@@ -58,8 +58,8 @@ spring:
           ## Both keys on purpose: jwk-set-uri keeps the key fetch lazy, so core starts even when the
           ## IdP is briefly unreachable, and issuer-uri adds issuer validation on top. issuer-uri
           ## alone makes startup fetch the IdP's metadata and couples core's boot to the IdP.
-          jwk-set-uri: "{{ easy_core_idp_base_url }}/realms/{{ easy_core_keycloak_realm }}/protocol/openid-connect/certs"
-          issuer-uri: "{{ easy_core_idp_base_url }}/realms/{{ easy_core_keycloak_realm }}"
+          jwk-set-uri: "{{ easy_core_idp_base_url }}{{ easy_core_idp_path_prefix }}/realms/{{ easy_core_keycloak_realm }}/protocol/openid-connect/certs"
+          issuer-uri: "{{ easy_core_idp_base_url }}{{ easy_core_idp_path_prefix }}/realms/{{ easy_core_keycloak_realm }}"
 
 easy:
   core:
@@ -117,6 +117,14 @@ easy:
       ## from this Keycloak. On an environment holding imported data with historical last_seen
       ## values, an unpinned run deletes a large slice of it.
       cron: "{{ easy_core_keycloak_cron }}"
+      ## The ORIGIN ONLY, with no path — deliberately different from the two URIs above, which have
+      ## the /auth prefix on them.
+      ##
+      ## delete_inactive_users.kt builds "$keycloakBaseUrl/auth/realms/master/..." and
+      ## "$keycloakBaseUrl/auth/admin/realms/$realm/..." — it appends `/auth` itself, in all three
+      ## places. So a base-url that already ends in /auth produces /auth/auth/... and every admin call
+      ## 404s. This was live and unnoticed until 2026-08-08, because staging pins the cron that drives
+      ## it to a date that never comes, so the broken URL was never built.
       base-url: "{{ easy_core_idp_base_url }}"
       realm: "{{ easy_core_keycloak_realm }}"
       client-id: "{{ easy_core_keycloak_client_id }}"

@@ -34,6 +34,24 @@
     - easy_core_moodle_grades_url
     - easy_core_web_base_url
 
+- name: Refuse an IdP base URL with a path on it
+  # The one property of this value that is not guessable from its name, and the one that was wrong on
+  # this host from the day it was written until 2026-08-08.
+  #
+  # core uses it two ways: Spring's jwk-set-uri and issuer-uri get `{{ easy_core_idp_path_prefix }}`
+  # added by the template, while delete_inactive_users.kt appends a hardcoded `/auth` to it in code.
+  # A value of `https://idp.example/auth` therefore makes JWKS right and every admin-API call
+  # `/auth/auth/...`, which 404s. Nobody saw it because staging pins the cron that would have built
+  # those URLs to a date that never comes — so this asserts what the comment cannot enforce.
+  ansible.builtin.assert:
+    that: easy_core_idp_base_url is match('^https?://[^/]+$')
+    fail_msg: >-
+      easy_core_idp_base_url is '{{ easy_core_idp_base_url }}', which has a path on it. It must be
+      the origin only (https://host), because core appends '/auth' to it itself in
+      delete_inactive_users.kt. The prefix for the Spring resource-server URIs is
+      easy_core_idp_path_prefix, currently '{{ easy_core_idp_path_prefix }}'.
+    quiet: true
+
 - name: Refuse to disable authentication
   # auth-enabled false installs DummyZeroAuthFilter, which trusts oidc_claim_* headers verbatim: any
   # request could claim to be an admin. It is a local-development affordance and there is no

@@ -62,6 +62,20 @@ easy_core_auth_enabled: true
 # Asserted. Getting the IdP wrong is the mistake §5 singles out, and a default here is how that
 # mistake would happen. The client *secret* is not among them: it lives on the host, like the
 # database password.
+#
+# easy_core_idp_base_url is the ORIGIN ONLY — https://host, no path. The role asserts that, because
+# the reason it must be bare is not guessable from the name: core's delete_inactive_users.kt appends
+# `/auth` to it itself, so a value ending in /auth silently becomes /auth/auth/... See the comment on
+# `base-url` in the template.
+
+# The path Keycloak is served under, added to the URLs core is *configured* with. Keycloak dropped
+# this prefix in the Quarkus rewrite and a modern deployment would set this to "" — ours keeps /auth
+# because both config.json files and core's own hardcoded admin URLs assume it.
+#
+# Worth knowing before changing it: this variable only reaches the two Spring resource-server URIs.
+# The admin-API paths in delete_inactive_users.kt have /auth compiled in and would not follow, so
+# setting this to "" needs a code change in the same commit.
+easy_core_idp_path_prefix: /auth
 
 # Both keys are set in the template rather than issuer-uri alone: jwk-set-uri makes the key fetch
 # lazy so core starts even if the IdP is briefly unreachable, and issuer-uri adds issuer validation

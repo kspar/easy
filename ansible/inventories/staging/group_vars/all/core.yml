@@ -30,28 +30,32 @@ easy_core_web_base_url: https://dev.lahendus.ut.ee
 easy_core_cors_allowed_origins: https://dev.lahendus.ut.ee
 
 # --- identity ---------------------------------------------------------------------------------------
-# None of this is verified, because there is currently nothing to verify it against: as of 2026-08-03
-# `dev.idp.lahendus.ut.ee` is a CNAME to `proxy.hpc.ut.ee`, and the easyidpdev VM (193.40.11.153)
-# serves nothing but SSH — no Keycloak on 443, 8080 or 8443. See §7 and EZ-1723; if the realm is gone
-# this stops being configuration and becomes "stand up Keycloak", which is the critical path for the
-# whole environment.
+# Verified against a live IdP as of 2026-08-08, which is new: everything here used to be a guess
+# because there was nothing to check it against. See doc/idp-setup.md for how the realm was built.
 #
-# The `/auth` suffix is not decoration: `deploy/staging/config.json` and `web/public/config.json` both
-# point the SPA at `https://dev.idp.lahendus.ut.ee/auth/`, the pre-Quarkus Keycloak path prefix. Core
-# builds `{base}/realms/{realm}/...` from this, so it needs the same prefix or every JWKS fetch 404s.
-easy_core_idp_base_url: https://dev.idp.lahendus.ut.ee/auth
+# The hostname changed at the same time, and the old one was never right. `dev.idp.lahendus.ut.ee` is
+# a CNAME to `proxy.hpc.ut.ee` — a host that has never served this IdP — so every config in this repo
+# pointed at a name that could not have worked. The VM answers to `easy-idp-dev.cloud.ut.ee`, which is
+# what Keycloak's `hostname` is set to and therefore what appears in the `issuer` of every token.
+#
+# ORIGIN ONLY, no path. The role asserts it. `/auth` is added by easy_core_idp_path_prefix for the
+# Spring resource-server URIs; core's admin-API code appends its own. See core_config/defaults.
+easy_core_idp_base_url: https://easy-idp-dev.cloud.ut.ee
 
-# From the same two config files, which are the closest thing to evidence available while the IdP is
-# down.
+# Keycloak's own admin realm, doubling as the application realm — which is not best practice and is
+# kept anyway, because production does the same and staging is meant to be the release gate. One
+# consequence worth knowing: in `master` the admin client is called `master-realm`, not the
+# `realm-management` every Keycloak guide names. doc/idp-setup.md has the detail.
 easy_core_keycloak_realm: master
 
-# NOT the SPA's client (`lahendus.ut.ee`, public, PKCE). Core needs the *confidential* client for its
-# admin-API work — user sync and deletion — and §7 lists creating it as outstanding work, so there is
-# no real value to put here yet. Left as a marked placeholder: core starts and logins work without it,
-# because JWT verification uses the realm's JWKS rather than this client, and only the admin
-# operations fail. The role says so on every run, and refuses placeholders outright in any environment
-# configured to reach real systems.
-easy_core_keycloak_client_id: CHANGEME-confidential-client-not-created-yet
+# NOT the SPA's client (`lahendus.ut.ee`, public, PKCE), which is what browsers authenticate against.
+# This is the confidential one core uses for admin-API work — the user lookup and deletion in
+# delete_inactive_users.kt — and nothing else. Its secret lives in secrets.yaml on the core host.
+#
+# Its service account deliberately holds `view-users` and NOT `manage-users`, so even if the deletion
+# cron below were unpinned, Keycloak would refuse the delete. That is §5's second line of defence and
+# the one that survives someone changing the cron without reading why it was pinned.
+easy_core_keycloak_client_id: easy-core
 
 # --- the outbound safety catch, left ON -------------------------------------------------------------
 # Deliberately not overridden here. Staging must not reach real systems, so the role's refusal to
