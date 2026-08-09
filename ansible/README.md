@@ -163,7 +163,8 @@ site.yml                     the plays: hardening everywhere, services by group
 smoke.yml                    read-only health check, safe against production
 run.sh                       staging only, sudo password from the keychain
 roles/hardening/             sshd, ufw, fail2ban, unattended-upgrade reboot policy
-roles/keycloak/              the IdP host entire: JVM, postgres, Keycloak, its unit, nginx, TLS
+roles/keycloak/              the IdP host entire: JVM, postgres, Keycloak, its unit, nginx, TLS,
+                             and the /idp-admin/ gate in front of the admin console
 roles/core_config/           core's config, its secrets file, and the guards on both
 roles/postgres/              cluster on loopback, role, database
 roles/core_service/          the systemd unit, the release tree, the deploy grant

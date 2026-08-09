@@ -403,6 +403,12 @@ The realm, as decided here and built there:
 by core at `POST /v2/account/checkin` (200), and a malformed one is refused on the same endpoint
 (401) — so the 200 means verification happened rather than being skipped.
 
+**Use `https://easy-idp-dev.cloud.ut.ee/idp-admin/` for admin work**, not `/auth/admin/` directly.
+Because we kept the `master` realm, every application user is a user in the realm whose admin console
+that is, and Keycloak's answer to "signed in, but not an admin" is a blank page with two spinners
+rather than a message. `/idp-admin/` checks first and either sends you through or says why not. It is
+one more thing a dedicated realm would make unnecessary — `doc/idp-setup.md` §4.6.
+
 One bug surfaced on the way and is fixed: `easy_core_idp_base_url` must be the **origin only**,
 because `delete_inactive_users.kt` appends `/auth` itself. The old value ended in `/auth`, so every
 admin-API call would have gone to `/auth/auth/...`. It was invisible because the cron that drives

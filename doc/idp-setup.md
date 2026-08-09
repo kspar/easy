@@ -25,9 +25,18 @@ issuer                     https://easy-idp-dev.cloud.ut.ee/auth/realms/master
 realm                      master
 SPA client                 lahendus.ut.ee     public, PKCE S256
 core's client              easy-core          confidential, service account, view-users only
+gate client                idp-admin-gate     public, PKCE S256 — see below
 role claim                 easy_role          client roles on lahendus.ut.ee
 login theme                lahendus
 ```
+
+### The three URLs worth knowing
+
+| | |
+| --- | --- |
+| `/idp-admin/` | **Start here for admin work.** Sends you to the console if your account may use it, and says so plainly if it may not (§4.6) |
+| `/auth/admin/` | The console itself. Works for admins; for anyone else it is a blank page with two spinners, forever — which is why the above exists |
+| `/auth/realms/master/account/` | Your own password, email and 2FA. Needs no administrator, and is what the application links to from its settings page |
 
 ---
 
@@ -219,7 +228,7 @@ It is also cheaper than the alternative in a specific way: `delete_inactive_user
 two disagree the moment the realm is not `master`, so moving to a dedicated realm is a code change,
 not a config change. **That half is now done** (`10f169c1`), so what remains is the realm itself.
 
-### What it costs, concretely
+#### What it costs, concretely
 
 Every application user is a user *in the realm whose admin console lives at `/auth/admin/`*. So an
 ordinary teacher or student can reach that console and authenticate against it. They have no admin
@@ -541,7 +550,10 @@ curl -s https://easy-idp-dev.cloud.ut.ee/auth/realms/master/.well-known/openid-c
 ssh easyidpdev 'systemctl is-active keycloak; curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:9000/auth/health/ready'
 ```
 
-The admin console is at <https://easy-idp-dev.cloud.ut.ee/auth/admin/>.
+For admin work go to <https://easy-idp-dev.cloud.ut.ee/idp-admin/>, which checks whether your account
+may use the console and sends you there if it may. The console's own URL,
+<https://easy-idp-dev.cloud.ut.ee/auth/admin/>, works too — but only if you are already an
+administrator, and gives no clue at all if you are not (§4.6).
 
 ---
 
@@ -556,6 +568,12 @@ The admin console is at <https://easy-idp-dev.cloud.ut.ee/auth/admin/>.
 - **A dedicated realm instead of `master`** (§4.1). The `getAccessToken()` half is **done** — all
   three admin URLs now follow `easy.core.keycloak.realm` — so what remains is the realm itself, the
   config in three places, and production doing the same so the two do not diverge.
+
+  Two things get **deleted** rather than migrated when that happens, and both will look like working
+  code at the time: the `/idp-admin/` gate and its client (§4.6), which guard a door application
+  users would no longer be able to reach, and the paragraph in §4.1 explaining why they exist. The
+  ledger for that move is longer than the realm itself, which is the honest reason it keeps not
+  happening.
 - **Production.** `easyidpprod` (193.40.22.67) has never been touched by this role. The role takes
   its hostname from the inventory and has no staging assumptions in it, but production is running an
   older Keycloak whose realm holds real accounts — that is a migration, not an apply.
