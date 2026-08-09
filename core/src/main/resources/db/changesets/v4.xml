@@ -142,4 +142,50 @@
                          defaultValue=""/>
     </changeSet>
 
+    <changeSet id="100826-1" author="kspar">
+        <comment>
+            Give management notifications a schedule, a severity, an optional link and an audience.
+
+            The table already existed with a single `message` column and a full admin CRUD, but no
+            web UI ever used it, and a message once created was shown to everyone forever until an
+            admin deleted it by id. That is why nobody used it: announcing planned maintenance meant
+            remembering to remove the notice afterwards.
+
+            Roles are three booleans rather than a join table. There are exactly three of them and
+            the set does not change; a join table would be tidier in the abstract and worse at every
+            query that actually runs. All three default true, so every row that already exists keeps
+            its current behaviour of being shown to everyone.
+
+            visible_from / visible_until are both nullable, and null is not "unset" but "no bound" —
+            null from means visible immediately, null until means visible until removed. That makes
+            the existing rows correct rather than requiring a backfill.
+        </comment>
+        <addColumn tableName="management_notification">
+            <column name="severity" type="text" defaultValue="INFO">
+                <constraints nullable="false"/>
+            </column>
+            <column name="link_url" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="link_label" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="visible_from" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="visible_until" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="for_students" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="for_teachers" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="for_admins" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

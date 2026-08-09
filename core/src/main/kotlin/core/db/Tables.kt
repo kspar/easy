@@ -254,6 +254,25 @@ object StatsAnonymousSubmission : LongIdTable("stats_anonymous_submission") {
 
 object ManagementNotification : LongIdTable("management_notification") {
     val message = text("message")
+
+    // URGENT is sticky and cannot be dismissed; INFO is quiet and can be. Stored as text rather
+    // than a DB enum for the same reason every other enum here is: adding a value should be a code
+    // change, not a migration.
+    val severity = text("severity")
+    val linkUrl = text("link_url").nullable()
+    val linkLabel = text("link_label").nullable()
+
+    // Null is "no bound", not "unset": null from means visible immediately, null until means
+    // visible until someone removes it. That is what lets the rows written before this existed
+    // keep behaving as they did without a backfill.
+    val visibleFrom = datetime("visible_from").nullable()
+    val visibleUntil = datetime("visible_until").nullable()
+
+    // Three booleans rather than a join table. There are exactly three roles and the set does not
+    // change; a join table would be tidier in the abstract and worse at every query that runs.
+    val forStudents = bool("for_students")
+    val forTeachers = bool("for_teachers")
+    val forAdmins = bool("for_admins")
 }
 
 object AutoExercise : LongIdTable("automatic_exercise") {
