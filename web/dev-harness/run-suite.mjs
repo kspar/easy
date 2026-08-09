@@ -56,6 +56,7 @@ const SCRIPTS = [
   'terms-redirect.mjs',
   'grade-table.mjs',
   'account-settings.mjs',
+  'landing-page.mjs',
 ]
 
 function log(msg) {
