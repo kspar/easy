@@ -1,0 +1,28 @@
+---
+- name: Restart postgres
+  ansible.builtin.systemd_service:
+    name: postgresql
+    state: restarted
+  when: not ansible_check_mode
+
+# A config change is not enough on its own: the unit runs `kc.sh start --optimized`, which reads the
+# baked-in build rather than re-deriving it. Changing a *build* option (db, features) and only
+# restarting would leave the server running the previous build — or refusing to start, if it noticed.
+# So the two go together, always, in this order.
+- name: Rebuild and restart keycloak
+  ansible.builtin.include_tasks: rebuild.yml
+
+- name: Restart keycloak
+  ansible.builtin.systemd_service:
+    name: "{{ keycloak_service_name }}"
+    state: restarted
+    daemon_reload: true
+  when:
+    - not ansible_check_mode
+    - keycloak_ready_to_configure | default(false) | bool
+
+- name: Reload nginx
+  ansible.builtin.systemd_service:
+    name: nginx
+    state: reloaded
+  when: not ansible_check_mode

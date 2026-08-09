@@ -1,0 +1,65 @@
+# Managed by Ansible (roles/keycloak) — local edits are overwritten.
+
+[Unit]
+Description=Keycloak — the Lahendus identity provider
+Documentation=https://www.keycloak.org/server/configuration
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+# Wants rather than Requires on postgres, same as core: Keycloak failing because the database is
+# down should be a restart loop that recovers on its own, not a unit systemd stops and leaves
+# stopped.
+
+[Service]
+Type=exec
+User={{ keycloak_user }}
+Group={{ keycloak_group }}
+
+Environment=JAVA_HOME={{ keycloak_java_home }}
+Environment=JAVA_OPTS={{ keycloak_java_opts }}
+# The database password and the first-run admin credentials. 0640 root:{{ keycloak_group }} — systemd
+# reads it as root before dropping to the service account, so the account running Keycloak never
+# needs read access to the file itself.
+EnvironmentFile={{ keycloak_env_file }}
+
+# --optimized: start with the configuration baked in by `kc.sh build` instead of re-deriving it at
+# every boot. Without it Keycloak runs a build on each start, which adds tens of seconds and — worse
+# — means a config change takes effect on restart without anyone having run a build, so the running
+# server and the last build silently disagree. The role runs the build as a handler instead.
+ExecStart={{ keycloak_home }}/bin/kc.sh start --optimized
+
+Restart=on-failure
+RestartSec=10s
+# Realm migrations run on first start after an upgrade and are not fast. Too short a timeout here
+# turns a migration into a restart loop against a half-migrated schema.
+TimeoutStartSec=300s
+TimeoutStopSec=60s
+
+# --- confinement ---------------------------------------------------------------------------------
+# Internet-reachable through a proxy, and it is the thing that holds every credential in the system,
+# so it gets the same treatment as core. Everything here is JVM-compatible.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# ProtectSystem=strict makes everything read-only except these. The whole install tree, because
+# Keycloak writes data/ (transaction logs, the gzip cache) and `kc.sh build` writes lib/quarkus.
+ReadWritePaths={{ keycloak_versioned_home }}
+
+# Deliberately NOT set: MemoryDenyWriteExecute. The JIT writes machine code and then executes it, so
+# that flag stops the JVM from starting at all. It appears in most systemd hardening guides, which is
+# exactly why it is worth writing down why it is missing.
+
+[Install]
+WantedBy=multi-user.target

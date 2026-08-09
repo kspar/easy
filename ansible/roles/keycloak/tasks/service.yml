@@ -1,0 +1,109 @@
+---
+# The configuration, the build it implies, and the unit.
+#
+# Keycloak has two kinds of option and the distinction drives everything here. *Build* options (which
+# database, which features) are baked into the image by `kc.sh build`; *runtime* options (hostname,
+# credentials, log level) are read at startup. Running with `--optimized` means the server refuses to
+# re-derive the build ones — so a change to db= that nobody rebuilt for is a startup failure with a
+# clear message, rather than a server quietly running the previous database.
+
+- name: Write Keycloak's configuration
+  ansible.builtin.template:
+    src: keycloak.conf.j2
+    dest: "{{ keycloak_home }}/conf/keycloak.conf"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_group }}"
+    mode: "0640"
+    backup: true
+  register: keycloak_conf
+  notify: Rebuild and restart keycloak
+  when: keycloak_ready_to_configure | default(false) | bool
+
+- name: Remove the pre-Ansible config if it is still lying about
+  # The install this replaced kept its configuration — including a database password in plaintext,
+  # world-readable — in ~kspar/keycloak-25.0.2/conf/keycloak.conf. It is not read by anything now
+  # that the server runs from {{ keycloak_home }}, which is precisely why it would sit there
+  # indefinitely with a live-looking credential in it.
+  ansible.builtin.file:
+    path: /home/kspar/keycloak-25.0.2/conf/keycloak.conf
+    state: absent
+
+- name: Install the unit
+  ansible.builtin.template:
+    src: keycloak.service.j2
+    dest: "/etc/systemd/system/{{ keycloak_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+    # systemd parses it before it is ever loaded, so a typo fails here rather than on the next
+    # daemon-reload — which would leave a broken unit in place behind a successful-looking run.
+    validate: "systemd-analyze verify %s"
+  notify: Restart keycloak
+  when: keycloak_ready_to_configure | default(false) | bool
+
+- name: Find out whether this install has ever been built
+  # `kc.sh build` writes a marker into lib/quarkus. Without this the first run would start an unbuilt
+  # install with --optimized, which fails outright — and only the *handler* rebuilds, so a first run
+  # where the config template reported "changed" but the handler had not fired yet would leave the
+  # unit unable to start.
+  ansible.builtin.stat:
+    path: "{{ keycloak_home }}/lib/quarkus/quarkus-application.dat"
+  register: keycloak_built
+  check_mode: false
+
+- name: Build it if it never has been
+  ansible.builtin.command:
+    cmd: "{{ keycloak_home }}/bin/kc.sh build"
+  environment:
+    JAVA_HOME: "{{ keycloak_java_home | default('') }}"
+  become: true
+  become_user: "{{ keycloak_user }}"
+  register: keycloak_first_build
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - keycloak_ready_to_configure | default(false) | bool
+    - not keycloak_built.stat.exists
+
+- name: Apply the config and any build before starting
+  # Handlers would otherwise run at the end of the play, i.e. long after the task below has tried to
+  # start a server against the previous configuration.
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable Keycloak and start it
+  ansible.builtin.systemd_service:
+    name: "{{ keycloak_service_name }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  when:
+    - not ansible_check_mode
+    - keycloak_ready_to_configure | default(false) | bool
+
+- name: Wait for it to answer on loopback
+  # Before nginx, before TLS, before DNS — so that a failure here is unambiguously Keycloak's and not
+  # the proxy's. The management port carries /health/ready, which is true only once the database
+  # migration has finished; the HTTP port would accept connections before that.
+  #
+  # `http-relative-path` applies to the **management interface too**, which is not what the option's
+  # name suggests and is not in the obvious place in the docs. With /auth set, readiness is at
+  # :9000/auth/health/ready and :9000/health/ready is a 404 — found the slow way on 2026-08-08, as
+  # thirty retries against a server that had been healthy the whole time.
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:9000{{ keycloak_http_relative_path }}/health/ready"
+    status_code: 200
+  register: keycloak_ready
+  retries: 30
+  delay: 5
+  until: keycloak_ready.status | default(0) == 200
+  changed_when: false
+  when:
+    - not ansible_check_mode
+    - keycloak_ready_to_configure | default(false) | bool
+
+- name: Say it is up
+  ansible.builtin.debug:
+    msg: >-
+      Keycloak is ready on 127.0.0.1:{{ keycloak_http_port }}{{ keycloak_http_relative_path }}
+      (health via 127.0.0.1:9000). nginx and TLS come next.
+  when: keycloak_ready.status | default(0) == 200

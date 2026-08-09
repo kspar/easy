@@ -1,0 +1,68 @@
+## Managed by Ansible (roles/keycloak) — local edits are overwritten.
+##
+## THIS FILE CONTAINS NO SECRETS, deliberately. The database password is KC_DB_PASSWORD in
+## {{ keycloak_env_file }}, which Ansible creates but never reads — see roles/keycloak/tasks/secrets.yml
+## and ansible/README.md. Every option here has a KC_-prefixed environment equivalent, which is what
+## makes that split possible at all.
+
+## --- database ---------------------------------------------------------------------------------
+## Postgres rather than the bundled H2. H2 is the dev-mode default and it is a file in data/ — which
+## is exactly how the previous IdP's realm was lost track of: a home-directory backup carried the
+## install and the theme, and the realm was never in either.
+db=postgres
+db-username={{ keycloak_db_user }}
+db-url=jdbc:postgresql://127.0.0.1:{{ keycloak_db_port }}/{{ keycloak_db_name }}
+
+## --- how it is addressed ------------------------------------------------------------------------
+## This is the setting that decides the `issuer` claim in every token, and core rejects any token
+## whose issuer is not the one it was configured with. Getting it wrong produces a 401 on every login
+## that looks nothing like a hostname problem.
+hostname={{ keycloak_hostname }}
+
+## `/auth` is the pre-Quarkus path prefix. Keycloak dropped it in the rewrite; we keep it because
+## core hardcodes it in delete_inactive_users.kt and both config.json files point the SPA at
+## `.../auth/`. Removing it means changing core, the SPA config and production together.
+http-relative-path={{ keycloak_http_relative_path }}
+
+## nginx terminates TLS and proxies here. Loopback only: a directly reachable Keycloak would bypass
+## the proxy entirely, and ufw does not cover ports Docker publishes if a container ever lands here.
+http-enabled=true
+http-host={{ keycloak_http_host }}
+http-port={{ keycloak_http_port }}
+
+## Trust X-Forwarded-* from the proxy, so Keycloak builds redirect URLs with the client's scheme and
+## host rather than its own http://127.0.0.1:8080.
+##
+## NOT `proxy=edge`, which is what this file said before and what most guides still show. That option
+## was deprecated in Keycloak 24 and removed in 26; `proxy-headers` is its replacement and works from
+## 24 onwards, so this is both correct now and survives the next upgrade.
+##
+## Safe only because nginx *overwrites* these headers rather than passing through what a client sent
+## — see the vhost template. A Keycloak trusting X-Forwarded-Host from the internet would let anyone
+## choose the issuer in the tokens it mints.
+proxy-headers=xforwarded
+
+## --- clustering, which this host does not do --------------------------------------------------
+## `local` rather than the `ispn` that production mode defaults to.
+##
+## This is not a tuning choice, it is a listener. With the default, Keycloak starts a JGroups stack
+## for cache replication and binds it to **0.0.0.0 on a random ephemeral port** — 36346 on the first
+## run here. ufw's default-deny keeps it off the internet, but a rule cannot name a port that changes
+## on every restart, so the firewall is the only thing standing in front of it and `smoke.yml` flags
+## it as a public listener on every run. There is exactly one Keycloak here and no second node to
+## replicate to, so the whole stack is cost without benefit.
+##
+## Revisit if this host is ever clustered: then it wants `ispn` plus a *pinned* JGroups port and a ufw
+## rule scoped to the peers, not a return to the default.
+cache=local
+
+## --- operational ----------------------------------------------------------------------------------
+## /health and /metrics on the management port (9000 by default, loopback via http-host above), which
+## is what makes the systemd unit's readiness check something better than "the port is open".
+health-enabled=true
+metrics-enabled=true
+
+## Logging to the console, which under systemd means the journal — one place to look, and it rotates
+## without anyone configuring logrotate for it.
+log=console
+log-level=info

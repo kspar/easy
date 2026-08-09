@@ -1,0 +1,175 @@
+---
+# Keycloak's database: a cluster on loopback, a role, an empty database. Keycloak migrates it itself
+# on first start, exactly as core does with its own.
+#
+# This is deliberately a near-copy of roles/postgres rather than a shared role. The two differ in
+# where the password lives (core's secrets.yaml vs Keycloak's env file), which is most of what that
+# role does, and production puts these on *different hosts* — so the shared version would be a role
+# parameterised by everything, which is worse than the duplication. See doc/idp-setup.md.
+
+- name: Install postgres
+  ansible.builtin.apt:
+    name: postgresql
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Find out whether postgres exists yet
+  ansible.builtin.stat:
+    path: /usr/lib/postgresql
+  register: keycloak_pg_installed
+  check_mode: false
+
+- name: Say why the database tasks are being skipped
+  ansible.builtin.debug:
+    msg: >-
+      postgres is not installed on this host and this is a dry run, so the cluster, role and database
+      below cannot be evaluated. Run without --check to install it, then dry-run again.
+  when: not keycloak_pg_installed.stat.exists
+
+- name: Start postgres and keep it started
+  ansible.builtin.systemd_service:
+    name: postgresql
+    state: started
+    enabled: true
+  when: keycloak_pg_installed.stat.exists
+
+- name: Find out which cluster is running
+  # The config path carries the major version (…/16/main/…), so it is discovered rather than assumed.
+  # A release upgrade would otherwise leave this role editing the old cluster's config.
+  community.postgresql.postgresql_query:
+    db: postgres
+    query: "SHOW config_file"
+  become: true
+  become_user: postgres
+  register: keycloak_pg_config_file
+  changed_when: false
+  check_mode: false
+  when: keycloak_pg_installed.stat.exists
+
+- name: Keep postgres on loopback
+  ansible.builtin.lineinfile:
+    path: "{{ keycloak_pg_config_file.query_result[0].config_file }}"
+    regexp: '^\s*#?\s*listen_addresses\s*='
+    line: "listen_addresses = '{{ keycloak_postgres_listen_addresses }}'"
+    validate: "grep -q '^listen_addresses' %s"
+  notify: Restart postgres
+  when: keycloak_pg_installed.stat.exists
+
+- name: Apply the listen address before anything tries to connect
+  ansible.builtin.meta: flush_handlers
+
+- name: Create the role Keycloak connects as
+  # No `password:` — the module would want the value, and the value is on the host. The task below
+  # sets it there. Until then the role simply cannot authenticate, which is a safe intermediate state
+  # rather than an open one.
+  community.postgresql.postgresql_user:
+    name: "{{ keycloak_db_user }}"
+    role_attr_flags: LOGIN,NOSUPERUSER,NOCREATEROLE
+    state: present
+  become: true
+  become_user: postgres
+  when: keycloak_pg_installed.stat.exists
+
+- name: Create the database
+  community.postgresql.postgresql_db:
+    name: "{{ keycloak_db_name }}"
+    owner: "{{ keycloak_db_user }}"
+    encoding: UTF-8
+    template: template0
+    state: present
+  become: true
+  become_user: postgres
+  when: keycloak_pg_installed.stat.exists
+
+- name: Tell postgres the password the host already has
+  # Runs entirely on the target: reads the env file, tries to authenticate with it over TCP, and only
+  # issues an ALTER ROLE when that fails. A converged host does nothing, the value never reaches the
+  # controller or the logs, and re-running cannot break a working login.
+  ansible.builtin.command:
+    cmd: python3 -
+  args:
+    stdin: |
+      import subprocess, sys
+
+      ENV = {{ keycloak_env_file | to_json }}
+      USER = {{ keycloak_db_user | to_json }}
+      DB = {{ keycloak_db_name | to_json }}
+      PORT = {{ keycloak_db_port | to_json }}
+
+      password = None
+      for line in open(ENV):
+          if line.startswith("KC_DB_PASSWORD="):
+              password = line.partition("=")[2].rstrip("\n")
+      if password is None:
+          sys.exit("KC_DB_PASSWORD is not in " + ENV)
+
+      # Does it already work? If so there is nothing to do, and saying so is what makes this
+      # idempotent rather than "ALTER ROLE every run and call it unchanged".
+      probe = subprocess.run(
+          ["psql", "-h", "127.0.0.1", "-p", str(PORT), "-U", USER, "-d", DB, "-tAc", "select 1"],
+          env={"PGPASSWORD": password, "PATH": "/usr/bin:/bin"},
+          capture_output=True, text=True,
+      )
+      if probe.returncode == 0 and probe.stdout.strip() == "1":
+          print("already-correct")
+          sys.exit(0)
+
+      # standard_conforming_strings has been on by default since 9.1, so doubling single quotes is
+      # the complete escaping rule and backslashes are literal. The generated value is URL-safe and
+      # needs none of this; a hand-edited one might.
+      literal = "'" + password.replace("'", "''") + "'"
+      statement = 'ALTER ROLE "%s" WITH LOGIN PASSWORD %s;' % (USER, literal)
+
+      # Fed on stdin, never as an argument — arguments are visible in `ps` to every user on the box
+      # for as long as the command runs.
+      alter = subprocess.run(
+          ["runuser", "-u", "postgres", "--", "psql", "-v", "ON_ERROR_STOP=1", "-f", "-"],
+          input=statement, capture_output=True, text=True,
+      )
+      if alter.returncode != 0:
+          sys.exit("could not set the password: " + alter.stderr.strip())
+      print("password-set")
+  # Root, not postgres: the env file is 0640 root:keycloak, and widening that to the postgres account
+  # would mean one more account able to read Keycloak's credentials. Root drops to postgres via
+  # runuser for the one statement that needs the superuser.
+  become: true
+  register: keycloak_pg_password_sync
+  changed_when: "'password-set' in keycloak_pg_password_sync.stdout"
+  when:
+    - not ansible_check_mode
+    - keycloak_pg_installed.stat.exists
+
+- name: Connect the way Keycloak will
+  # End to end over TCP with the real credential: role, password, pg_hba and the database at once.
+  # Creating a role and a database proves none of that, and the first thing Keycloak does at startup
+  # is exactly this connection.
+  ansible.builtin.command:
+    cmd: python3 -
+  args:
+    stdin: |
+      import subprocess, sys
+      password = None
+      for line in open({{ keycloak_env_file | to_json }}):
+          if line.startswith("KC_DB_PASSWORD="):
+              password = line.partition("=")[2].rstrip("\n")
+      out = subprocess.run(
+          ["psql", "-h", "127.0.0.1", "-p", str({{ keycloak_db_port | to_json }}),
+           "-U", {{ keycloak_db_user | to_json }}, "-d", {{ keycloak_db_name | to_json }},
+           "-tAc", "select current_database() || ' as ' || current_user"],
+          env={"PGPASSWORD": password, "PATH": "/usr/bin:/bin"},
+          capture_output=True, text=True,
+      )
+      if out.returncode != 0:
+          sys.exit("Keycloak's credentials do not work: " + out.stderr.strip())
+      print(out.stdout.strip())
+  become: true
+  register: keycloak_pg_login_check
+  changed_when: false
+  when:
+    - not ansible_check_mode
+    - keycloak_pg_installed.stat.exists
+
+- name: Say what connected
+  ansible.builtin.debug:
+    msg: "Keycloak will connect as: {{ keycloak_pg_login_check.stdout | default('(not checked in a dry run)') }}"

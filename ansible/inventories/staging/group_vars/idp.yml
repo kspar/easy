@@ -1,0 +1,16 @@
+---
+# What staging's IdP is called, and who hears about its certificate.
+#
+# `roles/keycloak/defaults/main.yml` holds the reasoning for everything else. Only the two values
+# that have no safe default are here: both decide something about the outside world — which
+# certificate is requested, and which issuer ends up in every token core validates — so a default
+# would be a guess with real consequences.
+
+# 193.40.11.153. Note this is NOT `dev.idp.lahendus.ut.ee`, which is what every config in this repo
+# said until 2026-08-08 and which is a CNAME to proxy.hpc.ut.ee — a host that has never served the
+# dev IdP. The `.cloud.ut.ee` name is the one that actually resolves to the VM.
+keycloak_hostname: easy-idp-dev.cloud.ut.ee
+
+# Let's Encrypt sends expiry warnings here, and those warnings are the backstop for a renewal timer
+# nobody is watching.
+keycloak_acme_email: kaspar.papli@helmes.com

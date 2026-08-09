@@ -1,0 +1,88 @@
+# Managed by Ansible (roles/keycloak) — local edits are overwritten.
+
+# --- HTTP: ACME, and otherwise go away -----------------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ keycloak_hostname }};
+
+    # Renewal happens over HTTP-01, so this one path must stay reachable without TLS. Served from a
+    # webroot rather than by certbot's nginx plugin, which would rewrite this file.
+    location ^~ /.well-known/acme-challenge/ {
+        root {{ keycloak_acme_webroot }};
+        default_type "text/plain";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+{% if keycloak_tls_ready %}
+# --- the IdP ---------------------------------------------------------------------------------------
+server {
+{% if keycloak_http2_directive | bool %}
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+{% else %}
+    # `http2 on;` as its own directive is 1.25.1 and later. This nginx is older, where HTTP/2 is a
+    # parameter on the listen line instead — and using the wrong one is a hard startup failure.
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+{% endif %}
+    server_name {{ keycloak_hostname }};
+
+    ssl_certificate     {{ keycloak_cert_dir }}/fullchain.pem;
+    ssl_certificate_key {{ keycloak_cert_dir }}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # No includeSubDomains: this name has siblings under cloud.ut.ee that this repo does not own and
+    # cannot vouch for, and a subdomain-wide pin is remembered by browsers long after the header
+    # stops being sent.
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Keycloak sets its own X-Frame-Options / CSP per realm, and adding a second one here would
+    # either duplicate the header or fight the realm's setting. Left to Keycloak deliberately.
+
+    # Login POSTs are small; an admin realm import is not. 32m matches the API vhost on the core
+    # host, for one less number to remember.
+    client_max_body_size 32m;
+
+    location / {
+        proxy_pass http://{{ keycloak_http_host }}:{{ keycloak_http_port }};
+
+        # These four are the security boundary for `proxy-headers=xforwarded` in keycloak.conf.
+        # Keycloak trusts them to decide the scheme and host it builds redirects and the token
+        # `issuer` from. Every one is SET, not appended and not passed through — a client sending its
+        # own X-Forwarded-Host must not be able to choose the issuer in the tokens Keycloak mints.
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header X-Forwarded-Port  443;
+
+        proxy_http_version 1.1;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+    }
+
+    # The management port, which serves /health and /metrics. Not proxied on purpose: it is bound to
+    # loopback and there is no reason for it to be reachable from the internet. `ss -tlnp` and the
+    # smoke check are how it gets looked at.
+
+    access_log /var/log/nginx/{{ keycloak_hostname }}.access.log;
+    error_log  /var/log/nginx/{{ keycloak_hostname }}.error.log;
+}
+{% else %}
+# TLS block omitted: no certificate at {{ keycloak_cert_dir }} yet. The HTTP server above is what
+# lets certbot obtain one over HTTP-01; re-running this role once it exists writes the rest.
+{% endif %}

@@ -1,0 +1,188 @@
+---
+# Unpack the release, and install the theme.
+#
+# Versioned directory plus a stable symlink: an upgrade is "unpack the new one, move the link", and a
+# rollback is moving it back. Everything else in this role refers to the link, never the version.
+
+- name: Download the release
+  # Checksummed, not trusted. `dest` is the versioned filename so a changed version downloads afresh
+  # rather than silently reusing the previous archive under the same name.
+  #
+  # If this fails with a checksum mismatch, do not "fix" it by updating the hash: the whole point is
+  # that the artifact matched the one whose provenance was verified. See defaults/main.yml.
+  ansible.builtin.get_url:
+    url: "{{ keycloak_zip_url }}"
+    dest: "/var/cache/keycloak-{{ keycloak_version }}.zip"
+    checksum: "sha256:{{ keycloak_zip_sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+  register: keycloak_zip
+
+- name: Find out whether the archive is actually there
+  # Guard on what exists, not on check mode — the same lesson roles/postgres, roles/nginx and
+  # roles/core_service each needed. In a dry run against a host that has never had Keycloak, the
+  # download above was only simulated, so unarchive would fail on a file that is not there and abort
+  # the run before the unit, the vhost and the certificate were ever diffed. Keying on the file means
+  # a dry run against an *installed* host still checks all of it, which is the case that matters
+  # once this host exists.
+  ansible.builtin.stat:
+    path: "/var/cache/keycloak-{{ keycloak_version }}.zip"
+  register: keycloak_zip_stat
+  check_mode: false
+
+- name: Say why the install is being skipped
+  ansible.builtin.debug:
+    msg: >-
+      /var/cache/keycloak-{{ keycloak_version }}.zip is not on this host and this is a dry run, so
+      unpacking it, the theme, the config, the unit and the build below cannot be evaluated. Run
+      without --check to download it, then dry-run again to see the rest.
+  when: not keycloak_zip_stat.stat.exists
+
+- name: Note whether there is anything to configure
+  # One gate for everything downstream — here, in service.yml and in the verification at the end of
+  # main.yml. Both halves have to hold: a JVM to run it with, and an archive to unpack.
+  ansible.builtin.set_fact:
+    keycloak_ready_to_configure: >-
+      {{ (keycloak_installed | default(false) | bool) and keycloak_zip_stat.stat.exists }}
+
+- name: Unpack it
+  # `creates:` rather than letting unarchive diff the tree every run: `kc.sh build` writes into
+  # lib/quarkus, so an unpacked-and-built install no longer matches the archive and unarchive would
+  # report changed on every single run and undo the build.
+  ansible.builtin.unarchive:
+    src: "/var/cache/keycloak-{{ keycloak_version }}.zip"
+    dest: "{{ keycloak_install_parent }}"
+    remote_src: true
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_group }}"
+    creates: "{{ keycloak_versioned_home }}/bin/kc.sh"
+  when: keycloak_ready_to_configure | bool
+
+- name: Point the stable path at this version
+  ansible.builtin.file:
+    src: "{{ keycloak_versioned_home }}"
+    dest: "{{ keycloak_home }}"
+    state: link
+  notify: Rebuild and restart keycloak
+  when: keycloak_ready_to_configure | bool
+
+- name: Let the service account own its own tree
+  when: keycloak_ready_to_configure | bool
+  # Keycloak's build step rewrites lib/quarkus and its runtime writes data/, so the account that runs
+  # it needs to own both. The trade, stated because it is a real one: the service account can modify
+  # the code it runs. The alternative — root-owned tree, build as root — means the build and the
+  # runtime disagree about file ownership in data/, which Keycloak notices and complains about. This
+  # is the arrangement the official container image uses, for the same reason.
+  ansible.builtin.file:
+    path: "{{ keycloak_versioned_home }}"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_group }}"
+    recurse: true
+
+# --- the theme -------------------------------------------------------------------------------------
+
+- name: Look for the theme source
+  ansible.builtin.stat:
+    path: "{{ keycloak_theme_src }}/{{ keycloak_theme_name }}"
+  register: keycloak_theme_stat
+  check_mode: false
+  when: keycloak_theme_install | bool
+
+- name: Say the theme is not where it was expected
+  # Not a failure: a Keycloak with the stock login page is a working Keycloak, and this theme arrived
+  # with a home-directory restore rather than from a repository — so its absence on a rebuilt host is
+  # entirely likely and should not stop the rest of the role.
+  ansible.builtin.debug:
+    msg: >-
+      {{ keycloak_theme_src }}/{{ keycloak_theme_name }} does not exist, so the theme was not
+      installed and the realm will use the stock Keycloak login page. That is functional. See
+      doc/idp-setup.md for where the theme comes from.
+  when:
+    - keycloak_theme_install | bool
+    - not keycloak_theme_stat.stat.exists
+
+- name: Find out whether the theme is already installed
+  ansible.builtin.stat:
+    path: "{{ keycloak_versioned_home }}/themes/{{ keycloak_theme_name }}/login/theme.properties"
+  register: keycloak_theme_installed
+  check_mode: false
+  when: keycloak_theme_install | bool
+
+- name: Install the theme
+  # Into themes/ as a plain directory rather than packaged into a jar in providers/. Directories are
+  # what a theme under active repair wants: edit a template, restart, look. A jar would mean a build
+  # step between every attempt, and this theme needed attempts — see the fixes below.
+  #
+  # Copied only when it is not already there, because the tasks below *edit* what was copied. An
+  # unconditional copy would restore the upstream file every run, the fixes would re-apply every run,
+  # and the role would report changed forever while flapping the login page's stylesheets.
+  # To pick up a changed source: remove {{ keycloak_versioned_home }}/themes/{{ keycloak_theme_name }}
+  # and run again.
+  ansible.builtin.copy:
+    src: "{{ keycloak_theme_src }}/{{ keycloak_theme_name }}/"
+    dest: "{{ keycloak_versioned_home }}/themes/{{ keycloak_theme_name }}/"
+    remote_src: true
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_group }}"
+    mode: preserve
+  when:
+    - keycloak_ready_to_configure | bool
+    - keycloak_theme_install | bool
+    - keycloak_theme_stat.stat.exists | default(false)
+    - not keycloak_theme_installed.stat.exists | default(false)
+  notify: Restart keycloak
+
+# --- what three years of Keycloak releases did to this theme --------------------------------------
+# The theme loads and the login form works, but it asked for three stylesheets that Keycloak 25 does
+# not ship, and a 404 stylesheet is an unstyled page rather than a visible error. Both fixes are
+# idempotent (the regexp matches the corrected line too), which is what lets them live in the role.
+#
+# The right long-term fix is not either of these: it is that this theme has no home. It arrived with
+# a home-directory restore, it is in no repository, and a rebuilt host would get the 2023 copy again.
+# Vendoring it is filed as follow-up work in doc/idp-setup.md.
+
+- name: Point the theme at stylesheets Keycloak 25 actually ships
+  # Was: web_modules/@patternfly/react-core/dist/styles/{base,app}.css — paths from the PatternFly 4
+  # layout Keycloak 15 used. Keycloak 25's common/keycloak has no web_modules directory at all; the
+  # equivalent is node_modules/@patternfly/patternfly/patternfly.min.css. Taken from KC 25's own
+  # keycloak/login/theme.properties rather than guessed.
+  ansible.builtin.lineinfile:
+    path: "{{ keycloak_versioned_home }}/themes/{{ keycloak_theme_name }}/login/theme.properties"
+    regexp: '^stylesCommon='
+    line: >-
+      stylesCommon=node_modules/@patternfly/patternfly/patternfly.min.css
+      node_modules/patternfly/dist/css/patternfly.min.css
+      node_modules/patternfly/dist/css/patternfly-additions.min.css lib/pficon/pficon.css
+  when:
+    - keycloak_ready_to_configure | bool
+    - keycloak_theme_install | bool
+    - keycloak_theme_stat.stat.exists | default(false)
+  notify: Restart keycloak
+
+- name: Stop the theme asking for a stylesheet that exists nowhere
+  # css/tile.css is not in this theme's resources and not in the parent it inherits from. It was
+  # presumably real in whatever Keycloak this was written against; it 404s on 25.
+  ansible.builtin.lineinfile:
+    path: "{{ keycloak_versioned_home }}/themes/{{ keycloak_theme_name }}/login/theme.properties"
+    regexp: '^styles='
+    line: "styles=css/login.css css/easy-login.css"
+  when:
+    - keycloak_ready_to_configure | bool
+    - keycloak_theme_install | bool
+    - keycloak_theme_stat.stat.exists | default(false)
+  notify: Restart keycloak
+
+- name: Say the theme still has to be selected
+  # Installing a theme does not apply it. Keeping selection in the realm rather than in this role is
+  # deliberate: if it renders badly on Keycloak 25, switching back to the stock theme should be two
+  # clicks in the console, not a playbook run.
+  ansible.builtin.debug:
+    msg: >-
+      Theme '{{ keycloak_theme_name }}' is installed but not selected. Set it per realm in
+      Realm settings → Themes, or with the kcadm command in doc/idp-setup.md. It was built for
+      Keycloak 15 — if the login page renders oddly, that is the first thing to suspect.
+  when:
+    - keycloak_theme_install | bool
+    - keycloak_theme_stat.stat.exists | default(false)

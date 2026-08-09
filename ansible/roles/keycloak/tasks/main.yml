@@ -1,0 +1,99 @@
+---
+# Keycloak on its own host: a JVM, a database, the server, and nginx in front of it.
+#
+# Read `doc/idp-setup.md` alongside this. The realm's *contents* — clients, mappers, the easy_role
+# claim — are deliberately not here: they are data, they change without a release, and a playbook
+# that owned them would either fight an admin editing the console or silently revert their work.
+# This role produces an empty, running, TLS-terminated Keycloak; the doc builds the realm on top.
+#
+# Ordering is the same safety property as in roles/hardening: the database exists before Keycloak is
+# told to connect to it, and nginx answers on port 80 before certbot is asked for a certificate.
+
+- name: Confirm this is the OS the role was written for
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == "Ubuntu"
+      - ansible_facts.distribution_major_version is version("24", ">=")
+    fail_msg: >-
+      This role targets Ubuntu 24.04+. Found
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+    quiet: true
+
+- name: Refuse to continue without the public hostname
+  # No default on purpose. This name decides which certificate is requested, which issuer ends up in
+  # every token core then validates, and which origin the browser is sent to. A guess here is a
+  # certificate request for a name someone else owns.
+  ansible.builtin.assert:
+    that:
+      - keycloak_hostname is defined
+      - keycloak_hostname | length > 0
+      - keycloak_acme_email is defined or not (keycloak_tls | bool)
+    fail_msg: >-
+      keycloak_hostname (and keycloak_acme_email when TLS is on) have no defaults and must be set in
+      the inventory. See inventories/staging/group_vars/all/idp.yml.
+    quiet: true
+
+- name: Install the pieces
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Make sure the host has its credentials
+  ansible.builtin.import_tasks: secrets.yml
+
+- name: Create the database
+  ansible.builtin.import_tasks: database.yml
+
+- name: Install the server
+  ansible.builtin.import_tasks: install.yml
+
+- name: Configure and start it
+  ansible.builtin.import_tasks: service.yml
+
+- name: Put nginx in front of it
+  ansible.builtin.import_tasks: nginx.yml
+
+# --- prove it, rather than assume it -------------------------------------------------------------
+
+- name: Apply anything still pending before verifying
+  ansible.builtin.meta: flush_handlers
+
+- name: Ask Keycloak for the realm's OIDC metadata
+  # The single most useful check available: it goes through nginx, through TLS, through the /auth
+  # prefix, into Keycloak, and out of the database. If this returns the right issuer then core's JWKS
+  # fetch will work, because it is the same path.
+  ansible.builtin.uri:
+    url: "https://{{ keycloak_hostname }}{{ keycloak_http_relative_path }}/realms/master/.well-known/openid-configuration"
+    return_content: true
+    validate_certs: true
+  register: keycloak_discovery
+  changed_when: false
+  retries: 10
+  delay: 6
+  until: keycloak_discovery.status | default(0) == 200
+  when:
+    - not ansible_check_mode
+    - keycloak_tls | bool
+    - keycloak_cert.stat.exists | default(false)
+
+- name: Check the issuer is the name core will validate against
+  # A mismatch here is the failure that looks like "login is broken" and is actually one wrong
+  # hostname: Keycloak signs tokens with whatever issuer it thinks it serves, and core rejects any
+  # token whose issuer is not the configured one. Catching it here beats catching it as a 401.
+  ansible.builtin.assert:
+    that:
+      - keycloak_discovery.json.issuer == expected_issuer
+    fail_msg: >-
+      Keycloak reports issuer '{{ keycloak_discovery.json.issuer | default('?') }}' but core will be
+      configured to expect '{{ expected_issuer }}'. Every login would fail with an invalid-token 401.
+      Check `hostname` in {{ keycloak_conf_dir }}/keycloak.conf and the proxy headers nginx sends.
+    quiet: true
+  vars:
+    expected_issuer: "https://{{ keycloak_hostname }}{{ keycloak_http_relative_path }}/realms/master"
+  when: keycloak_discovery.json is defined
+
+- name: Say what it is serving
+  ansible.builtin.debug:
+    msg:
+      - "issuer:   {{ keycloak_discovery.json.issuer | default('(not checked)') }}"
+      - "jwks:     {{ keycloak_discovery.json.jwks_uri | default('(not checked)') }}"
+      - "admin:    https://{{ keycloak_hostname }}{{ keycloak_http_relative_path }}/admin/"
+      - "core wants easy_core_idp_base_url: https://{{ keycloak_hostname }}"

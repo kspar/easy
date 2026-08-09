@@ -30,3 +30,12 @@
     - postgres
     - core_service
     - nginx
+
+# The IdP is already its own host in staging, which is how production is laid out too — so unlike the
+# core roles, nothing here has ever been able to assume co-location. The role brings its own postgres
+# and its own nginx for exactly that reason.
+- name: IdP
+  hosts: idp
+  become: true
+  roles:
+    - keycloak

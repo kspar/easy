@@ -1,0 +1,93 @@
+---
+# Keycloak: a JVM, a database, the server, and nginx terminating TLS in front of it.
+#
+# The reasoning that does not fit in a comment is in `doc/idp-setup.md`, which is the doc to read
+# before changing anything here.
+#
+# As with roles/hardening, the values here are meant to be the answer for the host that matters most,
+# and an environment loosens what it needs to in its own group_vars. There is only one Keycloak host
+# today (staging), so nothing overrides these yet — but production's IdP is a separate VM that this
+# same role is meant to reach, so nothing here may assume it is co-located with core.
+
+# --- the version ----------------------------------------------------------------------------------
+# Pinned, and verified by checksum rather than trusted. Keycloak upgrades change realm storage, so
+# "whatever is latest" is not a thing this role should ever install on its own.
+#
+# The checksum is the SHA-256 of the official release asset, confirmed on 2026-08-08 by downloading
+# it from GitHub on the host and comparing against the copy that was already sitting in ~kspar — they
+# matched, which is what makes that copy's provenance known rather than assumed.
+keycloak_version: 25.0.2
+keycloak_zip_url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_version }}/keycloak-{{ keycloak_version }}.zip"
+keycloak_zip_sha256: 782860ef21cbdbef3c3b8203a35202e0ce7f0047e34a41406ba9b3201a6c2b8b
+
+# Keycloak 25 runs on Java 17 or 21. 21 is the newer of the two it supports — deliberately NOT the
+# Java 25 core runs on, because Quarkus in this release predates it and the failure mode is an
+# obscure startup crash rather than a version check.
+keycloak_jre_package: openjdk-21-jre-headless
+# JAVA_HOME is discovered rather than written down: Debian puts the JVM under an architecture-suffixed
+# path (java-21-openjdk-amd64), and hardcoding one arch is a role that works here and fails on the
+# next host for a reason nobody enjoys finding. The tasks glob for it and assert exactly one match.
+keycloak_jvm_glob: /usr/lib/jvm/java-21-openjdk-*
+
+# --- where it lives -------------------------------------------------------------------------------
+# Versioned directory plus a stable symlink, so an upgrade is "unpack the new one, move the link"
+# and a rollback is moving it back. The unit and every path below refer to the link.
+keycloak_install_parent: /opt
+keycloak_home: /opt/keycloak
+keycloak_versioned_home: "{{ keycloak_install_parent }}/keycloak-{{ keycloak_version }}"
+
+keycloak_user: keycloak
+keycloak_group: keycloak
+keycloak_service_name: keycloak
+
+# Not in the install tree: `kc.sh build` rewrites parts of that tree, and config that survives an
+# upgrade should not live somewhere an upgrade replaces.
+keycloak_conf_dir: /etc/keycloak
+keycloak_env_file: "{{ keycloak_conf_dir }}/keycloak.env"
+
+# --- the database ---------------------------------------------------------------------------------
+# Keycloak's own, on this host's own cluster, on loopback. Nothing else uses it.
+keycloak_db_name: cloakdb
+keycloak_db_user: cloak
+keycloak_db_port: 5432
+keycloak_postgres_listen_addresses: 127.0.0.1
+
+# --- how it is addressed --------------------------------------------------------------------------
+# No default for the hostname. It decides which certificate is requested, which issuer ends up in
+# every token, and which origin the browser is redirected to — a wrong guess is a certificate request
+# for a name someone else owns, and tokens core will refuse.
+# keycloak_hostname — the public name, e.g. easy-idp-dev.cloud.ut.ee
+
+# `/auth` is not decoration and not nostalgia. Keycloak dropped this prefix in the Quarkus rewrite,
+# but core still builds `{base}/auth/admin/realms/...` in delete_inactive_users.kt with the prefix
+# hardcoded, and both config.json files point the SPA at `.../auth/`. Serving without it would mean
+# changing core, the SPA config and production together; keeping it costs one line.
+keycloak_http_relative_path: /auth
+
+# Loopback only. nginx terminates TLS and proxies; a directly reachable Keycloak would bypass that,
+# and ufw does not cover ports Docker publishes if a container ever lands on this host.
+keycloak_http_host: 127.0.0.1
+keycloak_http_port: 8080
+
+# --- TLS ------------------------------------------------------------------------------------------
+keycloak_tls: true
+keycloak_acme_webroot: /var/www/certbot
+# keycloak_acme_email — no default. Let's Encrypt sends expiry warnings here, and those warnings are
+# the backstop for a renewal timer nobody is watching.
+keycloak_cert_dir: "/etc/letsencrypt/live/{{ keycloak_hostname }}"
+
+# --- the theme ------------------------------------------------------------------------------------
+# The lahendus login/account/email theme, so staging looks like production. Built in 2023 against
+# Keycloak 15 and never run on 25 — see doc/idp-setup.md for what to check if the login page renders
+# oddly. Installing it does not select it: that is a realm setting, deliberately, so a broken theme
+# can be switched off without a playbook run.
+keycloak_theme_install: true
+keycloak_theme_name: lahendus
+# Where the theme source is taken from on the host. It arrived with the home-directory restore rather
+# than from a repository, which is itself the reason this is a variable and not a hardcoded path.
+keycloak_theme_src: /home/kspar/easy-kc-theme
+
+# --- JVM ------------------------------------------------------------------------------------------
+# Keycloak's own defaults, minus the container heap percentages that only make sense in a container.
+# 512m is comfortable for a staging realm with a handful of users; production wants more.
+keycloak_java_opts: "-Xms256m -Xmx768m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -XX:+ExitOnOutOfMemoryError -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom"

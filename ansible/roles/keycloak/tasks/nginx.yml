@@ -1,0 +1,130 @@
+---
+# nginx and a Let's Encrypt certificate for the IdP vhost.
+#
+# Same chicken-and-egg as roles/nginx, solved the same way: the HTTPS server block cannot be written
+# before a certificate exists, and the certificate cannot be obtained over HTTP-01 before nginx is
+# serving the challenge path. So the config is written twice, and a converged host skips the second.
+#
+# Yes, this duplicates roles/nginx. That role serves a SPA from a directory and proxies an API on a
+# *different host*; folding both into one would mean a role parameterised by a list of vhost shapes,
+# which is more machinery than two 80-line templates. If a third vhost ever appears, that is the
+# point to reconsider — noted in doc/idp-setup.md rather than left as a surprise.
+
+- name: Install nginx and certbot
+  ansible.builtin.apt:
+    name:
+      # No python3-certbot-nginx: the nginx plugin edits site configuration, and this role owns that
+      # file. certonly with a webroot leaves the config alone.
+      - nginx
+      - certbot
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Remove the distribution's placeholder site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Create the ACME challenge webroot
+  ansible.builtin.file:
+    path: "{{ keycloak_acme_webroot }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Find out whether nginx exists yet
+  ansible.builtin.stat:
+    path: /usr/sbin/nginx
+  register: keycloak_nginx_installed
+  check_mode: false
+
+- name: Ask nginx its version
+  # HTTP/2 is configured two different ways depending on the version and getting it wrong is a hard
+  # startup failure. `http2 on;` as its own directive arrived in 1.25.1; before that it is a
+  # parameter on the listen line. Ubuntu 24.04 ships 1.24, so the old form is what this host needs.
+  ansible.builtin.command: nginx -v
+  register: keycloak_nginx_version
+  changed_when: false
+  check_mode: false
+  when: keycloak_nginx_installed.stat.exists
+
+- name: Work out which HTTP/2 syntax this nginx wants
+  # Matches the version string itself rather than using a capture group: the group form returns a
+  # list and fails with an unhelpful NoneType error whenever the pattern does not match, which
+  # includes every dry run against a host where nginx is not installed yet.
+  ansible.builtin.set_fact:
+    keycloak_http2_directive: >-
+      {{ (keycloak_nginx_version.stderr | default('') | regex_search('[0-9]+\.[0-9]+\.[0-9]+')
+          | default('0', true)) is version('1.25.1', '>=') }}
+
+- name: Look for an existing certificate
+  ansible.builtin.stat:
+    path: "{{ keycloak_cert_dir }}/fullchain.pem"
+  register: keycloak_cert
+  check_mode: false
+
+- name: Note whether TLS can be configured yet
+  ansible.builtin.set_fact:
+    keycloak_tls_ready: "{{ keycloak_tls | bool and keycloak_cert.stat.exists }}"
+
+- name: Write the vhost
+  ansible.builtin.include_tasks: write_nginx_config.yml
+
+- name: Make sure nginx is running before anything asks it for a challenge
+  ansible.builtin.systemd_service:
+    name: nginx
+    state: started
+    enabled: true
+  when: keycloak_nginx_installed.stat.exists
+
+- name: Apply the config now, not at the end of the play
+  # certbot is about to make a real HTTP request to this host. Handlers would otherwise run long
+  # after the challenge has already failed.
+  ansible.builtin.meta: flush_handlers
+
+- name: Obtain a certificate
+  ansible.builtin.command:
+    cmd: >-
+      certbot certonly --webroot --webroot-path {{ keycloak_acme_webroot | quote }}
+      --cert-name {{ keycloak_hostname | quote }}
+      -d {{ keycloak_hostname | quote }}
+      --email {{ keycloak_acme_email | quote }} --agree-tos --non-interactive
+    creates: "{{ keycloak_cert_dir }}/fullchain.pem"
+  when:
+    - keycloak_tls | bool
+    - not ansible_check_mode
+    - keycloak_nginx_installed.stat.exists
+
+- name: Look again, now that certbot has run
+  ansible.builtin.stat:
+    path: "{{ keycloak_cert_dir }}/fullchain.pem"
+  register: keycloak_cert
+  check_mode: false
+
+- name: Note whether TLS can be configured now
+  ansible.builtin.set_fact:
+    keycloak_tls_ready: "{{ keycloak_tls | bool and keycloak_cert.stat.exists }}"
+
+- name: Write the vhost again, now that there is a certificate
+  # Does nothing on a converged host: the first write already included the TLS block.
+  ansible.builtin.include_tasks: write_nginx_config.yml
+
+- name: Reload nginx so the certificate is actually served
+  ansible.builtin.meta: flush_handlers
+
+- name: Reload nginx after each renewal
+  # certbot's timer renews quietly, and nginx would keep serving the old certificate until something
+  # reloaded it — which on a stable host might be after it expired.
+  ansible.builtin.copy:
+    dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      # Managed by Ansible (roles/keycloak).
+      systemctl reload nginx
+  when: keycloak_tls | bool

@@ -1,0 +1,24 @@
+---
+# Included from the "Rebuild and restart keycloak" handler. A handler cannot be two modules, and
+# these two must never happen apart — see the comment on the handler.
+
+- name: Bake the configuration into the server
+  ansible.builtin.command:
+    cmd: "{{ keycloak_home }}/bin/kc.sh build"
+  environment:
+    JAVA_HOME: "{{ keycloak_java_home | default('') }}"
+  become: true
+  become_user: "{{ keycloak_user }}"
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - keycloak_ready_to_configure | default(false) | bool
+
+- name: Restart it into the new build
+  ansible.builtin.systemd_service:
+    name: "{{ keycloak_service_name }}"
+    state: restarted
+    daemon_reload: true
+  when:
+    - not ansible_check_mode
+    - keycloak_ready_to_configure | default(false) | bool

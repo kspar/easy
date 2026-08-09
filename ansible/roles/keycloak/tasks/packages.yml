@@ -1,0 +1,68 @@
+---
+# The JVM and the two things needed to unpack a zip and talk to postgres.
+
+- name: Install a Java runtime Keycloak can run on
+  ansible.builtin.apt:
+    name:
+      - "{{ keycloak_jre_package }}"
+      - unzip
+      # community.postgresql talks to the server through this rather than shelling out to psql.
+      - python3-psycopg2
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+# Same lesson the postgres, nginx and core_service roles all needed: in a dry run against a host
+# without the package, the install above was only simulated, so anything that touches the result
+# fails on something that is not there and aborts the run before the interesting output.
+- name: Find the JVM that was installed
+  ansible.builtin.find:
+    paths: /usr/lib/jvm
+    patterns: "{{ keycloak_jvm_glob | basename }}"
+    file_type: any
+  register: keycloak_jvm_found
+  check_mode: false
+
+- name: Say why the rest is being skipped
+  ansible.builtin.debug:
+    msg: >-
+      No Java 21 under /usr/lib/jvm and this is a dry run, so everything below — the database, the
+      server, the unit and nginx — cannot be evaluated. Run without --check to install it, then dry-run
+      again to see the rest.
+  when: keycloak_jvm_found.matched | int == 0
+
+- name: Refuse to guess between two JVMs
+  # A host carrying both java-21-openjdk-amd64 and a leftover from an upgrade would otherwise get
+  # whichever sorted first, which is the kind of thing that works until it does not.
+  ansible.builtin.assert:
+    that: keycloak_jvm_found.matched | int == 1
+    fail_msg: >-
+      Expected exactly one {{ keycloak_jvm_glob }}, found {{ keycloak_jvm_found.matched }}:
+      {{ keycloak_jvm_found.files | map(attribute='path') | list }}. Set keycloak_jvm_glob to the one
+      this host should use.
+    quiet: true
+  when: keycloak_jvm_found.matched | int > 0
+
+- name: Remember where it is
+  ansible.builtin.set_fact:
+    keycloak_java_home: "{{ keycloak_jvm_found.files[0].path | default('') }}"
+    keycloak_installed: "{{ keycloak_jvm_found.matched | int == 1 }}"
+
+- name: Check the runtime is one Keycloak {{ keycloak_version }} supports
+  # Keycloak 25 runs on 17 and 21 and nothing newer — Quarkus in this release predates Java 25, and
+  # the failure is an obscure startup crash rather than a version check. Cheaper to find here.
+  ansible.builtin.command: "{{ keycloak_java_home }}/bin/java -version"
+  register: keycloak_java_version
+  changed_when: false
+  check_mode: false
+  when: keycloak_installed | bool
+
+- name: Refuse a runtime Keycloak will not start on
+  ansible.builtin.assert:
+    that: keycloak_java_version.stderr is search('version "(17|21)\.')
+    fail_msg: >-
+      {{ keycloak_java_home }} reports
+      "{{ keycloak_java_version.stderr_lines | first | default('?') }}", but Keycloak
+      {{ keycloak_version }} supports Java 17 and 21 only.
+    quiet: true
+  when: keycloak_installed | bool
