@@ -66,6 +66,32 @@ def token():
     return value
 
 
+class _StripAuthOnRedirect(urllib.request.HTTPRedirectHandler):
+    """Drop the Authorization header when a request is redirected to another host.
+
+    Artifact downloads need this. `archive_download_url` answers 302 to a **pre-signed** blob
+    storage URL (productionresultssa*.blob.core.windows.net), and urllib carries the original
+    headers across the redirect by default. Azure rejects a signed URL that also carries someone
+    else's bearer token, with
+
+        HTTP 401: Server failed to authenticate the request.
+        Please refer to the information in the www-authenticate header.
+
+    which mentions neither GitHub nor the token and reads exactly like the credential being wrong —
+    a misdiagnosis worth one comment to prevent, since the natural next move is to go and reissue a
+    token that was fine all along.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None:
+            new.remove_header("Authorization")
+        return new
+
+
+_OPENER = urllib.request.build_opener(_StripAuthOnRedirect)
+
+
 def api(path, tok, raw=False):
     req = urllib.request.Request(
         path if path.startswith("http") else f"{API}{path}",
@@ -76,7 +102,7 @@ def api(path, tok, raw=False):
             "User-Agent": "easy-autodeploy",
         },
     )
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    with _OPENER.open(req, timeout=300) as resp:
         return resp.read() if raw else json.load(resp)
 
 
