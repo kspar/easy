@@ -1,0 +1,9 @@
+# Managed by Ansible (roles/hardening) — local edits are overwritten.
+
+[Unit]
+Description=Reboot if a reboot has been requested and nobody acted on it
+Documentation=https://github.com/kspar/easy/blob/master/ansible/roles/hardening/defaults/main.yml
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/easy-reboot-if-required

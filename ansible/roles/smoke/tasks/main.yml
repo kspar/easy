@@ -241,7 +241,34 @@
     smoke_warn: >-
       {{ smoke_warn + ['a reboot is pending, so a kernel or library fix is installed but not
          running'] }}
-  when: smoke_reboot.stat.exists
+  when:
+    - smoke_reboot.stat.exists
+    - reboot_pending_days | int <= smoke_reboot_max_age_days | int
+  vars:
+    reboot_pending_days: "{{ ((ansible_facts.date_time.epoch | int) - (smoke_reboot.stat.mtime | int)) // 86400 }}"
+
+- name: Escalate a reboot nobody has acted on
+  # A pending reboot is ordinary for a few hours and is a finding after a few days: it means the
+  # running kernel is not the installed one and nothing on the host intends to fix that. Reported as
+  # a problem rather than a note because the failure mode here is precisely that the note gets read
+  # and not acted on — easyidpdev ran eight days that way, with the newer kernel already on disk.
+  #
+  # /var/run is tmpfs, so this file cannot outlive the current boot: its mtime is when something
+  # asked for the reboot, which makes the age meaningful rather than an artefact.
+  #
+  # On a host with roles/hardening's reboot timer this should never fire — the window is daily. It
+  # is aimed at the hosts that deliberately do not have it, production today, where somebody has to
+  # be told because nothing is going to act on its own.
+  ansible.builtin.set_fact:
+    smoke_fail: >-
+      {{ smoke_fail + ['a reboot has been pending for ' ~ reboot_pending_days ~ ' days — the
+         running kernel or libraries are not the installed ones, and nothing on this host is going
+         to act on that'] }}
+  when:
+    - smoke_reboot.stat.exists
+    - reboot_pending_days | int > smoke_reboot_max_age_days | int
+  vars:
+    reboot_pending_days: "{{ ((ansible_facts.date_time.epoch | int) - (smoke_reboot.stat.mtime | int)) // 86400 }}"
 
 # --- TLS -------------------------------------------------------------------------------------------
 

@@ -1,0 +1,21 @@
+# Managed by Ansible (roles/hardening) — local edits are overwritten.
+#
+# The same window unattended-upgrades is told to use, so there is one hour of the day on which this
+# host may bounce, however the reboot came to be needed. Keeping the two in step is why the value
+# comes from the same variable rather than being written twice.
+
+[Unit]
+Description=Daily check for an unacted-on reboot request
+
+[Timer]
+OnCalendar=*-*-* {{ hardening_unattended_reboot_time }}:00
+# A few minutes of jitter, and after u-u's own window (03:00-03:30) has closed, so on a day when
+# unattended-upgrades does install something this is a no-op rather than a race with it.
+RandomizedDelaySec=300
+# Persistent=true, unlike the apt timer: a host that was off at 04:30 still has the flag set when it
+# comes back, and the whole point of this unit is that an unacted-on request does not sit forever.
+# The catch-up run finds the file, or does not, and either answer is correct.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

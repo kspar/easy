@@ -384,6 +384,49 @@
     path: /etc/apt/apt.conf.d/52staging
     state: absent
 
+# --- the reboot unattended-upgrades will not perform ---------------------------------------------
+# `hardening_unattended_reboot: true` does not mean "this host reboots when it needs to". It means
+# "this host reboots after an unattended-upgrade run that installed something needing it" — and
+# reboot_if_requested_and_needed() is only reached from inside that branch. A reboot-required left by
+# a *manual* apt is therefore never acted on, however these values are set. See EZ-1746.
+
+- name: Install the reboot check
+  ansible.builtin.template:
+    src: easy-reboot-if-required.j2
+    dest: /usr/local/sbin/easy-reboot-if-required
+    owner: root
+    group: root
+    mode: "0755"
+    validate: "sh -n %s"
+
+- name: Install its unit and timer
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "systemd-analyze verify %s"
+  loop:
+    - easy-reboot-if-required.service
+    - easy-reboot-if-required.timer
+  notify: Reload the reboot timer
+
+- name: Apply the unit before enabling it
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable the reboot check only where unattended reboots are wanted
+  # Follows hardening_unattended_reboot rather than being independent of it: an environment that has
+  # decided rebooting itself is not acceptable should not acquire a second thing that does. Where it
+  # is off, production today, the pending reboot still gets reported — smoke.yml escalates one that
+  # has been ignored for days, which is the "tell someone" half of the same problem.
+  ansible.builtin.systemd_service:
+    name: easy-reboot-if-required.timer
+    enabled: "{{ hardening_unattended_reboot | bool }}"
+    state: "{{ 'started' if hardening_unattended_reboot | bool else 'stopped' }}"
+    daemon_reload: true
+  when: not ansible_check_mode
+
 - name: Check the unattended-upgrades config parses
   ansible.builtin.command: unattended-upgrades --dry-run --debug
   changed_when: false

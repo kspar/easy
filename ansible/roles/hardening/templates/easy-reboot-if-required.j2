@@ -1,0 +1,29 @@
+#!/bin/sh
+# Managed by Ansible (roles/hardening) — local edits are overwritten.
+#
+# Reboot if something has asked for one and nobody has acted on it.
+#
+# unattended-upgrades will not do this. Its reboot check lives inside the branch that runs after a
+# run which actually installed something, so a /var/run/reboot-required left behind by a *manual*
+# `apt` is never looked at: u-u runs daily, finds nothing to install, and exits before reaching it.
+# That is how the IdP host ran eight days on a superseded kernel with the replacement already on
+# disk. And because Allowed-Origins covers only the release and -security pockets, `apt upgrade` by
+# hand is a routine part of running these boxes, so this is the common case rather than the odd one.
+#
+# Deliberately does not care *what* asked for the reboot. The file means the running kernel or
+# libraries are not the installed ones; how they got that way changes nothing about the answer.
+set -eu
+
+if [ ! -f /var/run/reboot-required ]; then
+    exit 0
+fi
+
+# Named packages, when the file lists them — this line is what a person reads at 09:00 wondering
+# why the host bounced at {{ hardening_unattended_reboot_time }}, so it is worth the two lines.
+pkgs="$(tr '\n' ' ' < /var/run/reboot-required.pkgs 2>/dev/null || true)"
+echo "reboot-required is set${pkgs:+ by: $pkgs}"
+echo "rebooting: the running kernel or libraries are not the installed ones"
+
+# systemctl rather than `shutdown -r now`: this unit is already running under systemd, and shutdown
+# schedules through it anyway. No delay — the window this runs in is the delay.
+exec systemctl reboot

@@ -27,3 +27,14 @@
     name: apt-daily-upgrade.timer
     state: restarted
     daemon_reload: true
+
+- name: Reload the reboot timer
+  # Same reason as the apt timer: daemon-reload re-reads the unit but leaves the scheduled next run
+  # in place, so a changed window would not take effect until something restarted it.
+  ansible.builtin.systemd_service:
+    name: easy-reboot-if-required.timer
+    state: restarted
+    daemon_reload: true
+  when:
+    - not ansible_check_mode
+    - hardening_unattended_reboot | bool

@@ -41,3 +41,11 @@ smoke_optional_units:
   - easy-core
   - easy-executor
   - nginx
+
+# How long a pending reboot may sit before it stops being a note and becomes a finding.
+#
+# Three days, because the reboot window is daily wherever roles/hardening's timer is enabled — so on
+# those hosts anything past a day or two means the timer is not running, which is itself the thing
+# worth knowing. On hosts that deliberately reboot by hand it is the grace period before somebody
+# should be told they have forgotten.
+smoke_reboot_max_age_days: 3
