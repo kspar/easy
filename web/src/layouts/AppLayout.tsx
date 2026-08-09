@@ -11,6 +11,7 @@ import { useAuth } from '../auth/useAuth.ts'
 import type { Role } from '../auth/auth-context.ts'
 import { apiFetch } from '../api/client.ts'
 import type { StudentCourse, TeacherCourse } from '../api/types.ts'
+import config from '../config.ts'
 import {
   AppBar,
   Avatar,
@@ -49,6 +50,8 @@ import {
   PeopleOutlined,
   CompareArrowsOutlined,
   SettingsOutlined,
+  AdminPanelSettingsOutlined,
+  OpenInNewOutlined,
 } from '@mui/icons-material'
 import { useThemeMode } from '../theme/useThemeMode.ts'
 import { useCourseExercises } from '../api/exercises.ts'
@@ -690,6 +693,36 @@ export default function AppLayout() {
                     </ListItemIcon>
                     <ListItemText>{t('nav.accountSettings')}</ListItemText>
                   </MenuItem>
+                  {activeRole === 'admin' && config.idpAdminUrl && (
+                    // Only while actually acting as an admin, not merely for someone who could
+                    // switch to it — an admin working as a teacher is doing teacher things, and
+                    // this is the same reasoning as isTeacherOrAdmin above.
+                    //
+                    // A real anchor, so ctrl/cmd-click opens it in a new tab like any other link.
+                    // It leaves the application entirely, hence target=_blank and the trailing
+                    // icon that says so before you click rather than after.
+                    //
+                    // Being an app admin does not make you a Keycloak admin — they are separate
+                    // systems and separate grants. That is exactly what the page this points at
+                    // exists to explain, so showing the link to every app admin is right even
+                    // though some of them cannot use what is behind it.
+                    <MenuItem
+                      component="a"
+                      href={config.idpAdminUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setProfileAnchor(null)}
+                    >
+                      <ListItemIcon>
+                        <AdminPanelSettingsOutlined fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>{t('nav.idpAdmin')}</ListItemText>
+                      <OpenInNewOutlined
+                        fontSize="small"
+                        sx={{ ml: 1.5, opacity: 0.5 }}
+                      />
+                    </MenuItem>
+                  )}
                   <MenuItem
                     onClick={() => {
                       toggleLanguage()

@@ -66,6 +66,7 @@
     "roleTeacher": "Teacher",
     "roleStudent": "Student",
     "accountSettings": "Account settings",
+    "idpAdmin": "Keycloak admin",
     "logOut": "Log out",
     "myCourses": "My courses",
     "exerciseLibrary": "Exercise library",

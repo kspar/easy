@@ -4,5 +4,6 @@
     "url": "https://easy-idp-dev.cloud.ut.ee/auth/",
     "realm": "master",
     "clientId": "lahendus.ut.ee"
-  }
+  },
+  "idpAdminUrl": "https://easy-idp-dev.cloud.ut.ee/idp-admin/"
 }

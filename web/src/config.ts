@@ -20,6 +20,18 @@ export interface RuntimeConfig {
     realm: string
     clientId: string
   }
+  /**
+   * Where an admin goes to administer the identity provider. Optional — no value, no menu item.
+   *
+   * Not derived from `keycloak.url`, though it looks derivable. On staging this points at
+   * `/idp-admin/`, a page installed by `ansible/roles/keycloak` that checks whether the account may
+   * use Keycloak's console and says so if not; production's IdP has never been managed by that role
+   * and has no such page, so deriving the URL would put a link to a 404 in production's menu.
+   *
+   * Optional rather than required for the same reason: an environment that has nowhere sensible to
+   * send an admin should show nothing, not something broken.
+   */
+  idpAdminUrl?: string
 }
 
 const config = {
@@ -49,6 +61,9 @@ const config = {
     realm: '',
     clientId: '',
   },
+  // undefined rather than '' so the menu item's condition is a plain truthiness check and an
+  // environment that omits the key behaves identically to one that sets it empty.
+  idpAdminUrl: undefined as string | undefined,
 }
 
 /** Thrown with a message meant to be readable by whoever is looking at the blank page. */
@@ -83,6 +98,10 @@ function validate(raw: unknown): RuntimeConfig {
       realm: kc.realm as string,
       clientId: kc.clientId as string,
     },
+    // Deliberately absent from the `missing` check above: this one is optional, and an environment
+    // without it should boot normally rather than show the configuration-error page.
+    idpAdminUrl:
+      typeof o.idpAdminUrl === 'string' && o.idpAdminUrl !== '' ? o.idpAdminUrl : undefined,
   }
 }
 
@@ -123,9 +142,11 @@ export async function loadConfig(): Promise<void> {
       realm: import.meta.env.VITE_KEYCLOAK_REALM ?? runtime.keycloak.realm,
       clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID ?? runtime.keycloak.clientId,
     }
+    config.idpAdminUrl = import.meta.env.VITE_IDP_ADMIN_URL ?? runtime.idpAdminUrl
   } else {
     config.emsRoot = runtime.emsRoot
     config.keycloak = runtime.keycloak
+    config.idpAdminUrl = runtime.idpAdminUrl
   }
 }
 
