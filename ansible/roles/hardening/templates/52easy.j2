@@ -6,6 +6,20 @@
 Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
 
+{% if hardening_unattended_all_updates %}
+// Ordinary updates as well as security ones.
+//
+// `::` appends to the list 50unattended-upgrades already defines rather than replacing it, so the
+// security and ESM origins above it still apply — this adds a pocket, it does not swap one in.
+// Ubuntu ships this exact line commented out, which is the whole difference between "security
+// fixes" and "what `apt upgrade` would install".
+//
+// Without it, `apt list --upgradable` grows indefinitely while unattended-upgrades reports
+// "No packages found that can be upgraded unattended" — technically true, and the reason this host
+// had 19 pending updates and a superseded kernel while looking fully patched.
+Unattended-Upgrade::Allowed-Origins:: "${distro_id}:${distro_codename}-updates";
+{% endif %}
+
 {% if hardening_unattended_reboot %}
 // A reboot mid-grading kills running containers. Submissions in flight fail rather than corrupt
 // and the scheduler retries them, so a nightly window is an acceptable trade for staying patched

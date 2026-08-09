@@ -124,3 +124,24 @@ hardening_unattended_reboot_time: "04:30"
 # because the fix is a new timer rather than a different value for either of these.
 hardening_apt_upgrade_time: "03:00"
 hardening_apt_upgrade_delay_minutes: 30
+
+# Whether unattended-upgrades installs ordinary updates too, or only security ones.
+#
+# `false` by default, and that default is the conservative one rather than the safe one — the
+# trade genuinely runs both ways and it is worth being clear about which risk is being taken.
+#
+# Off: only `-security` is installed automatically. Everything else accumulates until a human runs
+# `apt upgrade`, and until they do, `unattended-upgrades` truthfully reports "No packages found that
+# can be upgraded unattended" on a host with dozens pending. That is how this host looked fully
+# patched while sitting on a superseded kernel — the reassurance is real for security fixes and
+# misleading about everything else.
+#
+# On: the host tracks `-updates` as well, which is what `apt upgrade` would install. The risk is a
+# package changing behaviour overnight with nobody watching, on a machine whose services are not
+# being restarted by anything that understands them.
+#
+# Production keeps it off because that risk is a service outage nobody chose the timing of.
+# Staging turns it on: finding out there that a library update breaks something is the entire
+# purpose of having a staging environment, and it is the only way the two hosts stay comparable
+# enough for that discovery to mean anything.
+hardening_unattended_all_updates: false

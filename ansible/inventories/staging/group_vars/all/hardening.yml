@@ -26,3 +26,13 @@ hardening_fail2ban_bantime: 15m
 # a fair trade for staying patched without anyone remembering to. Keep it out of working hours.
 hardening_unattended_reboot: true
 hardening_unattended_reboot_time: "04:30"
+
+# Ordinary updates, not just security ones. See the reasoning on the variable in the role's
+# defaults; the short version is that a staging host is where a breaking update should be found, and
+# that only works if it is actually ahead of production rather than quietly accumulating the same
+# backlog behind a report that says everything is fine.
+#
+# Safe here in the way the reboot setting is safe here: nothing on this box is worth an outage, and
+# the reboot timer added for EZ-1746 means a kernel update actually takes effect rather than sitting
+# installed-but-not-running.
+hardening_unattended_all_updates: true
