@@ -57,6 +57,7 @@ const SCRIPTS = [
   'grade-table.mjs',
   'account-settings.mjs',
   'landing-page.mjs',
+  'nav-idp-admin.mjs',
 ]
 
 function log(msg) {
