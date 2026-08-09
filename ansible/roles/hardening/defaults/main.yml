@@ -119,6 +119,8 @@ hardening_unattended_reboot_time: "04:30"
 # A residual worth knowing about, and NOT fixed here: `reboot_if_requested_and_needed()` is only
 # reached when a run actually installs something. A `/var/run/reboot-required` left behind by a
 # *manual* `apt` therefore sits forever, however these two values are set — which is how the IdP host
-# ran eight days on a superseded kernel. Filed rather than papered over.
+# ran eight days on a superseded kernel. Filed as EZ-1746 (A reboot-required left by manual apt is
+# never acted on, so hosts run indefinitely on superseded kernels) rather than papered over here,
+# because the fix is a new timer rather than a different value for either of these.
 hardening_apt_upgrade_time: "03:00"
 hardening_apt_upgrade_delay_minutes: 30

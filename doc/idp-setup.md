@@ -487,12 +487,18 @@ The admin console is at <https://easy-idp-dev.cloud.ut.ee/auth/admin/>.
 
 ## 8. Still to do
 
-- **Vendor the theme.** It exists only in a home directory on one VM (§4.5).
-- **A dedicated realm instead of `master`**, together with the `getAccessToken()` fix that makes it
-  possible (§4.1).
-- **Back up `/etc/keycloak/keycloak.env`** — currently the only copy of two passwords (§2).
-- **A backup of `cloakdb`.** The realm is now reproducible from this document, but the users created
-  in it are not. Same gap as EZ-1114/EZ-1738 for core's database.
+- **Vendor the theme** — EZ-1744 (Vendor the lahendus Keycloak theme — it exists only in a home
+  directory on one VM). Also fold the Keycloak 25 stylesheet corrections into the source and delete
+  the two `lineinfile` tasks that currently apply them after the copy (§4.5).
+- **Back up `cloakdb` and `/etc/keycloak/keycloak.env`** — EZ-1745 (Back up the IdP: cloakdb and
+  /etc/keycloak/keycloak.env are both single copies). This document reproduces the realm; it does not
+  reproduce the users in it, so today the IdP is rebuildable and logins are not (§2).
+- **A dedicated realm instead of `master`** (§4.1). The `getAccessToken()` half is **done** — all
+  three admin URLs now follow `easy.core.keycloak.realm` — so what remains is the realm itself, the
+  config in three places, and production doing the same so the two do not diverge.
 - **Production.** `easyidpprod` (193.40.22.67) has never been touched by this role. The role takes
   its hostname from the inventory and has no staging assumptions in it, but production is running an
   older Keycloak whose realm holds real accounts — that is a migration, not an apply.
+
+Not this document's, but found here and affecting this host: EZ-1746 (A reboot-required left by
+manual apt is never acted on, so hosts run indefinitely on superseded kernels).
