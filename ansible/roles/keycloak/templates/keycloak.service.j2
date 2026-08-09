@@ -15,7 +15,16 @@ User={{ keycloak_user }}
 Group={{ keycloak_group }}
 
 Environment=JAVA_HOME={{ keycloak_java_home }}
-Environment=JAVA_OPTS={{ keycloak_java_opts }}
+# QUOTED, and it has to be. systemd splits an unquoted Environment= on whitespace and reads each
+# token as its own KEY=VALUE, so this line without the quotes set JAVA_OPTS to just `-Xms256m` and
+# discarded the rest — -Xmx768m, both Metaspace bounds, ExitOnOutOfMemoryError and UseG1GC all
+# silently gone, leaving the JVM on its defaults.
+#
+# It announced itself only as `Invalid environment assignment, ignoring: -XX:+ExitOnOutOfMemoryError`
+# in the journal at startup, which names the one token that happens to contain no `=` and says
+# nothing about the four that were dropped without complaint. Found 2026-08-09 by reading
+# /proc/<pid>/environ rather than the unit file.
+Environment="JAVA_OPTS={{ keycloak_java_opts }}"
 # The database password and the first-run admin credentials. 0640 root:{{ keycloak_group }} — systemd
 # reads it as root before dropping to the service account, so the account running Keycloak never
 # needs read access to the file itself.

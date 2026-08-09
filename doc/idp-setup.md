@@ -217,7 +217,28 @@ not a third convention.
 It is also cheaper than the alternative in a specific way: `delete_inactive_users.kt` hardcodes
 `realms/master` in `getAccessToken()` while using the configured `$realm` for the admin calls. Those
 two disagree the moment the realm is not `master`, so moving to a dedicated realm is a code change,
-not a config change. Worth doing eventually — in the same commit as that fix.
+not a config change. **That half is now done** (`10f169c1`), so what remains is the realm itself.
+
+### What it costs, concretely
+
+Every application user is a user *in the realm whose admin console lives at `/auth/admin/`*. So an
+ordinary teacher or student can reach that console and authenticate against it. They have no admin
+rights, which works correctly — `/auth/admin/serverinfo` answers 403 — but Keycloak's console does
+not handle that answer: it renders a **blank page with two spinners, indefinitely**, rather than
+saying they do not have access.
+
+Verified 2026-08-09 in a real browser: as `dev-teacher`, blank page and a 403 on `serverinfo`; as
+`admin`, the console loads completely. So authorization is right and the UI is not. Nothing here is
+misconfigured, and there is nothing to fix on this side — patching it would mean maintaining a
+custom admin theme.
+
+With a dedicated realm the situation does not arise: application users would live in `easy`, the
+console at `/auth/admin/` belongs to `master`, and an application user could not log into it at all.
+That is a better argument for the move than tidiness, and it is why this is written down here rather
+than filed as a bug against something we cannot change.
+
+The account console (`/auth/realms/master/account/`), which is the one this application actually
+links to from its settings page, works correctly for ordinary users.
 
 ### 4.2 The realm settings
 
