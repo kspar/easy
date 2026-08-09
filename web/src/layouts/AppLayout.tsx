@@ -52,6 +52,7 @@ import {
   SettingsOutlined,
   AdminPanelSettingsOutlined,
   OpenInNewOutlined,
+  CampaignOutlined,
 } from '@mui/icons-material'
 import { useThemeMode } from '../theme/useThemeMode.ts'
 import { useCourseExercises } from '../api/exercises.ts'
@@ -701,6 +702,20 @@ export default function AppLayout() {
                     </ListItemIcon>
                     <ListItemText>{t('nav.accountSettings')}</ListItemText>
                   </MenuItem>
+                  {activeRole === 'admin' && (
+                    // An internal route, so a RouterLink rather than an anchor — but still a real
+                    // href, so ctrl/cmd-click opens it in a tab like any other link.
+                    <MenuItem
+                      component={RouterLink}
+                      to="/admin/messages"
+                      onClick={() => setProfileAnchor(null)}
+                    >
+                      <ListItemIcon>
+                        <CampaignOutlined fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>{t('admin.messages.title')}</ListItemText>
+                    </MenuItem>
+                  )}
                   {activeRole === 'admin' && config.idpAdminUrl && (
                     // Only while actually acting as an admin, not merely for someone who could
                     // switch to it — an admin working as a teacher is doing teacher things, and

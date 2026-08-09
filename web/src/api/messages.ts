@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client.ts'
 
 export type MessageSeverity = 'URGENT' | 'INFO'
@@ -47,5 +47,77 @@ export function useSystemMessages(enabled = true) {
     // tab returned to after five minutes would show the previous minute's answer until the next
     // tick. That was the first version of this, and it made the one behaviour the feature is for
     // stop working while every other check still passed.
+  })
+}
+
+// --- admin: authoring -----------------------------------------------------------------------------
+
+export interface AdminSystemMessage extends SystemMessage {
+  visible_from?: string | null
+  visible_until?: string | null
+  for_students: boolean
+  for_teachers: boolean
+  for_admins: boolean
+}
+
+/** What the form sends. Ids are assigned by core, so a draft has none. */
+export type SystemMessageDraft = Omit<AdminSystemMessage, 'id'>
+
+/**
+ * Every message, whatever its schedule — including ones not yet visible and ones already expired.
+ *
+ * Deliberately a different query from useSystemMessages: that one asks "what should I be seeing",
+ * this one asks "what exists". An admin editing next week's maintenance notice has to be able to
+ * see it, which is precisely what the other endpoint is built never to return.
+ */
+export function useAdminSystemMessages(enabled = true) {
+  return useQuery({
+    queryKey: ['admin', 'system', 'messages'],
+    queryFn: () =>
+      apiFetch<{ messages?: AdminSystemMessage[] }>('/management/notifications').then(
+        (r) => r.messages ?? [],
+      ),
+    enabled,
+  })
+}
+
+/**
+ * Both lists are invalidated after every write.
+ *
+ * The banner's own query is the one the author is about to look at to check their work, and it is
+ * otherwise up to a minute stale — which reads as "the save did not take" rather than as polling.
+ */
+function useInvalidateMessages() {
+  const qc = useQueryClient()
+  return () => {
+    void qc.invalidateQueries({ queryKey: ['admin', 'system', 'messages'] })
+    void qc.invalidateQueries({ queryKey: ['system', 'messages'] })
+  }
+}
+
+export function useCreateSystemMessage() {
+  const invalidate = useInvalidateMessages()
+  return useMutation({
+    mutationFn: (draft: SystemMessageDraft) =>
+      apiFetch('/management/notifications', { method: 'POST', body: draft }),
+    onSuccess: invalidate,
+  })
+}
+
+export function useUpdateSystemMessage() {
+  const invalidate = useInvalidateMessages()
+  return useMutation({
+    mutationFn: ({ id, ...draft }: AdminSystemMessage) =>
+      apiFetch(`/management/notifications/${id}`, { method: 'PATCH', body: draft }),
+    onSuccess: invalidate,
+  })
+}
+
+export function useDeleteSystemMessage() {
+  const invalidate = useInvalidateMessages()
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch(`/management/notifications/${id}`, { method: 'DELETE' }),
+    onSuccess: invalidate,
   })
 }

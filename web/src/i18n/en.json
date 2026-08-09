@@ -836,5 +836,36 @@
     "exportDataHint": "A zip of everything Lahendus stores about you: your account, submissions, grades and feedback.",
     "download": "Download",
     "exportFailed": "Could not prepare the download. Please try again."
+  },
+  "admin": {
+    "messages": {
+      "title": "System messages",
+      "intro": "Shown as a banner to everyone signed in, on a schedule. Appears and disappears on its own — nobody has to remember to take it down.",
+      "none": "No messages yet.",
+      "create": "New message",
+      "edit": "Edit message",
+      "text": "Message",
+      "severity": "Kind",
+      "urgent": "Urgent",
+      "info": "Info",
+      "urgentHint": "Coloured, stays at the top and cannot be dismissed. For outages and maintenance.",
+      "infoHint": "Quiet, and readers can dismiss it. For releases and announcements.",
+      "linkUrl": "Link URL",
+      "linkLabel": "Link text",
+      "linkBothRequired": "Give both a URL and a label, or neither.",
+      "visibleFrom": "Visible from",
+      "visibleUntil": "Visible until",
+      "emptyMeansNow": "Leave empty to show immediately.",
+      "emptyMeansForever": "Leave empty to show until deleted.",
+      "badWindow": "Must be after the start.",
+      "audience": "Shown to",
+      "noAudience": "With nobody selected this message will never be shown.",
+      "confirmDelete": "Delete this message?",
+      "state": {
+        "live": "Showing now",
+        "scheduled": "Scheduled",
+        "expired": "Finished"
+      }
+    }
   }
 }

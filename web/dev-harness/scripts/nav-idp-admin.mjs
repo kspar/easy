@@ -37,7 +37,11 @@ async function menuFor({ activeRole, config }) {
   const items = (await page.locator('[role=menuitem]').allInnerTexts()).map((s) =>
     s.trim().replace(/\s+/g, ' '),
   )
-  const anchor = page.locator('a[role=menuitem]')
+  // Named by its text, not by being the first anchor in the menu. It was the only one when this
+  // was written; adding the "System messages" item — an internal RouterLink, which also renders an
+  // anchor — made `.first()` silently start asserting against a different link, and the failure
+  // read as this feature being broken.
+  const anchor = page.locator('a[role=menuitem]').filter({ hasText: 'Keycloak admin' })
   const has = await anchor.count()
   const result = {
     items,

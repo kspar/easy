@@ -836,5 +836,36 @@
     "exportDataHint": "Zip-fail kõigest, mida Lahendus sinu kohta hoiab: konto, esitused, hinded ja tagasiside.",
     "download": "Laadi alla",
     "exportFailed": "Allalaadimist ei õnnestunud ette valmistada. Palun proovi uuesti."
+  },
+  "admin": {
+    "messages": {
+      "title": "Süsteemiteated",
+      "intro": "Kuvatakse ribana kõigile sisseloginutele vastavalt ajakavale. Ilmub ja kaob ise — keegi ei pea seda hiljem eemaldama.",
+      "none": "Teateid veel ei ole.",
+      "create": "Uus teade",
+      "edit": "Muuda teadet",
+      "text": "Teade",
+      "severity": "Tüüp",
+      "urgent": "Kiireloomuline",
+      "info": "Info",
+      "urgentHint": "Värviline, jääb üles ja seda ei saa peita. Tõrgete ja hoolduse jaoks.",
+      "infoHint": "Tagasihoidlik ja lugeja saab selle peita. Uuenduste ja teadaannete jaoks.",
+      "linkUrl": "Lingi URL",
+      "linkLabel": "Lingi tekst",
+      "linkBothRequired": "Lisa nii URL kui tekst või jäta mõlemad tühjaks.",
+      "visibleFrom": "Nähtav alates",
+      "visibleUntil": "Nähtav kuni",
+      "emptyMeansNow": "Jäta tühjaks, et kuvada kohe.",
+      "emptyMeansForever": "Jäta tühjaks, et kuvada kuni kustutamiseni.",
+      "badWindow": "Peab olema pärast algust.",
+      "audience": "Kellele kuvatakse",
+      "noAudience": "Kui kedagi pole valitud, ei kuvata seda teadet kunagi.",
+      "confirmDelete": "Kustutada see teade?",
+      "state": {
+        "live": "Kuvatakse praegu",
+        "scheduled": "Ajastatud",
+        "expired": "Lõppenud"
+      }
+    }
   }
 }

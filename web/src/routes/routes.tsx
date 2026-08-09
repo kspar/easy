@@ -17,6 +17,7 @@ import IndexRedirect from './IndexRedirect.tsx'
 import EmbedExercisePage from '../features/embed/EmbedExercisePage.tsx'
 import TermsRedirect from '../features/terms/TermsRedirect.tsx'
 import AccountSettingsPage from '../features/account/AccountSettingsPage.tsx'
+import SystemMessagesPage from '../features/admin/SystemMessagesPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -47,6 +48,17 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <AccountSettingsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        // Admin-only, and enforced here rather than only by hiding the menu entry: the endpoints
+        // behind it are @Secured to ROLE_ADMIN, so a teacher reaching this URL would otherwise get
+        // a page of failed requests instead of being sent somewhere sensible.
+        path: 'admin/messages',
+        element: (
+          <RequireAuth allowedRoles={['admin']}>
+            <SystemMessagesPage />
           </RequireAuth>
         ),
       },
