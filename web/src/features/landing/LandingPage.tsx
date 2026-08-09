@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Button, Container, CircularProgress } from '@mui/material'
+import { Avatar, Box, Typography, Button, Container, CircularProgress } from '@mui/material'
 import { keyframes } from '@emotion/react'
 import {
   AutoFixHighOutlined,
@@ -482,7 +482,7 @@ export default function LandingPage() {
   usePageTitle('Lahendus \u2014 Automated Programming Assessment')
 
   const navigate = useNavigate()
-  const { authenticated, login } = useAuth()
+  const { initialized, authenticated, firstName, login } = useAuth()
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -491,11 +491,22 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handler)
   }, [])
 
+  // Three states, not two. Until `check-sso` comes back from Keycloak, whether there is a session
+  // is genuinely unknown — and rendering the logged-out CTA in the meantime is not a harmless
+  // placeholder: it tells a signed-in user "Log in", and acting on it before the answer arrives
+  // sends them on a pointless round trip through the IdP.
+  const authKnown = initialized
+  const initials = firstName?.charAt(0)?.toUpperCase() ?? '?'
+
   const handleCta = () => {
     if (authenticated) {
       navigate('/courses')
     } else {
-      login()
+      // Land in the app, not back here. Without an explicit destination keycloak-js returns to
+      // location.href — the marketing page — so signing in used to take two clicks with this page
+      // in between. RequireAuth deliberately keeps that default, because there it means "back to
+      // the page you actually asked for".
+      login({ redirectUri: `${window.location.origin}/courses` })
     }
   }
 
@@ -586,27 +597,88 @@ export default function LandingPage() {
               ))}
             </Box>
 
-            {/* CTA */}
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleCta}
-              sx={{
-                fontFamily: F.body,
-                fontWeight: 500,
-                color: GREEN_BRIGHT,
-                borderColor: 'rgba(74, 222, 128, 0.3)',
-                borderRadius: '8px',
-                textTransform: 'none',
-                px: 2.5,
-                '&:hover': {
-                  borderColor: GREEN_BRIGHT,
-                  bgcolor: 'rgba(74, 222, 128, 0.08)',
-                },
-              }}
-            >
-              {authenticated ? 'Open Lahendus' : 'Log in'}
-            </Button>
+            {/* CTA. Signed-in state shows who you are, so "you are already logged in" is
+                something you can see rather than something you infer from a verb. */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              {authKnown && authenticated && (
+                <Box
+                  sx={{
+                    display: { xs: 'none', sm: 'flex' },
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      bgcolor: GREEN,
+                      color: '#fff',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      fontFamily: F.body,
+                    }}
+                  >
+                    {initials}
+                  </Avatar>
+                  {firstName && (
+                    <Typography
+                      sx={{
+                        fontFamily: F.body,
+                        fontSize: '0.88rem',
+                        color: 'rgba(255,255,255,0.75)',
+                      }}
+                    >
+                      {firstName}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleCta}
+                // Not clickable until the answer is in, so the button cannot perform the wrong
+                // action during the window where it does not yet know which action it is.
+                disabled={!authKnown}
+                endIcon={
+                  authKnown && authenticated ? (
+                    <ArrowForwardOutlined sx={{ fontSize: '1rem !important' }} />
+                  ) : undefined
+                }
+                sx={{
+                  fontFamily: F.body,
+                  fontWeight: 500,
+                  color: GREEN_BRIGHT,
+                  borderColor: 'rgba(74, 222, 128, 0.3)',
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  px: 2.5,
+                  whiteSpace: 'nowrap',
+                  // One width for all three states. Without it the button is a narrow pill while
+                  // the session is being checked and then jumps to full width, which reads as the
+                  // page glitching rather than as it resolving.
+                  minWidth: 132,
+                  '&:hover': {
+                    borderColor: GREEN_BRIGHT,
+                    bgcolor: 'rgba(74, 222, 128, 0.08)',
+                  },
+                  '&.Mui-disabled': {
+                    color: 'rgba(74, 222, 128, 0.4)',
+                    borderColor: 'rgba(74, 222, 128, 0.15)',
+                  },
+                }}
+              >
+                {!authKnown ? (
+                  <CircularProgress size={16} sx={{ color: GREEN_BRIGHT, opacity: 0.8 }} />
+                ) : authenticated ? (
+                  'Open Lahendus'
+                ) : (
+                  'Log in'
+                )}
+              </Button>
+            </Box>
           </Box>
         </Container>
       </Box>
@@ -693,6 +765,7 @@ export default function LandingPage() {
                   variant="contained"
                   size="large"
                   onClick={handleCta}
+                  disabled={!authKnown}
                   endIcon={<ArrowForwardOutlined />}
                   sx={{
                     fontFamily: F.body,
@@ -704,11 +777,19 @@ export default function LandingPage() {
                     borderRadius: '10px',
                     px: 3.5,
                     py: 1.5,
+                    minWidth: 190,
                     boxShadow: '0 0 24px rgba(56, 125, 20, 0.3)',
                     '&:hover': { bgcolor: '#2d6a11' },
+                    // Stays legible rather than greying out to near-invisible against the dark
+                    // hero: this state lasts one round trip, and a button that vanishes and
+                    // reappears reads as a glitch.
+                    '&.Mui-disabled': {
+                      bgcolor: 'rgba(22, 163, 74, 0.5)',
+                      color: 'rgba(255,255,255,0.7)',
+                    },
                   }}
                 >
-                  {authenticated ? 'Go to courses' : 'Get started'}
+                  {!authKnown ? 'Get started' : authenticated ? 'Go to courses' : 'Get started'}
                 </Button>
                 <Button
                   variant="outlined"

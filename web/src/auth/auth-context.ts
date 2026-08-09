@@ -26,10 +26,23 @@ export interface AuthState {
   checkinFailed: boolean
 }
 
+export interface LoginOptions {
+  locale?: string
+  /**
+   * Where to land after authenticating. Absolute, or a path this app serves.
+   *
+   * Omit it and keycloak-js falls back to `location.href`, which is right almost everywhere:
+   * RequireAuth calls login() from the protected page the user asked for, so they are returned
+   * to it. The exception is the landing page, where "back where you started" means the marketing
+   * page rather than the app — see LandingPage.
+   */
+  redirectUri?: string
+}
+
 export interface AuthContextType extends AuthState {
   keycloak: Keycloak | null
   switchRole: (role: Role) => void
-  login: (locale?: string) => void
+  login: (options?: LoginOptions) => void
   // No locale parameter: KeycloakLogoutOptions has no `locale` field (only login does),
   // so the value passed here was always discarded. No caller supplied one either.
   logout: () => void

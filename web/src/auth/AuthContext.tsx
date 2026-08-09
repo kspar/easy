@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import Keycloak from 'keycloak-js'
 import config from '../config.ts'
-import { AuthContext, type Role, type AuthState } from './auth-context.ts'
+import { AuthContext, type Role, type AuthState, type LoginOptions } from './auth-context.ts'
 import { apiFetch } from '../api/client.ts'
 
 // Type-only re-export, so the many existing `import { type Role } from './AuthContext.tsx'`
@@ -156,8 +156,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const login = useCallback(
-    (locale?: string) => {
-      keycloak.login({ locale: locale ?? 'et' })
+    (options?: LoginOptions) => {
+      keycloak.login({
+        locale: options?.locale ?? 'et',
+        // Passed through only when a caller asked for it. keycloak-js otherwise defaults to
+        // location.href, which is what RequireAuth wants — it is invoked from the protected page
+        // the user was trying to reach, so "back where you started" is the correct destination.
+        ...(options?.redirectUri ? { redirectUri: options.redirectUri } : {}),
+      })
     },
     [],
   )
