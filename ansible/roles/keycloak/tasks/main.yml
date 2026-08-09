@@ -51,6 +51,10 @@
 - name: Put nginx in front of it
   ansible.builtin.import_tasks: nginx.yml
 
+- name: Install the admin-console gate
+  # After nginx: it needs the vhost to exist, and its client check goes through TLS.
+  ansible.builtin.import_tasks: gate.yml
+
 # --- prove it, rather than assume it -------------------------------------------------------------
 
 - name: Apply anything still pending before verifying

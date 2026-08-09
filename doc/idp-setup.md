@@ -44,7 +44,7 @@ login theme                lahendus
 - **Credentials live on the host and nowhere else.** `/etc/keycloak/keycloak.env` is the only copy of
   the database and admin passwords. **Back it up.** (§2)
 - **Users need an email address.** core rejects a token without one, so a user created without email
-  logs into Keycloak fine and then fails every API call. (§4.6)
+  logs into Keycloak fine and then fails every API call. (§4.7)
 
 ---
 
@@ -98,7 +98,7 @@ ssh easyidpdev 'sudo grep KEYCLOAK_ADMIN_PASSWORD /etc/keycloak/keycloak.env'
 Ansible cannot rotate what it cannot read. Back the file up. It is four lines.
 
 Test-account passwords are in `/etc/keycloak/test-users.txt`, 0600 root. Those are disposable —
-delete the file and the users and re-run §4.6.
+delete the file and the users and re-run §4.7.
 
 **One credential does cross a machine:** the `easy-core` client secret is minted on the IdP and
 consumed by core, so it has to be copied to the core host's `secrets.yaml`. §6 does that without it
@@ -361,7 +361,46 @@ To fall back to the stock login page, no playbook run needed:
 $K update realms/master -s loginTheme=keycloak
 ```
 
-### 4.6 Accounts
+### 4.6 The admin-console gate
+
+`https://easy-idp-dev.cloud.ut.ee/idp-admin/` is a page of ours that stands in front of the admin
+console, because the console's own answer to "signed in, but not an admin" is a blank page with two
+spinners (§4.1). It gets a token, asks `/auth/admin/serverinfo` a question only an admin may ask, and
+branches on the answer: **200 → straight to the console**, **403 → say so, and offer to sign out and
+use another account** (or to go to the account page, which is what someone looking for "Keycloak"
+usually wanted).
+
+It tests the capability rather than a role name on purpose. The roles that grant console access are
+spelled differently in `master` than elsewhere, and a hardcoded list would be one more thing to get
+wrong on a page whose entire job is to prevent a confusing failure.
+
+`roles/keycloak` installs the page and the nginx location; the client it needs is realm data, so it
+lives here like every other client:
+
+```sh
+HOST=easy-idp-dev.cloud.ut.ee
+$K create clients -r master \
+  -s clientId=idp-admin-gate -s enabled=true -s publicClient=true \
+  -s standardFlowEnabled=true -s directAccessGrantsEnabled=false \
+  -s 'attributes."pkce.code.challenge.method"=S256' \
+  -s rootUrl="https://$HOST" \
+  -s "redirectUris=[\"https://$HOST/idp-admin/*\"]" \
+  -s "webOrigins=[\"https://$HOST\"]"
+```
+
+A separate client rather than reusing `security-admin-console`, whose redirect URIs are locked to
+`/admin/master/console/*` — widening Keycloak's own furniture to admit a page of ours buys nothing.
+The role checks the client answers a login attempt and reports it on every run if not, so a missing
+client shows up as a message rather than as a broken page.
+
+**It does not intercept `/auth/admin/`.** Keycloak's own URLs behave exactly as they do out of the
+box, and nothing here can break the console for an administrator; the cost is that typing
+`/auth/admin/` directly still hangs for a non-admin. Deliberate — see the decision in §4.1.
+
+**Delete this when the realm moves.** Under a dedicated realm application users cannot authenticate
+to the master console at all, and the gate becomes a page guarding a door nobody can reach.
+
+### 4.7 Accounts
 
 Registration is off, so accounts are created by an admin. **Every user needs an email address** —
 `EasyUserJwtConverter` rejects a token missing `preferred_username`, `email` or `easy_role` with a

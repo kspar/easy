@@ -91,3 +91,26 @@ keycloak_theme_src: /home/kspar/easy-kc-theme
 # Keycloak's own defaults, minus the container heap percentages that only make sense in a container.
 # 512m is comfortable for a staging realm with a handful of users; production wants more.
 keycloak_java_opts: "-Xms256m -Xmx768m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -XX:+ExitOnOutOfMemoryError -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom"
+
+# --- the admin-console gate ---------------------------------------------------------------------
+# A door in front of Keycloak's admin console. The console's own answer to "signed in, but not an
+# admin" is a blank page with two spinners, indefinitely — it authenticates fine and
+# /admin/serverinfo correctly returns 403, and the console does not handle that answer. This page
+# asks the same question and says what happened, offering a way to sign out and use another account.
+#
+# It exists only because we kept the `master` realm, so every application user is a user in the realm
+# whose console that is and can reach it. Under a dedicated realm the situation cannot arise and this
+# should be deleted rather than carried across. See doc/idp-setup.md §4.1.
+#
+# Served at its own path rather than intercepting /auth/admin/: Keycloak's URLs then behave exactly
+# as they do out of the box, and nothing here can break the console for an administrator. The cost is
+# that it only helps people who know this URL exists.
+keycloak_gate_enabled: true
+keycloak_gate_path: /idp-admin
+keycloak_gate_root: /srv/idp-admin
+keycloak_gate_realm: "{{ keycloak_realm | default('master') }}"
+
+# Its own public client. `security-admin-console` cannot be reused: its redirect URIs are locked to
+# /admin/master/console/*, and widening a built-in client to cover a page of ours would be a change
+# to Keycloak's own furniture for no benefit.
+keycloak_gate_client_id: idp-admin-gate

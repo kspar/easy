@@ -1,0 +1,67 @@
+---
+# The admin-console gate: a static page and the nginx location that serves it.
+#
+# The Keycloak client it needs is NOT created here. Realm contents are data — doc/idp-setup.md §4.6
+# creates it with the same kcadm pattern as every other client, and this role checks it exists and
+# says so if it does not. A role that created clients would be the one thing in this repo fighting an
+# admin who edits the console.
+
+- name: Create the directory the gate is served from
+  ansible.builtin.file:
+    path: "{{ keycloak_gate_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: keycloak_gate_enabled | bool
+
+- name: Write the gate page
+  ansible.builtin.template:
+    src: idp-admin-gate.html.j2
+    dest: "{{ keycloak_gate_root }}/index.html"
+    owner: root
+    group: root
+    mode: "0644"
+  when: keycloak_gate_enabled | bool
+
+- name: Remove it where it is not wanted
+  # So turning the flag off actually takes the page away rather than leaving a stale one served.
+  ansible.builtin.file:
+    path: "{{ keycloak_gate_root }}"
+    state: absent
+  when: not (keycloak_gate_enabled | bool)
+
+# --- does its client exist? ---------------------------------------------------------------------
+
+- name: Ask Keycloak whether the gate's client exists
+  # Unauthenticated, and deliberately: an OIDC authorization request for an unknown client_id is
+  # answered with an error page rather than a redirect to login, so the status alone distinguishes
+  # the two without this role needing admin credentials it otherwise has no use for.
+  ansible.builtin.uri:
+    url: >-
+      https://{{ keycloak_hostname }}{{ keycloak_http_relative_path }}/realms/{{ keycloak_gate_realm }}/protocol/openid-connect/auth?client_id={{ keycloak_gate_client_id }}&response_type=code&redirect_uri=https%3A%2F%2F{{ keycloak_hostname }}{{ keycloak_gate_path }}%2F
+    method: GET
+    follow_redirects: none
+    status_code: [200, 302, 400]
+    return_content: false
+  register: keycloak_gate_client_check
+  changed_when: false
+  failed_when: false
+  when:
+    - keycloak_gate_enabled | bool
+    - not ansible_check_mode
+    - keycloak_cert.stat.exists | default(false)
+
+- name: Say if the gate's client is missing
+  # 302 to the login page means Keycloak accepted the client and the redirect URI. 200 means it
+  # rendered an error page instead — almost always "Client not found" or a redirect_uri it will not
+  # accept, and both leave the gate showing an error instead of doing its job.
+  ansible.builtin.debug:
+    msg: >-
+      The gate page is installed at https://{{ keycloak_hostname }}{{ keycloak_gate_path }}/ but
+      Keycloak did not accept a login for client '{{ keycloak_gate_client_id }}' (HTTP
+      {{ keycloak_gate_client_check.status | default('?') }}). Create it with the kcadm block in
+      doc/idp-setup.md §4.6 — until then the page will report that it could not check your access.
+  when:
+    - keycloak_gate_enabled | bool
+    - keycloak_gate_client_check.status | default(302) != 302

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keycloak admin — {{ keycloak_hostname }}</title>
+<!--
+  Managed by Ansible (roles/keycloak) — local edits are overwritten.
+
+  A door in front of Keycloak's admin console, because the console's own answer to "you are signed
+  in but not an admin" is a blank page with two spinners, forever. It authenticates correctly and
+  /admin/serverinfo correctly answers 403; the console simply does not handle that. Nothing on this
+  side is misconfigured — see doc/idp-setup.md §4.1.
+
+  This exists because we kept the `master` realm, so every application user is a user in the realm
+  whose console that is and can therefore reach it. Under a dedicated realm the situation cannot
+  arise, and this page should be deleted rather than migrated.
+
+  It tests the capability rather than guessing at role names: ask the admin API a question only an
+  admin may ask, and branch on 200 vs 403. Role names differ between master and other realms
+  (`admin` here, realm-management client roles elsewhere) and a hardcoded list would be one more
+  thing to get wrong on a page whose whole job is to stop a confusing failure.
+-->
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; margin: 0; padding: 1.5rem; box-sizing: border-box;
+    background: #f4f5f3; color: #1a1a1a;
+  }
+  @media (prefers-color-scheme: dark) { body { background: #10140f; color: #e8e8e8; } }
+  main {
+    max-width: 34rem; width: 100%; padding: 2rem;
+    border: 1px solid rgba(128,128,128,.28); border-radius: 12px;
+    background: rgba(127,127,127,.05);
+  }
+  h1 { font-size: 1.15rem; margin: 0 0 .75rem; }
+  p { line-height: 1.55; margin: 0 0 1rem; }
+  .who { font-family: ui-monospace, monospace; font-weight: 600; }
+  .row { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.25rem; }
+  button {
+    font: inherit; padding: .55rem 1.1rem; border-radius: 8px; cursor: pointer;
+    border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit;
+  }
+  button.primary { background: #16a34a; border-color: #16a34a; color: #fff; font-weight: 600; }
+  button:hover { filter: brightness(1.08); }
+  .muted { opacity: .65; font-size: .88rem; }
+  code { font-family: ui-monospace, monospace; font-size: .9em; }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite">
+  <h1>Checking your access…</h1>
+  <p class="muted">Asking Keycloak whether this account may administer the realm.</p>
+</main>
+
+<script src="{{ keycloak_http_relative_path }}/js/keycloak.js"></script>
+<script>
+  var BASE = {{ (keycloak_http_relative_path) | to_json }};
+  var CONSOLE_URL = BASE + "/admin/master/console/";
+  var app = document.getElementById("app");
+
+  function render(html) { app.innerHTML = html; }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  var kc = new Keycloak({
+    url: window.location.origin + BASE,
+    realm: {{ keycloak_gate_realm | to_json }},
+    clientId: {{ keycloak_gate_client_id | to_json }}
+  });
+
+  // login-required rather than check-sso: arriving here means wanting the console, and the console
+  // needs a session regardless. Bouncing straight to the login page is one hop fewer than telling
+  // someone they are not signed in and asking them to click.
+  kc.init({ onLoad: "login-required", pkceMethod: "S256" })
+    .then(function () {
+      // The whole test. Any endpoint only an admin may call would do; serverinfo is the cheapest
+      // and returns no realm data, so a non-admin's 403 leaks nothing on the way to being handled.
+      return fetch(BASE + "/admin/serverinfo", {
+        headers: { Authorization: "Bearer " + kc.token }
+      });
+    })
+    .then(function (res) {
+      if (res.ok) {
+        window.location.replace(CONSOLE_URL);
+        return;
+      }
+      if (res.status === 401 || res.status === 403) {
+        showNoAccess();
+        return;
+      }
+      showError("Keycloak answered HTTP " + res.status + " when asked about your access.");
+    })
+    .catch(function (err) {
+      showError(String((err && err.message) || err || "unknown error"));
+    });
+
+  function showNoAccess() {
+    var t = kc.tokenParsed || {};
+    var who = t.preferred_username || t.email || "this account";
+    render(
+      '<h1>This account cannot administer Keycloak</h1>' +
+      '<p>You are signed in as <span class="who">' + esc(who) + '</span>, which is a normal ' +
+      'account on this realm. It can sign in to Keycloak, but it holds none of the roles the ' +
+      'admin console needs.</p>' +
+      '<p>Sign out and back in with an administrator account to continue. Signing out here ends ' +
+      'your Keycloak session, so anything else using it will ask you to sign in again.</p>' +
+      '<div class="row">' +
+        '<button class="primary" id="switch">Sign out and use another account</button>' +
+        '<button id="account">Manage my account instead</button>' +
+      '</div>' +
+      '<p class="muted" style="margin-top:1.25rem">Changing your own password, email or ' +
+      'two-factor settings does not need an administrator — that is the account page.</p>'
+    );
+    document.getElementById("switch").onclick = function () {
+      kc.logout({ redirectUri: window.location.href });
+    };
+    // Where someone who came looking for "Keycloak" most likely wanted to end up. Offering it
+    // matters more than a Back button: the browser already has one, and a person who followed a
+    // link here to change their password would otherwise leave with nothing.
+    document.getElementById("account").onclick = function () {
+      window.location.href = BASE + "/realms/" + {{ keycloak_gate_realm | to_json }} + "/account/";
+    };
+  }
+
+  function showError(detail) {
+    render(
+      '<h1>Could not check your access</h1>' +
+      '<p>Something went wrong before we could tell whether this account may administer Keycloak.</p>' +
+      '<p class="muted"><code>' + esc(detail) + '</code></p>' +
+      '<div class="row">' +
+        '<button class="primary" onclick="location.reload()">Try again</button>' +
+        '<button onclick="location.href=' + JSON.stringify(CONSOLE_URL) + '">Open the console anyway</button>' +
+      '</div>'
+    );
+  }
+</script>
+</body>
+</html>

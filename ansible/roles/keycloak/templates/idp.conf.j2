@@ -56,6 +56,24 @@ server {
     # host, for one less number to remember.
     client_max_body_size 32m;
 
+{% if keycloak_gate_enabled | default(false) %}
+    # The admin-console gate — a static page, served before the proxy block below so it is not
+    # forwarded to Keycloak. Outside {{ keycloak_http_relative_path }}/ on purpose: Keycloak owns
+    # every path under that prefix, and a page of ours living inside it would be one upgrade away
+    # from colliding with something upstream added.
+    location {{ keycloak_gate_path }}/ {
+        alias {{ keycloak_gate_root }}/;
+        index index.html;
+        # It reads the session and branches on it, so a cached copy is a page telling the wrong
+        # person the wrong thing.
+        add_header Cache-Control "no-store" always;
+    }
+
+    location = {{ keycloak_gate_path }} {
+        return 301 {{ keycloak_gate_path }}/;
+    }
+{% endif %}
+
     location / {
         proxy_pass http://{{ keycloak_http_host }}:{{ keycloak_http_port }};
 
