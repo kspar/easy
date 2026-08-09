@@ -194,7 +194,13 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
     }
 
     private fun getAccessToken(): String {
-        val tokenUrl = "$keycloakBaseUrl/auth/realms/master/protocol/openid-connect/token"
+        // `$realm`, not a hardcoded "master". The service account belongs to the client, the client
+        // belongs to a realm, and its token comes from that realm's token endpoint — so a hardcoded
+        // realm here and a configured one in the two admin calls below silently disagree the moment
+        // anyone configures a realm that is not master. That is only invisible today because both
+        // environments happen to use master, which makes it the kind of bug that surfaces during
+        // the migration rather than before it.
+        val tokenUrl = "$keycloakBaseUrl/auth/realms/$realm/protocol/openid-connect/token"
 
         val headers = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_FORM_URLENCODED
