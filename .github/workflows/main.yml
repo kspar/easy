@@ -5,12 +5,22 @@ on:
   push:
     branches:
       - master
-      # What the dev host tracks. Pushing here is the deploy: a timer on that box polls for the
-      # newest green run on this branch and installs it. See ansible/roles/core_autodeploy and
-      # deploy/README.md.
+      # What the dev host tracks. Pushing here is the deploy: a timer on that box asks whether a
+      # green run exists for the commit this branch points at and installs it. See
+      # ansible/roles/core_autodeploy and deploy/README.md.
       #
       # Deliberately not called `releases`: `releases/*` below is for real version branches, and a
       # name that says which environment it feeds cannot be confused with one of those.
+      #
+      # KEEP THIS LINE. It looks like waste and mostly is: the normal flow is
+      # `git push origin master:dev-releases`, where master has already built this exact tree, so
+      # this run duplicates one that passed minutes ago — and because the deployer matches on the
+      # commit rather than the branch, it does not even shorten the wait.
+      #
+      # What it buys is the abnormal flow. A commit pushed straight at this branch — a quick fix,
+      # made at exactly the moment nobody is being careful — is otherwise never built at all, and
+      # the deploy silently never comes. Reviewed and kept on 2026-08-09 for that reason; deleting
+      # it to save CI minutes is removing the only gate on the one path that has none.
       - dev-releases
       - 'releases/*'
 

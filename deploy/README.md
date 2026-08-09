@@ -40,10 +40,15 @@ whether it passed. So the useful order is: push to master, let CI go green, then
 deploy lands on the next tick.
 
 Note this is separate from CI *starting* a run: pushing a sha to a second branch is a new push
-event, so Actions builds it again regardless. That duplicate run is not on the deploy's critical
-path — it only means CI minutes are spent twice. Dropping `dev-releases` from `on.push.branches` in
-`main.yml` would stop it, at the cost of a commit pushed only to `dev-releases` never being built,
-which the timer would report once a minute as "no green CI run exists for it yet".
+event, so Actions builds it again regardless. **That duplicate run is deliberate, and it is not on
+the deploy's critical path** — it costs CI minutes and delays nothing.
+
+It stays because it is the only thing standing behind a commit that reaches `dev-releases` without
+going through master — a quick fix pushed straight at the branch, which is exactly the moment
+nobody is being careful. Without the trigger such a commit is never built, and the timer would sit
+there reporting "no green CI run exists for it yet" once a minute while whoever pushed it waited
+for a deploy that could not come. Paying for a redundant build of the normal path is the cheaper
+side of that trade.
 
 **It needs a token, once.** `/etc/easy/github-token` is created as a placeholder, and until a real
 value is in it every tick exits having said so in the journal. A fine-grained PAT scoped to
