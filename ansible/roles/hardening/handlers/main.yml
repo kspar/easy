@@ -17,3 +17,13 @@
 - name: Reload ufw
   community.general.ufw:
     state: reloaded
+
+# daemon_reload alone re-reads the unit but leaves the already-scheduled next run in place, so the
+# new window would not take effect until something else restarted the timer — which on a stable host
+# means the next reboot. Restarting it recalculates NEXT immediately, which is also what makes the
+# change visible to `systemctl list-timers` while someone is still looking at it.
+- name: Reload the apt timer
+  ansible.builtin.systemd_service:
+    name: apt-daily-upgrade.timer
+    state: restarted
+    daemon_reload: true

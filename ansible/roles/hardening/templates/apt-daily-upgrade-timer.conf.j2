@@ -1,0 +1,15 @@
+# Managed by Ansible (roles/hardening) — local edits are overwritten.
+#
+# Moves the daily unattended upgrade off Ubuntu's stock 06:00–07:00 window so that it finishes before
+# the reboot window in 52easy. Without this, the reboot time is *earlier in the day* than the upgrade
+# that requests it, `shutdown -r` reads that as tomorrow, and every reboot is deferred by ~22 hours.
+#
+# The empty `OnCalendar=` is required, not decoration: timer settings accumulate across drop-ins, so
+# without clearing it first this host would have *two* schedules and run the upgrade twice.
+
+[Timer]
+OnCalendar=
+OnCalendar=*-*-* {{ hardening_apt_upgrade_time }}
+RandomizedDelaySec={{ hardening_apt_upgrade_delay_minutes }}m
+# Catch up after downtime rather than skipping a day, same as the stock unit.
+Persistent=true

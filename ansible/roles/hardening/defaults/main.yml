@@ -101,3 +101,24 @@ hardening_fail2ban_ignoreip: []
 # kernel with better manners.
 hardening_unattended_reboot: false
 hardening_unattended_reboot_time: "04:30"
+
+# When the unattended upgrade itself runs. Ubuntu ships `OnCalendar=6:00` with `RandomizedDelaySec=60m`,
+# so the stock window is 06:00–07:00.
+#
+# **The reboot time has to fall after this window, and by default it did not.** unattended-upgrades
+# does not reboot on its own schedule: at the end of a run it calls `shutdown -r <time>`, and
+# `shutdown` interprets a time that has already passed today as tomorrow. With the stock 06:00–07:00
+# upgrade and a 04:30 reboot, every reboot was therefore deferred by about 22 hours — the security
+# fix installed on Monday morning took effect on Tuesday. Nothing reported this, because both halves
+# were individually doing exactly what they were told.
+#
+# Fixed by moving the upgrade rather than the reboot: 03:00–03:30 keeps the reboot in the quiet hour
+# it was chosen for, instead of dragging it into the start of the working day. The role asserts the
+# ordering, so a future edit to either value cannot quietly recreate the gap.
+#
+# A residual worth knowing about, and NOT fixed here: `reboot_if_requested_and_needed()` is only
+# reached when a run actually installs something. A `/var/run/reboot-required` left behind by a
+# *manual* `apt` therefore sits forever, however these two values are set — which is how the IdP host
+# ran eight days on a superseded kernel. Filed rather than papered over.
+hardening_apt_upgrade_time: "03:00"
+hardening_apt_upgrade_delay_minutes: 30

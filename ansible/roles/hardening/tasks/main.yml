@@ -320,6 +320,52 @@
       APT::Periodic::Update-Package-Lists "1";
       APT::Periodic::Unattended-Upgrade "1";
 
+- name: Refuse a reboot window that falls before the upgrade that triggers it
+  # unattended-upgrades does not reboot on a schedule of its own: at the end of a run it calls
+  # `shutdown -r <time>`, and shutdown reads a time that has already passed today as tomorrow. So a
+  # reboot time earlier in the day than the upgrade window does not mean "reboot promptly", it means
+  # "reboot in about 22 hours" — silently, with both halves behaving exactly as configured.
+  #
+  # Asserted rather than commented because the two values live in different files and neither one
+  # looks wrong on its own.
+  ansible.builtin.assert:
+    that: reboot_at | int > upgrade_ends | int
+    fail_msg: >-
+      The unattended reboot is set for {{ hardening_unattended_reboot_time }}, but the upgrade window
+      does not close until {{ '%02d:%02d' | format((upgrade_ends | int // 60), (upgrade_ends | int % 60)) }}
+      ({{ hardening_apt_upgrade_time }} plus {{ hardening_apt_upgrade_delay_minutes }}m of jitter).
+      `shutdown -r` would read that as tomorrow, deferring every reboot by roughly a day. Move
+      hardening_unattended_reboot_time later, or hardening_apt_upgrade_time earlier.
+    quiet: true
+  vars:
+    upgrade_ends: >-
+      {{ (hardening_apt_upgrade_time.split(':')[0] | int) * 60
+         + (hardening_apt_upgrade_time.split(':')[1] | int)
+         + (hardening_apt_upgrade_delay_minutes | int) }}
+    reboot_at: >-
+      {{ (hardening_unattended_reboot_time.split(':')[0] | int) * 60
+         + (hardening_unattended_reboot_time.split(':')[1] | int) }}
+  when: hardening_unattended_reboot | bool
+
+- name: Make somewhere for the timer override to live
+  # systemd creates .d directories for units it ships, but not for drop-ins nobody has written yet,
+  # and template does not create parent directories.
+  ansible.builtin.file:
+    path: /etc/systemd/system/apt-daily-upgrade.timer.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Run the upgrade early enough that the reboot window follows it
+  ansible.builtin.template:
+    src: apt-daily-upgrade-timer.conf.j2
+    dest: /etc/systemd/system/apt-daily-upgrade.timer.d/10-easy.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload the apt timer
+
 # Read after the stock 50unattended-upgrades, which is what lets it override.
 - name: Set the reboot policy
   ansible.builtin.template:
