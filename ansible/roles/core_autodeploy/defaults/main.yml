@@ -1,0 +1,84 @@
+---
+# Automatic deploys: the host polls GitHub for the newest green build of a branch and installs it.
+#
+# **Pull, not push**, and that is the substantive decision in this role. The alternative — a deploy
+# job in the workflow that SSHes in — needs a private key for this machine stored in GitHub, on a
+# public repository, where anyone with repo admin or a compromised Action inherits a shell here.
+# Polling costs latency and nothing else: no inbound access, and the only credential involved is a
+# read-only token that lives on the host and can do nothing but read CI artifacts of a public repo.
+#
+# It writes the same on-host layout as deploy/deploy-staging.sh, which remains the way to deploy an
+# arbitrary commit — a rollback, or something off master. See the header of the deploy script
+# template for the contract between them.
+
+core_autodeploy_enabled: true
+
+core_autodeploy_repo: kspar/easy
+
+# The branch this host tracks. Pushing to it is the deploy.
+#
+# Not `releases`: `releases/*` is for real version branches and CI already builds those, so a name
+# that says which environment it feeds cannot be mistaken for one of them.
+core_autodeploy_branch: dev-releases
+
+# Matched against the run's `name`, so an unrelated workflow gaining artifacts later cannot be
+# mistaken for a release build.
+core_autodeploy_workflow: CI
+
+# Every minute. One API call per tick in the steady state — the run list is checked, found to match
+# `current-sha`, and nothing else happens — against an authenticated limit of 5000/hour, so this
+# uses about 1.5% of it. Worth knowing before lowering it further: the floor that matters is not the
+# rate limit but CI, which takes minutes, so polling faster cannot make a deploy arrive sooner.
+core_autodeploy_interval: 1min
+
+# Ten seconds of jitter. Trivial here with one host, and the reason it is set anyway is that the
+# same role on several hosts would otherwise have all of them call GitHub on the same second.
+core_autodeploy_splay: 10
+
+# --- what it deploys into ---------------------------------------------------------------------
+# Deliberately mirrors roles/core_service rather than being independent of it: these two describe
+# the same tree, and a disagreement between them would be a deploy that installs somewhere core is
+# not looking.
+core_autodeploy_root: "{{ easy_core_root | default('/srv/easy') }}"
+core_autodeploy_service: "{{ easy_core_service_name | default('easy-core') }}"
+core_autodeploy_keep_releases: 5
+
+# This environment's config.json, placed on the host by this role from deploy/<env>/config.json.
+# It belongs to the environment, not to the release — which is why it is rewritten on every deploy,
+# rollbacks included, rather than being carried inside an artifact. CI strips it from the dist for
+# the same reason: web/public/config.json holds *production* defaults, and an artifact carrying
+# those is one forgotten step away from staging quietly talking to production.
+core_autodeploy_config_json: /srv/easy/conf/config.json
+core_autodeploy_config_src: "{{ playbook_dir }}/../deploy/staging/config.json"
+
+# --- the account it runs as ---------------------------------------------------------------------
+# Its own system account rather than root. The one thing this process handles that comes from
+# outside is a tarball, and unpacking an attacker-controlled archive as root is a different
+# proposition from unpacking it as an account that can write one directory tree.
+#
+# It gets exactly what a deploy needs: membership of the group that owns the release tree, and two
+# exact sudo commands. Not a login — roles/hardening's AllowGroups means creating a Unix account no
+# longer implies SSH access, which is what makes a service account safe to create here.
+core_autodeploy_user: easy-autodeploy
+core_autodeploy_deploy_group: "{{ easy_core_deploy_group | default('easy-deploy') }}"
+
+# --- the token ------------------------------------------------------------------------------------
+# A GitHub token with **Actions: read-only** on this repository, and nothing else. Artifact
+# downloads require authentication even for a public repo, which is the only reason one is needed.
+#
+# Created by this role as a placeholder and never read by it — same arrangement as every other
+# credential in this repo. Fill it in on the host:
+#
+#   sudo install -m 0640 -o root -g easy-autodeploy /dev/null /etc/easy/github-token
+#   sudo tee /etc/easy/github-token >/dev/null   # paste, Ctrl-D
+#
+# A fine-grained PAT scoped to kspar/easy with Actions: Read is the least it can be. Note those
+# expire; when it does, the timer logs the failure every minute, which is at least loud.
+core_autodeploy_token_file: /etc/easy/github-token
+
+# --- health check ---------------------------------------------------------------------------------
+# Core answers 401 to an unauthenticated request once its filter chain is up, so a 401 is the pass.
+# Any path under /v2 works.
+core_autodeploy_health_url: "{{ easy_core_health_url | default('https://dev.ems.lahendus.ut.ee/v2/') }}"
+core_autodeploy_health_attempts: 30
+core_autodeploy_health_interval: 4

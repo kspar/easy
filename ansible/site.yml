@@ -29,6 +29,9 @@
     - core_config
     - postgres
     - core_service
+    # After core_service: the release tree, the deploy group and the unit it restarts all come
+    # from there. Pull-based, so nothing in GitHub holds a credential for this host — see the role.
+    - core_autodeploy
     - nginx
 
 # The IdP is already its own host in staging, which is how production is laid out too — so unlike the

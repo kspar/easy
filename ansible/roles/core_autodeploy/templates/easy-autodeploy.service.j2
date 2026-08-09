@@ -1,0 +1,45 @@
+# Managed by Ansible (roles/core_autodeploy) — local edits are overwritten.
+
+[Unit]
+Description=Install the newest green CI build of {{ core_autodeploy_branch }}
+Documentation=https://github.com/{{ core_autodeploy_repo }}/blob/master/deploy/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User={{ core_autodeploy_user }}
+Group={{ core_autodeploy_user }}
+# Membership of the group that owns the release tree, granted here rather than by making the
+# account's primary group the deploy group — its own group keeps anything it creates elsewhere
+# private by default.
+SupplementaryGroups={{ core_autodeploy_deploy_group }}
+
+ExecStart=/usr/local/bin/easy-autodeploy
+
+# A deploy that fails should be loud and then leave the host alone until the next tick, rather than
+# retrying instantly against whatever broke it.
+Restart=no
+TimeoutStartSec=600
+
+# --- confinement -----------------------------------------------------------------------------
+# It talks to the internet, unpacks an archive from it, and writes one tree. Nothing else.
+NoNewPrivileges=no
+# ^ NOT yes, deliberately: this unit's whole job ends in `sudo systemctl restart`, and
+#   NoNewPrivileges makes sudo fail with a message that does not mention it. The privilege it can
+#   gain is two exact commands in /etc/sudoers.d/easy-autodeploy and nothing else.
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+# ProtectSystem=strict makes everything read-only except this.
+ReadWritePaths={{ core_autodeploy_root }}

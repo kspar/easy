@@ -3,11 +3,71 @@
 Deploying a CI-built release to staging. The reasoning behind all of it is in
 `doc/staging-environment.md` §8; this is the operating manual.
 
+There are two paths, and the automatic one is the normal one.
+
+## Automatic: push to `dev-releases`
+
+```sh
+git push origin master:dev-releases     # dev updates itself within a couple of minutes
+```
+
+A timer on the staging host polls GitHub every minute for the newest **green** CI run on
+`dev-releases`, and installs it if it differs from what is live. Nothing else is needed: no SSH, no
+laptop, no command.
+
+**Pull, not push, and that is the point.** The alternative — a deploy job in the workflow that
+SSHes in — needs a private key for the staging host stored in GitHub, on a *public* repository,
+where anyone with repo admin or a compromised Action inherits a shell on the box. Polling costs a
+minute of latency and nothing else: there is no inbound access, and the only credential involved is
+a read-only token that lives on the host and can do nothing but read CI artifacts of a public repo.
+
+`ansible/roles/core_autodeploy` installs it. Watch it work:
+
+```sh
+ssh easycoredev 'systemctl list-timers easy-autodeploy.timer --no-pager'
+ssh easycoredev 'sudo journalctl -u easy-autodeploy.service -n 40 --no-pager'
+ssh easycoredev 'cat /srv/easy/current-sha'
+```
+
+The branch is `dev-releases` rather than `releases` because `releases/*` is for real version
+branches — CI builds those too — and a name that says which environment it feeds cannot be mistaken
+for one of them.
+
+**It needs a token, once.** `/etc/easy/github-token` is created as a placeholder, and until a real
+value is in it every tick exits having said so in the journal. A fine-grained PAT scoped to
+`kspar/easy` with **Actions: Read-only** is the least it can be — artifact downloads require
+authentication even for a public repo, which is the only reason a token exists at all:
+
+```sh
+ssh easycoredev 'sudo tee /etc/easy/github-token >/dev/null'   # paste, then Ctrl-D
+```
+
+No restart needed; the next tick picks it up. Those PATs expire — when it does, the timer logs the
+failure every minute, which is at least loud.
+
+## Manual: a specific commit
+
+Still the way to deploy something that is not the tip of `dev-releases` — a rollback, or something
+off master:
+
 ```sh
 deploy/deploy-staging.sh latest        # newest green CI run on master
 deploy/deploy-staging.sh 1a2b3c4       # a specific commit, full or short sha
 deploy/deploy-staging.sh 1a2b3c4 --dry-run
 ```
+
+**A manual deploy is not sticky.** The timer compares against `current-sha` on every tick, so if
+you hand-deploy something older than the tip of `dev-releases`, the next tick puts the newer one
+back. To pin the host, stop the timer first:
+
+```sh
+ssh easycoredev 'sudo systemctl stop easy-autodeploy.timer'
+```
+
+The two implementations are separate on purpose — one pushes from a laptop, one pulls on the host —
+but they write the same on-host layout, and that layout is a contract between them. Change both
+together; it is written out at the top of
+`ansible/roles/core_autodeploy/templates/easy-autodeploy.py.j2`.
 
 Needs `gh` (authenticated), `jq`, and SSH to the staging host — no JDK, no Node. The jar and the
 dist come from the CI run that gated that commit, so the build staging exercises is byte-for-byte

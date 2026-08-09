@@ -1,0 +1,20 @@
+# Managed by Ansible (roles/core_autodeploy) — local edits are overwritten.
+
+[Unit]
+Description=Poll for a new green build of {{ core_autodeploy_branch }}
+
+[Timer]
+# From boot, so a host that has been down comes back and catches up on its own.
+OnBootSec=2min
+# Measured from the end of the last run, not the start, so a slow deploy cannot overlap the next
+# poll — OnUnitActiveSec would queue ticks behind a download.
+OnUnitInactiveSec={{ core_autodeploy_interval }}
+RandomizedDelaySec={{ core_autodeploy_splay }}
+# Deliberately NOT Persistent=true. This timer's job is "is there something newer", which is
+# answered by looking now — replaying missed ticks after downtime would just call GitHub several
+# times to reach the same conclusion once.
+Persistent=false
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

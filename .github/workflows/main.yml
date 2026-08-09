@@ -5,6 +5,13 @@ on:
   push:
     branches:
       - master
+      # What the dev host tracks. Pushing here is the deploy: a timer on that box polls for the
+      # newest green run on this branch and installs it. See ansible/roles/core_autodeploy and
+      # deploy/README.md.
+      #
+      # Deliberately not called `releases`: `releases/*` below is for real version branches, and a
+      # name that says which environment it feeds cannot be confused with one of those.
+      - dev-releases
       - 'releases/*'
 
 jobs:
@@ -42,7 +49,7 @@ jobs:
       # which is why the deploy script gates on the *run's* conclusion rather than on an artifact
       # merely existing.
       - name: Package core jar
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/releases/') }}
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
         run: |
           # Found by pattern rather than named core-1.jar, so that `version` in
           # core/build.gradle.kts stays something CI has no opinion about. The exclusion matters:
@@ -60,7 +67,7 @@ jobs:
           cp "${boot[0]}" "core-${{ github.sha }}.jar"
 
       - name: Publish core jar
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/releases/') }}
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
         uses: actions/upload-artifact@v7
         with:
           name: core-${{ github.sha }}
@@ -132,7 +139,7 @@ jobs:
       # The dist has been environment-agnostic since EZ-1726 — config.json is read at boot rather
       # than baked in — so one tarball serves staging and production both. See §8.1.
       - name: Package web dist
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/releases/') }}
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
         run: |
           # config.json is deliberately NOT shipped. web/public/config.json holds the *production*
           # IdP and API as local-dev defaults, so an artifact carrying it is one forgotten deploy
@@ -144,7 +151,7 @@ jobs:
           tar -czf "../web-${{ github.sha }}.tar.gz" -C dist .
 
       - name: Publish web dist
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/releases/') }}
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
         uses: actions/upload-artifact@v7
         with:
           name: web-${{ github.sha }}
