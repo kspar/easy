@@ -9,7 +9,7 @@ Idempotent by design: it compares the newest green run's commit against `current
 having done nothing when they match, which is what makes a {{ core_autodeploy_interval }} timer
 cheap — one API call per tick in the steady state.
 
-It writes the SAME on-host layout as deploy/deploy-staging.sh, which stays the way to deploy an
+It writes the SAME on-host layout as deploy/deploy-dev.sh, which stays the way to deploy an
 arbitrary commit (a rollback, or something off master). Those two implementations are separate on
 purpose — one pushes from a laptop, one pulls on the host — but the layout below is a contract
 between them, so change both together:
@@ -126,7 +126,7 @@ def green_run_for(sha, tok):
 
     `status=success` on the query is not the same question as `conclusion == "success"`, and
     artifacts are published per job — a run whose web job failed can still have left a jar behind.
-    Gate on the run's own conclusion, exactly as deploy-staging.sh does.
+    Gate on the run's own conclusion, exactly as deploy-dev.sh does.
     """
     runs = api(f"/repos/{REPO}/actions/runs?head_sha={sha}&status=success&per_page=20", tok)
     runs = [r for r in runs["workflow_runs"]
@@ -215,7 +215,7 @@ def activate(sha, rel):
         die(f"{ROOT}/conf/application.yaml does not exist — run the core_config role first")
 
     # CI strips config.json from the dist on purpose — web/public/config.json holds *production*
-    # defaults, and an artifact carrying those is one forgotten step from staging talking to prod.
+    # defaults, and an artifact carrying those is one forgotten step from dev talking to prod.
     # The environment's own copy is written here instead, on every deploy including rollbacks,
     # because this file belongs to the environment rather than to the release.
     if not CONFIG_JSON.is_file():

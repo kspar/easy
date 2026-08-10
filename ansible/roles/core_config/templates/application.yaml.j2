@@ -123,7 +123,7 @@ easy:
       ## delete_inactive_users.kt builds "$keycloakBaseUrl/auth/realms/master/..." and
       ## "$keycloakBaseUrl/auth/admin/realms/$realm/..." — it appends `/auth` itself, in all three
       ## places. So a base-url that already ends in /auth produces /auth/auth/... and every admin call
-      ## 404s. This was live and unnoticed until 2026-08-08, because staging pins the cron that drives
+      ## 404s. This was live and unnoticed until 2026-08-08, because dev pins the cron that drives
       ## it to a date that never comes, so the broken URL was never built.
       base-url: "{{ easy_core_idp_base_url }}"
       realm: "{{ easy_core_keycloak_realm }}"

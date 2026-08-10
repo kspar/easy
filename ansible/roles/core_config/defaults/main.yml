@@ -5,7 +5,7 @@
 # Same convention as the hardening role: **these defaults are the strict ones.** Anything that can
 # reach a real external system has no default at all, so a host that has not been told what to do
 # cannot quietly inherit somebody else's Moodle or somebody else's identity provider. §5 of
-# doc/staging-environment.md calls a copy-pasted production IdP URL "the worst single mistake
+# doc/dev-environment.md calls a copy-pasted production IdP URL "the worst single mistake
 # available on this host", and the way to make a mistake unavailable is to refuse to guess.
 
 easy_core_config_dir: /srv/easy/conf
@@ -30,7 +30,7 @@ easy_core_secrets_path: "{{ easy_core_config_dir }}/secrets.yaml"
 easy_core_user: easy-core
 easy_core_group: easy-core
 
-# root owns it, the service account only reads it. The staging plan guessed `0600 root:root`, which
+# root owns it, the service account only reads it. The dev plan guessed `0600 root:root`, which
 # cannot work: Spring reads this file as its own user, so root-only would mean core cannot start.
 # Group-read is the version of that intent which actually runs.
 easy_core_config_mode: "0640"
@@ -89,7 +89,7 @@ easy_core_idp_path_prefix: /auth
 # host. Production sets it true, having decided that on purpose.
 #
 # Why it matters more than it looks: `DeleteInactiveUsers` removes students idle 2y and teachers 5y
-# from the database *and* from Keycloak. On staging, `last_seen` values come from a production dump
+# from the database *and* from Keycloak. On dev, `last_seen` values come from a production dump
 # and are historical, so the first unpinned run would delete a large slice of the imported data and
 # do it against whichever Keycloak it was pointed at.
 easy_core_allow_real_outbound: false
@@ -125,7 +125,7 @@ easy_core_moodle_grades_wsfunction: local_ut_custom_update_manual_grades
 easy_core_moodle_format: json
 
 # --- internal timers, left alone ---------------------------------------------------------------------
-# Deliberately on everywhere, including staging: these touch nothing outside the host, and staging is
+# Deliberately on everywhere, including dev: these touch nothing outside the host, and dev is
 # the right place to find out they misbehave.
 easy_core_autoassess_delay_ms: 3000
 easy_core_autoassess_observer_clear_ms: 3000

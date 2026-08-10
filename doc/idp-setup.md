@@ -1,14 +1,14 @@
 # Setting up the dev IdP
 
 `easy-idp-dev.cloud.ut.ee` (193.40.11.153, OpenStack, Ubuntu 24.04.4 LTS) — Keycloak 25.0.2 serving
-the realm that every login on staging goes through.
+the realm that every login on dev goes through.
 
 Built from nothing on **2026-08-08**. This document is the whole procedure: what runs the machine,
 what had to be decided, and the parts a playbook cannot do. `ansible/roles/keycloak/` is the
 executable half; the realm's *contents* are the half that lives here, because they are data rather
 than configuration and a playbook that owned them would fight anyone editing the admin console.
 
-Read `doc/staging-environment.md` §7 for why this was the critical path: core deploys and serves
+Read `doc/dev-environment.md` §7 for why this was the critical path: core deploys and serves
 without an IdP — JWT verification fetches the realm's JWKS lazily, so core starts, answers 401, and
 only fails when someone actually tries to log in. This host is what turns that 401 into a session.
 
@@ -72,7 +72,7 @@ That restore carried the Keycloak *install* and the theme, and nothing else:
 | `~kspar/easy-kc-theme/` | The lahendus theme, last touched 2023 |
 | `hostname=dev.idp.lahendus.ut.ee` in the conf | **A name that has never served this IdP** — see §5 |
 
-That answers the open question in `doc/staging-environment.md` §7. The realm was not on disk, because
+That answers the open question in `doc/dev-environment.md` §7. The realm was not on disk, because
 it was never on disk. **Rebuilt from scratch** (§4) rather than restored — there was no dump.
 
 ---
@@ -220,7 +220,7 @@ $K config credentials --server http://127.0.0.1:8080/auth --realm master \
 ### 4.1 Why `master`, which is not best practice
 
 The application realm is Keycloak's own admin realm. That is not what anyone would choose fresh, and
-it is kept anyway because **production does the same** and staging is meant to be the release gate,
+it is kept anyway because **production does the same** and dev is meant to be the release gate,
 not a third convention.
 
 It is also cheaper than the alternative in a specific way: `delete_inactive_users.kt` hardcodes
@@ -260,8 +260,8 @@ $K update realms/master \
   -s loginTheme=lahendus
 ```
 
-Registration off is the decision from `doc/staging-environment.md` §7: accounts are admin-created,
-which removes the "anyone with a UT account wanders into staging" problem entirely.
+Registration off is the decision from `doc/dev-environment.md` §7: accounts are admin-created,
+which removes the "anyone with a UT account wanders into dev" problem entirely.
 
 ### 4.3 The SPA's client
 
@@ -326,9 +326,9 @@ $K add-roles -r master --uid $SA --cclientid master-realm --rolename view-users
 $K remove-roles -r master --uid $SA --cclientid master-realm --rolename manage-users   # must not hold this
 ```
 
-**`view-users` and never `manage-users`**, from `doc/staging-environment.md` §5. The reason is
+**`view-users` and never `manage-users`**, from `doc/dev-environment.md` §5. The reason is
 specific rather than general caution: core's `DeleteInactiveUsers` cron deletes accounts from the
-database *and* from Keycloak, and staging's imported `last_seen` values are historical, so an unpinned
+database *and* from Keycloak, and dev's imported `last_seen` values are historical, so an unpinned
 run would delete a large slice of the import from both. The cron is pinned to the never-date as the
 first defence. This is the second, and it is the one that still holds when someone unpins the cron
 without reading why it was pinned.
@@ -428,7 +428,7 @@ $K add-roles -r master --uid $UID_ --cclientid lahendus.ut.ee --rolename teacher
 `/etc/keycloak/test-users.txt` (0600 root).
 
 **To test as a teacher with real course data**, create a user whose **username matches** a teacher row
-in the imported data — `doc/staging-environment.md` §3.4. That tester then inhabits that (anonymised)
+in the imported data — `doc/dev-environment.md` §3.4. That tester then inhabits that (anonymised)
 teacher's courses, which is the deliberate, auditable way to get realistic access.
 
 ---
@@ -444,10 +444,10 @@ This matters more than a rename usually does, because Keycloak's `hostname` deci
 claim in every token, and core rejects any token whose issuer is not the configured one. The role
 asserts the two agree after every run.
 
-Changed in: `ansible/inventories/staging/group_vars/all/core.yml`, `deploy/staging/config.json`, and
+Changed in: `ansible/inventories/dev/group_vars/all/core.yml`, `deploy/dev/config.json`, and
 the deployed `config.json` on the core host (a redeploy would place the same file).
 
-`web/public/config.json` is **unchanged** — it holds production's values, not staging's.
+`web/public/config.json` is **unchanged** — it holds production's values, not dev's.
 
 ---
 
@@ -472,7 +472,7 @@ two incompatible jobs:
   **itself** — in all three of `getAccessToken`, `getKeycloakUserId` and `deleteKeycloakUser`.
 
 So the old value made JWKS correct and every admin-API call `/auth/auth/...`, which 404s. Nobody saw
-it because staging pins the cron that drives those calls to a date that never comes, so the broken URL
+it because dev pins the cron that drives those calls to a date that never comes, so the broken URL
 was never built.
 
 Fixed by splitting the prefix into `easy_core_idp_path_prefix` and adding an assert in `core_config`
@@ -575,7 +575,7 @@ administrator, and gives no clue at all if you are not (§4.6).
   ledger for that move is longer than the realm itself, which is the honest reason it keeps not
   happening.
 - **Production.** `easyidpprod` (193.40.22.67) has never been touched by this role. The role takes
-  its hostname from the inventory and has no staging assumptions in it, but production is running an
+  its hostname from the inventory and has no dev assumptions in it, but production is running an
   older Keycloak whose realm holds real accounts — that is a migration, not an apply.
 
 Not this document's, but found here and affecting this host: EZ-1746 (A reboot-required left by

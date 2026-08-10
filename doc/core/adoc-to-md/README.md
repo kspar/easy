@@ -20,7 +20,7 @@ Only `out/summary.txt` is written to be shareable.
 
 Nothing writes to any database. The dry run converts, re-renders and compares, then reports.
 
-**1. Export** (against prod or a staging copy — read-only):
+**1. Export** (against prod or a dev copy — read-only):
 
 ```sh
 psql -h <host> -U <user> -d <db> -v out=/tmp/export.jsonl -f export.sql
@@ -85,7 +85,7 @@ not something this migration can fix.
 
 The dry run has been executed against the full production corpus — 1081 exercises, 83 seconds,
 nothing written to any database. The converter is settled; **no write has happened, and the write
-will be done against staging** — EZ-1723 (Set up a staging environment at dev.lahendus.ut.ee).
+will be done against dev** — EZ-1723 (Set up a dev environment at dev.lahendus.ut.ee).
 
 | Outcome | Exercises |
 | --- | --- |
@@ -114,10 +114,10 @@ Decisions taken:
 - **`codehl` highlighting** is dropped — nothing in `web/` has styled it since the WUI went.
 - **Maths** is EZ-1732's problem, not this one.
 
-## When staging exists
+## When dev exists
 
 1. Restore an anonymised copy (`../anonymise-db/`), with v4.0 deployed so `text_md` exists.
-2. Re-run the dry run against staging and confirm the numbers still land near 92%.
+2. Re-run the dry run against dev and confirm the numbers still land near 92%.
 3. Work through the flagged list by hand — 5 block-title losses and 1 malformed source are the
    only ones carrying real content risk; the other 31 are cosmetic.
 4. Decide on the 48 maths exercises: hold for EZ-1732, or migrate and accept `$…$`, which is what
@@ -133,7 +133,7 @@ Not built yet, deliberately — the dry run should be reviewed first. When it is
   representation is being backfilled
 - leave `text_adoc` and `text_html` alone, so readers see no difference and rollback is
   `UPDATE exercise_version SET text_md = NULL`
-- rehearse on staging (EZ-1723) before production
+- rehearse on dev (EZ-1723) before production
 - production needs v4.0 deployed first — the `text_md` column arrives with EZ-1729 (core: bootJar cannot start — asciidoctorj JRuby gems do not resolve from a nested jar)
 
 ## Other files here
@@ -141,4 +141,4 @@ Not built yet, deliberately — the dry run should be reviewed first. When it is
 - `corpus-profile.sql` — which constructs appear, and how often
 - `risk-buckets.sql` — each exercise bucketed once by its worst construct
 - `export.sql` — the dry run's input
-- `anonymise-db/` (sibling directory) — unrelated, for staging data
+- `anonymise-db/` (sibling directory) — unrelated, for dev data

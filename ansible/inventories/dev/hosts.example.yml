@@ -3,13 +3,13 @@
 # the internet. Everything else — the sshd directives, the firewall rules, the fail2ban thresholds —
 # is standard practice that loses nothing by being readable, so it lives in the role.
 #
-# Staging's deviations from the role's strict defaults are in `group_vars/all.yml`, not here.
+# Dev's deviations from the role's strict defaults are in `group_vars/all.yml`, not here.
 #
 # Hosts are named by their `~/.ssh/config` alias, so the address, user and key live in one place and
 # `ssh <alias>` and `ansible-playbook` cannot drift apart. The flip side, hit on 2026-08-03: rename
 # the alias and Ansible stops resolving the host, with an "unreachable" that reads like a network
 # fault rather than a typo. `grep -i '^Host' ~/.ssh/config` is the check.
-staging:
+dev:
   hosts:
     your-ssh-config-alias:
       ansible_user: your-login

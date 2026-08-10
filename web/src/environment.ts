@@ -1,15 +1,15 @@
 /**
  * Telling one environment from another at a glance (EZ-1733).
  *
- * With staging live, people keep two or three tabs open on the same application: same layout, same
+ * With a dev environment live, people keep two or three tabs open on the same application: same layout, same
  * green, same favicon, same "Lahendus" in the title bar, with only a hostname to tell them apart.
  * The expensive mistake — deleting a course or resolving a submission on production while
- * believing you are on staging — is made by *clicking the wrong tab*, and a tab shows nothing but
+ * believing you are on dev — is made by *clicking the wrong tab*, and a tab shows nothing but
  * a favicon and a truncated title. Hence three signals, of which two live here:
  *
  * 1. a banner above the app bar (`components/EnvironmentBanner.tsx`), for when you are looking at
  *    the page rather than the tab;
- * 2. a **title prefix** — `[STAGING] Lahendus` — which also shows up in the window switcher and in
+ * 2. a **title prefix** — `[DEV] Lahendus` — which also shows up in the window switcher and in
  *    browser history;
  * 3. a **tinted favicon**, which is the one that actually catches the wrong-tab case.
  *
@@ -19,7 +19,7 @@
 import config from './config.ts'
 
 /**
- * The tab title, with the environment prefix when there is one — `[STAGING] My courses - Lahendus`.
+ * The tab title, with the environment prefix when there is one — `[DEV] My courses - Lahendus`.
  *
  * In front of the *whole* title, not in front of "Lahendus": a tab strip with several tabs open
  * truncates from the right, so anything but the leading position disappears exactly when it is
@@ -33,7 +33,7 @@ export function documentTitle(pageTitle?: string): string {
 /**
  * The Lahendus glyph, copied from `assets/logo.svg` rather than imported: that import resolves to
  * a URL, and this favicon is built as text so that any colour works without shipping an icon file
- * per environment. One built dist has to serve every environment (EZ-1726), so a "staging icon
+ * per environment. One built dist has to serve every environment (EZ-1726), so a "dev icon
  * set" in `public/` could only ever cover one predetermined colour.
  *
  * If the logo ever changes, this string is the second place to change.
@@ -72,7 +72,7 @@ export function applyEnvironmentBadge(): void {
   if (!env) return
 
   // Every icon link in index.html, not just the 32x32 one: leaving any of them behind means the
-  // browser is free to keep showing a green Lahendus icon on staging, which is the one outcome
+  // browser is free to keep showing a green Lahendus icon on dev, which is the one outcome
   // this cannot have. `rel~="icon"` covers `icon` and `shortcut icon`; the other two are single
   // words that it deliberately does not match.
   document

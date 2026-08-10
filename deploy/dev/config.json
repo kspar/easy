@@ -7,7 +7,7 @@
   },
   "idpAdminUrl": "https://easy-idp-dev.cloud.ut.ee/idp-admin/",
   "environment": {
-    "label": "STAGING",
+    "label": "DEV",
     "colour": "#b26a00"
   }
 }

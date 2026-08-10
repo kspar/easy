@@ -42,16 +42,16 @@ the one that gets deployed.
 
 ### Marking a non-production environment
 
-With staging live, people keep several tabs open on the same application, and the mistake worth
-preventing — deleting a course on production while believing you are on staging — is made by
+With a dev environment live, people keep several tabs open on the same application, and the mistake worth
+preventing — deleting a course on production while believing you are on dev — is made by
 clicking the wrong tab. Setting `environment` marks a deployment four ways:
 
 | Where | What |
 | --- | --- |
 | Above the app bar | A banner strip in `colour`, showing the label and a "not production" line. Not dismissible |
-| Tab title | `[STAGING] My courses - Lahendus` — leading, because tab titles truncate from the right |
+| Tab title | `[DEV] My courses - Lahendus` — leading, because tab titles truncate from the right |
 | Favicon | The Lahendus glyph knocked out of a badge in `colour`, built as an SVG data URI at boot |
-| Embed footer | `LAHENDUS · STAGING`, so an embed pasted into a wiki page says where it came from |
+| Embed footer | `LAHENDUS · DEV`, so an embed pasted into a wiki page says where it came from |
 
 **Production carries no `environment` key and needs no config edit.** That direction is deliberate:
 production cannot accidentally acquire a banner, and the rule to learn is the simple one — anything

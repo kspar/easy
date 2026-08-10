@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 #
-# Deploy a CI-built Lahendus release to the staging host.
+# Deploy a CI-built Lahendus release to the dev host.
 #
-#   deploy/deploy-staging.sh latest              # newest green CI run on master
-#   deploy/deploy-staging.sh 1a2b3c4             # a specific commit, full or short sha
-#   deploy/deploy-staging.sh 1a2b3c4 --dry-run   # resolve and download, touch nothing remote
+#   deploy/deploy-dev.sh latest              # newest green CI run on master
+#   deploy/deploy-dev.sh 1a2b3c4             # a specific commit, full or short sha
+#   deploy/deploy-dev.sh 1a2b3c4 --dry-run   # resolve and download, touch nothing remote
 #
-# Needs gh (authenticated), jq, and SSH to the staging host. Deliberately no JDK and no Node: the
-# artifacts come from the CI run that gated the commit, so what staging exercises is byte-for-byte
+# Needs gh (authenticated), jq, and SSH to the dev host. Deliberately no JDK and no Node: the
+# artifacts come from the CI run that gated the commit, so what dev exercises is byte-for-byte
 # what can later go to production. SSH access is therefore the real deploy permission.
-# See doc/staging-environment.md §8.
+# See doc/dev-environment.md §8.
 #
 # Rollback is this same command with an older sha. Releases stay on the host, so rolling back to
 # one still in $REMOTE_ROOT/releases needs neither a download nor a surviving CI run — which
@@ -19,11 +19,11 @@
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly ENV_NAME="staging"
+readonly ENV_NAME="dev"
 readonly ENV_DIR="$SCRIPT_DIR/$ENV_NAME"
 
-# shellcheck source=staging/staging.env
-source "$ENV_DIR/staging.env"
+# shellcheck source=dev/dev.env
+source "$ENV_DIR/dev.env"
 
 : "${GH_REPO:=kspar/easy}"
 export GH_REPO
@@ -66,12 +66,12 @@ gh auth status >/dev/null 2>&1 || die "gh is not authenticated — run 'gh auth 
 [ -f "$ENV_DIR/config.json" ] || die "missing $ENV_DIR/config.json"
 
 # A dry run resolves and downloads and stops there, so it must work with no host at all — that is
-# what makes it useful before the staging VM exists.
+# what makes it useful before the dev VM exists.
 if [ "$DRY_RUN" = false ]; then
-    # The staging VM is not chosen yet (the three old dev instances are still being triaged), so
+    # The dev VM is not chosen yet (the three old dev instances are still being triaged), so
     # this ships with a placeholder rather than a wrong hostname that looks right.
     case "$SSH_TARGET" in
-        ""|*TODO*) die "SSH_TARGET is still a placeholder — set it in $ENV_DIR/staging.env" ;;
+        ""|*TODO*) die "SSH_TARGET is still a placeholder — set it in $ENV_DIR/dev.env" ;;
     esac
 
     ssh -o BatchMode=yes -o ConnectTimeout=10 "$SSH_TARGET" true \
@@ -184,7 +184,7 @@ rel="$root/releases/$sha"
 
 # Core reads this through --spring.config.location and dies on an unresolved @Value placeholder,
 # so a release that adds a config key takes the environment down on restart. That is by design —
-# staging is where that gets caught instead of production (§8.4) — but a missing file entirely is
+# dev is where that gets caught instead of production (§8.4) — but a missing file entirely is
 # a first-deploy mistake worth naming before the service goes down for it.
 [ -f "$root/conf/application.yaml" ] \
     || { echo "error: $root/conf/application.yaml does not exist" >&2; exit 1; }

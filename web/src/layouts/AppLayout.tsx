@@ -604,7 +604,7 @@ export default function AppLayout() {
       >
         {/* Above even the system messages, and unlike them not tied to being signed in: which
             environment you are on is true before you log in, and the login page is where a
-            production/staging mix-up starts. Renders nothing on production. */}
+            production/dev mix-up starts. Renders nothing on production. */}
         <EnvironmentBanner />
 
         {/* Above the AppBar and outside it, so an urgent notice sits at the very top of the page

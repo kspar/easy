@@ -1,7 +1,7 @@
 -- Anonymise a restored copy of the production database (EZ-1725).
 --
 -- Run this against a RESTORED COPY, never against production. See README.md.
---   psql -h host -U user -d easyems_staging -v ON_ERROR_STOP=1 -f anonymise.sql
+--   psql -h host -U user -d easyems_dev -v ON_ERROR_STOP=1 -f anonymise.sql
 --
 -- Operates on the database rather than on dump text, deliberately: the previous
 -- anonymise-dump.py matched an exact COPY header and broke the moment a column was added
@@ -15,7 +15,7 @@
 --   account.username    - preserved on purpose. Imported accounts are unreachable because the
 --                         dev IdP has registration disabled, and an admin creating a dev-realm
 --                         user whose username matches an imported teacher is the auditable way
---                         to get realistic teacher access on staging. See doc/staging-environment.md.
+--                         to get realistic teacher access on dev. See doc/dev-environment.md.
 --   course.course_code, course.moodle_short_name, course_group.name - organisational, not personal.
 --   group.name          - implicit groups are named after the account username, which we keep.
 --   stored_file         - exercise and article attachments, teacher-authored. Review if that
@@ -25,7 +25,7 @@
 
 \set ON_ERROR_STOP on
 
--- Escape hatch for a staging database that is not named like one. Prefer renaming the database.
+-- Escape hatch for a dev database that is not named like one. Prefer renaming the database.
 \if :{?ALLOW_ANY_DATABASE}
 \else
   \set ALLOW_ANY_DATABASE false
@@ -33,17 +33,17 @@
 
 -- Checked at the psql level, not inside a DO block: psql does not interpolate its variables
 -- inside dollar-quoted strings, so :ALLOW_ANY_DATABASE would arrive as a literal colon.
-SELECT current_database() !~ '(staging|stage|anon)' AS db_looks_unsafe \gset
+SELECT current_database() !~ '(dev|stage|anon)' AS db_looks_unsafe \gset
 
 \if :db_looks_unsafe
 \if :ALLOW_ANY_DATABASE
-\echo '!! ALLOW_ANY_DATABASE is set: proceeding against a database that does not look like a staging copy.'
+\echo '!! ALLOW_ANY_DATABASE is set: proceeding against a database that does not look like a dev copy.'
 \else
 DO $$
 BEGIN
     RAISE EXCEPTION E'Refusing to run against database "%".\n'
         'This script rewrites every account name and email and deletes invitations and logs. It is meant for a restored copy, whose name should say so. '
-        'Restore the dump into a differently-named database (e.g. easyems_staging), or pass '
+        'Restore the dump into a differently-named database (e.g. easyems_dev), or pass '
         '-v ALLOW_ANY_DATABASE=true if you are certain.', current_database();
 END $$;
 \endif
@@ -52,7 +52,7 @@ END $$;
 BEGIN;
 
 -- ---------------------------------------------------------------------------
--- Pseudonym source: Estonian colours x birds, as the old script did, so staging
+-- Pseudonym source: Estonian colours x birds, as the old script did, so dev
 -- shows plausible names rather than user1/user2.
 -- ---------------------------------------------------------------------------
 

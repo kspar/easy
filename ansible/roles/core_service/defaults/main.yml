@@ -1,7 +1,7 @@
 ---
 # The systemd unit that runs core, plus the directory layout the deploy script expects to find.
 #
-# This role does not put a jar on the host — `deploy/deploy-staging.sh` does that, from a CI
+# This role does not put a jar on the host — `deploy/deploy-dev.sh` does that, from a CI
 # artifact. So a freshly converged host has a unit that is enabled and correct and has nothing to
 # run yet, which is the intended intermediate state.
 

@@ -49,9 +49,9 @@ jobs:
       - name: Unit tests
         run: ./gradlew :core:test -PexcludeTags=db --no-daemon
 
-      # Staging fetches this instead of building on the host — deploy/deploy-staging.sh,
-      # doc/staging-environment.md §8. The jar is environment-agnostic: every setting lives in the
-      # external application.yaml, so the artifact staging exercises is byte-for-byte the one that
+      # Dev fetches this instead of building on the host — deploy/deploy-dev.sh,
+      # doc/dev-environment.md §8. The jar is environment-agnostic: every setting lives in the
+      # external application.yaml, so the artifact dev exercises is byte-for-byte the one that
       # can later go to production.
       #
       # Steps are sequential, so a failing build or test above publishes nothing. The web job is
@@ -147,15 +147,15 @@ jobs:
           retention-days: 7
 
       # The dist has been environment-agnostic since EZ-1726 — config.json is read at boot rather
-      # than baked in — so one tarball serves staging and production both. See §8.1.
+      # than baked in — so one tarball serves dev and production both. See §8.1.
       - name: Package web dist
         if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
         run: |
           # config.json is deliberately NOT shipped. web/public/config.json holds the *production*
           # IdP and API as local-dev defaults, so an artifact carrying it is one forgotten deploy
-          # step away from staging quietly talking to production — the failure §4.1 is written
+          # step away from dev quietly talking to production — the failure §4.1 is written
           # around, and not one anybody debugs quickly. Without the file the app renders a
-          # "Configuration error" page naming the problem, and deploy-staging.sh writes the real
+          # "Configuration error" page naming the problem, and deploy-dev.sh writes the real
           # one from deploy/<env>/config.json.
           rm -f dist/config.json
           tar -czf "../web-${{ github.sha }}.tar.gz" -C dist .

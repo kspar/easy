@@ -1,8 +1,8 @@
 ---
 # Places core's server-side config, and refuses to place a dangerous one.
 #
-# The guards are the substance of this role, not the file write. §5 of doc/staging-environment.md is a
-# list of five ways a correctly-deployed staging host can damage real systems — mail to real students,
+# The guards are the substance of this role, not the file write. §5 of doc/dev-environment.md is a
+# list of five ways a correctly-deployed dev host can damage real systems — mail to real students,
 # grades into the real Moodle gradebook, mass deletion of accounts from the real identity provider —
 # and every one of them is a value in this file being wrong. A template alone would place those
 # mistakes just as faithfully as it places the correct values.
@@ -41,7 +41,7 @@
   # core uses it two ways: Spring's jwk-set-uri and issuer-uri get `{{ easy_core_idp_path_prefix }}`
   # added by the template, while delete_inactive_users.kt appends a hardcoded `/auth` to it in code.
   # A value of `https://idp.example/auth` therefore makes JWKS right and every admin-API call
-  # `/auth/auth/...`, which 404s. Nobody saw it because staging pins the cron that would have built
+  # `/auth/auth/...`, which 404s. Nobody saw it because dev pins the cron that would have built
   # those URLs to a date that never comes — so this asserts what the comment cannot enforce.
   ansible.builtin.assert:
     that: easy_core_idp_base_url is match('^https?://[^/]+$')
@@ -75,7 +75,7 @@
 # Skipped only where someone has explicitly said this environment may talk to real systems.
 
 - name: Refuse a Moodle URL that is not obviously dead
-  # Dead means loopback. A hostname that merely *looks* like staging is not enough: the manual
+  # Dead means loopback. A hostname that merely *looks* like dev is not enough: the manual
   # "sync grades" endpoint would still POST to whatever resolves.
   ansible.builtin.assert:
     that: item is search('://(127\.0\.0\.1|localhost|\[::1\])(:|/|$)')

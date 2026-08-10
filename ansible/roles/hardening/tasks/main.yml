@@ -1,6 +1,6 @@
 ---
 # Baseline hardening for an internet-facing Ubuntu 24.04 host. The per-host reasoning lives in
-# doc/staging-hardening.md, which is kept out of this public repo (see .gitignore); the reasoning
+# doc/dev-hardening.md, which is kept out of this public repo (see .gitignore); the reasoning
 # that generalises is in the comments here and in defaults/main.yml.
 #
 # Ordering is a safety property, not a style choice. Group membership is granted before AllowGroups
@@ -375,10 +375,10 @@
     group: root
     mode: "0644"
 
-# This file was called 52staging until 2026-08-03, when the role stopped being staging-only. Leaving
+# This file was called 52staging until 2026-08-03, when the role stopped being dev-only. Leaving
 # it behind would not be cosmetic: apt reads apt.conf.d in lexical order and the last assignment to a
 # key wins, so a stale `52staging` sorts *after* `52easy` and would quietly keep overriding it —
-# pinning the reboot policy to whatever staging wanted, on whatever host still had the file.
+# pinning the reboot policy to whatever dev wanted, on whatever host still had the file.
 - name: Remove the file this used to be called
   ansible.builtin.file:
     path: /etc/apt/apt.conf.d/52staging

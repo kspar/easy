@@ -1,7 +1,7 @@
 # deploy
 
-Deploying a CI-built release to staging. The reasoning behind all of it is in
-`doc/staging-environment.md` §8; this is the operating manual.
+Deploying a CI-built release to dev. The reasoning behind all of it is in
+`doc/dev-environment.md` §8; this is the operating manual.
 
 There are two paths, and the automatic one is the normal one.
 
@@ -11,12 +11,12 @@ There are two paths, and the automatic one is the normal one.
 git push origin master:dev-releases     # dev updates itself within a couple of minutes
 ```
 
-A timer on the staging host polls GitHub every minute for the newest **green** CI run on
+A timer on the dev host polls GitHub every minute for the newest **green** CI run on
 `dev-releases`, and installs it if it differs from what is live. Nothing else is needed: no SSH, no
 laptop, no command.
 
 **Pull, not push, and that is the point.** The alternative — a deploy job in the workflow that
-SSHes in — needs a private key for the staging host stored in GitHub, on a *public* repository,
+SSHes in — needs a private key for the dev host stored in GitHub, on a *public* repository,
 where anyone with repo admin or a compromised Action inherits a shell on the box. Polling costs a
 minute of latency and nothing else: there is no inbound access, and the only credential involved is
 a read-only token that lives on the host and can do nothing but read CI artifacts of a public repo.
@@ -68,9 +68,9 @@ Still the way to deploy something that is not the tip of `dev-releases` — a ro
 off master:
 
 ```sh
-deploy/deploy-staging.sh latest        # newest green CI run on master
-deploy/deploy-staging.sh 1a2b3c4       # a specific commit, full or short sha
-deploy/deploy-staging.sh 1a2b3c4 --dry-run
+deploy/deploy-dev.sh latest        # newest green CI run on master
+deploy/deploy-dev.sh 1a2b3c4       # a specific commit, full or short sha
+deploy/deploy-dev.sh 1a2b3c4 --dry-run
 ```
 
 **A manual deploy is not sticky.** The timer compares against `current-sha` on every tick, so if
@@ -86,8 +86,8 @@ but they write the same on-host layout, and that layout is a contract between th
 together; it is written out at the top of
 `ansible/roles/core_autodeploy/templates/easy-autodeploy.py.j2`.
 
-Needs `gh` (authenticated), `jq`, and SSH to the staging host — no JDK, no Node. The jar and the
-dist come from the CI run that gated that commit, so the build staging exercises is byte-for-byte
+Needs `gh` (authenticated), `jq`, and SSH to the dev host — no JDK, no Node. The jar and the
+dist come from the CI run that gated that commit, so the build dev exercises is byte-for-byte
 the one that can later go to production.
 
 **SSH access is the deploy permission.** There is no other gate; anyone who can reach the host can
@@ -107,17 +107,17 @@ for a run whose web job failed — the deploy script gates on the *run's* conclu
 artifact existing.
 
 `config.json` is stripped on purpose. `web/public/config.json` holds the **production** IdP and API
-as local-dev defaults, and an artifact carrying those is one forgotten step away from staging
+as local-dev defaults, and an artifact carrying those is one forgotten step away from dev
 silently talking to production. Without the file the app renders a "Configuration error" page
-instead, and the deploy writes the environment's own copy from `deploy/staging/config.json`.
+instead, and the deploy writes the environment's own copy from `deploy/dev/config.json`.
 
-That copy also carries `"environment": {"label": "STAGING", …}`, which is what puts the banner, the
+That copy also carries `"environment": {"label": "DEV", …}`, which is what puts the banner, the
 tab-title prefix and the orange favicon on this deployment (EZ-1733). Production's config.json must
 **not** have the key — absent means production, so nothing there needs changing to stay unmarked.
 
 ## Before the first deploy
 
-**`ansible/` builds all of this.** `./run.sh site.yml` against the staging inventory produces a host
+**`ansible/` builds all of this.** `./run.sh site.yml` against the dev inventory produces a host
 this script can deploy to; there is nothing here to do by hand. The list below is what it sets up, so
 that a deploy failing on a missing precondition is diagnosable rather than mysterious.
 
@@ -149,12 +149,12 @@ Worth knowing about the split: core *reads* the jar, a deploy *replaces* it, and
 privileges on purpose. The deploy account cannot read `secrets.yaml`, and the service account cannot
 write the release tree.
 
-Then set `SSH_TARGET` in `deploy/staging/staging.env`. It ships as a placeholder and the script
+Then set `SSH_TARGET` in `deploy/dev/dev.env`. It ships as a placeholder and the script
 refuses to run until it is real.
 
 ## Values still to confirm
 
-`deploy/staging/config.json` is written from the plan, not from a live IdP — `dev.idp.lahendus.ut.ee`
+`deploy/dev/config.json` is written from the plan, not from a live IdP — `dev.idp.lahendus.ut.ee`
 currently resolves to `proxy.hpc.ut.ee`, which answers `tlsv1 unrecognized name`, so the dev realm
 could not be inspected. Check all three before the first login attempt:
 

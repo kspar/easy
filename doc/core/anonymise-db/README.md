@@ -1,6 +1,6 @@
 # Anonymising a production copy
 
-For seeding staging (EZ-1723) from a production dump. Run against a **restored copy**, never
+For seeding dev (EZ-1723) from a production dump. Run against a **restored copy**, never
 against production.
 
 ## Why SQL and not the old Python script
@@ -18,17 +18,17 @@ the result is reviewable in SQL, and each pass is re-runnable.
 ## Order of operations
 
 ```sh
-# 1. Restore into a database whose NAME SAYS STAGING. The scripts refuse otherwise.
-createdb -h host -U user easyems_staging
-pg_restore -h host -U user -d easyems_staging prod-dump.sql   # or: psql ... < prod-dump.sql
+# 1. Restore into a database whose NAME SAYS DEV. The scripts refuse otherwise.
+createdb -h host -U user easyems_dev
+pg_restore -h host -U user -d easyems_dev prod-dump.sql   # or: psql ... < prod-dump.sql
 
 # 2. Required pass. Run from THIS directory: \copy reads the wordlists relative to your cwd.
 cd doc/core/anonymise-db
-psql -h host -U user -d easyems_staging -f anonymise.sql
+psql -h host -U user -d easyems_dev -f anonymise.sql
 
 # 3. Optional passes — see the decision table below.
-psql -h host -U user -d easyems_staging -f strip-teacher-feedback.sql
-psql -h host -U user -d easyems_staging -f strip-submissions.sql
+psql -h host -U user -d easyems_dev -f strip-teacher-feedback.sql
+psql -h host -U user -d easyems_dev -f strip-submissions.sql
 ```
 
 Do all of this **before** the database is reachable from anything but your own session, and before
@@ -36,12 +36,12 @@ any tester gets access to the host.
 
 ## The guard
 
-Each script refuses to run unless the database name contains `staging`, `stage` or `anon`, and
+Each script refuses to run unless the database name contains `dev`, `stage` or `anon`, and
 exits non-zero without touching a row. This is the difference between a scripted mistake and a
 catastrophe: pointed at production, `anonymise.sql` would rename every real user and delete every
 live invitation.
 
-If your staging database genuinely has another name, prefer renaming it. The escape hatch is
+If your dev database genuinely has another name, prefer renaming it. The escape hatch is
 `-v ALLOW_ANY_DATABASE=true`, which prints a warning and proceeds.
 
 ## What each pass does
@@ -75,8 +75,8 @@ summary.
 
 `account.username` is **preserved deliberately**. Imported accounts are unreachable because the dev
 IdP has registration disabled, and an admin creating a dev-realm user whose username matches an
-imported teacher is the auditable way to get realistic teacher access on staging. See
-`doc/staging-environment.md` §3.4.
+imported teacher is the auditable way to get realistic teacher access on dev. See
+`doc/dev-environment.md` §3.4.
 
 ### `strip-teacher-feedback.sql` — recommended, needs a decision
 
@@ -88,7 +88,7 @@ does not anonymise it — "you have failed this three times now, come see me" is
 and identifiable to anyone who knows the course and the dates. Against that: teacher grading UI is
 exactly what wants realistic feedback threads to test against.
 
-Because the staging import happens once and then drifts, this is decided once. Decide before the
+Because the dev import happens once and then drifts, this is decided once. Decide before the
 data lands.
 
 ### `strip-submissions.sql` — optional

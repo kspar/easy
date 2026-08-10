@@ -12,11 +12,11 @@
 #    stop there, correctly — which turns "what is production actually running" into a question with an
 #    answer.
 # 3. **Never with a stored sudo password.** Production runs with `--ask-become-pass` and a human
-#    present. The keychain shortcut is a staging convenience; see the README.
+#    present. The keychain shortcut is a dev convenience; see the README.
 # 4. **One host at a time.** Add `serial: 1` to the play before it targets more than one host, so a
 #    config that locks out SSH does so once rather than three times in parallel.
 #
-# Production separates what staging co-locates — core, IdP and executor each on their own host — so
+# Production separates what dev co-locates — core, IdP and executor each on their own host — so
 # any role that assumes postgres or the executor is on localhost is wrong here. That is the reason
 # service roles need their addresses as variables from the start.
 production:

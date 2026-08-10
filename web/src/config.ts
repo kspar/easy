@@ -23,7 +23,7 @@ export interface RuntimeConfig {
   /**
    * Where an admin goes to administer the identity provider. Optional — no value, no menu item.
    *
-   * Not derived from `keycloak.url`, though it looks derivable. On staging this points at
+   * Not derived from `keycloak.url`, though it looks derivable. On dev this points at
    * `/idp-admin/`, a page installed by `ansible/roles/keycloak` that checks whether the account may
    * use Keycloak's console and says so if not; production's IdP has never been managed by that role
    * and has no such page, so deriving the URL would put a link to a 404 in production's menu.
@@ -39,12 +39,12 @@ export interface RuntimeConfig {
    * **Absent means production**, and that direction is deliberate: production needs no config
    * edit, cannot accidentally acquire a banner, and the rule a person learns is the simple one —
    * anything unusual on the page means this is not production. The mistake being prevented is
-   * deleting a course or resolving a submission on production while believing you are on staging,
-   * which is exactly the habit staging encourages.
+   * deleting a course or resolving a submission on production while believing you are on dev,
+   * which is exactly the habit a dev environment encourages.
    */
   environment?: {
     /**
-     * Short name of the environment — STAGING, LOCAL. Carries the meaning on its own, because
+     * Short name of the environment — DEV, LOCAL. Carries the meaning on its own, because
      * colour cannot: whoever cannot tell the banner's colour from any other still reads the word.
      */
     label: string
@@ -92,7 +92,7 @@ const config = {
 /** Amber: not a colour anything else in the app uses, and dark enough to carry white text. */
 const DEFAULT_ENVIRONMENT_COLOUR = '#b26a00'
 const HEX_COLOUR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
-/** Long enough for STAGING or LOCAL, short enough that it cannot push the app bar off the page. */
+/** Long enough for DEV or LOCAL, short enough that it cannot push the app bar off the page. */
 const MAX_ENVIRONMENT_LABEL = 16
 
 /** Thrown with a message meant to be readable by whoever is looking at the blank page. */

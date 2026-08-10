@@ -1,8 +1,8 @@
 ---
-# Core's configuration for staging — the non-secret half. Secrets are in `secrets.yml` beside this
+# Core's configuration for dev — the non-secret half. Secrets are in `secrets.yml` beside this
 # file, which is not in git.
 #
-# Most of this file is §5 of `doc/staging-environment.md` made executable: staging runs the same code
+# Most of this file is §5 of `doc/dev-environment.md` made executable: dev runs the same code
 # as production, so it has the same outbound reach into real systems, and a separate database is only
 # the easy half of keeping it harmless. The `core_config` role asserts these values rather than
 # trusting them, because every item on that list is a value in this file being wrong.
@@ -11,12 +11,12 @@
 easy_core_db_host: 127.0.0.1
 
 # The name matters more than it looks. Every script in `doc/core/anonymise-db/` refuses to run unless
-# `current_database()` matches `(staging|stage|anon)`, because pointed at production they would rename
-# every account and delete every invitation. A staging database called something else does not fail
+# `current_database()` matches `(dev|stage|anon)`, because pointed at production they would rename
+# every account and delete every invitation. A dev database called something else does not fail
 # at setup — it fails during the phase 3 import, where the quickest way out is
 # `-v ALLOW_ANY_DATABASE=true`, i.e. disarming the guard rather than satisfying it. The runbook in
 # that directory uses this exact name.
-easy_core_db_name: easyems_staging
+easy_core_db_name: easyems_dev
 easy_core_db_user: easyems
 
 # --- URLs -------------------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ easy_core_cors_allowed_origins: https://dev.lahendus.ut.ee
 easy_core_idp_base_url: https://easy-idp-dev.cloud.ut.ee
 
 # Keycloak's own admin realm, doubling as the application realm — which is not best practice and is
-# kept anyway, because production does the same and staging is meant to be the release gate. One
+# kept anyway, because production does the same and dev is meant to be the release gate. One
 # consequence worth knowing: in `master` the admin client is called `master-realm`, not the
 # `realm-management` every Keycloak guide names. doc/idp-setup.md has the detail.
 easy_core_keycloak_realm: master
@@ -58,18 +58,18 @@ easy_core_keycloak_realm: master
 easy_core_keycloak_client_id: easy-core
 
 # --- the outbound safety catch, left ON -------------------------------------------------------------
-# Deliberately not overridden here. Staging must not reach real systems, so the role's refusal to
+# Deliberately not overridden here. Dev must not reach real systems, so the role's refusal to
 # write a config that could stays in force. The three settings below are what it checks.
 # easy_core_allow_real_outbound: false   <- inherited from the role, on purpose
 
 # Port 9 is discard, and it is on loopback, so a request goes nowhere at all. A hostname that merely
-# looks like staging would not do: the "sync grades" endpoint is reachable by hand, so a tester
+# looks like dev would not do: the "sync grades" endpoint is reachable by hand, so a tester
 # clicking it must not reach a gradebook that exists.
-easy_core_moodle_users_url: http://127.0.0.1:9/moodle-disabled-on-staging
-easy_core_moodle_grades_url: http://127.0.0.1:9/moodle-disabled-on-staging
+easy_core_moodle_users_url: http://127.0.0.1:9/moodle-disabled-on-dev
+easy_core_moodle_grades_url: http://127.0.0.1:9/moodle-disabled-on-dev
 # The Moodle token is not here: it is a real credential in an environment with a real Moodle, so it
 # lives in the host's secrets file with the others rather than moving between the two depending on
-# which environment is being configured. On staging it stays a placeholder, which is harmless — the
+# which environment is being configured. On dev it stays a placeholder, which is harmless — the
 # URLs above go to a discard port, so there is nothing for a token to authenticate against.
 
 # --- mail: off until there is a catch-all ------------------------------------------------------------

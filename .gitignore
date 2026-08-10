@@ -35,14 +35,14 @@ __pycache__/
 # neither *.log nor *.log.gz matches — the date sits between the .log and the extension.
 *.log.*
 
-# Staging host security posture — deliberately not in a public repo.
+# Dev host security posture — deliberately not in a public repo.
 #
 # Not because any of it is a secret in the Kerckhoffs sense (key-only auth, ufw and fail2ban are
 # standard practice and saying so weakens nothing), but because this document is specific: which
 # accounts can log in, that keys are the only credential in existence, that there is no console
 # rescue path, and what to do when locked out. That is a reconnaissance packet for one named host.
 # The reusable *reasoning* lives in ansible/roles/hardening/ instead.
-doc/staging-hardening.md
+doc/dev-hardening.md
 
 # The real inventories: host addresses and, more to the point, the complete list of accounts that can
 # log in. Each environment's `hosts.example.yml` is the committed template. Roles and per-environment

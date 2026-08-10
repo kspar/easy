@@ -1,12 +1,12 @@
 -- Optional third pass: replace student-submitted code (EZ-1725).
 --
---   psql -h host -U user -d easyems_staging -v ON_ERROR_STOP=1 -f strip-submissions.sql
+--   psql -h host -U user -d easyems_dev -v ON_ERROR_STOP=1 -f strip-submissions.sql
 --
 -- Student code is personal data in practice even after the account is pseudonymised: submissions
 -- carry name headers, comments, and occasionally things students should not have put in a file.
 --
 -- Running this costs you the most realistic part of the dataset — grading, plagiarism comparison
--- and the auto-assessment path all want real submissions of varying quality. Most staging setups
+-- and the auto-assessment path all want real submissions of varying quality. Most dev setups
 -- will want to keep them and accept the residual risk. Run this if the host is shared more widely
 -- than the team, or if the anonymisation review decided against keeping student work.
 --
@@ -15,7 +15,7 @@
 
 \set ON_ERROR_STOP on
 
--- Escape hatch for a staging database that is not named like one. Prefer renaming the database.
+-- Escape hatch for a dev database that is not named like one. Prefer renaming the database.
 \if :{?ALLOW_ANY_DATABASE}
 \else
   \set ALLOW_ANY_DATABASE false
@@ -23,17 +23,17 @@
 
 -- Checked at the psql level, not inside a DO block: psql does not interpolate its variables
 -- inside dollar-quoted strings, so :ALLOW_ANY_DATABASE would arrive as a literal colon.
-SELECT current_database() !~ '(staging|stage|anon)' AS db_looks_unsafe \gset
+SELECT current_database() !~ '(dev|stage|anon)' AS db_looks_unsafe \gset
 
 \if :db_looks_unsafe
 \if :ALLOW_ANY_DATABASE
-\echo '!! ALLOW_ANY_DATABASE is set: proceeding against a database that does not look like a staging copy.'
+\echo '!! ALLOW_ANY_DATABASE is set: proceeding against a database that does not look like a dev copy.'
 \else
 DO $$
 BEGIN
     RAISE EXCEPTION E'Refusing to run against database "%".\n'
         'This script destroys every student submission. It is meant for a restored copy, whose name should say so. '
-        'Restore the dump into a differently-named database (e.g. easyems_staging), or pass '
+        'Restore the dump into a differently-named database (e.g. easyems_dev), or pass '
         '-v ALLOW_ANY_DATABASE=true if you are certain.', current_database();
 END $$;
 \endif

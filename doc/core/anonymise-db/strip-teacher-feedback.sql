@@ -1,6 +1,6 @@
 -- Optional second pass: remove teacher feedback written about named students (EZ-1725).
 --
---   psql -h host -U user -d easyems_staging -v ON_ERROR_STOP=1 -f strip-teacher-feedback.sql
+--   psql -h host -U user -d easyems_dev -v ON_ERROR_STOP=1 -f strip-teacher-feedback.sql
 --
 -- This is the most sensitive content in the database. Pseudonymising the account it points at
 -- does not anonymise it: "you have failed this three times now, come see me" is about a real
@@ -8,14 +8,14 @@
 --
 -- The trade is real, which is why this is a separate file rather than part of anonymise.sql —
 -- teacher grading UI is exactly what wants realistic feedback threads to test against. Decide
--- once, before the data lands on a shared host; see doc/staging-environment.md §3.3.
+-- once, before the data lands on a shared host; see doc/dev-environment.md §3.3.
 --
 -- Grades are kept. Only the free text goes, so grade tables, statistics and the activity feed
 -- structure stay intact and the grading UI still has something to show.
 
 \set ON_ERROR_STOP on
 
--- Escape hatch for a staging database that is not named like one. Prefer renaming the database.
+-- Escape hatch for a dev database that is not named like one. Prefer renaming the database.
 \if :{?ALLOW_ANY_DATABASE}
 \else
   \set ALLOW_ANY_DATABASE false
@@ -23,17 +23,17 @@
 
 -- Checked at the psql level, not inside a DO block: psql does not interpolate its variables
 -- inside dollar-quoted strings, so :ALLOW_ANY_DATABASE would arrive as a literal colon.
-SELECT current_database() !~ '(staging|stage|anon)' AS db_looks_unsafe \gset
+SELECT current_database() !~ '(dev|stage|anon)' AS db_looks_unsafe \gset
 
 \if :db_looks_unsafe
 \if :ALLOW_ANY_DATABASE
-\echo '!! ALLOW_ANY_DATABASE is set: proceeding against a database that does not look like a staging copy.'
+\echo '!! ALLOW_ANY_DATABASE is set: proceeding against a database that does not look like a dev copy.'
 \else
 DO $$
 BEGIN
     RAISE EXCEPTION E'Refusing to run against database "%".\n'
         'This script deletes teacher feedback about named students. It is meant for a restored copy, whose name should say so. '
-        'Restore the dump into a differently-named database (e.g. easyems_staging), or pass '
+        'Restore the dump into a differently-named database (e.g. easyems_dev), or pass '
         '-v ALLOW_ANY_DATABASE=true if you are certain.', current_database();
 END $$;
 \endif

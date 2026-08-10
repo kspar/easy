@@ -1,6 +1,6 @@
 ---
 # Core has to be restarted to pick up a config change, but the unit does not exist yet — the
-# systemd-unit work is still ahead (doc/staging-environment.md §8.2). So this restarts it only if it
+# systemd-unit work is still ahead (doc/dev-environment.md §8.2). So this restarts it only if it
 # is actually installed, rather than failing the run on a host where the config legitimately lands
 # before the service that reads it.
 - name: Restart core

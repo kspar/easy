@@ -1,14 +1,14 @@
 ---
-# These defaults are the STRICT ones, and deliberately not the ones staging runs.
+# These defaults are the STRICT ones, and deliberately not the ones dev runs.
 #
-# The role is meant for production as well as staging, so every value here is the answer for the
+# The role is meant for production as well as dev, so every value here is the answer for the
 # host that matters most, and each environment loosens what it needs to in its own group_vars — with
-# the reason next to the override. Written the other way round, staging's conveniences (a longer
+# the reason next to the override. Written the other way round, dev's conveniences (a longer
 # fail2ban leash, unattended reboots, agent forwarding) would become what a new prod host silently
 # inherits, and nothing would announce it. Safe by omission; every relaxation deliberate and
 # reviewable.
 #
-# `inventories/staging/group_vars/all.yml` is the worked example.
+# `inventories/dev/group_vars/all.yml` is the worked example.
 
 # Only members of this group may log in over SSH at all, so creating a user account is not the
 # same thing as granting access.
@@ -141,7 +141,7 @@ hardening_apt_upgrade_delay_minutes: 30
 # being restarted by anything that understands them.
 #
 # Production keeps it off because that risk is a service outage nobody chose the timing of.
-# Staging turns it on: finding out there that a library update breaks something is the entire
-# purpose of having a staging environment, and it is the only way the two hosts stay comparable
+# Dev turns it on: finding out there that a library update breaks something is the entire
+# purpose of having a dev environment, and it is the only way the two hosts stay comparable
 # enough for that discovery to mean anything.
 hardening_unattended_all_updates: false

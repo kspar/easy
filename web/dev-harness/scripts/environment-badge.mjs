@@ -7,7 +7,7 @@ import { launch, checker, fakeApi, waitUntil, BASE_URL } from '../harness.mjs'
 
 const check = checker()
 const KC = { url: 'http://localhost:9999/auth/', realm: 'stub', clientId: 'cfg' }
-const STAGING = { label: 'STAGING', colour: '#b26a00' }
+const DEV = { label: 'DEV', colour: '#b26a00' }
 
 const { browser, page, shot } = await launch({ shotPrefix: 'env-badge-' })
 
@@ -62,35 +62,35 @@ check(
   !prod.icons.some((i) => i.href.startsWith('data:')),
 )
 
-// --- staging: all three signals ------------------------------------------------------------------
-const staging = await bootWith({ emsRoot: '/v2', keycloak: KC, environment: STAGING })
-check(`staging: banner shows the label (${staging.banner})`, (staging.banner ?? '').includes('STAGING'))
+// --- dev: all three signals ------------------------------------------------------------------
+const dev = await bootWith({ emsRoot: '/v2', keycloak: KC, environment: DEV })
+check(`dev: banner shows the label (${dev.banner})`, (dev.banner ?? '').includes('DEV'))
 check(
-  'staging: the label is not the only thing said — the warning text carries the meaning',
-  (staging.banner ?? '').toLowerCase().includes('not the production environment'),
+  'dev: the label is not the only thing said — the warning text carries the meaning',
+  (dev.banner ?? '').toLowerCase().includes('not the production environment'),
 )
-check(`staging: title is prefixed (${staging.title})`, staging.title.startsWith('[STAGING] '))
+check(`dev: title is prefixed (${dev.title})`, dev.title.startsWith('[DEV] '))
 // The prefix must lead: a tab strip truncates from the right, so a suffix disappears exactly when
 // several tabs are open, which is the case this whole feature exists for.
 check(
-  `staging: exactly one favicon, an SVG data URI (${staging.icons.length})`,
-  staging.icons.length === 1 && staging.icons[0].href.startsWith('data:image/svg+xml,'),
+  `dev: exactly one favicon, an SVG data URI (${dev.icons.length})`,
+  dev.icons.length === 1 && dev.icons[0].href.startsWith('data:image/svg+xml,'),
 )
 check(
-  'staging: the favicon is drawn in the configured colour',
-  decodeURIComponent(staging.icons[0].href).includes(STAGING.colour),
+  'dev: the favicon is drawn in the configured colour',
+  decodeURIComponent(dev.icons[0].href).includes(DEV.colour),
 )
 // The green PNGs must be *gone*, not merely outranked: leaving one behind lets the browser keep
-// showing production's icon on staging, which is the exact failure being prevented.
+// showing production's icon on dev, which is the exact failure being prevented.
 check(
-  'staging: no green icon link survives',
-  !staging.icons.some((i) => i.href.includes('favicon-32x32')),
+  'dev: no green icon link survives',
+  !dev.icons.some((i) => i.href.includes('favicon-32x32')),
 )
-await shot('01-staging-banner')
+await shot('01-dev-banner')
 
 // The banner is not dismissible — no close button anywhere in it.
 const bannerButtons = await page.locator('[role=note] button').count()
-check(`staging: banner cannot be dismissed (${bannerButtons} buttons)`, bannerButtons === 0)
+check(`dev: banner cannot be dismissed (${bannerButtons} buttons)`, bannerButtons === 0)
 
 // --- a malformed environment must not take the app down ------------------------------------------
 // A typo in a config file should degrade to "production", never to a configuration-error page.
@@ -98,7 +98,7 @@ const emptyLabel = await bootWith({ emsRoot: '/v2', keycloak: KC, environment: {
 check(`empty label: treated as production (${emptyLabel.title})`, emptyLabel.banner === null)
 check('empty label: the app still booted', (await page.locator('[class*=MuiAppBar]').count()) > 0)
 
-const notAnObject = await bootWith({ emsRoot: '/v2', keycloak: KC, environment: 'STAGING' })
+const notAnObject = await bootWith({ emsRoot: '/v2', keycloak: KC, environment: 'DEV' })
 check(`environment as a string: treated as production`, notAnObject.banner === null)
 
 // A colour is interpolated into an SVG, so anything that is not a hex colour is replaced rather
@@ -134,20 +134,20 @@ const EMBED = {
   rendered: 'text=Read two numbers',
 }
 
-await bootWith({ emsRoot: '/v2', keycloak: KC, environment: STAGING }, EMBED)
+await bootWith({ emsRoot: '/v2', keycloak: KC, environment: DEV }, EMBED)
 const footer = (await page.locator('#root').innerText()).replace(/\s+/g, ' ')
-check(`embed: footer says the environment (${footer.slice(-60)})`, footer.includes('STAGING'))
+check(`embed: footer says the environment (${footer.slice(-60)})`, footer.includes('DEV'))
 const courseLink = await page.locator('a[href="/courses/1/exercises/2"]').innerText()
 check(
   `embed: the course link says it too (${courseLink.replace(/\s+/g, ' ')})`,
-  courseLink.includes('STAGING'),
+  courseLink.includes('DEV'),
 )
 await shot('02-embed-footer')
 
 // And on production the embed is exactly what it was before this change.
 await bootWith({ emsRoot: '/v2', keycloak: KC }, EMBED)
 const prodFooter = (await page.locator('#root').innerText()).replace(/\s+/g, ' ')
-check('embed on production: undecorated', prodFooter.includes('LAHENDUS') && !prodFooter.includes('STAGING'))
+check('embed on production: undecorated', prodFooter.includes('LAHENDUS') && !prodFooter.includes('DEV'))
 
 await browser.close()
 process.exit(check.summary() ? 0 : 1)

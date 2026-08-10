@@ -1,5 +1,5 @@
 ---
-# What staging's IdP is called, and who hears about its certificate.
+# What dev's IdP is called, and who hears about its certificate.
 #
 # `roles/keycloak/defaults/main.yml` holds the reasoning for everything else. Only the two values
 # that have no safe default are here: both decide something about the outside world — which

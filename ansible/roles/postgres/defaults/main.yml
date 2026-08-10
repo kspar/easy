@@ -6,7 +6,7 @@
 # The name and owner are derived from core's config rather than repeated, because they are the same
 # fact: if they ever disagree, core cannot connect and the error says nothing useful about why. The
 # defaults only apply when this role is run without core_config in the same play.
-postgres_db_name: "{{ easy_core_db_name | default('easyems_staging') }}"
+postgres_db_name: "{{ easy_core_db_name | default('easyems_dev') }}"
 postgres_db_user: "{{ easy_core_db_user | default('easyems') }}"
 
 # Where the password comes from. Ansible never reads this file — a task on the host reads it and
@@ -14,7 +14,7 @@ postgres_db_user: "{{ easy_core_db_user | default('easyems') }}"
 postgres_secrets_path: "{{ easy_core_secrets_path | default('/srv/easy/conf/secrets.yaml') }}"
 
 # Loopback only, and this is load-bearing rather than tidy: postgres authenticates with a password
-# that lives in a file on this host, and the staging database will hold an anonymised copy of real
+# that lives in a file on this host, and the dev database will hold an anonymised copy of real
 # student data. ufw covers the port too, but ufw does not cover ports Docker publishes, so the bind
 # address is the setting that actually holds.
 postgres_listen_addresses: localhost

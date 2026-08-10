@@ -1,6 +1,6 @@
-# Staging Environment Plan
+# Dev Environment Plan
 
-A permanent staging deployment of Lahendus with **real auth, real users, and a real executor**,
+A permanent dev deployment of Lahendus with **real auth, real users, and a real executor**,
 safe to point testers at and safe to redeploy from master several times a day.
 
 Decisions already made (2026-07-31): data is a **one-time anonymised prod import** that then
@@ -9,22 +9,22 @@ drifts; CI builds artifacts and a **deploy script fetches them**; the dev Keyclo
 Ansible or VM to inherit.
 
 Done since (EZ-1724): core verifies Keycloak JWTs itself rather than trusting reverse-proxy
-headers. This was deliberately landed before building staging, because it removes most of what the
+headers. This was deliberately landed before building dev, because it removes most of what the
 proxy config would otherwise have to get right — see §2.
 
 ---
 
 ## 0. Rules
 
-**If you are changing something on staging and reading nothing else, read this.** Each line is
+**If you are changing something on dev and reading nothing else, read this.** Each line is
 the whole rule; the linked section has the reasoning.
 
 Two are enforced — the code stops you:
 
 - **Auth stays on.** `easy.core.auth-enabled: false` makes core trust `oidc_claim_*` headers, i.e.
   anyone is admin. Core refuses to start with it false on a non-loopback address. (§2)
-- **Anonymisation only runs on a staging-named database.** The scripts refuse anything not matching
-  `staging`/`stage`/`anon`. Aimed at prod they would rename every user. (§3.2)
+- **Anonymisation only runs on a dev-named database.** The scripts refuse anything not matching
+  `dev`/`stage`/`anon`. Aimed at prod they would rename every user. (§3.2)
 
 The rest are on you:
 
@@ -33,7 +33,7 @@ The rest are on you:
 - **Nightly `pg_dump`.** The data drifts and cannot be regenerated from prod. (§3.5)
 - **Moodle sync must not reach real Moodle.** Dead URLs *and* pinned crons — grade sync also has a
   manual endpoint a tester can click. (§5)
-- **`keycloak.cron` pinned to the never-date, and staging's Keycloak service account has no
+- **`keycloak.cron` pinned to the never-date, and dev's Keycloak service account has no
   user-delete permission.** Otherwise the first run deletes a slice of the import, in the DB and
   the IdP. (§5)
 - **`keycloak.base-url` is the dev IdP.** Pasting prod's value here is the worst mistake available
@@ -44,7 +44,7 @@ The rest are on you:
 - **The proxy serves `config.json` with `Cache-Control: no-store`.** A cached one points a fresh
   deploy at the previous environment's backend. (§4.1)
 
-Not a rule but the usual first stumble: staging needs **its own `application.yaml`** (four keys are
+Not a rule but the usual first stumble: dev needs **its own `application.yaml`** (four keys are
 new in v4.0 — see `doc/release-procedure.md`) **and its own `config.json`**. Every environment
 keeps its own config outside the repo; the prohibition above is about *test* config specifically.
 
@@ -56,7 +56,7 @@ One new VM, plus the existing IDP elsewhere:
 
 ```
                     ┌──────────────────────────────────────────────┐
-  browser ────────► │  staging VM                                  │
+  browser ────────► │  dev VM                                  │
                     │                                              │
    dev.lahendus     │   nginx :443                                 │
        .ut.ee ──────┼──►  vhost 1: static web dist (docroot)       │
@@ -88,11 +88,11 @@ backend name. Three facts argue the other way:
 
 - `dev.ems.lahendus.ut.ee` **already resolves to 193.40.11.202**, and `dev.core` has no A record at
   all. Using the existing name removes a dependency on UT IT from the critical path.
-- **Production still serves `ems.lahendus.ut.ee`** (a CNAME to `lahendus.ut.ee`). Staging is meant
+- **Production still serves `ems.lahendus.ut.ee`** (a CNAME to `lahendus.ut.ee`). Dev is meant
   to be the release gate, so it should mirror production's names rather than invent a third
   convention that exists nowhere else.
 - Renaming is not blocked by this. If `ems` → `core` is worth doing, it is worth doing in both
-  environments at once, as its own piece of work — and doing it on staging first would only prove
+  environments at once, as its own piece of work — and doing it on dev first would only prove
   that a name production does not use works.
 
 So: no new A records needed, and TLS for two names that already point here.
@@ -130,8 +130,8 @@ block in `core/src/main/resources/application.yaml.sample` for why both `jwk-set
 
 ### 3.1 What the import is
 
-A single `pg_dump` of prod, anonymised, restored into the staging postgres once at setup. After
-that staging is its own world: testers' courses and submissions accumulate and are never
+A single `pg_dump` of prod, anonymised, restored into the dev postgres once at setup. After
+that dev is its own world: testers' courses and submissions accumulate and are never
 overwritten by a refresh.
 
 ### 3.2 How the anonymisation runs
@@ -149,7 +149,7 @@ the whole `11 colours × 290 birds` product with no slack.
 Operating on the database instead means column order cannot break it, and each pass ends with
 assertions that print `0` when they hold.
 
-Each script **refuses to run** unless the database name contains `staging`, `stage` or `anon`.
+Each script **refuses to run** unless the database name contains `dev`, `stage` or `anon`.
 Pointed at production, `anonymise.sql` would rename every real user and delete every live
 invitation, so that guard is the difference between a scripted mistake and a catastrophe.
 
@@ -170,7 +170,7 @@ Two are trade-offs rather than clear calls, which is why they are separate scrip
   knows the course and the dates. Against that, teacher grading UI is exactly what wants realistic
   feedback threads. `strip-teacher-feedback.sql` keeps the grades and drops only the prose.
 - **Student submissions** carry name headers and comments. Keeping them is what makes grading,
-  plagiarism comparison and auto-assessment worth testing on staging; `strip-submissions.sql` is
+  plagiarism comparison and auto-assessment worth testing on dev; `strip-submissions.sql` is
   there if the host ends up shared more widely than the team.
 
 Because the import happens once and then drifts, both are decided once. Decide before the data
@@ -195,7 +195,7 @@ one of the realm-config items in §7.
 
 ### 3.5 Backups are now mandatory
 
-Because staging drifts and is never re-imported, tester-created state is unique and unrecoverable.
+Because dev drifts and is never re-imported, tester-created state is unique and unrecoverable.
 Nightly `pg_dump` to a second location, 7–14 days retention. This is a direct cost of the
 drift choice and easy to forget.
 
@@ -215,8 +215,8 @@ proxy authenticates nothing and what is left is TLS termination, a static direct
 `proxy_pass`. nginx is the simpler of the two to write and read for that job.
 
 The trade, stated so nobody is surprised by it: **production runs Apache/2.4.52**, so until the same
-role reaches production, staging and production differ in the component terminating TLS. That is a
-narrow class of difference now that the proxy does nothing clever, but it is not zero — and staging is
+role reaches production, dev and production differ in the component terminating TLS. That is a
+narrow class of difference now that the proxy does nothing clever, but it is not zero — and dev is
 supposed to be the release gate. The intent is that the nginx role replaces prod's hand-built Apache
 when these playbooks get there, rather than the two diverging permanently.
 
@@ -236,7 +236,7 @@ root /srv/easy/web/current;
 
 # config.json carries this environment's backend and realm (EZ-1726). It MUST NOT be cached: the app
 # requests it with `cache: 'no-store'`, but a caching layer in front would hand a freshly deployed
-# dist the previous environment's backend URL. That failure presents as "staging is talking to
+# dist the previous environment's backend URL. That failure presents as "dev is talking to
 # production", which is not where anyone looks first.
 location = /config.json {
     add_header Cache-Control "no-store" always;
@@ -284,7 +284,7 @@ this being a dumb proxy, both good:
   (`/*/unauth/exercises/*/anonymous/autoassess` and `.../details`) need no special-casing in the proxy
   — Spring decides. Under an authenticating vhost they would each have needed their own
   `<Location>` with `Require all granted` or the "try an exercise without logging in" flow would
-  break on staging only.
+  break on dev only.
 - Cross-origin preflight `OPTIONS` requests, which carry no `Authorization` header, are no longer a
   problem. An authenticating proxy would have 401'd them, and every API call would have failed
   looking exactly like a CORS bug in core.
@@ -292,7 +292,7 @@ this being a dumb proxy, both good:
 ### 4.3 CORS
 
 Web and API are on different origins here, so core has to allow the web origin. Since EZ-1727 that
-is config rather than a hardcoded list, so staging's `application.yaml` needs:
+is config rather than a hardcoded list, so dev's `application.yaml` needs:
 
 ```yaml
 easy:
@@ -312,14 +312,14 @@ send no preflight, and nothing needs allowing.
 
 ## 5. Things that must be neutered before a single tester logs in
 
-Staging runs the same code as prod, which means it has the same outbound reach into real systems.
+Dev runs the same code as prod, which means it has the same outbound reach into real systems.
 This list is the actual "non-destructive" work — a separate database is the easy half.
 
 | Risk | Path | Treatment |
 | --- | --- | --- |
 | **Grades written into real Moodle** | `POST /courses/{id}/moodle/grades` (`SyncMoodleAllGrades.kt:22`) — a **manual** endpoint, plus the cron | Pinning the cron is **not enough**. Point `easy.core.moodle-sync.grades.url` at a dead local address *and* pin the cron. A tester clicking "sync grades" must not reach the real gradebook |
 | **Real Moodle read + student invites** | `SyncMoodleAllStudents.kt:22`, `moodle-sync.users.url` | Same: dead URL + pinned cron. A read is harmless, but it pulls real names back into the anonymised DB |
-| **Mass account deletion, in the DB and in Keycloak** | `DeleteInactiveUsers` (`core/src/main/kotlin/core/ems/cron/delete_inactive_users.kt`) deletes students idle 2y / teachers 5y, then deletes them from Keycloak via the admin API | Imported `last_seen` values are historical, so the **first cron run would delete a large slice of the imported data and hit the configured Keycloak**. Pin `easy.core.keycloak.cron` to the never-date, and give staging's Keycloak client a service account **without** user-delete permission |
+| **Mass account deletion, in the DB and in Keycloak** | `DeleteInactiveUsers` (`core/src/main/kotlin/core/ems/cron/delete_inactive_users.kt`) deletes students idle 2y / teachers 5y, then deletes them from Keycloak via the admin API | Imported `last_seen` values are historical, so the **first cron run would delete a large slice of the imported data and hit the configured Keycloak**. Pin `easy.core.keycloak.cron` to the never-date, and give dev's Keycloak client a service account **without** user-delete permission |
 | **Email to real people** | `SendMailService`, `easy.core.mail.*` | Run a local catch-all (mailpit) and point `spring.mail` at it, so email stays testable but cannot escape. Simpler alternative: `mail.user.enabled: false` and `mail.sys.enabled: false` |
 | **Wrong IDP** | `easy.core.keycloak.base-url` | Must be the dev IDP. Combined with the delete cron above, a copy-paste of prod's value here is the worst single mistake available on this host |
 
@@ -327,10 +327,10 @@ The never-date trick for crons is already used in `core/src/test/resources/appli
 `"0 0 5 31 2 ?"` — February 31st, which never occurs.
 
 Leave the *internal* crons on (`pending-access.clean`, `exercise-index-normalisation`,
-`anonymous-submissions-to-keep`, statistics) — staging is the right place to find out they misbehave.
+`anonymous-submissions-to-keep`, statistics) — dev is the right place to find out they misbehave.
 
 Set `easy.core.auth-enabled: true` (real auth) and `easy.web.base-url: https://dev.lahendus.ut.ee`
-so email links point at staging.
+so email links point at dev.
 
 ---
 
@@ -356,7 +356,7 @@ Real executor: `aae/server.py` under gunicorn, grading in Docker containers on t
   run as a dedicated `easy-executor` user in the `docker` group instead. Same access, no blanket
   root, and it fixes that TODO on the way past.
 - **Accept, but write down, the co-location risk.** This host executes arbitrary student code. Being
-  on the same VM as the staging DB means a container escape reaches that DB. Given the data is
+  on the same VM as the dev DB means a container escape reaches that DB. Given the data is
   anonymised and backed up, that's a reasonable trade for one-VM simplicity — but if the
   anonymisation review in §3.3 decides to keep `teacher_inline_comment` rows, revisit it.
 - Executor calls are unauthenticated (`callExecutor` in `core/src/main/kotlin/core/aas/executor_utils.kt:132`
@@ -385,7 +385,7 @@ built by `ansible/roles/keycloak` and applied with `./run.sh site.yml --limit ea
 The realm, as decided here and built there:
 
 - **Registration disabled**, admin-created accounts only. Removes the "anyone with a UT account
-  wanders into staging" problem entirely.
+  wanders into dev" problem entirely.
 - `lahendus.ut.ee` — public client, PKCE, redirect URIs and web origins for
   `https://dev.lahendus.ut.ee`.
 - **`easy_role` mapped** into the token, as **client** roles on that client rather than realm roles:
@@ -438,12 +438,12 @@ Two details worth knowing:
   about.
 - **`config.json` is deleted from the dist before packing.** `web/public/config.json` holds the
   *production* IdP and API as local-dev defaults, so an artifact carrying it is one forgotten deploy
-  step away from staging quietly talking to production — the §4.1 failure, and not one anybody
+  step away from dev quietly talking to production — the §4.1 failure, and not one anybody
   debugs quickly. Without the file the app renders its "Configuration error" page instead, and the
   deploy writes the environment's own copy.
 
 Both artifacts are now genuinely environment-neutral, which is the property that makes
-artifact-based deploys worth the trouble: the build staging exercised is the same build that later
+artifact-based deploys worth the trouble: the build dev exercised is the same build that later
 goes to production, byte for byte.
 
 That was not true when this plan was written. `web/src/config.ts` read `import.meta.env.VITE_*` at
@@ -463,12 +463,12 @@ Two consequences for the deploy:
 absolute cross-origin URL works with no code change.)
 
 For storage, GitHub Actions artifacts plus `gh run download` needs no new infrastructure and reuses
-the `gh` auth everyone already has. 90-day retention is fine for staging. If artifacts need to
-outlive that or become prod-promotable, switch to prereleases tagged `staging-<sha>`.
+the `gh` auth everyone already has. 90-day retention is fine for dev. If artifacts need to
+outlive that or become prod-promotable, switch to prereleases tagged `dev-<sha>`.
 
 ### 8.2 The deploy script
 
-**Written.** `deploy/deploy-staging.sh <sha|latest>`, run by any team member from their laptop;
+**Written.** `deploy/deploy-dev.sh <sha|latest>`, run by any team member from their laptop;
 `deploy/README.md` is the operating manual and lists what the host must already have. Requires only
 `gh` auth and SSH — no local JDK or Node, which is the main win over building on the server. It does
 the seven steps above, plus:
@@ -492,7 +492,7 @@ Two systemd units the host needs: `easy-core.service` (`java -jar`, `Restart=on-
 path via `--spring.config.location`) and `easy-executor.service` (gunicorn as the non-root user from
 §6). Deploy also needs passwordless `sudo systemctl restart easy-core`.
 
-The environment's own files live in `deploy/staging/` — `config.json` and `staging.env`. Neither is
+The environment's own files live in `deploy/dev/` — `config.json` and `dev.env`. Neither is
 secret; the secrets stay in `/srv/easy/conf/application.yaml`, which no deploy touches. `SSH_TARGET`
 ships as a placeholder and the script refuses to run until the VM is picked.
 
@@ -512,13 +512,13 @@ Deliberately phase two, on the same script: a workflow job on green master that 
 deploy key and runs it. Manual deploy stays available and stays the override. Getting the manual
 path solid first means the automatic one is one extra caller, not a second mechanism.
 
-### 8.4 Staging as the release gate
+### 8.4 Dev as the release gate
 
 Each environment keeps its own `application.yaml` outside the repo, and Spring **fails fast** on an
 unresolved `@Value` placeholder. So a config key added in a release that nobody wrote down takes the
-environment down on restart. That makes a staging deploy the natural place to catch it — the config
-table in `doc/release-procedure.md` gains a third environment, and staging finds the missing row
-before prod does. Worth adding staging to that doc as part of this work.
+environment down on restart. That makes a dev deploy the natural place to catch it — the config
+table in `doc/release-procedure.md` gains a third environment, and dev finds the missing row
+before prod does. Worth adding dev to that doc as part of this work.
 
 ---
 
@@ -531,7 +531,7 @@ Greenfield, so this is a small amount of setup done once:
   fail rather than corrupt (the scheduler retries), so a nightly window is fine — just don't put it
   mid-morning.
 - Everything reproducible in one Ansible playbook from the start — packages, users, nginx vhosts,
-  postgres, Docker, the two systemd units, mailpit, the backup cron. Not because staging needs
+  postgres, Docker, the two systemd units, mailpit, the backup cron. Not because dev needs
   Ansible, but because writing it here means prod's rebuild is a known quantity later, and the
   answer to "what did we configure on that box" is a file.
 
@@ -543,16 +543,16 @@ Greenfield, so this is a small amount of setup done once:
    (2026-08-01): ACME works on this network.** The old dev host serves a Let's Encrypt cert issued
    6 Jul 2026, SANs `dev.lahendus`, `dev.ems.lahendus`, `dev.aas.lahendus` — so certbot renews from
    inside UT's network today, and nothing needs requesting from UT IT. Those SANs are also the two
-   names staging now uses, which is part of why the `dev.core` rename was dropped (§1): the
+   names dev now uses, which is part of why the `dev.core` rename was dropped (§1): the
    certificate story for `dev.lahendus` + `dev.ems.lahendus` is already a solved problem, and a new
    name would have needed both an A record and a fresh SAN.
 2. **How much of `teacher_inline_comment` / `teacher_activity` survives anonymisation?** Grading-UI
    testing wants it; it's the most sensitive content in the DB. This is the one anonymisation call
    that needs a human decision, and it's easier to make once than to revisit (§3.3).
 3. **Which container images does prod actually have?** Needed before auto-assessment works on
-   staging; enumerate from prod's `container_image` table (§6).
+   dev; enumerate from prod's `container_image` table (§6).
 4. **VM sizing** — the executor's `workers = 30` in `aae/gunicorn-conf.py.sample` plus concurrent
-   Docker builds is the driver, not core. Staging can start much smaller, but pick a number.
+   Docker builds is the driver, not core. Dev can start much smaller, but pick a number.
 5. **Who gets SSH?** Deploy needs it, which makes SSH access the real deploy permission.
 
 ---
@@ -565,8 +565,8 @@ Greenfield, so this is a small amount of setup done once:
 | 2 | Core deployed from a CI artifact with a **migrated-but-empty** DB; login works end to end against the dev realm. Proves the auth chain (§2, §4) before any real data exists. **Half done 2026-08-04**: deployed, serving, 42 tables migrated on first start — login blocked on §7, there is no IdP to log in to |
 | 3 | Anonymisation script rewritten and reviewed; prod dump imported; backups running |
 | 4 | Executor + base images; auto-assessment verified on a real imported exercise |
-| 5 | `deploy/deploy-staging.sh` documented; whole team can deploy. **Done 2026-08-04** — first real deploy succeeded, `SSH_TARGET` set. "Whole team" still means one account: the host has `kspar` and the break-glass `ubuntu`, and adding a deployer means `hardening_ssh_users` plus `easy_core_deploy_users` |
-| 6 | Automatic deploy on green master; staging added to `doc/release-procedure.md` |
+| 5 | `deploy/deploy-dev.sh` documented; whole team can deploy. **Done 2026-08-04** — first real deploy succeeded, `SSH_TARGET` set. "Whole team" still means one account: the host has `kspar` and the break-glass `ubuntu`, and adding a deployer means `hardening_ssh_users` plus `easy_core_deploy_users` |
+| 6 | Automatic deploy on green master; dev added to `doc/release-procedure.md` |
 
 Phase 2 before phase 3 is the point worth keeping: the environment that can't yet leak anything is
 the one to make mistakes in.

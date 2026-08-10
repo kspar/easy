@@ -88,9 +88,9 @@ export default function EmbedExercisePage() {
   /**
    * The environment marking (EZ-1733) reaches the footer too, and this is the one place where the
    * audience is not the person using Lahendus. The snippet the embed dialog generates is built
-   * from `window.location.origin`, so one produced on staging carries staging URLs — and it keeps
-   * working, because staging is internet-reachable. Nothing else would ever reveal that a course
-   * page has been quietly showing a staging exercise for a term. wui did the same thing by calling
+   * from `window.location.origin`, so one produced on dev carries dev URLs — and it keeps
+   * working, because dev is internet-reachable. Nothing else would ever reveal that a course
+   * page has been quietly showing a dev exercise for a term. wui did the same thing by calling
    * itself "DevLahendus" on dev.
    */
   const environment = config.environment

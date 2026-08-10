@@ -20,7 +20,7 @@
 # install above was only simulated, so the rest would fail on a service that is not there — which
 # would abort the run and hide whatever the later tasks would have reported. Keying on the binary
 # rather than on check mode means a dry run against an *installed* host still checks everything,
-# which is the case that matters once staging is built.
+# which is the case that matters once dev is built.
 - name: Find out whether postgres exists yet
   ansible.builtin.stat:
     path: /usr/lib/postgresql
@@ -198,13 +198,13 @@
 # --- the guard that only matters later --------------------------------------------------------------------
 
 - name: Warn if the database name would block the anonymisation scripts
-  # doc/core/anonymise-db/*.sql refuse to run unless current_database() matches (staging|stage|anon),
+  # doc/core/anonymise-db/*.sql refuse to run unless current_database() matches (dev|stage|anon),
   # because pointed at production they would rename every account and delete every invitation. A
-  # staging database named something else does not fail here — it fails in phase 3, at which point
+  # dev database named something else does not fail here — it fails in phase 3, at which point
   # the tempting fix is -v ALLOW_ANY_DATABASE=true, which is exactly the guard being disarmed.
   ansible.builtin.debug:
     msg: >-
-      Database '{{ postgres_db_name }}' does not contain staging, stage or anon, so the
+      Database '{{ postgres_db_name }}' does not contain dev, stage or anon, so the
       anonymisation scripts in doc/core/anonymise-db/ will refuse to run against it. Rename it before
       the production import rather than passing ALLOW_ANY_DATABASE later.
-  when: postgres_db_name is not search('(staging|stage|anon)')
+  when: postgres_db_name is not search('(dev|stage|anon)')

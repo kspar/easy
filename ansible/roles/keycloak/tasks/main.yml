@@ -30,7 +30,7 @@
       - keycloak_acme_email is defined or not (keycloak_tls | bool)
     fail_msg: >-
       keycloak_hostname (and keycloak_acme_email when TLS is on) have no defaults and must be set in
-      the inventory. See inventories/staging/group_vars/all/idp.yml.
+      the inventory. See inventories/dev/group_vars/all/idp.yml.
     quiet: true
 
 - name: Install the pieces

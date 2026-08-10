@@ -6,7 +6,7 @@
 #
 # As with roles/hardening, the values here are meant to be the answer for the host that matters most,
 # and an environment loosens what it needs to in its own group_vars. There is only one Keycloak host
-# today (staging), so nothing overrides these yet — but production's IdP is a separate VM that this
+# today (dev), so nothing overrides these yet — but production's IdP is a separate VM that this
 # same role is meant to reach, so nothing here may assume it is co-located with core.
 
 # --- the version ----------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ keycloak_acme_webroot: /var/www/certbot
 keycloak_cert_dir: "/etc/letsencrypt/live/{{ keycloak_hostname }}"
 
 # --- the theme ------------------------------------------------------------------------------------
-# The lahendus login/account/email theme, so staging looks like production. Built in 2023 against
+# The lahendus login/account/email theme, so dev looks like production. Built in 2023 against
 # Keycloak 15 and never run on 25 — see doc/idp-setup.md for what to check if the login page renders
 # oddly. Installing it does not select it: that is a realm setting, deliberately, so a broken theme
 # can be switched off without a playbook run.
@@ -89,7 +89,7 @@ keycloak_theme_src: /home/kspar/easy-kc-theme
 
 # --- JVM ------------------------------------------------------------------------------------------
 # Keycloak's own defaults, minus the container heap percentages that only make sense in a container.
-# 512m is comfortable for a staging realm with a handful of users; production wants more.
+# 512m is comfortable for a dev realm with a handful of users; production wants more.
 keycloak_java_opts: "-Xms256m -Xmx768m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -XX:+ExitOnOutOfMemoryError -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom"
 
 # --- the admin-console gate ---------------------------------------------------------------------

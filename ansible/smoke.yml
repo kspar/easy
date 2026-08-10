@@ -2,7 +2,7 @@
 # Read-only health check. Nothing here writes, so it is safe against production and is the intended
 # first thing to run against a host this repo has never managed.
 #
-#   ./run.sh smoke.yml                                            # staging
+#   ./run.sh smoke.yml                                            # dev
 #   ansible-playbook -i inventories/production smoke.yml --ask-become-pass
 #
 # It reads the same inventory as site.yml on purpose: "who may log in" is one of the things being

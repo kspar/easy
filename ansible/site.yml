@@ -1,14 +1,14 @@
 ---
 # Every host in whichever inventory was named on the command line. Only hardening exists so far; the
-# rest of what doc/staging-environment.md §9 asks for — Apache vhosts, postgres, Docker, the two
+# rest of what doc/dev-environment.md §9 asks for — Apache vhosts, postgres, Docker, the two
 # systemd units, mailpit, the backup cron — becomes further roles.
 #
-# `hosts: all` rather than `hosts: staging` because the inventory is the environment boundary: there
+# `hosts: all` rather than `hosts: dev` because the inventory is the environment boundary: there
 # is no default inventory and no inventory contains two environments, so "all" can only ever mean the
 # one that was named. See ansible.cfg.
 #
 # When those service roles arrive they will want plays per group (core, idp, executor) instead, since
-# production separates onto three hosts what staging keeps on one. Hardening is the case that really
+# production separates onto three hosts what dev keeps on one. Hardening is the case that really
 # does apply to every host, so it stays here — and add `serial: 1` before this targets more than one
 # host at a time, so an sshd mistake locks out one box rather than all of them at once.
 - name: Baseline hardening
@@ -17,8 +17,8 @@
   roles:
     - hardening
 
-# Service roles target groups, not hosts, because staging keeps core, the IdP and the executor on one
-# VM while production splits them across three. `core` has one member in staging and will have one in
+# Service roles target groups, not hosts, because dev keeps core, the IdP and the executor on one
+# VM while production splits them across three. `core` has one member in dev and will have one in
 # production; what changes is which other groups that same host is also in.
 - name: Core
   hosts: core
@@ -34,7 +34,7 @@
     - core_autodeploy
     - nginx
 
-# The IdP is already its own host in staging, which is how production is laid out too — so unlike the
+# The IdP is already its own host in dev, which is how production is laid out too — so unlike the
 # core roles, nothing here has ever been able to assume co-location. The role brings its own postgres
 # and its own nginx for exactly that reason.
 - name: IdP

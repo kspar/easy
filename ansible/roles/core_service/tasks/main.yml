@@ -115,7 +115,7 @@
   notify: Restart core service
 
 - name: Let the deploy account restart core without a password
-  # The single grant deploy/deploy-staging.sh needs. Scoped to one exact command: a deploy should be
+  # The single grant deploy/deploy-dev.sh needs. Scoped to one exact command: a deploy should be
   # able to restart core and do nothing else with root.
   ansible.builtin.template:
     src: sudoers-deploy.j2
@@ -156,6 +156,6 @@
   ansible.builtin.debug:
     msg: >-
       {{ easy_core_service_name }} is installed and enabled but not started: {{ easy_core_jar }} does
-      not exist yet. Deploy a release with deploy/deploy-staging.sh and it will come up — and stay up
+      not exist yet. Deploy a release with deploy/deploy-dev.sh and it will come up — and stay up
       across reboots.
   when: not easy_core_jar_stat.stat.exists

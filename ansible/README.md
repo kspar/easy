@@ -1,14 +1,14 @@
 # ansible
 
-Configuration for the staging host, so that "what did we configure on that box" has a file for an
-answer. `doc/staging-environment.md` §9 asks for this from the start — not because staging needs
+Configuration for the dev host, so that "what did we configure on that box" has a file for an
+answer. `doc/dev-environment.md` §9 asks for this from the start — not because dev needs
 Ansible, but because it makes production's eventual rebuild a known quantity.
 
-As of 2026-08-08 this builds both staging hosts: the core host (hardening, postgres, core's config
+As of 2026-08-08 this builds both dev hosts: the core host (hardening, postgres, core's config
 and systemd unit, nginx with TLS) and the **IdP host** (Keycloak 25 on its own postgres, behind its
 own nginx). What is missing is the executor and mailpit.
 
-The hardening role's reasoning, host by host, is in `doc/staging-hardening.md` — **which is
+The hardening role's reasoning, host by host, is in `doc/dev-hardening.md` — **which is
 deliberately not in this repo** (see `.gitignore`), because it is specific about one internet-facing
 machine in a way the role is not. Ask kspar for it. The roles' own comments carry the parts that
 generalise, and are worth reading before a first run.
@@ -18,10 +18,10 @@ generalise, and are worth reading before a first run.
 ```sh
 brew install ansible          # or pipx install ansible
 cd ansible
-cp inventories/staging/hosts.example.yml inventories/staging/hosts.yml   # first time only
-$EDITOR inventories/staging/hosts.yml
-ansible-playbook -i inventories/staging site.yml --check --diff --ask-become-pass   # dry run first
-ansible-playbook -i inventories/staging site.yml --ask-become-pass
+cp inventories/dev/hosts.example.yml inventories/dev/hosts.yml   # first time only
+$EDITOR inventories/dev/hosts.yml
+ansible-playbook -i inventories/dev site.yml --check --diff --ask-become-pass   # dry run first
+ansible-playbook -i inventories/dev site.yml --ask-become-pass
 ```
 
 **`-i` is mandatory, and that is the main safety property here.** There is no default inventory and
@@ -53,7 +53,7 @@ This started as a question about how to store secrets on the controller — vaul
 — and the better answer was to notice the controller never needs them. The server has to hold them in
 plaintext regardless, because Spring reads them at startup; the only real choice was whether a
 *second* copy existed too. There is no second copy, so there is nothing to encrypt, nothing to
-gitignore, and nothing to hand to a colleague. Production benefits more than staging: its credentials
+gitignore, and nothing to hand to a colleague. Production benefits more than dev: its credentials
 never touch anyone's machine.
 
 The trade: rebuilding a host from nothing needs the secrets from somewhere else, and Ansible cannot
@@ -63,7 +63,7 @@ copy.
 ### Checking a host without changing it
 
 ```sh
-./run.sh smoke.yml                                              # staging
+./run.sh smoke.yml                                              # dev
 ansible-playbook -i inventories/production smoke.yml --ask-become-pass
 ```
 
@@ -83,10 +83,10 @@ where nothing is installed would otherwise be the most dangerous output it could
 
 `roles/hardening/defaults/main.yml` holds the **strict** values — the answer for the host that
 matters most — and each environment loosens what it needs to in its own `group_vars/all.yml`, with
-the reason beside the override. Written the other way round, staging's conveniences would be what a
+the reason beside the override. Written the other way round, dev's conveniences would be what a
 new production host silently inherits. Safe by omission; every relaxation deliberate.
 
-`inventories/staging/group_vars/all/` is the worked example: agent forwarding on because everything
+`inventories/dev/group_vars/all/` is the worked example: agent forwarding on because everything
 is co-located behind loopback there, a longer fail2ban leash because verifying the host means failing
 auth at it, unattended reboots because there is nothing to interrupt.
 
@@ -134,7 +134,7 @@ Three things this deliberately is not:
   log — and nothing wider.
 
 Worth being clear-eyed about the trade: anything that can read that keychain item can become root
-on the staging host. That is the point of storing it, and it is why the item is scoped to staging —
+on the dev host. That is the point of storing it, and it is why the item is scoped to dev —
 do not reuse it for production.
 
 **Open a second SSH session and keep it open for the duration.** Ubuntu 24.04 runs sshd under socket
@@ -161,7 +161,7 @@ failure this is insurance against. Tear it down with `-O exit` when the run is v
 ansible.cfg                  no default inventory, yaml output, ssh multiplexing
 site.yml                     the plays: hardening everywhere, services by group
 smoke.yml                    read-only health check, safe against production
-run.sh                       staging only, sudo password from the keychain
+run.sh                       dev only, sudo password from the keychain
 roles/hardening/             sshd, ufw, fail2ban, unattended-upgrade reboot policy
 roles/keycloak/              the IdP host entire: JVM, postgres, Keycloak, its unit, nginx, TLS,
                              and the /idp-admin/ gate in front of the admin console
@@ -171,10 +171,10 @@ roles/core_service/          the systemd unit, the release tree, the deploy gran
 roles/nginx/                 TLS, the SPA vhost, the API proxy
 roles/smoke/                 what smoke.yml runs
 inventories/
-  staging/
+  dev/
     hosts.example.yml        the committed template
     hosts.yml                NOT IN GIT — real hosts and who may log in
-    group_vars/all.yml       what staging loosens, and why
+    group_vars/all.yml       what dev loosens, and why
   production/
     hosts.example.yml        intended shape; nothing has been run against it
     group_vars/all.yml       near-empty on purpose — the defaults are the prod answer
@@ -210,8 +210,8 @@ always a separate VM, so nothing in it could assume co-location, and it brings i
 its own nginx for that reason. It duplicates `roles/nginx`'s certbot dance rather than sharing it —
 deliberately, for now; if a third vhost appears, that is the moment to reconsider.
 
-**Write them as service roles applied to groups, not as "the staging box".** Production separates
-onto three hosts (core, IdP, executor) what staging keeps on one, so a role that assumes postgres or
+**Write them as service roles applied to groups, not as "the dev box".** Production separates
+onto three hosts (core, IdP, executor) what dev keeps on one, so a role that assumes postgres or
 the executor is on `127.0.0.1` is already wrong for production. Those addresses want to be variables
 from the first role that touches them; retrofitting them later is the expensive version. `site.yml`
 already has a play per group, and wants `serial: 1` before anything targets more than one host.

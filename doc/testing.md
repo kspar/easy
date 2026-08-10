@@ -15,7 +15,7 @@ them rather than a replacement for them.
 - **EZ-1366 (R&D unit tests)** — the core side, open since 2021 and one line long.
 - **EZ-1715 (Run core tests in CI with a postgres service container)** — the prerequisite for
   almost everything backend below.
-- **EZ-1723 (Set up a staging environment at dev.lahendus.ut.ee)** — the prerequisite for the
+- **EZ-1723 (Set up a dev environment at dev.lahendus.ut.ee)** — the prerequisite for the
   integration and migration testing that needs real infrastructure.
 
 ---
@@ -121,8 +121,8 @@ Nothing exercises core + database + executor together, or core + IdP. The realis
   tokens, so the hard part exists; nothing automated consumes it.
 - **Liquibase migrations against a realistic database.** See below — this deserves its own line.
 
-Best done on staging (EZ-1723) rather than in CI: they need infrastructure CI has no business
-standing up, and staging exists precisely to be a place where real things can be run.
+Best done on dev (EZ-1723) rather than in CI: they need infrastructure CI has no business
+standing up, and dev exists precisely to be a place where real things can be run.
 
 ### UI tests — have a good harness, uneven coverage
 
@@ -152,7 +152,7 @@ Changeset `020826-1` (making the template non-nullable) rewrites production rows
 hand, against a copy of the dev database, once. That is better than nothing and worse than a test.
 
 The mechanism is cheap: restore a dump into a scratch database, run Liquibase, assert on the
-resulting schema and data. It becomes considerably more valuable once staging exists and there is
+resulting schema and data. It becomes considerably more valuable once dev exists and there is
 an anonymised production copy to run it against (`doc/core/anonymise-db/`), because the
 interesting migration failures are all about real data rather than clean schemas.
 
@@ -164,7 +164,7 @@ two exceptions worth measuring rather than assuming:
 - **The grade table and participants list on a large course.** Both build big tables client-side
   and both fetch everything. There is no evidence either is a problem, and no evidence it is not.
 - **Executor concurrency.** `aae/gunicorn-conf.py.sample` sets `workers = 30` with Docker builds
-  behind it, and VM sizing for staging is an open question in `doc/staging-environment.md` §10.4
+  behind it, and VM sizing for dev is an open question in `doc/dev-environment.md` §10.4
   precisely because nobody has numbers.
 
 A single scripted "1000 students, one course" fixture would answer more than a load-testing
@@ -215,6 +215,6 @@ one, it is worth making it fail on purpose once.
 3. **Service tests for access control** — internet-reachable, and wrong answers are silent.
 4. **Contract or fixture-shape checks** — stops the whole browser suite drifting from reality.
 5. **`ParticipantsPage` and `GradeTablePage`** — largest remaining untested surfaces.
-6. **Migration tests against an anonymised copy** — once staging exists.
+6. **Migration tests against an anonymised copy** — once dev exists.
 7. **axe in the browser harness** — cheap, and there is already evidence it would find things.
 8. **Performance measurement of the two known suspects** — a fixture, not a framework.

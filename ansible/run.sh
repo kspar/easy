@@ -11,30 +11,34 @@
 # file, and never in the transcript of whatever is running this. `-T /usr/bin/security` is what
 # lets it be read back without a GUI confirmation dialog; `-U` updates an existing item.)
 #
-# Usage — any ansible-playbook arguments are passed straight through, against the staging inventory:
+# Usage — any ansible-playbook arguments are passed straight through, against the dev inventory:
 #
 #   ./run.sh site.yml --check --diff
 #   ./run.sh site.yml --diff
 #
-# Staging only. Production is interactive by design; see the check below and the README.
+# Dev only. Production is interactive by design; see the check below and the README.
 #
 set -euo pipefail
 
+# `easy-staging-become` and not `easy-dev-become`, alone among the names in this repo: it is a
+# keychain item that already exists on the machines that use this, and renaming it here would only
+# make run.sh stop finding it. Override with EASY_BECOME_KEYCHAIN_SERVICE if yours is named
+# something else.
 KEYCHAIN_SERVICE="${EASY_BECOME_KEYCHAIN_SERVICE:-easy-staging-become}"
-INVENTORY="${EASY_INVENTORY:-inventories/staging}"
+INVENTORY="${EASY_INVENTORY:-inventories/dev}"
 
 cd "$(dirname "$0")"
 
-# Staging only, and not as a formality.
+# Dev only, and not as a formality.
 #
 # The password this reads can be read by anything running as this user — that is the trade accepted
-# for unattended staging runs. Production is where that trade stops being acceptable: it runs with
+# for unattended dev runs. Production is where that trade stops being acceptable: it runs with
 # --ask-become-pass and a person watching. Refusing here rather than documenting a convention means
 # the wrong environment is a failure instead of a habit.
 for arg in "$@"; do
   case "$arg" in
     *production*|*prod*)
-      echo "run.sh is staging-only, and '$arg' does not look like staging." >&2
+      echo "run.sh is dev-only, and '$arg' does not look like dev." >&2
       echo "Production runs interactively, with a human present:" >&2
       echo "  ansible-playbook -i inventories/production site.yml --check --diff --ask-become-pass" >&2
       exit 2
@@ -61,6 +65,6 @@ fi
 # is never written to disk, not even briefly with 0600 on it.
 #
 # -i comes first so an explicitly passed -i later on the command line still wins — useful for a second
-# staging host, and harmless because anything production-shaped was already refused above.
+# dev host, and harmless because anything production-shaped was already refused above.
 exec ansible-playbook -i "$INVENTORY" "$@" \
   --become-password-file <(security find-generic-password -s "$KEYCHAIN_SERVICE" -w)
