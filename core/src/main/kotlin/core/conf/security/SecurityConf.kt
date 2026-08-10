@@ -101,7 +101,11 @@ class SecurityConf {
                 it.requestMatchers(
                     // Allow unauthenticated access to anonymous auto-assess services
                     "/*/unauth/exercises/*/anonymous/autoassess",
-                    "/*/unauth/exercises/*/anonymous/details"
+                    "/*/unauth/exercises/*/anonymous/details",
+                    // What is deployed (EZ-1709). Unauthenticated so that whoever is reporting a
+                    // bug can read it off the About page — including someone who cannot log in,
+                    // which is the report that needs a version most.
+                    "/*/unauth/versions"
                 ).permitAll()
                     // All other services require auth == any role by default
                     .anyRequest().authenticated()

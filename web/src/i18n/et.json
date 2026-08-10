@@ -543,7 +543,11 @@
     "statsAutograding": "Hetkel kontrollimisel",
     "statsSubmissions": "Lahendust",
     "statsAccounts": "Kasutajat",
-    "sponsors": "Lahenduse ja easy arendust ning ülesannete loomist on toetanud"
+    "sponsors": "Lahenduse ja easy arendust ning ülesannete loomist on toetanud",
+    "versions": "Versioonid",
+    "versionsLoading": "Küsime serverilt…",
+    "versionsFailed": "Ülejäänud versioonide saamiseks ei õnnestunud serveriga ühendust saada.",
+    "versionUnreachable": "ei vasta"
   },
   "embed": {
     "loadFailed": "Ülesande laadimine ebaõnnestus.",

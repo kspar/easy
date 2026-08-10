@@ -13,6 +13,22 @@ npm run lint       # fails on errors; there is a known warning backlog (EZ-1722)
 npm run build      # tsc -b && vite build
 ```
 
+## Version stamping
+
+The bundle knows what it is (EZ-1709). `vite.config.ts` injects three constants via `define`, so
+they cost no request and cannot disagree with the code around them:
+
+| Constant | From |
+| --- | --- |
+| `__APP_VERSION__` | the repo-root `VERSION` file, which core and aae read too |
+| `__APP_COMMIT__` | `GITHUB_SHA` in CI, `git rev-parse` locally, `unknown` where neither exists |
+| `__APP_BUILT_AT__` | build time, ISO |
+
+Declared in `src/build-info.d.ts` and rendered by the Versions block on the About page, which gets
+core's and the executors' numbers from `GET /unauth/versions` — an unauthenticated endpoint, so a
+reporter who cannot log in can still say what they were running. `package.json` keeps `0.0.0` on
+purpose: it is never published, and a second version to bump at release is a second one to forget.
+
 ## Runtime configuration
 
 Environment-specific settings are fetched from **`/config.json` at boot**, not baked in at build

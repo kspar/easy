@@ -25,7 +25,38 @@ plugins {
 }
 
 group = "ee.urgas"
-version = "1"
+
+// One version for the whole product, from the repo-root VERSION file (EZ-1709). web/ and aae/ read
+// the same file, so "which version is deployed" has one answer rather than three that can disagree.
+// Bumping it is a release step — see doc/release-procedure.md.
+version = rootProject.file("VERSION").readText().trim()
+
+/**
+ * The commit this jar was built from, seven characters of it.
+ *
+ * `GITHUB_SHA` first, because that is the authority in CI and needs no git in the build. Locally it
+ * falls back to asking git, and to "unknown" where neither exists (a source tarball, a build with
+ * git absent) — a version endpoint reporting "unknown" is fine, a build that fails because it could
+ * not find git is not.
+ */
+val gitCommit: String = System.getenv("GITHUB_SHA")?.take(7)
+    ?: runCatching {
+        providers.exec {
+            commandLine("git", "rev-parse", "--short=7", "HEAD")
+            workingDir = rootDir
+        }.standardOutput.asText.get().trim().ifEmpty { null }
+    }.getOrNull() ?: "unknown"
+
+springBoot {
+    // Generates META-INF/build-info.properties, which Spring exposes as a BuildProperties bean —
+    // read by core.ems.service.VersionsController. `time` comes for free and is the honest answer
+    // to "is this actually the build I deployed an hour ago".
+    buildInfo {
+        properties {
+            additional.put("commit", gitCommit)
+        }
+    }
+}
 
 java {
     toolchain {

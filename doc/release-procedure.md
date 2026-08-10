@@ -45,6 +45,20 @@ issue-by-issue.
 
 Issues resolved long ago may have the field empty. That's history, not the convention.
 
+## The VERSION file
+
+`VERSION` at the repo root holds the number the running application reports about itself
+(EZ-1709) — core reads it in `core/build.gradle.kts`, web in `vite.config.ts`, aae in `server.py`,
+and all three show up on the About page as `v4.0 (b14b916)`.
+
+**Bump it when the "- next" version is renamed below**, to the number that release just became, and
+commit that on its own. The file is the only place to change: nothing else in the repo carries a
+product version, and `web/package.json` deliberately keeps its meaningless `0.0.0`.
+
+The commit hash beside it is stamped by the build (`GITHUB_SHA` in CI, `git rev-parse` locally), so
+it needs no maintenance — and it is what distinguishes two builds of the same version, which is the
+usual question when a deploy is in doubt.
+
 ## Steps
 
 ### 1. Rename the current "- next" version (remove suffix + reset color)

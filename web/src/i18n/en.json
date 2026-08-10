@@ -543,7 +543,11 @@
     "statsAutograding": "Currently grading",
     "statsSubmissions": "Submissions",
     "statsAccounts": "Accounts",
-    "sponsors": "The development of Lahendus and easy, and creating some of the exercises has been supported by"
+    "sponsors": "The development of Lahendus and easy, and creating some of the exercises has been supported by",
+    "versions": "Versions",
+    "versionsLoading": "Asking the server…",
+    "versionsFailed": "Could not reach the server for the other versions.",
+    "versionUnreachable": "not responding"
   },
   "embed": {
     "loadFailed": "Could not load this exercise.",

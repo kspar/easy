@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import config from '../../config.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import { useStatistics } from '../../api/statistics.ts'
+import { useVersions, formatVersion } from '../../api/versions.ts'
 import harnoLogo from '../../assets/sponsors/harno.svg'
 import mkmLogo from '../../assets/sponsors/mkm.png'
 import itaLogo from '../../assets/sponsors/ita.png'
@@ -58,6 +59,82 @@ export default function AboutPage() {
           <img src={itaLogo} alt="ITA" style={{ height: '2.5rem', display: 'block' }} />
         </Box>
       </Box>
+
+      <Versions />
+    </Box>
+  )
+}
+
+/**
+ * What is deployed (EZ-1709).
+ *
+ * Last on the page and deliberately quiet: nobody comes to About for this, but when a bug report
+ * needs "which version were you on", it has to be somewhere a person can be pointed at in one
+ * sentence. Web's line needs no request — it is compiled into this bundle.
+ */
+function Versions() {
+  const { t } = useTranslation()
+  const { data, isLoading, isError } = useVersions()
+
+  const rows: { name: string; value: string; muted?: boolean }[] = [
+    { name: 'web', value: formatVersion(__APP_VERSION__, __APP_COMMIT__) },
+  ]
+
+  if (data) {
+    rows.push({ name: 'core', value: formatVersion(data.core.version, data.core.commit) })
+    for (const ex of data.executors) {
+      rows.push({
+        name: ex.name,
+        value: ex.reachable && ex.version
+          ? formatVersion(ex.version, ex.commit)
+          : t('about.versionUnreachable'),
+        muted: !ex.reachable,
+      })
+    }
+  }
+
+  return (
+    <Box mt={5}>
+      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+        {t('about.versions')}
+      </Typography>
+      <Box
+        component="dl"
+        sx={{
+          m: 0,
+          display: 'grid',
+          // Two columns rather than a table: three or four rows of two short strings is a
+          // description list, and a DataTable here would be furniture around nothing.
+          gridTemplateColumns: 'max-content auto',
+          columnGap: 2,
+          rowGap: 0.25,
+          fontFamily: 'monospace',
+          fontSize: '0.8rem',
+        }}
+      >
+        {rows.map((row) => (
+          <Box key={row.name} sx={{ display: 'contents' }}>
+            <Box component="dt" sx={{ color: 'text.secondary' }}>
+              {row.name}
+            </Box>
+            <Box component="dd" sx={{ m: 0, color: row.muted ? 'text.disabled' : 'text.primary' }}>
+              {row.value}
+            </Box>
+          </Box>
+        ))}
+      </Box>
+      {/* Core's half can fail on its own — web's line is still true, so the block stays rather than
+          disappearing and taking the one version we do know with it. */}
+      {isLoading && (
+        <Typography variant="caption" color="text.disabled">
+          {t('about.versionsLoading')}
+        </Typography>
+      )}
+      {isError && (
+        <Typography variant="caption" color="text.disabled">
+          {t('about.versionsFailed')}
+        </Typography>
+      )}
     </Box>
   )
 }

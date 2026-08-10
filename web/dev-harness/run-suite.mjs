@@ -59,6 +59,7 @@ const SCRIPTS = [
   'landing-page.mjs',
   'nav-idp-admin.mjs',
   'environment-badge.mjs',
+  'about-versions.mjs',
   'system-messages.mjs',
   'admin-system-messages.mjs',
 ]

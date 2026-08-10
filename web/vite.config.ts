@@ -1,8 +1,45 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { decodeJwt } from './vite-jwt-proxy.ts'
 
+/**
+ * Version stamping (EZ-1709).
+ *
+ * The version comes from the repo-root `VERSION` file, which core and aae read too — one number for
+ * the product rather than three that can disagree. `web/package.json` deliberately keeps its
+ * meaningless `0.0.0`: it is not published to npm, and a second place to bump at release time is a
+ * second place to forget.
+ *
+ * The commit is what tells you which *build* you are looking at, since several builds share a
+ * version. `GITHUB_SHA` is the authority in CI; locally it asks git, and where neither exists it
+ * says "unknown" rather than failing a build over a diagnostic string.
+ */
+function readVersion(): string {
+  try {
+    return readFileSync(new URL('../VERSION', import.meta.url), 'utf8').trim() || 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
+function readCommit(): string {
+  const fromCi = process.env.GITHUB_SHA
+  if (fromCi) return fromCi.slice(0, 7)
+  try {
+    return execFileSync('git', ['rev-parse', '--short=7', 'HEAD'], { encoding: 'utf8' }).trim()
+  } catch {
+    return 'unknown'
+  }
+}
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(readVersion()),
+    __APP_COMMIT__: JSON.stringify(readCommit()),
+    __APP_BUILT_AT__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [react()],
   server: {
     proxy: {

@@ -1,5 +1,7 @@
 # coding=utf-8
 
+import os
+import subprocess
 import time
 import json
 import typing as T
@@ -18,6 +20,42 @@ SOMETHING_FAILED_MESSAGE = "Automaatkontrollimise käigus tekkis ootamatu viga. 
 
 app = Flask(__name__)
 app.logger.setLevel("DEBUG")
+
+# Version reporting (EZ-1709). Read once at import: the answer cannot change while the process
+# runs, and /v1/version is called by core on a timer rather than by a person.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _read_version() -> str:
+    """The product version, from the repo-root VERSION file that core and web also read."""
+    try:
+        with open(os.path.join(_REPO_ROOT, "VERSION")) as f:
+            return f.read().strip() or "unknown"
+    except OSError:
+        # A deployment that copied only aae/ has no VERSION file. Saying "unknown" is the useful
+        # failure; refusing to start a grading service over a version string is not.
+        return "unknown"
+
+
+def _read_commit() -> str:
+    """
+    The commit this executor is running, if it is running from a git checkout.
+
+    Unlike core and web, aae has no build step to stamp anything into, so this is asked of git at
+    startup and is simply "unknown" wherever git or the checkout is absent.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--short=7", "HEAD"],
+            cwd=_REPO_ROOT, capture_output=True, text=True, timeout=5,
+        )
+        return out.stdout.strip() or "unknown" if out.returncode == 0 else "unknown"
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+
+
+VERSION = _read_version()
+COMMIT = _read_commit()
 
 
 def check_content(content):
@@ -124,6 +162,15 @@ def post_grade():
     app.logger.info("Request finished: {}".format(request_time))
 
     return jsonify({"grade": assessment[0], "feedback": assessment[1]})
+
+
+@app.route('/v1/version', methods=['GET'])
+def get_version():
+    """
+    What this executor is running (EZ-1709). Core calls it and passes the answer on to the About
+    page, since nothing in a browser can reach an executor directly.
+    """
+    return jsonify({"version": VERSION, "commit": COMMIT})
 
 
 @app.errorhandler(BadRequest)
