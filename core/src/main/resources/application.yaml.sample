@@ -47,6 +47,16 @@ easy:
     # oidc_claim_* request headers verbatim. See doc/core/api-testing.md.
     auth-enabled: true
 
+    db:
+      # Apply changesets/testdata.xml — accounts, courses and exercises at fixed ids in the 9000s,
+      # for local development. True here because this sample is what a local database is set up
+      # from; defaults to FALSE in code, so an environment that does not name the key gets none.
+      #
+      # Never true on a deployed environment. Those fixtures insert at hardcoded ids, and a
+      # deployed database has its own rows at them: on dev this failed the migration outright,
+      # which for core means it does not start. See DatabaseConf.kt.
+      test-data: true
+
     cors:
       # Origins allowed to call the API cross-origin — in practice the web app's origin, when it
       # is served from a different host than the API. Comma-separated, no spaces.

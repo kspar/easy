@@ -20,7 +20,7 @@
         - CE 9010 / Palindrome Check:    Raw legacy feedback (old groups format, no longer parsed — shows as plain text)
     -->
 
-    <changeSet id="testdata-accounts" author="kspar">
+    <changeSet id="testdata-accounts" author="kspar" context="testdata">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM account WHERE username = 'kspar'</sqlCheck>
         </preConditions>
@@ -43,7 +43,7 @@
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-groups" author="kspar">
+    <changeSet id="testdata-groups" author="kspar" context="testdata">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM "group" WHERE name = 'kspar' AND implicit = true</sqlCheck>
         </preConditions>
@@ -61,7 +61,7 @@
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-exercises" author="kspar">
+    <changeSet id="testdata-exercises" author="kspar" context="testdata">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM exercise WHERE id = 9001</sqlCheck>
         </preConditions>
@@ -185,7 +185,7 @@
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-courses" author="kspar">
+    <changeSet id="testdata-courses" author="kspar" context="testdata">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM course WHERE id = 9001</sqlCheck>
         </preConditions>
@@ -601,7 +601,7 @@
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-course-groups" author="kspar">
+    <changeSet id="testdata-course-groups" author="kspar" context="testdata">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM course_group WHERE id = 9001</sqlCheck>
         </preConditions>
@@ -632,7 +632,7 @@
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-moodle-pending" author="kspar">
+    <changeSet id="testdata-moodle-pending" author="kspar" context="testdata">
         <!-- Invite ids were reformatted to the M- prefixed shape; accept the older checksum -->
         <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
@@ -673,7 +673,7 @@
           Data Structures (dir 9103, kspar=PRAWM, any_access=PR)
             └── Linked Lists (ex 9104, implicit dir 9113, dev-student=PR direct on implicit dir)
     -->
-    <changeSet id="testdata-library-dirs" author="kspar">
+    <changeSet id="testdata-library-dirs" author="kspar" context="testdata">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM exercise_dir WHERE id = 9101</sqlCheck>
         </preConditions>
@@ -748,7 +748,7 @@
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-moodle-pending-prefix-ids" author="kspar">
+    <changeSet id="testdata-moodle-pending-prefix-ids" author="kspar" context="testdata">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM student_moodle_pending_access WHERE invite_id LIKE 'M-%'</sqlCheck>
         </preConditions>
@@ -765,7 +765,7 @@
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-empty-courses" author="kspar">
+    <changeSet id="testdata-empty-courses" author="kspar" context="testdata">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM course WHERE id = 9006</sqlCheck>
         </preConditions>
@@ -823,7 +823,7 @@
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-mock-executor" author="kspar">
+    <changeSet id="testdata-mock-executor" author="kspar" context="testdata">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM executor WHERE id = 9001</sqlCheck>
         </preConditions>
@@ -837,7 +837,7 @@
         </sql>
     </changeSet>
 
-    <changeSet id="testdata-exercise-markdown" author="kspar">
+    <changeSet id="testdata-exercise-markdown" author="kspar" context="testdata">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM exercise_version WHERE id = 9001 AND text_md IS NOT NULL</sqlCheck>
         </preConditions>

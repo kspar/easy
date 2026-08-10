@@ -6,7 +6,13 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
 
     <changeSet id="220226-1" author="kspar">
-        <!-- Add new jsonb feedback column and migrate existing data -->
+        <!-- Add new jsonb feedback column and migrate existing data.
+
+             The predicate takes either column, not just feedback_adoc: 220226-2 drops both, so a row
+             holding rendered HTML and no source would have lost it silently. Whether production has
+             such rows is unknown and does not need to be known — this costs nothing either way.
+             validCheckSum because databases that ran the narrower version are already past it. -->
+        <validCheckSum>ANY</validCheckSum>
         <addColumn tableName="teacher_activity">
             <column name="feedback" type="jsonb">
                 <constraints nullable="true"/>
@@ -20,7 +26,7 @@
                 'general_html', feedback_html,
                 'inline', '[]'::jsonb
             )
-            WHERE feedback_adoc IS NOT NULL;
+            WHERE feedback_adoc IS NOT NULL OR feedback_html IS NOT NULL;
         ]]></sql>
     </changeSet>
 
@@ -36,12 +42,37 @@
     </changeSet>
 
     <changeSet id="260225-1" author="kspar">
-        <!-- Revert JSONB feedback column back to separate text columns (JSONB was never deployed to prod) -->
-        <dropColumn tableName="teacher_activity" columnName="feedback"/>
+        <!--
+            Revert the JSONB feedback column back to separate text columns.
+
+            This used to drop `feedback` and add two empty columns, on the reasoning recorded in its
+            old comment: "JSONB was never deployed to prod". That is true, and it is precisely why
+            dropping was wrong. A database which had not run 220226-1 yet — production, and any
+            restored copy of it — runs the whole sequence in order on the next deploy: 220226-1 copies
+            feedback_adoc into `feedback`, 220226-2 drops feedback_adoc, and this changeset then
+            dropped `feedback`. Every teacher feedback text in the database, gone, with the migration
+            reporting success.
+
+            Found on dev, 2026-08-10, by importing a production dump: teacher_activity arrived with
+            thousands of feedback_adoc values and came out of the migration with none. The same
+            deploy against production would have done the same thing to the same rows.
+
+            So it carries the data across before dropping. On a database that already ran the old
+            version the copy is a no-op over columns that are already empty, and validCheckSum keeps
+            that database from failing validation on the changed body.
+        -->
+        <validCheckSum>ANY</validCheckSum>
         <addColumn tableName="teacher_activity">
             <column name="feedback_md" type="text"><constraints nullable="true"/></column>
             <column name="feedback_html" type="text"><constraints nullable="true"/></column>
         </addColumn>
+        <sql><![CDATA[
+            UPDATE teacher_activity
+            SET feedback_md = feedback ->> 'general_md',
+                feedback_html = feedback ->> 'general_html'
+            WHERE feedback IS NOT NULL;
+        ]]></sql>
+        <dropColumn tableName="teacher_activity" columnName="feedback"/>
     </changeSet>
 
     <changeSet id="260225-2" author="kspar">
