@@ -23,7 +23,12 @@ const INFO = {
     applied_at: '2026-08-04T10:00:00Z',
     total_changesets: 142,
   },
-  grading: [{ executor: 'dev-executor', queued: 0, running: 1 }],
+  grading: [
+    { executor: 'dev-executor', queued: 0, running: 1, reachable: true },
+    // Down, and idle-looking if you only count its queue — the case this panel used to report as
+    // "0 queued, 0 running", i.e. indistinguishable from healthy.
+    { executor: 'sleepy-executor', queued: 0, running: 0, reachable: false },
+  ],
   disk: { free_gb: 29, total_gb: 38 },
 }
 
@@ -77,7 +82,14 @@ check('admin: heap is shown against its maximum', asAdmin.text.includes('412 MB 
 check('admin: db pool is spelled out', asAdmin.text.includes('2 active, 8 idle, 0 waiting'))
 // The one thing actuator could not tell us, and the reason a half-applied deploy is diagnosable.
 check('admin: the schema changeset is named', asAdmin.text.includes('2026-08-04-add-message'))
+// The bare count was unlabelled and unguessable — "(142)" says nothing about what 142 is.
+check('admin: the changeset count says what it counts', asAdmin.text.includes('142 changesets'))
 check('admin: grading queue depth per executor', asAdmin.text.includes('0 queued, 1 running'))
+// An executor that is down must not read as an idle healthy one.
+check(
+  'admin: a down executor says so instead of looking idle',
+  asAdmin.text.includes('sleepy-executor') && /sleepy-executor[^0-9]*not responding/.test(asAdmin.text),
+)
 check('admin: disk is shown', asAdmin.text.includes('29 GB / 38 GB'))
 check(`admin: the endpoint was called (${asAdmin.calls})`, asAdmin.calls === 1)
 

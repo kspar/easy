@@ -28,7 +28,7 @@ export interface OperatingInfo {
     applied_at: string | null
     total_changesets: number
   }
-  grading: { executor: string; queued: number; running: number }[]
+  grading: { executor: string; queued: number; running: number; reachable: boolean }[]
   disk: { free_gb: number; total_gb: number }
 }
 

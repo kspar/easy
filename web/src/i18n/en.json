@@ -559,7 +559,8 @@
     "opSchemaUnknown": "unknown",
     "opGrading": "grading ({{executor}})",
     "opGradingValue": "{{queued}} queued, {{running}} running",
-    "opDisk": "disk free"
+    "opDisk": "disk free",
+    "opSchemaValue": "{{changeset}} / {{count}} changesets"
   },
   "embed": {
     "loadFailed": "Could not load this exercise.",

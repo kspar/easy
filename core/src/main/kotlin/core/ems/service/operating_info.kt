@@ -67,6 +67,10 @@ class OperatingInfoController(private val operatingInfoService: OperatingInfoSer
         @get:JsonProperty("executor") val executor: String,
         @get:JsonProperty("queued") val queued: Int,
         @get:JsonProperty("running") val running: Int,
+        // Without this, an executor that is *down* renders identically to one that is idle — both
+        // are "0 queued, 0 running" — which is the wrong direction for an operations panel to fail
+        // in. Taken from the same check the version list uses, so the two cannot contradict.
+        @get:JsonProperty("reachable") val reachable: Boolean,
     )
 
     data class DiskResp(
@@ -94,6 +98,8 @@ class OperatingInfoController(private val operatingInfoService: OperatingInfoSer
 class OperatingInfoService(
     private val dataSource: DataSource,
     private val autoGradeScheduler: AutoGradeScheduler,
+    // For executor reachability, which it already establishes and caches for the version list.
+    private val versionsService: VersionsService,
 ) {
 
     fun get() = OperatingInfoController.Resp(
@@ -162,23 +168,33 @@ class OperatingInfoService(
     }
 
     /**
-     * Queue depth per executor, from the scheduler's own memory joined to the executor names.
+     * Queue depth per executor, from the scheduler's own memory joined to the executor names, plus
+     * whether the executor is actually answering.
      *
      * An executor with a row but no entry in the scheduler is reported as idle rather than omitted:
      * the two can disagree for up to a minute after the rows change, and hiding that would hide
      * exactly the state worth seeing.
+     *
+     * Reachability is reused from [VersionsService] rather than pinged again. That is one HTTP call
+     * per executor saved, and — more to the point — it means this panel and the version list on the
+     * same page cannot disagree about whether an executor is up. The cost is that a change of state
+     * takes up to that cache's TTL to appear here, which for an operations page a human is reading
+     * is a fair trade.
      */
     private fun grading(): List<OperatingInfoController.GradingResp> {
         val load = autoGradeScheduler.currentLoad()
         val names = transaction {
             Executor.selectAll().associate { it[Executor.id].value to it[Executor.name] }
         }
+        val reachableByName = versionsService.executors().associate { it.name to it.reachable }
+
         return names.entries.sortedBy { it.value }.map { (id, name) ->
             val executorLoad = load[id]
             OperatingInfoController.GradingResp(
                 executor = name,
                 queued = executorLoad?.waiting ?: 0,
                 running = executorLoad?.active ?: 0,
+                reachable = reachableByName[name] ?: false,
             )
         }
     }

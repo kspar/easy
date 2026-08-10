@@ -559,7 +559,8 @@
     "opSchemaUnknown": "teadmata",
     "opGrading": "kontrollimine ({{executor}})",
     "opGradingValue": "{{queued}} järjekorras, {{running}} töös",
-    "opDisk": "vaba kettaruumi"
+    "opDisk": "vaba kettaruumi",
+    "opSchemaValue": "{{changeset}} / {{count}} muudatust"
   },
   "embed": {
     "loadFailed": "Ülesande laadimine ebaõnnestus.",

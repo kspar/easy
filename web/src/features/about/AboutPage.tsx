@@ -83,7 +83,7 @@ function OperatingInfo() {
 
   if (!isAdmin) return null
 
-  const rows: { label: string; value: string }[] = []
+  const rows: { label: string; value: string; muted?: boolean }[] = []
 
   if (data) {
     const { jvm, db_pool: pool, schema, disk } = data
@@ -113,13 +113,19 @@ function OperatingInfo() {
     rows.push({
       label: t('about.opSchema'),
       value: schema.changeset
-        ? `${schema.changeset} (${schema.total_changesets})`
+        ? t('about.opSchemaValue', { changeset: schema.changeset, count: schema.total_changesets })
         : t('about.opSchemaUnknown'),
     })
     for (const g of data.grading) {
       rows.push({
         label: t('about.opGrading', { executor: g.executor }),
-        value: t('about.opGradingValue', { queued: g.queued, running: g.running }),
+        // "0 queued, 0 running" for an executor that is down reads as healthy, which is the wrong
+        // way for an operations panel to be wrong. Same wording as the version list above, from
+        // the same reachability check, so the two lines cannot disagree.
+        value: g.reachable
+          ? t('about.opGradingValue', { queued: g.queued, running: g.running })
+          : t('about.versionUnreachable'),
+        muted: !g.reachable,
       })
     }
     rows.push({
@@ -155,7 +161,7 @@ function OperatingInfo() {
             <Box component="dt" sx={{ color: 'text.secondary' }}>
               {row.label}
             </Box>
-            <Box component="dd" sx={{ m: 0 }}>
+            <Box component="dd" sx={{ m: 0, color: row.muted ? 'text.disabled' : 'text.primary' }}>
               {row.value}
             </Box>
           </Box>
