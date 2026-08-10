@@ -114,6 +114,24 @@ await shot('01-dev-badge')
 const dismissables = await page.locator('[aria-label*="not the production"] button').count()
 check(`dev: nothing to dismiss (${dismissables} buttons inside it)`, dismissables === 0)
 
+// --- the landing page, which lives outside AppLayout ----------------------------------------------
+// The one page a signed-out person lands on, and the page a production/dev mix-up starts from. It
+// has its own navbar rather than the app shell's, so the badge has to be placed there separately —
+// which means it can silently stop being there without anything else failing.
+const landing = await bootWith(
+  { emsRoot: '/v2', keycloak: KC, environment: DEV },
+  { path: '/landing', rendered: 'text=LAHENDUS' },
+)
+check(`landing: marked too (${landing.badge})`, (landing.badge ?? '').includes('DEV'))
+check(`landing: title carries the prefix (${landing.title})`, landing.title.startsWith('[DEV] '))
+await shot('03-landing')
+
+const landingProd = await bootWith(
+  { emsRoot: '/v2', keycloak: KC },
+  { path: '/landing', rendered: 'text=LAHENDUS' },
+)
+check('landing on production: undecorated', landingProd.badge === null)
+
 // --- a malformed environment must not take the app down ------------------------------------------
 // A typo in a config file should degrade to "production", never to a configuration-error page.
 const emptyLabel = await bootWith({ emsRoot: '/v2', keycloak: KC, environment: { label: '   ' } })

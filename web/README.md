@@ -71,7 +71,7 @@ clicking the wrong tab. Setting `environment` marks a deployment four ways:
 
 | Where | What |
 | --- | --- |
-| Beside the wordmark | A small badge in `colour` showing the label, top left, with the "not production" warning as its tooltip and accessible name. Nothing to dismiss |
+| Beside the wordmark | A small badge in `colour` showing the label, top left, with the "not production" warning as its tooltip and accessible name. Nothing to dismiss. Rendered in the app shell *and* in the landing page's own navbar, which is outside `AppLayout` |
 | Tab title | `[DEV] My courses - Lahendus` — leading, because tab titles truncate from the right |
 | Favicon | The Lahendus glyph knocked out of a badge in `colour`, built as an SVG data URI at boot |
 | Embed footer | `LAHENDUS · DEV`, so an embed pasted into a wiki page says where it came from |

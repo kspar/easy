@@ -24,6 +24,7 @@ import harnoLogo from '../../assets/sponsors/harno.svg'
 import mkmLogo from '../../assets/sponsors/mkm.png'
 import itaLogo from '../../assets/sponsors/ita.png'
 import config from '../../config.ts'
+import EnvironmentBadge from '../../components/EnvironmentBadge.tsx'
 
 // ─── Design Tokens ──────────────────────────────────────────────────────────────
 
@@ -557,6 +558,10 @@ export default function LandingPage() {
               >
                 LAHENDUS
               </Typography>
+              {/* The same badge the app shell shows (EZ-1733). This page is outside AppLayout, so
+                  without it the one page a signed-out person lands on would be the one page that
+                  never says which deployment they are looking at. Renders nothing on production. */}
+              <EnvironmentBadge />
             </Box>
 
             <Box sx={{ flexGrow: 1 }} />
