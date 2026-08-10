@@ -7,7 +7,7 @@
  * believing you are on dev — is made by *clicking the wrong tab*, and a tab shows nothing but
  * a favicon and a truncated title. Hence three signals, of which two live here:
  *
- * 1. a banner above the app bar (`components/EnvironmentBanner.tsx`), for when you are looking at
+ * 1. a badge beside the wordmark (`components/EnvironmentBadge.tsx`), for when you are looking at
  *    the page rather than the tab;
  * 2. a **title prefix** — `[DEV] Lahendus` — which also shows up in the window switcher and in
  *    browser history;
@@ -63,7 +63,7 @@ function faviconSvg(colour: string): string {
  *
  * The replacement is an SVG data URI, which every current browser accepts as a favicon. Somewhere
  * old enough to refuse it shows no icon at all on non-production rather than a wrong one, and the
- * title prefix and the banner still say where you are.
+ * title prefix and the badge still say where you are.
  */
 export function applyEnvironmentBadge(): void {
   document.title = documentTitle()
@@ -89,7 +89,7 @@ export function applyEnvironmentBadge(): void {
 /**
  * Black or white, whichever is readable on `hex`.
  *
- * The banner's colour comes from a config file, so the text colour cannot be a constant: someone
+ * The badge's colour comes from a config file, so the text colour cannot be a constant: someone
  * marking a third environment in pale yellow should get readable text, not white on white. Plain
  * relative luminance with the sRGB gamma step, which is what WCAG contrast is built on.
  */

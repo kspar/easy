@@ -111,7 +111,7 @@ as local-dev defaults, and an artifact carrying those is one forgotten step away
 silently talking to production. Without the file the app renders a "Configuration error" page
 instead, and the deploy writes the environment's own copy from `deploy/dev/config.json`.
 
-That copy also carries `"environment": {"label": "DEV", …}`, which is what puts the banner, the
+That copy also carries `"environment": {"label": "DEV", …}`, which is what puts the badge, the
 tab-title prefix and the orange favicon on this deployment (EZ-1733). Production's config.json must
 **not** have the key — absent means production, so nothing there needs changing to stay unmarked.
 

@@ -71,13 +71,13 @@ clicking the wrong tab. Setting `environment` marks a deployment four ways:
 
 | Where | What |
 | --- | --- |
-| Above the app bar | A banner strip in `colour`, showing the label and a "not production" line. Not dismissible |
+| Beside the wordmark | A small badge in `colour` showing the label, top left, with the "not production" warning as its tooltip and accessible name. Nothing to dismiss |
 | Tab title | `[DEV] My courses - Lahendus` — leading, because tab titles truncate from the right |
 | Favicon | The Lahendus glyph knocked out of a badge in `colour`, built as an SVG data URI at boot |
 | Embed footer | `LAHENDUS · DEV`, so an embed pasted into a wiki page says where it came from |
 
 **Production carries no `environment` key and needs no config edit.** That direction is deliberate:
-production cannot accidentally acquire a banner, and the rule to learn is the simple one — anything
+production cannot accidentally acquire a badge, and the rule to learn is the simple one — anything
 unusual on the page means this is not production.
 
 `label` carries the meaning on its own, since colour cannot for everyone; it is trimmed and capped

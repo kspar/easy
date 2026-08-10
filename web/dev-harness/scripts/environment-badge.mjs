@@ -42,8 +42,11 @@ async function bootWith(config, { path = '/courses', rendered = '[class*=MuiAppB
     const icons = [...document.querySelectorAll('link')]
       .filter((l) => (l.getAttribute('rel') ?? '').includes('icon'))
       .map((l) => ({ rel: l.getAttribute('rel'), href: l.getAttribute('href') ?? '' }))
-    const banner = document.querySelector('[role=note]')
-    return { title: document.title, icons, banner: banner ? banner.textContent : null }
+    // The badge is the element carrying the environment warning as its accessible name — found
+    // that way rather than by class or position, since it renders in two places (sidenav on
+    // desktop, app bar on mobile) and neither is inherently "the" one.
+    const badge = document.querySelector('[aria-label*="not the production"], [aria-label*="päriskeskkond"]')
+    return { title: document.title, icons, badge: badge ? badge.textContent.trim() : null }
   })
 }
 
@@ -51,7 +54,7 @@ async function bootWith(config, { path = '/courses', rendered = '[class*=MuiAppB
 // The absence of the key is what production ships, so this is the case that must stay untouched:
 // no banner, no prefix, and the green icons index.html declares.
 const prod = await bootWith({ emsRoot: '/v2', keycloak: KC })
-check(`production: no banner (${prod.banner})`, prod.banner === null)
+check(`production: no badge (${prod.badge})`, prod.badge === null)
 check(`production: plain title (${prod.title})`, !prod.title.includes('['))
 check(
   `production: the original icons are untouched (${prod.icons.length})`,
@@ -64,10 +67,28 @@ check(
 
 // --- dev: all three signals ------------------------------------------------------------------
 const dev = await bootWith({ emsRoot: '/v2', keycloak: KC, environment: DEV })
-check(`dev: banner shows the label (${dev.banner})`, (dev.banner ?? '').includes('DEV'))
+check(`dev: the badge shows the label (${dev.badge})`, (dev.badge ?? '').includes('DEV'))
+// The label is short enough to be cryptic on its own, so the warning has to be reachable — it is
+// the badge's accessible name and its tooltip. Colour is never the only channel.
 check(
-  'dev: the label is not the only thing said — the warning text carries the meaning',
-  (dev.banner ?? '').toLowerCase().includes('not the production environment'),
+  'dev: the badge carries the warning as its accessible name',
+  await page.locator('[aria-label*="not the production"]').count() > 0,
+)
+// Beside the wordmark, not floating somewhere else on the page: the whole point of moving it off
+// the top strip was that it should be read together with "LAHENDUS".
+check(
+  'dev: it sits next to the wordmark',
+  await page.evaluate(() => {
+    const badge = document.querySelector('[aria-label*="not the production"]')
+    const mark = [...document.querySelectorAll('*')].find(
+      (el) => el.children.length === 0 && el.textContent.trim() === 'LAHENDUS',
+    )
+    if (!badge || !mark) return false
+    const b = badge.getBoundingClientRect()
+    const m = mark.getBoundingClientRect()
+    // Same line, and within a wordmark's width of it.
+    return Math.abs(b.top - m.top) < 24 && b.left >= m.left && b.left - m.right < 40
+  }),
 )
 check(`dev: title is prefixed (${dev.title})`, dev.title.startsWith('[DEV] '))
 // The prefix must lead: a tab strip truncates from the right, so a suffix disappears exactly when
@@ -86,20 +107,21 @@ check(
   'dev: no green icon link survives',
   !dev.icons.some((i) => i.href.includes('favicon-32x32')),
 )
-await shot('01-dev-banner')
+await shot('01-dev-badge')
 
-// The banner is not dismissible — no close button anywhere in it.
-const bannerButtons = await page.locator('[role=note] button').count()
-check(`dev: banner cannot be dismissed (${bannerButtons} buttons)`, bannerButtons === 0)
+// Nothing to dismiss: a marking someone can turn off is a marking that is off on the day it
+// matters. The badge is a span, not a chip with a delete affordance.
+const dismissables = await page.locator('[aria-label*="not the production"] button').count()
+check(`dev: nothing to dismiss (${dismissables} buttons inside it)`, dismissables === 0)
 
 // --- a malformed environment must not take the app down ------------------------------------------
 // A typo in a config file should degrade to "production", never to a configuration-error page.
 const emptyLabel = await bootWith({ emsRoot: '/v2', keycloak: KC, environment: { label: '   ' } })
-check(`empty label: treated as production (${emptyLabel.title})`, emptyLabel.banner === null)
+check(`empty label: treated as production (${emptyLabel.title})`, emptyLabel.badge === null)
 check('empty label: the app still booted', (await page.locator('[class*=MuiAppBar]').count()) > 0)
 
 const notAnObject = await bootWith({ emsRoot: '/v2', keycloak: KC, environment: 'DEV' })
-check(`environment as a string: treated as production`, notAnObject.banner === null)
+check(`environment as a string: treated as production`, notAnObject.badge === null)
 
 // A colour is interpolated into an SVG, so anything that is not a hex colour is replaced rather
 // than escaped. `<script>` in a colour has no legitimate reading.
@@ -109,7 +131,7 @@ const badColour = await bootWith({
   environment: { label: 'ODD', colour: '"/><script>alert(1)</script>' },
 })
 const badFavicon = decodeURIComponent(badColour.icons[0]?.href ?? '')
-check(`odd colour: still marked (${badColour.banner})`, (badColour.banner ?? '').includes('ODD'))
+check(`odd colour: still marked (${badColour.badge})`, (badColour.badge ?? '').includes('ODD'))
 check('odd colour: nothing from it reaches the favicon', !badFavicon.includes('script'))
 check('odd colour: fell back to the default amber', badFavicon.includes('#b26a00'))
 

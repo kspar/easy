@@ -62,7 +62,7 @@ import EditCourseDialog from '../features/course-settings/EditCourseDialog.tsx'
 import useRecentExercises from '../hooks/useRecentExercises.ts'
 import logoSvg from '../assets/logo.svg'
 import SystemMessageBanner from '../components/SystemMessageBanner.tsx'
-import EnvironmentBanner from '../components/EnvironmentBanner.tsx'
+import EnvironmentBadge from '../components/EnvironmentBadge.tsx'
 
 function slugify(s: string): string {
   return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u00C0-\u024F-]/g, '')
@@ -266,6 +266,9 @@ export default function AppLayout() {
         >
           LAHENDUS
         </Typography>
+        {/* Beside the wordmark, so "which application" and "which deployment" are read in one
+            glance. Renders nothing on production. */}
+        <EnvironmentBadge />
       </Box>
 
       {/* User & role switcher */}
@@ -602,11 +605,6 @@ export default function AppLayout() {
           mt: isMobile ? 0 : 1,
         }}
       >
-        {/* Above even the system messages, and unlike them not tied to being signed in: which
-            environment you are on is true before you log in, and the login page is where a
-            production/dev mix-up starts. Renders nothing on production. */}
-        <EnvironmentBanner />
-
         {/* Above the AppBar and outside it, so an urgent notice sits at the very top of the page
             and pushes the chrome down rather than competing with it. Renders nothing when there is
             nothing to say, so the ordinary case costs no layout. Gated on `authenticated` because
@@ -661,6 +659,7 @@ export default function AppLayout() {
                 >
                   LAHENDUS
                 </Typography>
+                <EnvironmentBadge compact />
               </Box>
             )}
 
