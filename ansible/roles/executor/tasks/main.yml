@@ -230,6 +230,26 @@
     executor_images_present: "{{ built_images.results | selectattr('rc', 'equalto', 0) | map(attribute='item.name') | list }}"
     executor_images_missing: "{{ built_images.results | rejectattr('rc', 'equalto', 0) | map(attribute='item.name') | list }}"
 
+# An image can answer to more than one reference: TSL exercises ask for `tiivad:tsl-compose`, which
+# is the tiivad image under the tag production uses. Only tags of images that actually built.
+- name: Apply the extra tags an image answers to
+  ansible.builtin.command: "docker tag {{ item.0.name }} {{ item.1 }}"
+  loop: "{{ executor_images | subelements('tags', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.0.name }} -> {{ item.1 }}"
+  when: item.0.name in executor_images_present
+  changed_when: false  # `docker tag` is idempotent; re-tagging the same image is a no-op
+
+- name: Work out every reference core should be told about
+  # The image names plus their tags, because `container_image` rows are matched by the exact string
+  # an exercise carries — `tiivad` and `tiivad:tsl-compose` are two rows, not one.
+  ansible.builtin.set_fact:
+    executor_image_refs: >-
+      {{ executor_images_present
+         + (executor_images | selectattr('name', 'in', executor_images_present)
+                            | selectattr('tags', 'defined')
+                            | map(attribute='tags') | flatten | list) }}
+
 - name: Say plainly which images are missing, if any
   ansible.builtin.debug:
     msg: >-
@@ -251,7 +271,7 @@
   register: image_rows
   notify: Restart core so it sees the executor rows
   changed_when: "'INSERT 0 1' in image_rows.stdout"
-  loop: "{{ executor_images_present }}"
+  loop: "{{ executor_image_refs }}"
   loop_control:
     label: "{{ item }}"
 
@@ -282,7 +302,7 @@
   # Only what exists on this host. Advertising an image core cannot actually grade with sends
   # submissions to an executor that will fail them, which is worse than the exercise having no
   # capable executor at all — that at least says so.
-  loop: "{{ executor_images_present }}"
+  loop: "{{ executor_image_refs }}"
   loop_control:
     label: "{{ item }}"
 

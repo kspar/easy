@@ -11,10 +11,10 @@ const { browser, page, shot } = await launch({ shotPrefix: 'about-versions-' })
 const VERSIONS = {
   core: { version: '4.0', commit: 'abc1234', built_at: '2026-08-10T09:26:52.903Z' },
   executors: [
-    { name: 'executor-1', version: '4.0', commit: 'abc1234', reachable: true },
+    { name: 'executor-1', version: '4.0', commit: 'abc1234', built_at: '2026-08-09T18:05:00Z', reachable: true },
     // Registered but silent. Rendering it is the point: an executor that is down is exactly what
     // someone reading this page needs to see.
-    { name: 'executor-2', version: null, commit: null, reachable: false },
+    { name: 'executor-2', version: null, commit: null, built_at: null, reachable: false },
   ],
 }
 
@@ -53,10 +53,13 @@ async function readVersions() {
     const dl = document.querySelector('dl')
     if (!dl) return {}
     const out = {}
-    const terms = [...dl.querySelectorAll('dt')]
-    for (const dt of terms) {
-      const dd = dt.nextElementSibling
-      out[dt.textContent.trim()] = dd ? dd.textContent.trim() : null
+    for (const dt of dl.querySelectorAll('dt')) {
+      const version = dt.nextElementSibling
+      const builtAt = version ? version.nextElementSibling : null
+      out[dt.textContent.trim()] = {
+        version: version ? version.textContent.trim() : null,
+        builtAt: builtAt ? builtAt.textContent.trim() : null,
+      }
     }
     return out
   })
@@ -67,16 +70,35 @@ const rows = await readVersions()
 
 // web's version is compiled in by Vite's define, so this is also the check that the define
 // survived the build rather than leaving the literal `__APP_VERSION__` in the bundle.
-check(`web reports its own version (${rows.web})`, /^v\d/.test(rows.web ?? ''))
+check(`web reports its own version (${rows.web?.version})`, /^v\d/.test(rows.web?.version ?? ''))
 check(
   'web version carries a commit',
-  /^v[\w.]+ \([0-9a-f]{7}\)$/.test(rows.web ?? '') || /unknown/.test(rows.web ?? ''),
+  /^v[\w.]+ \([0-9a-f]{7}\)$/.test(rows.web?.version ?? '') || /unknown/.test(rows.web?.version ?? ''),
 )
-check(`core comes from the server (${rows.core})`, rows.core === 'v4.0 (abc1234)')
-check(`a reachable executor shows its version (${rows['executor-1']})`, rows['executor-1'] === 'v4.0 (abc1234)')
+check(`core comes from the server (${rows.core?.version})`, rows.core?.version === 'v4.0 (abc1234)')
+check(`a reachable executor shows its version (${rows['executor-1']?.version})`, rows['executor-1']?.version === 'v4.0 (abc1234)')
 check(
-  `an unreachable executor says so rather than vanishing (${rows['executor-2']})`,
-  (rows['executor-2'] ?? '').includes('not responding'),
+  `an unreachable executor says so rather than vanishing (${rows['executor-2']?.version})`,
+  (rows['executor-2']?.version ?? '').includes('not responding'),
+)
+
+// --- build times ----------------------------------------------------------------------------------
+// dd/MM/yyyy HH:mm, British order like every other date in the app. Asserted as a shape rather than
+// an exact string: these render in the viewer's timezone, so a fixed expectation would pass in
+// Tartu and fail in CI.
+const DATE_TIME = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/
+check(`web has a build time (${rows.web?.builtAt})`, DATE_TIME.test(rows.web?.builtAt ?? ''))
+check(`core's build time is rendered (${rows.core?.builtAt})`, DATE_TIME.test(rows.core?.builtAt ?? ''))
+check(
+  `the executor's is too (${rows['executor-1']?.builtAt})`,
+  DATE_TIME.test(rows['executor-1']?.builtAt ?? ''),
+)
+// 2026-08-10T09:26:52Z is the 10th in every timezone this app is read in, so the day is safe to
+// assert even though the hour is not.
+check(`core's date matches what the server sent (${rows.core?.builtAt})`, (rows.core?.builtAt ?? '').startsWith('10/08/2026'))
+check(
+  'an unreachable executor gets no invented timestamp',
+  (rows['executor-2']?.builtAt ?? '') === '',
 )
 // No bearer token on the wire. The About page is reachable signed out and the endpoint is
 // permitAll in SecurityConf precisely so a reporter who cannot log in can still read it; sending a
@@ -98,7 +120,7 @@ check(`fetching versions with no session works (HTTP ${authHeaders})`, authHeade
 versionsStatus = 500
 await page.goto(`${BASE_URL}/about?again=1`)
 const degraded = await readVersions()
-check(`web still reported when the server 500s (${degraded.web})`, /^v\d/.test(degraded.web ?? ''))
+check(`web still reported when the server 500s (${degraded.web?.version})`, /^v\d/.test(degraded.web?.version ?? ''))
 check('no core row is invented', degraded.core === undefined)
 check(
   'and the page says why',

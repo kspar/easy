@@ -42,6 +42,10 @@ class VersionsController(private val versionsService: VersionsService) {
         @get:JsonProperty("name") val name: String,
         @get:JsonProperty("version") val version: String?,
         @get:JsonProperty("commit") val commit: String?,
+        // When the executor's code was put on its host. aae has no build step, so this is the
+        // mtime of its source rather than a build time — the same question, answered the only way
+        // a copied-not-compiled component can answer it.
+        @get:JsonProperty("built_at") val builtAt: String?,
         // False when the executor did not answer in time. Rendering "unreachable" is more useful
         // than omitting the row: an executor that is registered but silent is worth seeing.
         @get:JsonProperty("reachable") val reachable: Boolean,
@@ -115,13 +119,13 @@ class VersionsService(buildPropertiesProvider: ObjectProvider<BuildProperties>) 
                 client.getForObject(baseUrl + EXECUTOR_VERSION_URL, ExecutorVersionResponse::class.java)
             }.fold(
                 onSuccess = {
-                    VersionsController.ExecutorResp(name, it?.version, it?.commit, reachable = it != null)
+                    VersionsController.ExecutorResp(name, it?.version, it?.commit, it?.builtAt, reachable = it != null)
                 },
                 onFailure = {
                     // Info, not error: an executor being drained or restarted is ordinary, and this
                     // endpoint asking about it should not fill the log with stack traces.
                     log.info { "Executor $name did not report a version: ${it.message}" }
-                    VersionsController.ExecutorResp(name, null, null, reachable = false)
+                    VersionsController.ExecutorResp(name, null, null, null, reachable = false)
                 },
             )
         }
@@ -130,6 +134,7 @@ class VersionsService(buildPropertiesProvider: ObjectProvider<BuildProperties>) 
     data class ExecutorVersionResponse(
         @get:JsonProperty("version") val version: String?,
         @get:JsonProperty("commit") val commit: String?,
+        @get:JsonProperty("built_at") val builtAt: String?,
     )
 
     companion object {

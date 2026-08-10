@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+from datetime import datetime, timezone
 import time
 import json
 import typing as T
@@ -65,8 +66,26 @@ def _read_commit() -> str:
         return "unknown"
 
 
+def _read_deployed_at() -> str:
+    """
+    When this executor's code was put here, as an ISO timestamp.
+
+    There is no build to date — aae is copied, not compiled — so the honest equivalent is the
+    modification time of the source itself, which a deploy sets when it writes the file. Answers
+    "is this running what we shipped an hour ago", which is the question core and web answer with
+    their build times.
+    """
+    try:
+        return datetime.fromtimestamp(
+            os.path.getmtime(os.path.abspath(__file__)), tz=timezone.utc
+        ).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    except OSError:
+        return ""
+
+
 VERSION = _read_version()
 COMMIT = _read_commit()
+DEPLOYED_AT = _read_deployed_at()
 
 
 def check_content(content):
@@ -181,7 +200,7 @@ def get_version():
     What this executor is running (EZ-1709). Core calls it and passes the answer on to the About
     page, since nothing in a browser can reach an executor directly.
     """
-    return jsonify({"version": VERSION, "commit": COMMIT})
+    return jsonify({"version": VERSION, "commit": COMMIT, "built_at": DEPLOYED_AT})
 
 
 @app.errorhandler(BadRequest)

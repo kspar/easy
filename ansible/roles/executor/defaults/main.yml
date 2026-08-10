@@ -43,6 +43,17 @@ executor_timeout_sec: 60
 executor_images:
   - name: tiivad
     dockerfile: tiivad
+    # TSL exercises pin this exact reference — `TSL_CONTAINER` in web/src/features/library/
+    # autoEvalTypes.ts and the same literal in UpdateExercise.kt — and core rejects a save whose
+    # container_image has no row, which is what `ENTITY_WITH_ID_NOT_FOUND: tiivad:tsl-compose`
+    # means. It is a *tag* of this same image rather than a separate build: the Dockerfile installs
+    # the tiivad package, which is what runs a compiled TSL spec.
+    #
+    # Production also has `tiivad:tsl-spec`, the legacy YAML flavour. Deliberately not here: dev has
+    # no imported exercises yet, and the TSL migration (doc/core/tsl-migration/) is converting those
+    # away. Add it here if an import brings some along.
+    tags:
+      - tiivad:tsl-compose
   - name: silmused
     dockerfile: silmused
   - name: pygrader

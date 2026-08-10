@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { format } from 'date-fns'
 import { apiFetch } from './client.ts'
 
 /**
@@ -24,6 +25,8 @@ export interface ExecutorVersion {
   /** Null when the executor did not answer. */
   version: string | null
   commit: string | null
+  /** aae has no build step, so this is when its source was last written to its host. */
+  built_at: string | null
   reachable: boolean
 }
 
@@ -47,4 +50,18 @@ export function useVersions() {
 export function formatVersion(version: string, commit?: string | null): string {
   const hasCommit = commit && commit !== 'unknown'
   return hasCommit ? `v${version} (${commit})` : `v${version}`
+}
+
+/**
+ * `10/08/2026 09:43` — British order, like every other date in the app, and with the time because
+ * several builds share a day and "which build" is the question this whole block exists to answer.
+ *
+ * Rendered in the reader's own timezone: the timestamps arrive as UTC, and a person comparing what
+ * the page says against when they pushed is comparing against their own clock.
+ */
+export function formatBuiltAt(builtAt: string | null | undefined): string {
+  if (!builtAt) return ''
+  const date = new Date(builtAt)
+  if (Number.isNaN(date.getTime())) return ''
+  return format(date, 'dd/MM/yyyy HH:mm')
 }
