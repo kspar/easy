@@ -1,0 +1,67 @@
+# The auto-assessment executor: aae/server.py under gunicorn, grading student code in Docker
+# containers on this host. doc/dev-environment.md §6 is the reasoning; this role is the answer to
+# the "still to write" it ends with.
+#
+# Everything here is an ordinary default. The one value worth thinking about per environment is
+# executor_workers — see below.
+
+executor_user: easy-executor
+executor_group: easy-executor
+
+# Loopback only, and not negotiable: `callExecutor` in core posts with no credentials at all
+# (core/src/main/kotlin/core/aas/executor_utils.kt), so anything that can reach this port can run
+# arbitrary code in a container on this host.
+executor_bind_address: 127.0.0.1
+executor_port: 5111
+# What goes in the executor's `base_url` column, i.e. what core will POST submissions to.
+executor_base_url: "http://{{ executor_bind_address }}:{{ executor_port }}"
+
+# The database core reads. Comes from the environment's inventory (easy_core_db_name), the same
+# value core_config writes into core's own datasource URL — these rows are useless in any other.
+executor_db: "{{ easy_core_db_name | default('easyems_dev') }}"
+
+executor_root: /srv/easy/aae
+executor_venv: "{{ executor_root }}/venv"
+# The source, and the VERSION/COMMIT files beside it. server.py resolves its version relative to
+# its own parent's parent, so these land where /srv/easy/aae/server.py expects them.
+executor_src: "{{ playbook_dir }}/../aae"
+executor_stamp_dir: "{{ executor_root | dirname }}"
+
+# The sample config says 30, which is sized for production. A dev VM with two cores and one tester
+# does not need 30 gunicorn workers each able to start a container; it needs enough to prove
+# concurrency works. Raise it per environment rather than here.
+executor_workers: 4
+executor_timeout_sec: 60
+
+# What core will be told this executor can grade with, and what gets built locally. `containers.py`
+# builds `FROM <image>` and does **not** pull, so an image named in the database but absent here
+# fails at grading time on exactly the exercise a tester tries first.
+#
+# `context` is a directory created under {{ executor_root }}/images; `git` clones a repository into
+# it first, which is how pygrader gets the python-grader tree its Dockerfile COPYs. Order matters:
+# imgrec builds FROM pygrader.
+executor_images:
+  - name: tiivad
+    dockerfile: tiivad
+  - name: silmused
+    dockerfile: silmused
+  - name: pygrader
+    dockerfile: pygrader
+    git:
+      repo: https://github.com/kspar/python-grader.git
+      dest: python-grader
+  - name: imgrec
+    dockerfile: imgrec
+
+# Where the Dockerfiles come from. They live in doc/ because they are documentation of what the
+# grading images contain as much as they are build inputs.
+executor_dockerfile_src: "{{ playbook_dir }}/../doc/aae/dockerfiles"
+
+# The row core looks up to find this executor. Name is what shows up on the About page's version
+# list (EZ-1709), so it should say which host it is.
+executor_registered_name: dev-executor
+executor_db_max_load: 10
+
+# Testdata's seven auto-exercises reference a container image called `mock`, which no Dockerfile
+# provides — they cannot grade until they point at something real. Set to empty to leave them alone.
+executor_repoint_mock_to: pygrader

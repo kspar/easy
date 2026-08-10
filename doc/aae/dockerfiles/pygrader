@@ -1,4 +1,8 @@
-FROM python:3
+# Pinned, and it has to stay pinned. `python:3` drifted to 3.14, where numpy 1.23.4 has no wheels
+# and the source build fails outright — so this file stopped being buildable at some point without
+# anyone changing it. 3.10 is the newest that numpy 1.23.x ships wheels for, and it is what the
+# tiivad image already pins.
+FROM python:3.10
 
 ENV PYTHONIOENCODING utf-8
 

@@ -1,0 +1,33 @@
+[Unit]
+# Managed by Ansible (roles/executor) — local edits are overwritten.
+Description=Easy executor — grades submissions in Docker containers
+Documentation=file:///srv/easy/aae
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+# The point of this unit, beyond starting the thing: aae/start-executor.sh runs `sudo gunicorn3`
+# with a TODO next to it saying that privilege escalation should be a privilege rather than an
+# assumption. Here it is a dedicated account whose only special power is membership of `docker` —
+# which is root-equivalent on this host in practice, but is at least one named grant rather than
+# blanket sudo, and it is the access the service genuinely needs.
+User={{ executor_user }}
+Group={{ executor_group }}
+SupplementaryGroups=docker
+WorkingDirectory={{ executor_root }}
+ExecStart={{ executor_venv }}/bin/gunicorn -c {{ executor_root }}/gunicorn-conf.py server:app
+
+Restart=on-failure
+RestartSec=5
+
+# Modest hardening. Deliberately not ProtectSystem=strict: the service writes build contexts under
+# /tmp and hands them to the Docker daemon, and tightening this is worth doing only alongside
+# testing an actual grading run, not blind.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

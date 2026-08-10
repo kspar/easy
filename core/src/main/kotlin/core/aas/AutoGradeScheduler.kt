@@ -29,7 +29,7 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
     @Synchronized
     override fun onApplicationEvent(p0: ContextRefreshedEvent) {
         log.info { "Initializing ${javaClass.simpleName} by syncing executors and checking AutoAssess statuses." }
-        addExecutorsFromDB()
+        syncExecutorsFromDB()
         statusInProgressToFailed()
     }
 
@@ -98,15 +98,46 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         log.info { "Executor '$executorId' deleted" }
     }
 
+    /**
+     * Make the in-memory executors match the database, in both directions.
+     *
+     * It used to only add. An executor whose row disappeared stayed in the map forever, and since
+     * [grade] asks the database for each known executor's max load every cycle, a vanished row
+     * meant a NoSuchElementException every few seconds, for as long as core ran. The admin delete
+     * API cleaned up after itself, so this only bit rows changed behind core's back — which is
+     * exactly what provisioning does: `ansible/roles/executor` registers an executor and removes
+     * the mock one, and before this, that combination needed a core restart to take effect.
+     *
+     * Runs on a timer as well as at startup and on executor creation, so such a change is picked up
+     * on its own. The delay has a default in the annotation deliberately: adding a property that
+     * every environment's application.yaml must define would turn a diagnostic improvement into a
+     * failed deploy (see doc/release-procedure.md).
+     */
+    @Scheduled(fixedDelayString = "\${easy.core.auto-assess.executor-sync.fixed-delay.ms:60000}")
     @Synchronized
-    fun addExecutorsFromDB() {
-        val countBefore = executors.size
+    fun syncExecutorsFromDB() {
+        val inDb = getAvailableExecutorIds().toSet()
+        val known = executors.keys.toSet()
 
-        getAvailableExecutorIds().forEach {
-            executors.putIfAbsent(it, PriorityLevel.values().associateWith { FunctionScheduler(::callExecutor) })
+        (inDb - known).forEach {
+            executors[it] = PriorityLevel.values().associateWith { FunctionScheduler(::callExecutor) }
         }
 
-        log.info { "Checked for new executors. Executor count is now: $countBefore -> ${executors.size}." }
+        (known - inDb).forEach { executorId ->
+            val schedulers = executors[executorId]
+            val load = schedulers?.values?.sumOf { it.size() } ?: 0
+            // Unlike deleteExecutor, there is no `force` to respect: the row is already gone, so
+            // whatever is in flight has nowhere to be graded and nothing to be recorded against.
+            if (load > 0) {
+                log.warn { "Executor '$executorId' vanished from the database with $load job(s) queued or running" }
+            }
+            schedulers?.forEach { it.value.killScheduler() }
+            executors.remove(executorId)
+        }
+
+        if (known != executors.keys) {
+            log.info { "Synced executors from the database. Executor count is now: ${known.size} -> ${executors.size}." }
+        }
     }
 
     /**

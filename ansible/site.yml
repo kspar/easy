@@ -33,6 +33,11 @@
     # from there. Pull-based, so nothing in GitHub holds a credential for this host — see the role.
     - core_autodeploy
     - nginx
+    # Last, and after postgres: it registers itself in core's database, so the database has to
+    # exist and be migrated first. Grading is also the one thing here that runs other people's
+    # code, which is a good reason for it to be the last thing added to a host rather than the
+    # first. See doc/dev-environment.md §6.
+    - executor
 
 # The IdP is already its own host in dev, which is how production is laid out too — so unlike the
 # core roles, nothing here has ever been able to assume co-location. The role brings its own postgres

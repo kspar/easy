@@ -39,11 +39,22 @@ def _read_version() -> str:
 
 def _read_commit() -> str:
     """
-    The commit this executor is running, if it is running from a git checkout.
+    The commit this executor is running.
 
-    Unlike core and web, aae has no build step to stamp anything into, so this is asked of git at
-    startup and is simply "unknown" wherever git or the checkout is absent.
+    Unlike core and web, aae has no build step to stamp anything into, so there are two answers and
+    a fallback. A `COMMIT` file beside `VERSION` wins: that is what a deploy writes, and a deployed
+    executor is a copy of the source with no git history to ask. Otherwise ask git, which is the
+    answer while developing in a checkout. "unknown" where neither exists — a grading service must
+    not fail to start over a diagnostic string.
     """
+    try:
+        with open(os.path.join(_REPO_ROOT, "COMMIT")) as f:
+            stamped = f.read().strip()
+            if stamped:
+                return stamped
+    except OSError:
+        pass
+
     try:
         out = subprocess.run(
             ["git", "rev-parse", "--short=7", "HEAD"],

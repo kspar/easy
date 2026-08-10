@@ -35,7 +35,7 @@ class CreateExecutorController(private val autoGradeScheduler: AutoGradeSchedule
         log.info { "${caller.id} is creating executor (name = ${body.name})" }
 
         val executorId = insertExecutor(body)
-        autoGradeScheduler.addExecutorsFromDB()
+        autoGradeScheduler.syncExecutorsFromDB()
         return Resp(executorId.toString())
     }
 

@@ -1,0 +1,129 @@
+# Does grading actually work, end to end?
+#
+#   ./run.sh grading-check.yml                 # dev
+#   ansible-playbook -i inventories/<env> grading-check.yml --ask-become-pass
+#
+# Two checks that fail differently, which is the point of having both:
+#
+#   1. Straight at the executor — proves aae, the Docker daemon, and the grading image. A failure
+#      here is the executor tier.
+#   2. Through core — proves the scheduler, executor selection, and the container_image /
+#      executor_container_image rows. A failure here with (1) passing means core cannot *find* a
+#      healthy executor, which is the failure mode that looks like "grading is broken" and has
+#      nothing to do with grading.
+#
+# Separate from smoke.yml on purpose: that one is read-only and safe to point at production, and
+# this one submits work and runs a container. This is also why the core half only runs where
+# `grading_check_exercise` is set — dev sets it in group_vars; production deliberately does not.
+- name: Check that grading works end to end
+  hosts: core
+  become: true
+  gather_facts: false
+  vars:
+    # The output contract aae expects from a grading script (see parse_assessment_output in
+    # aae/server.py): feedback, then fifty '#', then a final `grade: N` line. Anything else is
+    # reported as "something went wrong during grading", which is what the testdata's original
+    # `echo "mock grading"` did.
+    grading_check_script: |
+      #!/bin/bash
+      echo "Checking the submission:"
+      cat /student-submission/submission.py
+      printf '%0.s#' $(seq 1 50)
+      echo
+      echo "grade: 100"
+    grading_check_image: "{{ executor_images_present | default(['tiivad']) | first }}"
+    grading_check_core_url: "http://127.0.0.1:8080"
+    # From the inventory, not from roles/executor: this playbook runs on its own, so a role default
+    # is not in scope. It is the same value core_config writes into core's datasource URL.
+    grading_check_db: "{{ easy_core_db_name }}"
+
+  tasks:
+    # --- 1. the executor on its own ---------------------------------------------------------------
+
+    - name: Ask the executor what it is
+      ansible.builtin.uri:
+        url: "http://{{ executor_bind_address | default('127.0.0.1') }}:{{ executor_port | default(5111) }}/v1/version"
+      register: version
+
+    - name: Ask the executor to grade something
+      ansible.builtin.uri:
+        url: "http://{{ executor_bind_address | default('127.0.0.1') }}:{{ executor_port | default(5111) }}/v1/grade"
+        method: POST
+        body_format: json
+        body:
+          submission: "print('hello from the submission')\n"
+          grading_script: "{{ grading_check_script }}"
+          assets: []
+          image_name: "{{ grading_check_image }}"
+          max_time_sec: 60
+          max_mem_mb: 256
+        # The per-submission image is built on every request, so even a trivial grading run is not
+        # instant. Core's own patience is far longer still.
+        timeout: 300
+      register: direct
+
+    - name: What the executor said
+      ansible.builtin.debug:
+        msg: >-
+          executor {{ version.json.version }} ({{ version.json.commit }}) on image
+          {{ grading_check_image }}: grade={{ direct.json.grade }}
+
+    # --- 2. through core --------------------------------------------------------------------------
+    # Submitted through the anonymous auto-assess endpoint, the one submission path that needs no
+    # Keycloak token — and the same AutoGradeScheduler a student submission takes, so it exercises
+    # the same wiring.
+
+    - name: Make sure the check's exercise is one that can actually be graded
+      # Idempotent, and the reason this playbook can be re-run: it writes the same script and the
+      # same flag every time. The exercise it points at is a testdata one whose original script
+      # (`echo "mock grading"`) produces no grade line and so could only ever fail.
+      ansible.builtin.shell:
+        cmd: |
+          psql -d {{ grading_check_db }} -v ON_ERROR_STOP=1 <<'SQL'
+          UPDATE automatic_exercise SET grading_script = $script${{ grading_check_script }}$script$
+          WHERE id = {{ grading_check_exercise }}
+            AND grading_script IS DISTINCT FROM $script${{ grading_check_script }}$script$;
+          UPDATE exercise SET anonymous_autoassess_enabled = true
+          WHERE id = {{ grading_check_exercise }} AND anonymous_autoassess_enabled IS NOT true;
+          SQL
+      become_user: postgres
+      register: fixture
+      changed_when: "'UPDATE 1' in fixture.stdout"
+      when: grading_check_exercise is defined
+
+    - name: Submit through core
+      ansible.builtin.uri:
+        url: "{{ grading_check_core_url }}/v2/unauth/exercises/{{ grading_check_exercise }}/anonymous/autoassess"
+        method: POST
+        body_format: json
+        body:
+          solution: "print('submitted through core')\n"
+        timeout: 300
+      register: through_core
+      when: grading_check_exercise is defined
+
+    - name: What core said
+      ansible.builtin.debug:
+        msg: "core: grade={{ through_core.json.grade }}"
+      when: grading_check_exercise is defined
+
+    - name: Say so if the core half was skipped
+      ansible.builtin.debug:
+        msg: >-
+          `grading_check_exercise` is not set for this environment, so only the executor was
+          checked. Core's ability to find an executor is NOT covered by this run.
+      when: grading_check_exercise is not defined
+
+    # --- the verdict -------------------------------------------------------------------------------
+
+    - name: Both paths must have graded
+      ansible.builtin.assert:
+        that:
+          - direct.json.grade == 100
+          - grading_check_exercise is not defined or through_core.json.grade == 100
+        fail_msg: >-
+          Grading did not come back as expected — executor {{ direct.json.grade | default('?') }},
+          core {{ through_core.json.grade | default('not run') }}.
+        success_msg: >-
+          Grading works end to end: the executor graded 100, and
+          {{ 'core did too' if grading_check_exercise is defined else 'the core half was skipped' }}.

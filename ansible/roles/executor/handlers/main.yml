@@ -1,0 +1,15 @@
+- name: Restart the executor
+  ansible.builtin.systemd_service:
+    name: easy-executor
+    state: restarted
+    daemon_reload: true
+
+# Core reads the executor table into an in-memory map and never removes from it: `addExecutorsFromDB`
+# in AutoGradeScheduler.kt is `putIfAbsent`, and the only path that drops one is the admin delete
+# API. So a running core keeps scheduling against an executor whose row this role deleted — a
+# NoSuchElementException from getExecutorMaxLoad every few seconds — and never notices the one it
+# inserted. Changing these rows behind core's back therefore means restarting it.
+- name: Restart core so it sees the executor rows
+  ansible.builtin.systemd_service:
+    name: "{{ executor_core_service | default('easy-core') }}"
+    state: restarted

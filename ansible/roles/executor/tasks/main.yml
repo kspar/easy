@@ -1,0 +1,327 @@
+# The executor tier: Docker, the aae service, the grading images, and the database rows that make
+# core aware of all three. doc/dev-environment.md §6.
+#
+# Written to be re-runnable: images are built only when absent, and every insert is conditional, so
+# a second run reports almost nothing changed.
+
+- name: Install Docker and the tools the image builds need
+  ansible.builtin.apt:
+    name:
+      # Ubuntu's own package rather than Docker's apt repository. One less third-party repo on a
+      # host whose job is running other people's code, and the version difference does not matter
+      # to `docker build` + `docker run`.
+      - docker.io
+      - git
+      - python3-venv
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Make sure the Docker daemon is running and comes back after a reboot
+  ansible.builtin.systemd_service:
+    name: docker
+    state: started
+    enabled: true
+
+# --- the service account ------------------------------------------------------------------------
+
+- name: Create the executor's group
+  ansible.builtin.group:
+    name: "{{ executor_group }}"
+    system: true
+
+- name: Create the executor's account
+  ansible.builtin.user:
+    name: "{{ executor_user }}"
+    group: "{{ executor_group }}"
+    # `docker` is what lets it grade at all. It is also, on any Linux host, equivalent to root —
+    # written down here rather than discovered later, and the reason this account does nothing else.
+    groups: docker
+    append: true
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ executor_root }}"
+    create_home: false
+
+# --- the code -------------------------------------------------------------------------------------
+
+- name: Create the executor directory
+  ansible.builtin.file:
+    path: "{{ executor_root }}"
+    state: directory
+    owner: root
+    group: "{{ executor_group }}"
+    mode: "0750"
+
+- name: Deploy the executor source
+  ansible.builtin.copy:
+    src: "{{ executor_src }}/{{ item }}"
+    dest: "{{ executor_root }}/{{ item }}"
+    owner: root
+    group: "{{ executor_group }}"
+    mode: "0640"
+  loop:
+    - server.py
+    - containers.py
+    - requirements.txt
+  notify: Restart the executor
+
+# server.py reports these on /v1/version, which core passes through to the About page (EZ-1709).
+# A deployed executor has no git history to ask, so the commit is stamped here instead.
+- name: Stamp the version and commit the executor is running
+  ansible.builtin.copy:
+    content: "{{ item.content }}\n"
+    dest: "{{ executor_stamp_dir }}/{{ item.name }}"
+    owner: root
+    group: "{{ executor_group }}"
+    mode: "0644"
+  loop:
+    - name: VERSION
+      content: "{{ lookup('file', playbook_dir + '/../VERSION') | trim }}"
+    - name: COMMIT
+      content: "{{ executor_commit | default(lookup('pipe', 'git -C ' + playbook_dir + '/.. rev-parse --short=7 HEAD'), true) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Restart the executor
+
+- name: Create the virtualenv and install the executor's dependencies
+  ansible.builtin.pip:
+    requirements: "{{ executor_root }}/requirements.txt"
+    virtualenv: "{{ executor_venv }}"
+    virtualenv_command: python3 -m venv
+  notify: Restart the executor
+
+- name: Install gunicorn into the virtualenv
+  # Not in requirements.txt because that file describes what the application imports; gunicorn is
+  # how this environment chooses to run it. start-executor.sh used the system gunicorn3 instead.
+  ansible.builtin.pip:
+    name: gunicorn
+    virtualenv: "{{ executor_venv }}"
+  notify: Restart the executor
+
+- name: Let the executor account read its virtualenv
+  ansible.builtin.file:
+    path: "{{ executor_venv }}"
+    state: directory
+    owner: root
+    group: "{{ executor_group }}"
+    recurse: true
+
+- name: Write the gunicorn config
+  ansible.builtin.template:
+    src: gunicorn-conf.py.j2
+    dest: "{{ executor_root }}/gunicorn-conf.py"
+    owner: root
+    group: "{{ executor_group }}"
+    mode: "0640"
+  notify: Restart the executor
+
+# --- the service ----------------------------------------------------------------------------------
+# Before the images, deliberately. Image builds are the slowest and most fragile thing here — they
+# pull from Docker Hub and PyPI — and a failure in one of them used to abort the play before the
+# unit was ever installed, leaving the host with no executor rather than one that could grade with
+# the images that did build.
+
+- name: Install the systemd unit
+  ansible.builtin.template:
+    src: easy-executor.service.j2
+    dest: /etc/systemd/system/easy-executor.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart the executor
+
+- name: Start the executor and enable it at boot
+  ansible.builtin.systemd_service:
+    name: easy-executor
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Flush handlers, so the check below tests what was just deployed
+  ansible.builtin.meta: flush_handlers
+
+- name: Ask the executor what it is
+  ansible.builtin.uri:
+    url: "http://{{ executor_bind_address }}:{{ executor_port }}/v1/version"
+    return_content: true
+  register: executor_version
+  retries: 10
+  delay: 2
+  until: executor_version.status is defined and executor_version.status == 200
+
+- name: Say what answered
+  ansible.builtin.debug:
+    msg: "executor reports {{ executor_version.json }}"
+
+# --- the grading images -----------------------------------------------------------------------
+
+- name: Create the image build directories
+  ansible.builtin.file:
+    path: "{{ executor_root }}/images/{{ item.name }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ executor_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Place each Dockerfile
+  ansible.builtin.copy:
+    src: "{{ executor_dockerfile_src }}/{{ item.dockerfile }}"
+    dest: "{{ executor_root }}/images/{{ item.name }}/Dockerfile"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ executor_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Fetch the sources an image build COPYs in
+  ansible.builtin.git:
+    repo: "{{ item.git.repo }}"
+    dest: "{{ executor_root }}/images/{{ item.name }}/{{ item.git.dest }}"
+    version: HEAD
+    # The build context, not a working copy anyone edits. A forced update keeps a re-run honest
+    # rather than silently building last month's grader.
+    force: true
+  loop: "{{ executor_images | selectattr('git', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Ask which images already exist
+  ansible.builtin.command: "docker image inspect {{ item.name }}"
+  register: existing_images
+  changed_when: false
+  failed_when: false
+  loop: "{{ executor_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+# Sequentially and in the order they are declared, because imgrec builds FROM pygrader. A first run
+# takes several minutes; later runs skip everything.
+#
+# Errors are carried rather than fatal, and the play asserts on them at the very end. An image build
+# depends on Docker Hub and PyPI, so it is the task most likely to fail for reasons having nothing
+# to do with this host — and when one does, registering the images that *did* build is far more
+# useful than abandoning the run. Nothing is hidden: the missing ones are named twice below.
+- name: Build the grading images
+  ansible.builtin.command:
+    cmd: "docker build -t {{ item.item.name }} ."
+    chdir: "{{ executor_root }}/images/{{ item.item.name }}"
+  when: item.rc != 0
+  loop: "{{ existing_images.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  ignore_errors: true
+
+- name: Ask which images exist now
+  ansible.builtin.command: "docker image inspect {{ item.name }}"
+  register: built_images
+  changed_when: false
+  failed_when: false
+  loop: "{{ executor_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Work out what actually built
+  ansible.builtin.set_fact:
+    executor_images_present: "{{ built_images.results | selectattr('rc', 'equalto', 0) | map(attribute='item.name') | list }}"
+    executor_images_missing: "{{ built_images.results | rejectattr('rc', 'equalto', 0) | map(attribute='item.name') | list }}"
+
+- name: Say plainly which images are missing, if any
+  ansible.builtin.debug:
+    msg: >-
+      These images did not build and will NOT be registered, so no exercise can be graded with
+      them: {{ executor_images_missing | join(', ') }}
+  when: executor_images_missing | length > 0
+
+# --- the database rows core looks up ---------------------------------------------------------------
+# Core finds an executor by joining exercise -> container_image -> executor_container_image, so an
+# executor with no image rows is invisible no matter how healthy it is. These are environment data,
+# not schema, which is why they are here and not in a Liquibase changeset.
+
+- name: Register the images
+  ansible.builtin.command:
+    cmd: >-
+      psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
+      "INSERT INTO container_image (id) VALUES ('{{ item }}') ON CONFLICT DO NOTHING;"
+  become_user: postgres
+  register: image_rows
+  notify: Restart core so it sees the executor rows
+  changed_when: "'INSERT 0 1' in image_rows.stdout"
+  loop: "{{ executor_images_present }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Register the executor
+  ansible.builtin.command:
+    cmd: >-
+      psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
+      "INSERT INTO executor (name, base_url, max_load, drain)
+       SELECT '{{ executor_registered_name }}', '{{ executor_base_url }}', {{ executor_db_max_load }}, false
+       WHERE NOT EXISTS (SELECT 1 FROM executor WHERE base_url = '{{ executor_base_url }}');"
+  become_user: postgres
+  register: executor_row
+  notify: Restart core so it sees the executor rows
+  changed_when: "'INSERT 0 1' in executor_row.stdout"
+
+- name: Tell core which images this executor can grade with
+  ansible.builtin.command:
+    cmd: >-
+      psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
+      "INSERT INTO executor_container_image (executor_id, container_image_id)
+       SELECT e.id, '{{ item }}' FROM executor e WHERE e.base_url = '{{ executor_base_url }}'
+       AND NOT EXISTS (SELECT 1 FROM executor_container_image x
+                       WHERE x.executor_id = e.id AND x.container_image_id = '{{ item }}');"
+  become_user: postgres
+  register: link_rows
+  notify: Restart core so it sees the executor rows
+  changed_when: "'INSERT 0 1' in link_rows.stdout"
+  # Only what exists on this host. Advertising an image core cannot actually grade with sends
+  # submissions to an executor that will fail them, which is worse than the exercise having no
+  # capable executor at all — that at least says so.
+  loop: "{{ executor_images_present }}"
+  loop_control:
+    label: "{{ item }}"
+
+# The seven testdata exercises point at an image called `mock` that no Dockerfile provides, so they
+# fail at grading time rather than being merely unused. Point them at something that exists.
+- name: Repoint the testdata exercises away from the mock image
+  ansible.builtin.command:
+    cmd: >-
+      psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
+      "UPDATE automatic_exercise SET container_image_id = '{{ executor_repoint_mock_to }}'
+       WHERE container_image_id = 'mock';"
+  become_user: postgres
+  register: repointed
+  notify: Restart core so it sees the executor rows
+  changed_when: not repointed.stdout.startswith('UPDATE 0')
+  when: executor_repoint_mock_to | length > 0
+
+- name: Remove the mock executor and its image, now that nothing references them
+  ansible.builtin.command:
+    cmd: >-
+      psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
+      "DELETE FROM executor_container_image WHERE container_image_id = 'mock';
+       DELETE FROM executor WHERE name = 'mock-executor';
+       DELETE FROM container_image WHERE id = 'mock'
+         AND NOT EXISTS (SELECT 1 FROM automatic_exercise WHERE container_image_id = 'mock');"
+  become_user: postgres
+  register: mock_removed
+  notify: Restart core so it sees the executor rows
+  changed_when: "'DELETE 0' not in mock_removed.stdout"
+  when: executor_repoint_mock_to | length > 0
+
+# Last, so that everything above has run and the host is in the best state it can be, and only then
+# does the run go red. A build failure is a real failure — it means some exercise type cannot be
+# graded here — but it should not cost the environment its executor.
+- name: Fail the run if any declared image is missing
+  ansible.builtin.assert:
+    that: executor_images_missing | length == 0
+    fail_msg: >-
+      The executor is deployed and running, and every image that built is registered — but these
+      did not build: {{ executor_images_missing | join(', ') }}. Exercises using them cannot be
+      graded on this host. The build output is above.
+    success_msg: "All {{ executor_images_present | length }} grading images built and registered."

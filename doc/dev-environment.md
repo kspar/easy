@@ -336,6 +336,10 @@ so email links point at dev.
 
 ## 6. Executor
 
+**Done, 2026-08-10 — `ansible/roles/executor` builds all of this, and `ansible/grading-check.yml`
+proves it works.** What follows is the plan it was built from, kept because the reasoning still
+holds; what actually happened is at the end of the section.
+
 Real executor: `aae/server.py` under gunicorn, grading in Docker containers on the same host.
 
 - **Needs Python >= 3.9.** `aae/requirements.txt` was unusable on a fresh install until EZ-1720 —
@@ -361,6 +365,32 @@ Real executor: `aae/server.py` under gunicorn, grading in Docker containers on t
   anonymisation review in §3.3 decides to keep `teacher_inline_comment` rows, revisit it.
 - Executor calls are unauthenticated (`callExecutor` in `core/src/main/kotlin/core/aas/executor_utils.kt:132`
   posts with no credentials), so 5111 must be loopback-only too.
+
+### What it took, in the end
+
+Four things the plan did not anticipate, all found by building it:
+
+- **`doc/aae/dockerfiles/pygrader` had stopped being buildable.** `FROM python:3` drifted to 3.14,
+  where `numpy~=1.23.4` has no wheels and the source build fails; `imgrec` builds `FROM pygrader`
+  and went with it. Now pinned to `python:3.10`, which is what `tiivad` already used. Nobody
+  changed the file — the tag moved underneath it, which is the failure mode of an unpinned base.
+- **A failed image build used to cost the whole tier.** The role installs and starts the service
+  *before* building images, carries build failures to an assertion at the very end, and registers
+  only the images that actually exist — so one unbuildable image no longer means no executor, and
+  never means core being told about an image it cannot grade with.
+- **Core does not notice executor rows changing underneath it.** `addExecutorsFromDB` only added;
+  an executor whose row was deleted stayed in the map and threw `NoSuchElementException` out of
+  `getExecutorMaxLoad` every scheduling cycle, while a newly inserted one was never picked up. That
+  is exactly what provisioning does, so it now reconciles in both directions on a timer —
+  `syncExecutorsFromDB` (EZ-1709 follow-up). The role restarts core as well, for the builds that
+  predate the fix.
+- **The testdata exercises could never have graded.** All seven referenced a container image called
+  `mock` that no Dockerfile provides, and their grading script was `echo "mock grading"`, which
+  produces no `grade:` line and so parses as a failure. They are repointed to a real image, and
+  `grading-check.yml` gives exercise 9001 a script that actually grades.
+
+Verified end to end on 2026-08-10: the executor graded a submission 100 directly, and core graded
+one 100 through the anonymous auto-assess path. `./run.sh grading-check.yml` re-runs both.
 
 ---
 
@@ -561,10 +591,10 @@ Greenfield, so this is a small amount of setup done once:
 
 | Phase | Outcome |
 | --- | --- |
-| 1 | VM provisioned via Ansible; DNS + TLS; nginx with both vhosts; postgres. Nothing deployed. **Done 2026-08-04**, except the executor and mailpit |
+| 1 | VM provisioned via Ansible; DNS + TLS; nginx with both vhosts; postgres. Nothing deployed. **Done 2026-08-04**; the executor followed on 2026-08-10, mailpit is still outstanding |
 | 2 | Core deployed from a CI artifact with a **migrated-but-empty** DB; login works end to end against the dev realm. Proves the auth chain (§2, §4) before any real data exists. **Half done 2026-08-04**: deployed, serving, 42 tables migrated on first start — login blocked on §7, there is no IdP to log in to |
 | 3 | Anonymisation script rewritten and reviewed; prod dump imported; backups running |
-| 4 | Executor + base images; auto-assessment verified on a real imported exercise |
+| 4 | Executor + base images; auto-assessment verified on a real imported exercise. **Executor and all four images done 2026-08-10**, and grading verified end to end by `ansible/grading-check.yml` — but on a *testdata* exercise, since phase 3's import has not happened yet |
 | 5 | `deploy/deploy-dev.sh` documented; whole team can deploy. **Done 2026-08-04** — first real deploy succeeded, `SSH_TARGET` set. "Whole team" still means one account: the host has `kspar` and the break-glass `ubuntu`, and adding a deployer means `hardening_ssh_users` plus `easy_core_deploy_users` |
 | 6 | Automatic deploy on green master; dev added to `doc/release-procedure.md` |
 

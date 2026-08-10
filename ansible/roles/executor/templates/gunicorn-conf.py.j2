@@ -1,0 +1,15 @@
+# Managed by Ansible (roles/executor) — local edits are overwritten.
+#
+# Replaces aae/gunicorn-conf.py.sample, whose `bind = 'ip:port'` was a placeholder rather than a
+# value. Worker count is deliberately far below the sample's 30: see executor_workers in the role's
+# defaults.
+
+bind = '{{ executor_bind_address }}:{{ executor_port }}'
+workers = {{ executor_workers }}
+
+# Grading is slow by nature — a container is built and run per submission — so these are generous
+# on purpose. Core's own patience is separate and much longer (`executor-request-timeout-seconds`
+# in the database), which is why a worker timing out here surfaces as a failed assessment rather
+# than a hung request.
+timeout = {{ executor_timeout_sec }}
+graceful_timeout = {{ executor_timeout_sec }}

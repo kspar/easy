@@ -161,6 +161,8 @@ failure this is insurance against. Tear it down with `-O exit` when the run is v
 ansible.cfg                  no default inventory, yaml output, ssh multiplexing
 site.yml                     the plays: hardening everywhere, services by group
 smoke.yml                    read-only health check, safe against production
+grading-check.yml            does grading actually work — executor directly, then through core.
+                             Submits work and runs a container, so NOT production-safe
 run.sh                       dev only, sudo password from the keychain
 roles/hardening/             sshd, ufw, fail2ban, unattended-upgrade reboot policy
 roles/keycloak/              the IdP host entire: JVM, postgres, Keycloak, its unit, nginx, TLS,
@@ -169,6 +171,8 @@ roles/core_config/           core's config, its secrets file, and the guards on 
 roles/postgres/              cluster on loopback, role, database
 roles/core_service/          the systemd unit, the release tree, the deploy grant
 roles/nginx/                 TLS, the SPA vhost, the API proxy
+roles/executor/              Docker, the aae service as a non-root user, the grading images, and
+                             the database rows that make core aware of them
 roles/smoke/                 what smoke.yml runs
 inventories/
   dev/
@@ -200,10 +204,14 @@ Hosts are named by their `~/.ssh/config` alias, so the address, user and key liv
 
 ## Adding the rest
 
-Still to write: the **executor** (Docker, base images, `easy-executor.service` as a non-root user in
-the `docker` group — §6), **mailpit** as a local catch-all so mail stays testable and cannot escape
-(§5), and the **backup timer with a verified restore** (EZ-1114, EZ-1738 — and now `cloakdb` too,
-whose users are the one thing on the IdP host that `doc/idp-setup.md` cannot reproduce).
+Still to write: **mailpit** as a local catch-all so mail stays testable and cannot escape (§5), and
+the **backup timer with a verified restore** (EZ-1114, EZ-1738 — and now `cloakdb` too, whose users
+are the one thing on the IdP host that `doc/idp-setup.md` cannot reproduce).
+
+The **executor** is now `roles/executor` (§6): Docker, the four grading images built from
+`doc/aae/dockerfiles`, `easy-executor.service` running gunicorn as a non-root account whose only
+special grant is `docker`, and the `container_image` / `executor` / `executor_container_image` rows
+without which a perfectly healthy executor is invisible to core.
 
 `roles/keycloak` is the worked example of the "service roles target groups" advice below: the IdP was
 always a separate VM, so nothing in it could assume co-location, and it brings its own postgres and
