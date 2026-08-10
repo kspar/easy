@@ -547,7 +547,19 @@
     "versions": "Versioonid",
     "versionsLoading": "Küsime serverilt…",
     "versionsFailed": "Ülejäänud versioonide saamiseks ei õnnestunud serveriga ühendust saada.",
-    "versionUnreachable": "ei vasta"
+    "versionUnreachable": "ei vasta",
+    "operating": "Süsteemi info (admin)",
+    "operatingFailed": "Süsteemi info laadimine ebaõnnestus.",
+    "opUptime": "töötanud",
+    "opHeap": "mälu",
+    "opThreads": "lõimed",
+    "opDbPool": "andmebaasi ühendused",
+    "opDbPoolValue": "{{active}} kasutuses, {{idle}} vaba, {{waiting}} ootel, max {{max}}",
+    "opSchema": "skeem",
+    "opSchemaUnknown": "teadmata",
+    "opGrading": "kontrollimine ({{executor}})",
+    "opGradingValue": "{{queued}} järjekorras, {{running}} töös",
+    "opDisk": "vaba kettaruumi"
   },
   "embed": {
     "loadFailed": "Ülesande laadimine ebaõnnestus.",

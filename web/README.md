@@ -29,6 +29,13 @@ core's and the executors' numbers from `GET /unauth/versions` — an unauthentic
 reporter who cannot log in can still say what they were running. `package.json` keeps `0.0.0` on
 purpose: it is never published, and a second version to bump at release is a second one to forget.
 
+Below it, **only while acting as admin**, an operating panel from `GET /admin/operating-info`
+(`@Secured("ROLE_ADMIN")`): uptime, heap, database pool, the Liquibase changeset the schema is on,
+grading queue depth per executor, and free disk. Not Spring Actuator — see the reasoning in
+`core/ems/service/operating_info.kt`. The hook is disabled for non-admins, so no request is made
+that could only 403. Covered by `dev-harness/scripts/about-operating-info.mjs`, which checks both
+the admin view and that a teacher neither sees the panel nor calls the endpoint.
+
 ## Runtime configuration
 
 Environment-specific settings are fetched from **`/config.json` at boot**, not baked in at build

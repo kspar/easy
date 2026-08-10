@@ -547,7 +547,19 @@
     "versions": "Versions",
     "versionsLoading": "Asking the server…",
     "versionsFailed": "Could not reach the server for the other versions.",
-    "versionUnreachable": "not responding"
+    "versionUnreachable": "not responding",
+    "operating": "Operating info (admin)",
+    "operatingFailed": "Could not load operating info.",
+    "opUptime": "uptime",
+    "opHeap": "heap",
+    "opThreads": "threads",
+    "opDbPool": "db pool",
+    "opDbPoolValue": "{{active}} active, {{idle}} idle, {{waiting}} waiting, max {{max}}",
+    "opSchema": "schema",
+    "opSchemaUnknown": "unknown",
+    "opGrading": "grading ({{executor}})",
+    "opGradingValue": "{{queued}} queued, {{running}} running",
+    "opDisk": "disk free"
   },
   "embed": {
     "loadFailed": "Could not load this exercise.",

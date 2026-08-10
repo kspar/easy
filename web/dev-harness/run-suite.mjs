@@ -60,6 +60,7 @@ const SCRIPTS = [
   'nav-idp-admin.mjs',
   'environment-badge.mjs',
   'about-versions.mjs',
+  'about-operating-info.mjs',
   'system-messages.mjs',
   'admin-system-messages.mjs',
 ]

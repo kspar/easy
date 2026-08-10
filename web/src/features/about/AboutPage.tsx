@@ -5,6 +5,8 @@ import config from '../../config.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import { useStatistics } from '../../api/statistics.ts'
 import { useVersions, formatVersion, formatBuiltAt } from '../../api/versions.ts'
+import { useOperatingInfo, formatUptime } from '../../api/operatingInfo.ts'
+import { useAuth } from '../../auth/useAuth.ts'
 import harnoLogo from '../../assets/sponsors/harno.svg'
 import mkmLogo from '../../assets/sponsors/mkm.png'
 import itaLogo from '../../assets/sponsors/ita.png'
@@ -61,6 +63,104 @@ export default function AboutPage() {
       </Box>
 
       <Versions />
+      <OperatingInfo />
+    </Box>
+  )
+}
+
+/**
+ * How the deployment is doing — admins only (EZ-1709).
+ *
+ * Gated on the *acting* role rather than on having admin available, the same reasoning as the IdP
+ * admin link in AppLayout: an admin working as a teacher is doing teacher things. The endpoint is
+ * `@Secured("ROLE_ADMIN")` regardless, so this hides a panel rather than protecting anything.
+ */
+function OperatingInfo() {
+  const { t } = useTranslation()
+  const { activeRole } = useAuth()
+  const isAdmin = activeRole === 'admin'
+  const { data, isError } = useOperatingInfo(isAdmin)
+
+  if (!isAdmin) return null
+
+  const rows: { label: string; value: string }[] = []
+
+  if (data) {
+    const { jvm, db_pool: pool, schema, disk } = data
+    rows.push({
+      label: t('about.opUptime'),
+      value: `${formatUptime(jvm.uptime_sec)} (${formatBuiltAt(jvm.started_at)})`,
+    })
+    rows.push({
+      label: t('about.opHeap'),
+      // -1 means the JVM reports no maximum, so there is nothing to compare against.
+      value: jvm.heap_max_mb > 0
+        ? `${jvm.heap_used_mb} MB / ${jvm.heap_max_mb} MB`
+        : `${jvm.heap_used_mb} MB`,
+    })
+    rows.push({ label: t('about.opThreads'), value: `${jvm.threads} (Java ${jvm.java_version})` })
+    if (pool) {
+      rows.push({
+        label: t('about.opDbPool'),
+        value: t('about.opDbPoolValue', {
+          active: pool.active,
+          idle: pool.idle,
+          waiting: pool.waiting,
+          max: pool.max,
+        }),
+      })
+    }
+    rows.push({
+      label: t('about.opSchema'),
+      value: schema.changeset
+        ? `${schema.changeset} (${schema.total_changesets})`
+        : t('about.opSchemaUnknown'),
+    })
+    for (const g of data.grading) {
+      rows.push({
+        label: t('about.opGrading', { executor: g.executor }),
+        value: t('about.opGradingValue', { queued: g.queued, running: g.running }),
+      })
+    }
+    rows.push({
+      label: t('about.opDisk'),
+      value: `${disk.free_gb} GB / ${disk.total_gb} GB`,
+    })
+  }
+
+  return (
+    <Box mt={4}>
+      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+        {t('about.operating')}
+      </Typography>
+      {isError && (
+        <Typography variant="caption" color="text.disabled">
+          {t('about.operatingFailed')}
+        </Typography>
+      )}
+      <Box
+        component="dl"
+        sx={{
+          m: 0,
+          display: 'grid',
+          gridTemplateColumns: 'max-content auto',
+          columnGap: 2,
+          rowGap: 0.25,
+          fontFamily: 'monospace',
+          fontSize: '0.8rem',
+        }}
+      >
+        {rows.map((row) => (
+          <Box key={row.label} sx={{ display: 'contents' }}>
+            <Box component="dt" sx={{ color: 'text.secondary' }}>
+              {row.label}
+            </Box>
+            <Box component="dd" sx={{ m: 0 }}>
+              {row.value}
+            </Box>
+          </Box>
+        ))}
+      </Box>
     </Box>
   )
 }

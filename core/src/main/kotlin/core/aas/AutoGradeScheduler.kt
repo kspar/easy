@@ -98,6 +98,24 @@ class AutoGradeScheduler : ApplicationListener<ContextRefreshedEvent> {
         log.info { "Executor '$executorId' deleted" }
     }
 
+    /** What each executor currently has queued and running, by executor id. */
+    data class Load(val waiting: Int, val active: Int)
+
+    /**
+     * A snapshot of the scheduler's queues, for the admin operating view (EZ-1709).
+     *
+     * Read-only and cheap: it counts what is already in memory and touches neither the database nor
+     * the executors. Keyed by id rather than name because names live in the database and this is
+     * deliberately not a place that queries it.
+     */
+    @Synchronized
+    fun currentLoad(): Map<Long, Load> = executors.mapValues { (_, schedulers) ->
+        Load(
+            waiting = schedulers.values.sumOf { it.countWaiting() },
+            active = schedulers.values.sumOf { it.countActive() },
+        )
+    }
+
     /**
      * Make the in-memory executors match the database, in both directions.
      *
