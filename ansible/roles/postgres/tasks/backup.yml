@@ -1,0 +1,88 @@
+# The nightly dump. doc/dev-environment.md §3.5 calls this mandatory and it is the one item on that
+# list the code cannot enforce: dev's data is a one-time production import that then drifts, so a
+# tester's courses and submissions exist here and nowhere else, and no refresh can bring them back.
+#
+# Deliberately on-host, and deliberately not enough on its own. It protects against the failure this
+# environment will actually have — a bad import, a Liquibase changeset that eats a column, someone
+# clearing a table — and not against losing the VM. Off-host copies are the open item in §3.5;
+# `postgres_backup_dir` being a plain directory is what makes an rsync of it a later addition rather
+# than a rewrite.
+
+- name: Create the dump directory
+  ansible.builtin.file:
+    path: "{{ postgres_backup_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    # 0700: these are full copies of the database, including whatever survived anonymisation. Every
+    # account on the box can otherwise read one.
+    mode: "0700"
+
+- name: Install the backup script
+  ansible.builtin.template:
+    src: easy-db-backup.sh.j2
+    dest: /usr/local/bin/easy-db-backup
+    owner: root
+    group: root
+    mode: "0755"
+    # Catches a templating mistake here rather than at 03:30 in three weeks' time.
+    validate: bash -n %s
+
+- name: Install the backup unit
+  ansible.builtin.template:
+    src: easy-db-backup.service.j2
+    dest: /etc/systemd/system/easy-db-backup.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install the backup timer
+  ansible.builtin.template:
+    src: easy-db-backup.timer.j2
+    dest: /etc/systemd/system/easy-db-backup.timer
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Say why the timer is not being started
+  ansible.builtin.debug:
+    msg: >-
+      This is a dry run, so the unit files above were not written and systemd cannot be asked about
+      a timer that does not exist yet. Run without --check to install it, then dry-run again.
+  when: ansible_check_mode
+
+- name: Start the backup timer and keep it started
+  ansible.builtin.systemd_service:
+    name: easy-db-backup.timer
+    state: started
+    enabled: true
+    # Here rather than in a handler: the two templates above are what it would react to, and a
+    # handler runs at the end of the play — after the task that starts the timer, which would then
+    # be starting a unit systemd has not re-read.
+    daemon_reload: true
+  # A dry run simulated the templates rather than writing them, so this would fail on a unit that is
+  # not there — and take the rest of the run with it, hiding everything below.
+  when: not ansible_check_mode
+
+# A timer that is installed and a backup that works are different claims, and only the second one is
+# worth anything. This takes a real dump now, so the first run happens while somebody is watching
+# rather than unattended at 03:30 — the failure modes are permissions and disk, both of which show
+# up immediately or not at all.
+- name: Take a backup now, so the first one is not unattended
+  ansible.builtin.command: systemctl start easy-db-backup.service
+  changed_when: true
+  when: postgres_backup_run_now | bool
+
+- name: Show what the dump directory holds
+  ansible.builtin.command: ls -lh {{ postgres_backup_dir }}
+  become_user: postgres
+  register: postgres_backup_listing
+  changed_when: false
+  # Read-only, so a dry run should still answer the question a dry run is being asked: is anything
+  # actually landing in there. Without this the command is skipped and the debug below has no value
+  # to print.
+  check_mode: false
+
+- name: Say what is there
+  ansible.builtin.debug:
+    var: postgres_backup_listing.stdout_lines

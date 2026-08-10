@@ -33,6 +33,9 @@ The rest are on you:
 - **Nightly `pg_dump`.** The data drifts and cannot be regenerated from prod. (§3.5)
 - **Moodle sync must not reach real Moodle.** Dead URLs *and* pinned crons — grade sync also has a
   manual endpoint a tester can click. (§5)
+- **A production import brings production's `executor` rows with it.** They must be deleted before
+  core is allowed to start, or a tester's submission is dispatched to a production grader.
+  `import-prod-dump.yml` does it; a hand-run `pg_restore` does not. (§3.6, §5)
 - **`keycloak.cron` pinned to the never-date, and dev's Keycloak service account has no
   user-delete permission.** Otherwise the first run deletes a slice of the import, in the DB and
   the IdP. (§5)
@@ -176,6 +179,15 @@ Two are trade-offs rather than clear calls, which is why they are separate scrip
 Because the import happens once and then drifts, both are decided once. Decide before the data
 lands.
 
+**Decided 2026-08-10: `anonymise.sql` only.** Teacher feedback and student submissions both stay, on
+the grounds that grading UI, plagiarism comparison and auto-assessment are most of what dev exists to
+test and none of them are worth much against placeholder text. The consequence is written down rather
+than waved past: this host holds real teacher prose about real students *and* executes arbitrary
+student code in Docker containers on the same VM (§6), so a container escape reaches that data. That
+trade was acceptable for a database of pseudonymised grades; it is a thinner margin now. If dev is
+ever shared past the team, `strip-teacher-feedback.sql` and `strip-submissions.sql` are still there
+and still work — on the current schema, which is what the database will have by then.
+
 ### 3.4 Usernames, and how testers get in
 
 The dev Keycloak has registration disabled and accounts created by an admin. That gives a clean
@@ -199,11 +211,117 @@ Because dev drifts and is never re-imported, tester-created state is unique and 
 Nightly `pg_dump` to a second location, 7–14 days retention. This is a direct cost of the
 drift choice and easy to forget.
 
+**Half done, 2026-08-10.** `ansible/roles/postgres` now installs `easy-db-backup.timer` — 03:30
+nightly, `Persistent=true` so a host that was down still takes the missed dump, 14 days retention,
+pruning only after a dump succeeds so a week of failures cannot quietly eat the history it exists to
+protect. The dump is written to `.partial` and renamed only once `pg_restore --list` has parsed it,
+because a half-written file that looks like a backup is worse than an obviously missing one.
+
+Nothing scheduled was running until then: `/srv/easy/db-dumps` existed and held two dumps somebody
+had taken by hand, which is the state that looks like a working backup and is not one.
+
+**Still on-host only**, which is the half that is missing. This protects against the failure dev
+will actually have — a bad import, a changeset that eats a column, someone clearing a table — and
+not against losing the VM. `postgres_backup_dir` is a plain directory so that copying it elsewhere
+is a later addition rather than a rewrite.
+
 Also: never place a `core/src/test/resources/application.yaml` on this host and never run
 `./gradlew test` there. `InitTestDatabase` calls Liquibase `dropAll()`. It is not in the bootJar
 and `assertDisposableDatabase()` fails closed on non-local hosts and non-`_test` database names
 (see DEVELOPMENT.md §4), so this is defence in depth rather than a live risk — but the host should
 not have the test source set on it at all, which the artifact-based deploy in §8 gives us for free.
+
+### 3.6 What the import brings that has to be cut
+
+`ansible/import-prod-dump.yml` is the runbook above made executable — backup, stop core, drop,
+restore, cut, anonymise, start, re-register, verify — and it exists because three of those steps are
+not obvious from "restore a dump and anonymise it".
+
+A dump is the whole database, including rows that describe the *environment* rather than its content:
+
+- **`executor` and `executor_container_image`.** Production's graders, with production's URLs. Core
+  reconciles this table into its scheduler on a timer (`syncExecutorsFromDB`), so a dev tester's
+  submission would be POSTed to a production executor — unauthenticated, since `callExecutor` sends
+  no credentials. The playbook deletes them between the restore and core's first start, then re-runs
+  the executor role's `register_in_db.yml` to put dev's own row back. That file was split out of the
+  role for this: re-registering should not mean rebuilding four Docker images.
+- **`databasechangelog`.** Production's — and this turned out to be the interesting one. See below.
+
+The testdata rows themselves go: exercise 9001 and the three test accounts are replaced by real
+ones, which is the point. `grading_check_exercise` in the dev inventory named 9001, though, and
+pointing it at an imported exercise would have been worse than leaving it broken — `grading-check.yml`
+rewrites its target's grading script and switches on anonymous submission, so it would have quietly
+vandalised somebody's coursework and made it gradeable without a token. The check now creates and
+finds its own fixture exercise by title, at whatever id the sequences give it, and the inventory
+names no id at all.
+
+#### The testdata changesets were never dev-only
+
+Restoring production's `databasechangelog` was expected to mark the `testdata-*` changesets as
+already run. It did the opposite: **production had never run them.** They are part of the same
+changelog as the schema (`changelog.xml` includes `changesets/testdata.xml` unconditionally) and were
+added after production's last deploy, so Liquibase treated them as pending and tried to apply
+fixtures at hardcoded ids in the 9000s to a database now full of imported rows. Two were skipped by
+their own preconditions — production has a `kspar` account — and `testdata-exercises` failed on a
+duplicate `exercise_version` id. A failed changeset means core does not start, which is what dev did,
+176 restarts deep.
+
+**The same would have happened on the next production deploy.** Dev was supposed to be the release
+gate and this is the first thing it caught, which is an argument for the whole environment.
+
+Fixed at the source: every changeset in `testdata.xml` now declares `context="testdata"`, and
+`DatabaseConf.kt` activates that context only when `easy.core.db.test-data` is true, defaulting to
+false. The context it passes otherwise is a non-empty placeholder rather than the empty string,
+because Liquibase reads "no contexts given" as "run everything" — which is the behaviour being
+prevented. `application.yaml.sample` sets the key to true, so a local database still seeds itself.
+
+Dev's own database was unblocked by marking the nine outstanding changesets `MARK_RAN`, which is what
+their preconditions would have done had they matched. The deployed jar predates the fix; once a build
+carrying it is deployed, those rows are inert.
+
+#### And the migration was destroying teacher feedback
+
+The second thing the import caught, and the more expensive one. `teacher_activity` arrived with
+several thousand rows, most of them carrying `feedback_adoc`. After core migrated the schema
+forward: the same rows, the same grades, and **zero** feedback texts. The migration reported success.
+
+Three changesets in `v4.xml`, each defensible alone:
+
+1. `220226-1` copies `feedback_adoc` and `feedback_html` into a new jsonb `feedback` column.
+2. `220226-2` drops both source columns.
+3. `260225-1` drops `feedback` and adds empty `feedback_md` / `feedback_html` — commented
+   *"JSONB was never deployed to prod"*.
+
+That comment is true, and it is the bug. It reads as "no deployed database has this column, so
+dropping it loses nothing", but Liquibase applies every pending changeset in order: a database that
+had never run step 1 runs all three on the next deploy, so the data goes into the jsonb column and is
+then dropped with it. The only databases safe from this were the ones that had *already* run step 1 —
+the developer laptops the reasoning was formed on.
+
+**This would have hit production on its next deploy**, on exactly those rows. Dev existing is the
+only reason it was found first, and finding it cost nothing but a restore.
+
+`260225-1` now copies the jsonb values into the text columns before dropping, and `220226-1` widens
+its predicate so a row with rendered HTML and no source is not silently lost either. Both carry
+`<validCheckSum>ANY</validCheckSum>`, because dev and every local database already ran the old
+bodies. Dev's own feedback was restored from the dump, which was still the only remaining copy —
+the decision in §3.3 was to keep it, and a migration is not entitled to overrule that.
+- **`system_configuration`.** Production's settings, kept deliberately: they are what production runs
+  with, and dev is meant to be the release gate.
+
+The ordering constraint that follows from all this: **anonymise before core ever starts.** A dump is
+behind master by definition — dev runs master, production does not — so the restored schema is
+production's, and core's first start is what migrates it forward. Anonymising first means no core
+process ever connects to real names. The cost is that `anonymise.sql` has to tolerate a schema older
+than the one it was written against, which it now does: the 14.x production schema had
+`teacher_activity.feedback_adoc` rather than `feedback_md` and no `teacher_inline_comment` table at
+all, and the script's closing report named both. It aborted *after* the anonymisation had committed,
+so psql exited non-zero with none of its assertions printed — which reads as "the anonymisation
+failed" when in fact only the receipt for it did.
+
+One thing the playbook cannot do for you: it refuses to run twice without `-e import_confirmed=true`.
+dev is imported once and then drifts, so a second import is not a refresh, it is deleting everything
+testers have built since the first one.
 
 ---
 
@@ -322,6 +440,7 @@ This list is the actual "non-destructive" work — a separate database is the ea
 | **Mass account deletion, in the DB and in Keycloak** | `DeleteInactiveUsers` (`core/src/main/kotlin/core/ems/cron/delete_inactive_users.kt`) deletes students idle 2y / teachers 5y, then deletes them from Keycloak via the admin API | Imported `last_seen` values are historical, so the **first cron run would delete a large slice of the imported data and hit the configured Keycloak**. Pin `easy.core.keycloak.cron` to the never-date, and give dev's Keycloak client a service account **without** user-delete permission |
 | **Email to real people** | `SendMailService`, `easy.core.mail.*` | Run a local catch-all (mailpit) and point `spring.mail` at it, so email stays testable but cannot escape. Simpler alternative: `mail.user.enabled: false` and `mail.sys.enabled: false` |
 | **Wrong IDP** | `easy.core.keycloak.base-url` | Must be the dev IDP. Combined with the delete cron above, a copy-paste of prod's value here is the worst single mistake available on this host |
+| **Student code sent to production's graders** | the `executor` table, restored from the production dump. `syncExecutorsFromDB` picks the rows up on a timer; `callExecutor` sends no credentials | Not a config key — this one arrives *in the data*, which is why it was missed when this table was first written. Delete production's executor rows before core starts and register dev's own. `import-prod-dump.yml` does both (§3.6) |
 
 The never-date trick for crons is already used in `core/src/test/resources/application.yaml.sample`:
 `"0 0 5 31 2 ?"` — February 31st, which never occurs.
@@ -593,8 +712,8 @@ Greenfield, so this is a small amount of setup done once:
 | --- | --- |
 | 1 | VM provisioned via Ansible; DNS + TLS; nginx with both vhosts; postgres. Nothing deployed. **Done 2026-08-04**; the executor followed on 2026-08-10, mailpit is still outstanding |
 | 2 | Core deployed from a CI artifact with a **migrated-but-empty** DB; login works end to end against the dev realm. Proves the auth chain (§2, §4) before any real data exists. **Half done 2026-08-04**: deployed, serving, 42 tables migrated on first start — login blocked on §7, there is no IdP to log in to |
-| 3 | Anonymisation script rewritten and reviewed; prod dump imported; backups running |
-| 4 | Executor + base images; auto-assessment verified on a real imported exercise. **Executor and all four images done 2026-08-10**, and grading verified end to end by `ansible/grading-check.yml` — but on a *testdata* exercise, since phase 3's import has not happened yet |
+| 3 | Anonymisation script rewritten and reviewed; prod dump imported; backups running. **Done 2026-08-10.** `import-prod-dump.yml` runs the whole sequence; `anonymise.sql` was fixed to tolerate the older schema a production dump carries (§3.6); the nightly dump exists and is on-host only (§3.5) |
+| 4 | Executor + base images; auto-assessment verified on a real imported exercise. **Executor and all four images done 2026-08-10**, and grading verified end to end by `ansible/grading-check.yml` — which now creates its own fixture exercise rather than borrowing testdata's 9001, since the import removed it |
 | 5 | `deploy/deploy-dev.sh` documented; whole team can deploy. **Done 2026-08-04** — first real deploy succeeded, `SSH_TARGET` set. "Whole team" still means one account: the host has `kspar` and the break-glass `ubuntu`, and adding a deployer means `hardening_ssh_users` plus `easy_core_deploy_users` |
 | 6 | Automatic deploy on green master; dev added to `doc/release-procedure.md` |
 

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+#
+# Managed by Ansible (roles/postgres) — local edits are overwritten.
+#
+# Nightly dump of {{ postgres_db_name }}. doc/dev-environment.md §3.5: dev's data is a one-time
+# import that then drifts, so everything a tester creates here exists nowhere else and cannot be
+# regenerated from production. That makes this the only copy.
+
+set -euo pipefail
+
+DB={{ postgres_db_name | quote }}
+DIR={{ postgres_backup_dir | quote }}
+KEEP_DAYS={{ postgres_backup_keep_days }}
+
+stamp=$(date +%Y-%m-%dT%H%M)
+final="$DIR/$DB-$stamp.dump"
+partial="$final.partial"
+
+# A dump interrupted half way through is a file that looks like a backup and is not one. Writing to
+# `.partial` and renaming only after the archive verifies means the directory contains finished
+# dumps and nothing else — the rename is atomic within the filesystem.
+cleanup() { rm -f "$partial"; }
+trap cleanup EXIT
+
+# --no-owner --no-privileges so this restores into a cluster that has never heard of these roles,
+# which is the situation any real restore is in.
+pg_dump --format=custom --compress=9 --no-owner --no-privileges --file="$partial" "$DB"
+
+# Cheap proof that the archive is readable rather than merely present: pg_restore parses the whole
+# table of contents, which a truncated or half-written file fails.
+pg_restore --list "$partial" > /dev/null
+
+mv "$partial" "$final"
+trap - EXIT
+
+echo "wrote $final ($(du -h "$final" | cut -f1))"
+
+# Only after a dump succeeded. Pruning first, or unconditionally, means a week of failures quietly
+# eats the history it was supposed to protect — the retention window should shrink when backups
+# break, not the archive.
+deleted=$(find "$DIR" -maxdepth 1 -name "$DB-*.dump" -type f -mtime "+$KEEP_DAYS" -print -delete | wc -l)
+echo "kept $(find "$DIR" -maxdepth 1 -name "$DB-*.dump" -type f | wc -l) dumps, pruned $deleted older than $KEEP_DAYS days"

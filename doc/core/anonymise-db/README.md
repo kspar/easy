@@ -17,6 +17,10 @@ the result is reviewable in SQL, and each pass is re-runnable.
 
 ## Order of operations
 
+On dev, don't do this by hand — `ansible/import-prod-dump.yml` runs the whole sequence, including
+the parts that are not in this directory (stopping core, cutting production's executor rows, putting
+dev's own back). What follows is what it does, and what to do against a copy somewhere else:
+
 ```sh
 # 1. Restore into a database whose NAME SAYS DEV. The scripts refuse otherwise.
 createdb -h host -U user easyems_dev
@@ -33,6 +37,24 @@ psql -h host -U user -d easyems_dev -f strip-submissions.sql
 
 Do all of this **before** the database is reachable from anything but your own session, and before
 any tester gets access to the host.
+
+### Anonymise before the application migrates the schema
+
+Step 2 runs against **production's schema, not master's**. A production dump is behind master by
+definition — dev is the release gate, so it runs changesets production has not seen — and core
+applies the pending ones at startup. Letting core start first would migrate the schema at the cost
+of connecting the application to real names; doing it in this order means nothing but your own psql
+session ever sees them.
+
+`anonymise.sql` is written for that. Everything it *changes* exists in both schemas; its closing
+report is the part that had to be taught to cope, since it named `teacher_activity.feedback_md`
+(called `feedback_adoc` before the Markdown switch) and `teacher_inline_comment` (which did not
+exist at all in the 14.x production schema). Under `ON_ERROR_STOP` that aborted the report after the
+`COMMIT`, so the anonymisation had happened, psql exited non-zero, and none of the assertions
+printed — a failure that looks exactly like the one you least want.
+
+The two optional scripts have no such treatment: run them **after** core has migrated, which on dev
+is any time after the import playbook finishes.
 
 ## The guard
 
@@ -90,6 +112,12 @@ exactly what wants realistic feedback threads to test against.
 
 Because the dev import happens once and then drifts, this is decided once. Decide before the
 data lands.
+
+**Decided 2026-08-10 for dev: not run.** Teacher feedback and student submissions both stay, because
+grading UI, plagiarism comparison and auto-assessment are most of what dev exists to test. The
+consequence, written down rather than waved past: the dev VM holds real teacher prose about real
+students and also executes arbitrary student code in containers, so a container escape reaches that
+data — see `doc/dev-environment.md` §3.3 and §6.
 
 ### `strip-submissions.sql` — optional
 

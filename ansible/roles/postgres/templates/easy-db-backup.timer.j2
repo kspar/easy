@@ -1,0 +1,16 @@
+# Managed by Ansible (roles/postgres) — local edits are overwritten.
+
+[Unit]
+Description=Dump {{ postgres_db_name }} nightly
+
+[Timer]
+OnCalendar={{ postgres_backup_on_calendar }}
+RandomizedDelaySec={{ postgres_backup_splay }}
+# Unlike the autodeploy timer, this one catches up. That timer asks "is there something newer",
+# which is answered by looking now; this one produces an artefact for a night that has no other
+# copy, so a host that was down at 03:30 should still take last night's dump when it comes back.
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

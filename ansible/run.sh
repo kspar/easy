@@ -35,10 +35,28 @@ cd "$(dirname "$0")"
 # for unattended dev runs. Production is where that trade stops being acceptable: it runs with
 # --ask-become-pass and a person watching. Refusing here rather than documenting a convention means
 # the wrong environment is a failure instead of a habit.
+#
+# What is checked is the INVENTORY, because that is what decides which hosts are touched — there is
+# no default inventory and no inventory holds two environments (see ansible.cfg). This used to match
+# `prod` anywhere in any argument, which also refused `import-prod-dump.yml`: a playbook whose whole
+# job is loading a production dump *into dev*, i.e. the exact case the guard exists to protect and
+# not the one it was refusing.
+inventories=("$INVENTORY")
+previous=""
 for arg in "$@"; do
+  case "$previous" in
+    -i|--inventory|--inventory-file) inventories+=("$arg") ;;
+  esac
   case "$arg" in
-    *production*|*prod*)
-      echo "run.sh is dev-only, and '$arg' does not look like dev." >&2
+    -i=*|--inventory=*|--inventory-file=*) inventories+=("${arg#*=}") ;;
+  esac
+  previous="$arg"
+done
+
+for inventory in "${inventories[@]}"; do
+  case "$inventory" in
+    *prod*)
+      echo "run.sh is dev-only, and inventory '$inventory' does not look like dev." >&2
       echo "Production runs interactively, with a human present:" >&2
       echo "  ansible-playbook -i inventories/production site.yml --check --diff --ask-become-pass" >&2
       exit 2

@@ -99,8 +99,12 @@ easy_nginx_api_host: dev.ems.lahendus.ut.ee
 # renewal timer nobody is watching.
 easy_nginx_acme_email: kaspar.papli@helmes.com
 
-# The exercise `grading-check.yml` submits to. Testdata exercise 9001, whose seeded grading script
-# (`echo "mock grading"`) produces no grade line and so could only ever fail — the check rewrites it
-# to a real one, idempotently, on every run. Deliberately unset for production: that playbook
-# submits work and runs a container, which is not something to do to a real environment casually.
-grading_check_exercise: 9001
+# Let `grading-check.yml` create the exercise it submits to, and find it again by title on later
+# runs. This said `grading_check_exercise: 9001` until the production import, which is a testdata id
+# that the restore removed — and naming an imported exercise instead would have been worse than
+# useless, because the check rewrites its target's grading script and makes it anonymously
+# submittable.
+#
+# Deliberately absent for production, along with the id it replaces: that playbook submits work and
+# runs a container, which is not something to do to a real environment casually.
+grading_check_fixture: true

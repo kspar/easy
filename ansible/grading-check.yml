@@ -32,6 +32,8 @@
       echo
       echo "grade: 100"
     grading_check_image: "{{ executor_images_present | default(['tiivad']) | first }}"
+    # What the fixture exercise is called, and therefore how it is found again on the next run.
+    grading_check_fixture_title: "grading-check fixture (ansible)"
     grading_check_core_url: "http://127.0.0.1:8080"
     # From the inventory, not from roles/executor: this playbook runs on its own, so a role default
     # is not in scope. It is the same value core_config writes into core's datasource URL.
@@ -73,22 +75,77 @@
     # Keycloak token — and the same AutoGradeScheduler a student submission takes, so it exercises
     # the same wiring.
 
-    - name: Make sure the check's exercise is one that can actually be graded
-      # Idempotent, and the reason this playbook can be re-run: it writes the same script and the
-      # same flag every time. The exercise it points at is a testdata one whose original script
-      # (`echo "mock grading"`) produces no grade line and so could only ever fail.
+    # This check used to submit to testdata exercise 9001, named by id in the inventory. The
+    # production import (import-prod-dump.yml) removes it — production never ran those inserts — and
+    # repointing at an imported exercise is not an option, because the task below rewrites the
+    # grading script and switches on anonymous submission. On a real exercise that is vandalism plus
+    # making somebody's coursework publicly gradeable without a token.
+    #
+    # So the check owns its fixture: found by title, created if missing, at whatever id the
+    # sequences hand out. No id in the inventory to go stale, and re-importing cannot break it.
+    - name: Find or create the check's own exercise
+      ansible.builtin.shell:
+        cmd: |
+          psql -d {{ grading_check_db }} -v ON_ERROR_STOP=1 -tA <<'SQL'
+          WITH existing AS (
+              SELECT exercise_id AS id FROM exercise_version
+              WHERE title = $t${{ grading_check_fixture_title }}$t$ AND valid_to IS NULL
+              LIMIT 1
+          ), owner AS (
+              -- An admin if there is one. After an import every account is anonymised, so this is
+              -- somebody's pseudonym rather than a real name.
+              SELECT username FROM account ORDER BY is_admin DESC, username LIMIT 1
+          ), d AS (
+              INSERT INTO exercise_dir (name, implicit, created_at, modified_at)
+              SELECT $t${{ grading_check_fixture_title }}$t$, false, now(), now()
+              WHERE NOT EXISTS (SELECT 1 FROM existing)
+              RETURNING id
+          ), a AS (
+              INSERT INTO automatic_exercise (grading_script, container_image_id, max_time_sec, max_mem_mb)
+              SELECT $script${{ grading_check_script }}$script$, $i${{ grading_check_image }}$i$, 60, 256
+              WHERE NOT EXISTS (SELECT 1 FROM existing)
+              RETURNING id
+          ), e AS (
+              INSERT INTO exercise (created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+              SELECT now(), (SELECT username FROM owner), false, d.id, true FROM d
+              RETURNING id
+          ), v AS (
+              INSERT INTO exercise_version (exercise_id, author_id, valid_from, grader_type, title,
+                                            solution_file_name, solution_file_type, auto_exercise_id)
+              SELECT e.id, (SELECT username FROM owner), now(), 'AUTO',
+                     $t${{ grading_check_fixture_title }}$t$, 'solution.py', 0, a.id
+              FROM e, a
+              RETURNING exercise_id
+          )
+          SELECT coalesce((SELECT id FROM existing), (SELECT exercise_id FROM v)),
+                 NOT EXISTS (SELECT 1 FROM existing);
+          SQL
+      become_user: postgres
+      register: fixture
+      changed_when: fixture.stdout.strip().endswith('|t')
+      when: grading_check_fixture | default(false) | bool
+
+    - name: Use it
+      ansible.builtin.set_fact:
+        grading_check_exercise: "{{ fixture.stdout.strip().split('|')[0] }}"
+      when: grading_check_fixture | default(false) | bool
+
+    - name: Keep the fixture's script and flag current
+      # Separate from the creation above so that a fixture created by an older run of this playbook
+      # is brought up to date rather than used as it was. Idempotent: same script, same flag.
       ansible.builtin.shell:
         cmd: |
           psql -d {{ grading_check_db }} -v ON_ERROR_STOP=1 <<'SQL'
           UPDATE automatic_exercise SET grading_script = $script${{ grading_check_script }}$script$
-          WHERE id = {{ grading_check_exercise }}
+          WHERE id = (SELECT auto_exercise_id FROM exercise_version
+                      WHERE exercise_id = {{ grading_check_exercise }} AND valid_to IS NULL)
             AND grading_script IS DISTINCT FROM $script${{ grading_check_script }}$script$;
           UPDATE exercise SET anonymous_autoassess_enabled = true
           WHERE id = {{ grading_check_exercise }} AND anonymous_autoassess_enabled IS NOT true;
           SQL
       become_user: postgres
-      register: fixture
-      changed_when: "'UPDATE 1' in fixture.stdout"
+      register: fixture_update
+      changed_when: "'UPDATE 1' in fixture_update.stdout"
       when: grading_check_exercise is defined
 
     - name: Submit through core

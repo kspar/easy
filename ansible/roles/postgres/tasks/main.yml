@@ -195,6 +195,12 @@
   ansible.builtin.debug:
     msg: "core will connect as: {{ postgres_login_check.stdout | default('(not checked in a dry run)') }}"
 
+# --- the nightly dump -------------------------------------------------------------------------------
+
+- name: Set up the nightly backup
+  ansible.builtin.include_tasks: backup.yml
+  when: postgres_installed.stat.exists
+
 # --- the guard that only matters later --------------------------------------------------------------------
 
 - name: Warn if the database name would block the anonymisation scripts

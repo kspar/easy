@@ -1,7 +1,11 @@
 ---
-# Every host in whichever inventory was named on the command line. Only hardening exists so far; the
-# rest of what doc/dev-environment.md §9 asks for — Apache vhosts, postgres, Docker, the two
-# systemd units, mailpit, the backup cron — becomes further roles.
+# Every host in whichever inventory was named on the command line. What doc/dev-environment.md §9
+# asks for is nearly all here now — nginx vhosts, postgres and its nightly dump, Docker, the two
+# systemd units. Mailpit is the one still outstanding.
+#
+# Seeding the database is deliberately NOT part of this: `import-prod-dump.yml` replaces the whole
+# database and dev is imported once and then drifts, so it is a thing you run knowingly rather than
+# something a convergence run can decide to do to you.
 #
 # `hosts: all` rather than `hosts: dev` because the inventory is the environment boundary: there
 # is no default inventory and no inventory contains two environments, so "all" can only ever mean the

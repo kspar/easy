@@ -1,0 +1,113 @@
+# The database rows core looks up to find this executor.
+#
+# Core finds an executor by joining exercise -> container_image -> executor_container_image, so an
+# executor with no image rows is invisible no matter how healthy it is. These are environment data,
+# not schema, which is why they are here and not in a Liquibase changeset.
+#
+# Split out of main.yml so that anything which replaces the database wholesale can put them back
+# without rebuilding four Docker images to do it. That is not hypothetical: restoring a production
+# dump (import-prod-dump.yml) brings production's own `executor` rows with it, and until these run
+# again dev's core knows about production's graders and nothing else.
+
+# Only when the caller has not already worked this out — main.yml knows which images built, and its
+# answer is better than this one, because "the image exists" and "the image built in this run" are
+# the same thing there and only approximately the same thing here.
+- name: Ask which grading images this host actually has
+  ansible.builtin.command: "docker image inspect {{ item.name }}"
+  register: present_images
+  changed_when: false
+  failed_when: false
+  when: executor_images_present is not defined
+  loop: "{{ executor_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Work out which images are present
+  ansible.builtin.set_fact:
+    executor_images_present: "{{ present_images.results | selectattr('rc', 'equalto', 0) | map(attribute='item.name') | list }}"
+  when: executor_images_present is not defined
+
+- name: Work out every reference core should be told about
+  # The image names plus their tags, because `container_image` rows are matched by the exact string
+  # an exercise carries — `tiivad` and `tiivad:tsl-compose` are two rows, not one.
+  ansible.builtin.set_fact:
+    executor_image_refs: >-
+      {{ executor_images_present
+         + (executor_images | selectattr('name', 'in', executor_images_present)
+                            | selectattr('tags', 'defined')
+                            | map(attribute='tags') | flatten | list) }}
+
+- name: Register the images
+  ansible.builtin.command:
+    cmd: >-
+      psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
+      "INSERT INTO container_image (id) VALUES ('{{ item }}') ON CONFLICT DO NOTHING;"
+  become_user: postgres
+  register: image_rows
+  notify: Restart core so it sees the executor rows
+  changed_when: "'INSERT 0 1' in image_rows.stdout"
+  loop: "{{ executor_image_refs }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Register the executor
+  ansible.builtin.command:
+    cmd: >-
+      psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
+      "INSERT INTO executor (name, base_url, max_load, drain)
+       SELECT '{{ executor_registered_name }}', '{{ executor_base_url }}', {{ executor_db_max_load }}, false
+       WHERE NOT EXISTS (SELECT 1 FROM executor WHERE base_url = '{{ executor_base_url }}');"
+  become_user: postgres
+  register: executor_row
+  notify: Restart core so it sees the executor rows
+  changed_when: "'INSERT 0 1' in executor_row.stdout"
+
+- name: Tell core which images this executor can grade with
+  ansible.builtin.command:
+    cmd: >-
+      psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
+      "INSERT INTO executor_container_image (executor_id, container_image_id)
+       SELECT e.id, '{{ item }}' FROM executor e WHERE e.base_url = '{{ executor_base_url }}'
+       AND NOT EXISTS (SELECT 1 FROM executor_container_image x
+                       WHERE x.executor_id = e.id AND x.container_image_id = '{{ item }}');"
+  become_user: postgres
+  register: link_rows
+  notify: Restart core so it sees the executor rows
+  changed_when: "'INSERT 0 1' in link_rows.stdout"
+  # Only what exists on this host. Advertising an image core cannot actually grade with sends
+  # submissions to an executor that will fail them, which is worse than the exercise having no
+  # capable executor at all — that at least says so.
+  loop: "{{ executor_image_refs }}"
+  loop_control:
+    label: "{{ item }}"
+
+# The seven testdata exercises point at an image called `mock`, which no Dockerfile provides, so they
+# fail at grading time rather than being merely unused. Point them at something that exists.
+#
+# After a production import there are no such rows — prod never had the testdata changesets' data —
+# so this and the delete below are no-ops there, which is the correct outcome rather than a skip.
+- name: Repoint the testdata exercises away from the mock image
+  ansible.builtin.command:
+    cmd: >-
+      psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
+      "UPDATE automatic_exercise SET container_image_id = '{{ executor_repoint_mock_to }}'
+       WHERE container_image_id = 'mock';"
+  become_user: postgres
+  register: repointed
+  notify: Restart core so it sees the executor rows
+  changed_when: not repointed.stdout.startswith('UPDATE 0')
+  when: executor_repoint_mock_to | length > 0
+
+- name: Remove the mock executor and its image, now that nothing references them
+  ansible.builtin.command:
+    cmd: >-
+      psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
+      "DELETE FROM executor_container_image WHERE container_image_id = 'mock';
+       DELETE FROM executor WHERE name = 'mock-executor';
+       DELETE FROM container_image WHERE id = 'mock'
+         AND NOT EXISTS (SELECT 1 FROM automatic_exercise WHERE container_image_id = 'mock');"
+  become_user: postgres
+  register: mock_removed
+  notify: Restart core so it sees the executor rows
+  changed_when: "'DELETE 0' not in mock_removed.stdout"
+  when: executor_repoint_mock_to | length > 0

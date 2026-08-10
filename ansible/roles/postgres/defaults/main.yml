@@ -24,3 +24,23 @@ postgres_port: 5432
 # and finding that out later means a dump-and-restore rather than a setting change.
 postgres_encoding: UTF-8
 postgres_locale: en_US.UTF-8
+
+# --- the nightly dump -----------------------------------------------------------------------------
+# doc/dev-environment.md §3.5. Dev is imported once and then drifts, so a tester's work exists here
+# and in no other copy of anything.
+
+postgres_backup_dir: /srv/easy/db-dumps
+
+# 14 days, the upper end of §3.5's 7–14. The thing this protects against is usually noticed late —
+# "that course looks wrong" is a slower signal than a service failing to start — and the dumps are
+# small next to the disk: at roughly half a gigabyte each, a fortnight is a few percent of the VM.
+postgres_backup_keep_days: 14
+
+# 03:30 UTC, and the offset from the hour is on purpose: unattended-upgrades and its reboot window
+# are the other things that run overnight here (§9), and a dump killed halfway by a reboot is a
+# night with no backup.
+postgres_backup_on_calendar: "*-*-* 03:30:00"
+postgres_backup_splay: 20min
+
+# Take one immediately when the role runs, so the first dump is watched rather than unattended.
+postgres_backup_run_now: true

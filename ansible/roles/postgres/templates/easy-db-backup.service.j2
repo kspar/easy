@@ -1,0 +1,45 @@
+# Managed by Ansible (roles/postgres) — local edits are overwritten.
+
+[Unit]
+Description=Nightly dump of {{ postgres_db_name }}
+Documentation=https://github.com/kspar/easy/blob/master/doc/dev-environment.md
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+# postgres, so the dump authenticates over the unix socket as the superuser and needs no password
+# in a file anywhere. It also means the dump can read every table regardless of who owns it.
+User=postgres
+Group=postgres
+
+ExecStart=/usr/local/bin/easy-db-backup
+
+# A big database on a small VM; give it room rather than losing a night's backup to a timeout.
+TimeoutStartSec=3600
+# Nice, because this runs on the same host that serves the app and executes student code, and a
+# backup is never the most urgent thing happening.
+Nice=10
+IOSchedulingClass=idle
+
+# --- confinement -----------------------------------------------------------------------------
+# It reads a database over a unix socket and writes one directory.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+# No AF_INET: the connection is the local socket, so a backup that suddenly wants the network is a
+# backup pointed somewhere it should not be.
+RestrictAddressFamilies=AF_UNIX
+
+# ProtectSystem=strict makes everything read-only except these. /var/run/postgresql is the socket
+# directory, which libpq wants writable for its lock handling on some paths.
+ReadWritePaths={{ postgres_backup_dir }} /var/run/postgresql

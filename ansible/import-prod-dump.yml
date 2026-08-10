@@ -1,0 +1,350 @@
+# Import a production dump into dev, anonymised. doc/dev-environment.md §3, phase 3.
+#
+#   ./run.sh import-prod-dump.yml -e import_dump=/home/kspar/easyems-prod-2026-08-10.dump
+#
+# This is the one-time seeding of dev, and "one-time" is the whole design: the plan chose an import
+# that then drifts rather than a nightly refresh, so everything a tester creates afterwards exists
+# only here. Running this a second time throws all of that away — hence the confirmation below.
+#
+# The order is not arbitrary. Three things have to be true and each one constrains where it can go:
+#
+#   1. Nothing but this play may read the database between the restore and the anonymisation.
+#      So core is stopped first and started last, and the anonymisation is not a step you can
+#      forget to run afterwards.
+#   2. The anonymisation runs BEFORE core migrates the schema forward. A production dump is behind
+#      master by definition — dev is the release gate — so the restored schema is production's, not
+#      master's. Anonymising first means no core process ever connects to real names; the cost is
+#      that anonymise.sql has to cope with an older schema, which it now does.
+#   3. Production's `executor` rows arrive with the dump and are cut immediately, before core can
+#      read them. They point at production's graders, and core would happily send a dev tester's
+#      submission to one. This is the same class of risk as §5's Moodle URLs and was not on that
+#      list until this playbook was written.
+#
+# What this deliberately does NOT do: strip teacher feedback or student submissions. Decided
+# 2026-08-10 — see §3.3 and the note in doc/core/anonymise-db/README.md. Run the two optional
+# scripts by hand if that decision is ever revisited.
+- name: Import an anonymised production dump
+  hosts: core
+  become: true
+  gather_facts: false
+
+  vars:
+    # Path to the dump ON THE HOST. No default: there is no sensible one, and a typo'd variable that
+    # falls back to something would be a restore of the wrong file.
+    import_dump: ""
+    import_db: "{{ easy_core_db_name }}"
+    import_db_user: "{{ easy_core_db_user }}"
+    import_core_service: easy-core
+    # Where anonymise.sql and its two wordlists get staged. The script reads the wordlists with
+    # \copy, which is client-side and relative to psql's working directory, so they have to travel
+    # together and be readable by the postgres user.
+    import_sql_src: "{{ playbook_dir }}/../doc/core/anonymise-db"
+    import_work_dir: /var/tmp/easy-anonymise
+    # A copy of the dump that the postgres account can open. Deleted again whether or not the
+    # restore works.
+    import_staged_dump: /var/tmp/easy-import.dump
+    # Two, on a two-core VM: pg_restore -j parallelises table data and index builds, and more jobs
+    # than cores just makes them queue behind each other while the disk thrashes.
+    import_jobs: 2
+    # Set to false to re-import over an existing database without being asked.
+    import_confirmed: false
+
+  tasks:
+
+    # --- refuse to do the wrong thing ------------------------------------------------------------
+
+    - name: Insist on being told which dump
+      ansible.builtin.assert:
+        that: import_dump | length > 0
+        fail_msg: >-
+          Pass the dump's path on the host:
+          ./run.sh import-prod-dump.yml -e import_dump=/home/kspar/easyems-prod-YYYY-MM-DD.dump
+
+    # The same guard the SQL scripts apply, checked here so it fails before the database is dropped
+    # rather than after. anonymise.sql refuses a database whose name does not look like a copy;
+    # discovering that after the restore leaves the host holding un-anonymised production data with
+    # the tempting fix being -v ALLOW_ANY_DATABASE=true, i.e. disarming the guard.
+    - name: Refuse a database that is not obviously a copy
+      ansible.builtin.assert:
+        that: import_db is search('(dev|stage|anon)')
+        fail_msg: >-
+          Database '{{ import_db }}' does not contain dev, stage or anon, so the anonymisation
+          would refuse to run against it after the restore. Rename the database first.
+
+    - name: Find the dump
+      ansible.builtin.stat:
+        path: "{{ import_dump }}"
+      register: import_dump_stat
+
+    - name: Insist the dump exists
+      ansible.builtin.assert:
+        that: import_dump_stat.stat.exists and import_dump_stat.stat.size > 0
+        fail_msg: "No dump at {{ import_dump }} on this host, or it is empty."
+
+    # Real production data in a file. scp does not carry the mode across, so a dump created under
+    # `umask 077` commonly lands here world-readable.
+    - name: Keep the dump to its owner
+      ansible.builtin.file:
+        path: "{{ import_dump }}"
+        mode: "0600"
+
+    - name: Read the dump's table of contents
+      # Proves the archive is intact and readable by THIS pg_restore before anything is dropped.
+      # A 14.x archive into a 16.x pg_restore is fine; the reverse is not, and this is where that
+      # would surface.
+      ansible.builtin.command: "pg_restore --list {{ import_dump | quote }}"
+      register: import_toc
+      changed_when: false
+
+    - name: Insist the dump has data in it
+      ansible.builtin.assert:
+        that: import_toc.stdout is search('TABLE DATA')
+        fail_msg: "{{ import_dump }} has no table data — a schema-only dump is not what dev needs."
+
+    - name: Find out whether this would overwrite an existing import
+      ansible.builtin.command: >-
+        psql -d {{ import_db }} -tAc
+        "SELECT count(*) FROM account"
+      become_user: postgres
+      register: import_existing_accounts
+      changed_when: false
+      failed_when: false
+
+    # dev drifts and is never re-imported, so a second run is not a refresh — it is deleting
+    # whatever testers have built since the first one. The threshold is deliberately low: the
+    # testdata changeset alone puts three accounts in an empty dev, and anything past that is
+    # either an import or real use.
+    - name: Refuse to overwrite an existing import without being told to
+      ansible.builtin.assert:
+        that: import_confirmed | bool
+        fail_msg: >-
+          {{ import_db }} already holds {{ import_existing_accounts.stdout }} accounts. dev is
+          imported once and then drifts (§3.1), so re-importing DELETES everything testers have
+          created since. If that is what you want: -e import_confirmed=true
+      when:
+        - import_existing_accounts.rc == 0
+        - import_existing_accounts.stdout | int > 10
+
+    # --- take a copy of what is here now ---------------------------------------------------------
+
+    # Cheap, and the only thing standing between a bad import and a lost afternoon. Uses the same
+    # unit as the nightly backup, so this also exercises that path with somebody watching.
+    - name: Back up the current database first
+      ansible.builtin.command: systemctl start easy-db-backup.service
+      changed_when: true
+      when: import_existing_accounts.rc == 0
+
+    # --- restore -----------------------------------------------------------------------------------
+
+    # From here until core is started again, nothing can read this database but this play. Core is
+    # the only thing on the host that connects to it, and the API being down is the honest state to
+    # be in while the database holds un-anonymised production data.
+    - name: Stop core for the duration
+      ansible.builtin.systemd_service:
+        name: "{{ import_core_service }}"
+        state: stopped
+
+    - name: Disconnect anything still holding the database open
+      # DROP DATABASE fails while any session is connected, and core's connection pool takes a
+      # moment to die with it. Excluding pg_backend_pid() so this does not terminate itself.
+      ansible.builtin.command: >-
+        psql -d postgres -v ON_ERROR_STOP=1 -tAc
+        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+          WHERE datname = '{{ import_db }}' AND pid <> pg_backend_pid();"
+      become_user: postgres
+      changed_when: true
+
+    - name: Drop the old database
+      community.postgresql.postgresql_db:
+        name: "{{ import_db }}"
+        state: absent
+      become_user: postgres
+
+    - name: Create it empty, owned by the account core connects as
+      # Same parameters the postgres role uses, so an imported database and a provisioned one are
+      # the same database. template0 because the cluster's default template carries its own locale.
+      community.postgresql.postgresql_db:
+        name: "{{ import_db }}"
+        owner: "{{ import_db_user }}"
+        encoding: "{{ postgres_encoding | default('UTF-8') }}"
+        lc_collate: "{{ postgres_locale | default('en_US.UTF-8') }}"
+        lc_ctype: "{{ postgres_locale | default('en_US.UTF-8') }}"
+        template: template0
+        state: present
+      become_user: postgres
+
+    - name: Restore, from a copy the postgres account can actually open
+      block:
+        # The restore runs as the superuser, not as whoever uploaded the file — and the file is
+        # 0600 in a home directory that is 0750, which is how it should be for a production dump.
+        # So it is staged rather than opened in place. Copied and not moved: the upload is somebody
+        # else's file, and a failed run should leave it where they put it.
+        - name: Stage the dump where postgres can read it
+          ansible.builtin.copy:
+            src: "{{ import_dump }}"
+            remote_src: true
+            dest: "{{ import_staged_dump }}"
+            owner: postgres
+            group: postgres
+            mode: "0600"
+
+        - name: Restore the dump
+          # As postgres, but with --role, so every object ends up owned by the account core connects
+          # as rather than by the superuser doing the restoring. Without it the restore succeeds and
+          # core then cannot write to a single table it did not create.
+          #
+          # --exit-on-error rather than pg_restore's default of carrying on and summarising at the
+          # end: a half-restored database that reports success is the worst outcome available here.
+          ansible.builtin.command:
+            cmd: >-
+              pg_restore --dbname={{ import_db }} --jobs={{ import_jobs }}
+              --no-owner --no-privileges --role={{ import_db_user }}
+              --exit-on-error {{ import_staged_dump | quote }}
+          become_user: postgres
+          register: import_restore
+          changed_when: true
+      always:
+        # In `always`, because the copy holds production data and a failed restore is exactly when
+        # it would be forgotten.
+        - name: Remove the staged copy
+          ansible.builtin.file:
+            path: "{{ import_staged_dump }}"
+            state: absent
+
+    # --- cut the wires, before core can read them --------------------------------------------------
+
+    # Production's executors came with the dump. Core reconciles the executor table into its
+    # scheduler on a timer (syncExecutorsFromDB, EZ-1709), so leaving these here means a dev
+    # tester's submission is dispatched to a production grader. Deleted before core is allowed to
+    # start; the dev executor is registered again further down.
+    - name: Remove production's executors
+      ansible.builtin.command: >-
+        psql -d {{ import_db }} -v ON_ERROR_STOP=1 -c
+        "DELETE FROM executor_container_image;
+         DELETE FROM executor;"
+      become_user: postgres
+      register: import_executors_cut
+      changed_when: true
+
+    - name: Say what was cut
+      ansible.builtin.debug:
+        msg: "executor rows removed: {{ import_executors_cut.stdout_lines | join(' / ') }}"
+
+    # --- anonymise, before anything else connects ---------------------------------------------------
+
+    - name: Stage the anonymisation scripts where postgres can read them
+      ansible.builtin.copy:
+        src: "{{ import_sql_src }}/"
+        dest: "{{ import_work_dir }}/"
+        owner: postgres
+        group: postgres
+        mode: "0600"
+        directory_mode: "0700"
+
+    - name: Anonymise
+      # chdir matters: anonymise.sql loads the colour and bird wordlists with \copy, which is
+      # client-side and resolves relative to psql's working directory rather than to the script.
+      ansible.builtin.command:
+        cmd: "psql -d {{ import_db }} -v ON_ERROR_STOP=1 -f anonymise.sql"
+        chdir: "{{ import_work_dir }}"
+      become_user: postgres
+      register: import_anonymise
+      changed_when: true
+
+    - name: Show the anonymisation report
+      ansible.builtin.debug:
+        var: import_anonymise.stdout_lines
+
+    # The script prints its own assertions; this fails the run on them. Printing "should be 0: 412"
+    # and exiting green would leave real names on the host with a green tick next to them.
+    - name: Check the anonymisation actually took
+      ansible.builtin.command: >-
+        psql -d {{ import_db }} -tAc
+        "SELECT (SELECT count(*) FROM account WHERE email NOT LIKE '%@ez.ez')
+              + (SELECT count(*) FROM account WHERE moodle_username IS NOT NULL)
+              + (SELECT count(*) FROM student_course_access WHERE moodle_username IS NOT NULL)
+              + (SELECT count(*) FROM student_moodle_pending_access)
+              + (SELECT count(*) FROM course_invite_link)
+              + (SELECT count(*) FROM log_report)
+              + (SELECT count(*) FROM (SELECT email FROM account
+                                       GROUP BY email HAVING count(*) > 1) d)
+              + (SELECT count(*) FROM (SELECT given_name, family_name FROM account
+                                       GROUP BY given_name, family_name HAVING count(*) > 1) n);"
+      become_user: postgres
+      register: import_leftovers
+      changed_when: false
+
+    - name: Fail if anything survived that should not have
+      ansible.builtin.assert:
+        that: import_leftovers.stdout | int == 0
+        fail_msg: >-
+          {{ import_leftovers.stdout }} rows still carry production identifiers, or names and emails
+          are not unique. The database is NOT safe to expose. The report above says which category.
+          Do not start core against it.
+        success_msg: "No production identifiers left, and names and emails are unique."
+
+    - name: Remove the staged scripts
+      ansible.builtin.file:
+        path: "{{ import_work_dir }}"
+        state: absent
+
+    # --- let core migrate it forward ----------------------------------------------------------------
+
+    # Only now. Core applies pending Liquibase changesets at startup through the SpringLiquibase bean
+    # in core/conf/DatabaseConf.kt, so this is where production's schema catches up with master —
+    # against data that is already anonymised.
+    - name: Start core
+      ansible.builtin.systemd_service:
+        name: "{{ import_core_service }}"
+        state: started
+
+    - name: Wait for core to finish migrating and answer
+      # 401 is the success condition. Core has no unauthenticated health endpoint, so an
+      # unauthenticated request reaching Spring Security and being refused proves the context came
+      # up — which, on this run, means every pending changeset applied. The same check the deploy
+      # script makes, for the same reason.
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:8080/v2/"
+        status_code: [401, 200]
+      register: import_core_up
+      retries: 60
+      delay: 5
+      until: import_core_up is succeeded
+
+    - name: Report how far the schema moved
+      ansible.builtin.command: >-
+        psql -d {{ import_db }} -tAc
+        "SELECT count(*) FROM databasechangelog;"
+      become_user: postgres
+      register: import_changesets
+      changed_when: false
+
+    # --- put dev's own executor back ------------------------------------------------------------------
+
+    - name: Register the dev executor and its images
+      ansible.builtin.include_role:
+        name: executor
+        tasks_from: register_in_db.yml
+
+    # --- what landed ------------------------------------------------------------------------------------
+
+    - name: Count what was imported
+      ansible.builtin.command: >-
+        psql -d {{ import_db }} -tAc
+        "SELECT 'accounts: '   || (SELECT count(*) FROM account)
+             || ', courses: '  || (SELECT count(*) FROM course)
+             || ', exercises: '|| (SELECT count(*) FROM exercise)
+             || ', submissions: ' || (SELECT count(*) FROM submission)
+             || ', executors: ' || (SELECT count(*) FROM executor);"
+      become_user: postgres
+      register: import_counts
+      changed_when: false
+
+    - name: Say what dev now holds
+      ansible.builtin.debug:
+        msg:
+          - "{{ import_counts.stdout }}"
+          - "liquibase changesets applied: {{ import_changesets.stdout }}"
+          - >-
+            Next: ./run.sh grading-check.yml — it creates its own fixture exercise now, so it no
+            longer depends on the testdata rows this import removed.

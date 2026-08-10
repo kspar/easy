@@ -163,7 +163,42 @@ COMMIT;
 
 -- ---------------------------------------------------------------------------
 -- Report, so the operator can see it did something
+--
+-- Everything above runs against whatever schema the dump carried; this part has to as well.
+-- A production dump is by definition BEHIND master — dev is the release gate, so it runs
+-- changesets production has not seen yet — and this script is meant to run before core has
+-- migrated the restore forward, so that no core process ever connects to un-anonymised data.
+--
+-- Two of these counts named columns that only exist after that migration: `teacher_inline_comment`
+-- did not exist at all in the 14.x production schema, and `teacher_activity.feedback_md` was still
+-- called `feedback_adoc` before the Markdown switch. Under ON_ERROR_STOP that aborted the report —
+-- after the COMMIT above, so the anonymisation had happened and psql still exited non-zero with
+-- none of the assertions printed, which reads as "the anonymisation failed".
 -- ---------------------------------------------------------------------------
+
+-- Counts a table that may not be in this schema yet, rather than failing the whole report.
+CREATE OR REPLACE FUNCTION pg_temp.count_if_exists(rel text, predicate text DEFAULT 'true')
+RETURNS text AS $$
+DECLARE n bigint;
+BEGIN
+    IF to_regclass(rel) IS NULL THEN
+        RETURN 'n/a — no such table in this schema';
+    END IF;
+    EXECUTE format('SELECT count(*) FROM %s WHERE %s', rel, predicate) INTO n;
+    RETURN n::text;
+END $$ LANGUAGE plpgsql;
+
+-- Whichever feedback columns this schema actually has. Empty means none of them do, which is
+-- itself the answer to "is there teacher prose in here".
+SELECT coalesce(
+           string_agg(quote_ident(column_name) || ' IS NOT NULL', ' OR ' ORDER BY column_name),
+           'false')
+       AS feedback_predicate
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'teacher_activity'
+  AND column_name IN ('feedback_md', 'feedback_adoc', 'feedback_html')
+\gset
 
 \echo ''
 \echo 'Anonymisation complete. Remaining personal-ish data:'
@@ -180,8 +215,8 @@ UNION ALL SELECT 'moodle usernames left (should be 0)',
 UNION ALL SELECT 'pending invitations left (should be 0)',
     (SELECT count(*) FROM student_moodle_pending_access)::text
 UNION ALL SELECT 'teacher feedback rows with text (strip-teacher-feedback.sql)',
-    (SELECT count(*) FROM teacher_activity WHERE feedback_md IS NOT NULL OR feedback_html IS NOT NULL)::text
+    pg_temp.count_if_exists('public.teacher_activity', :'feedback_predicate')
 UNION ALL SELECT 'inline comments (strip-teacher-feedback.sql)',
-    (SELECT count(*) FROM teacher_inline_comment)::text
+    pg_temp.count_if_exists('public.teacher_inline_comment')
 UNION ALL SELECT 'submissions with code (strip-submissions.sql)',
     (SELECT count(*) FROM submission WHERE solution <> '')::text;
