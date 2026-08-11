@@ -63,6 +63,16 @@ async function openPage(list) {
   )
   await page.goto(`${BASE_URL}/admin/messages`)
   await waitUntil(async () => (await page.locator('h5').count()) > 0)
+  // The heading is not the list. `SystemMessagesPage` renders its title unconditionally and a
+  // spinner underneath while the query is in flight, so waiting for the h5 only proves the route
+  // mounted — and reading body text at that moment reads the spinner.
+  //
+  // That is exactly how this script failed in CI on 2026-08-11 while passing on every laptop: four
+  // checks reported missing messages, which reads as a broken admin page rather than as a page
+  // inspected too early. Reproduced locally by delaying the stubbed response 1.5s, which fails the
+  // same four and no others. Waiting for the spinner to go waits for the data, and still works for
+  // the empty-list case, which has no rows to wait for.
+  await waitUntil(async () => (await page.locator('[class*=MuiCircularProgress]').count()) === 0)
   return { browser, page, shot, posted }
 }
 
