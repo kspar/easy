@@ -63,6 +63,7 @@ const SCRIPTS = [
   'about-operating-info.mjs',
   'system-messages.mjs',
   'admin-system-messages.mjs',
+  'web-update-banner.mjs',
 ]
 
 function log(msg) {

@@ -84,6 +84,11 @@
   "environment": {
     "notProduction": "This is not the production environment — anything here can be changed or deleted at any time."
   },
+  "update": {
+    "available": "A new version of Lahendus is available. Reload the page to start using it — unsaved work in the editor will be lost, so finish what you are doing first.",
+    "reload": "Reload",
+    "dismiss": "Not now"
+  },
   "courses": {
     "title": "My courses",
     "titleAdmin": "All courses",

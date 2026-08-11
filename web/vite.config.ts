@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -34,13 +34,55 @@ function readCommit(): string {
   }
 }
 
+/**
+ * The build stamp, read once so that the constants compiled into the bundle and the manifest
+ * written beside it can never disagree — which is the whole basis of the update check in
+ * `src/api/webVersion.ts`: it compares one against the other.
+ */
+const BUILD = {
+  version: readVersion(),
+  commit: readCommit(),
+  builtAt: new Date().toISOString(),
+}
+
+/**
+ * Writes `version.json` into the dist (EZ-1752).
+ *
+ * A running tab keeps the bundle it loaded until someone reloads it, so it needs a way to ask what
+ * is deployed *now*. Core cannot answer that — web is deployed as static files and often changes
+ * when core does not — so the dist describes itself, and the check is one static fetch with no
+ * backend involved.
+ *
+ * Emitted by the build rather than written by the deploy script: an artifact that carries its own
+ * identity works the same on every environment and needs nothing added to any deploy. It is the
+ * opposite decision to `config.json`, which is deliberately *removed* from the artifact because it
+ * differs per environment (EZ-1726). This file is the same everywhere the artifact goes, which is
+ * exactly what makes it a build stamp.
+ *
+ * Build only: under `vite dev` there is no build to identify, and no file — the request falls
+ * through to the SPA's index.html and the client treats the HTML it gets back as "nothing to say".
+ */
+function versionManifest(): Plugin {
+  return {
+    name: 'easy-version-manifest',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify(BUILD, null, 2) + '\n',
+      })
+    },
+  }
+}
+
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify(readVersion()),
-    __APP_COMMIT__: JSON.stringify(readCommit()),
-    __APP_BUILT_AT__: JSON.stringify(new Date().toISOString()),
+    __APP_VERSION__: JSON.stringify(BUILD.version),
+    __APP_COMMIT__: JSON.stringify(BUILD.commit),
+    __APP_BUILT_AT__: JSON.stringify(BUILD.builtAt),
   },
-  plugins: [react()],
+  plugins: [react(), versionManifest()],
   server: {
     proxy: {
       '/v2': {

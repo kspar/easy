@@ -50,6 +50,17 @@ try {
       bundle: true,
       platform: 'node',
       format: 'esm',
+      // The build-time constants vite's `define` substitutes (see vite.config.ts). esbuild is
+      // standing in for vite here, so it has to stand in for this too: without them, importing any
+      // module that reads one — `api/webVersion.ts`, `features/about/AboutPage.tsx` — dies with a
+      // ReferenceError at module scope, before a single assertion runs. Stub values rather than
+      // real ones, because a unit test that depended on which commit it was built from would be a
+      // test that fails on someone else's machine.
+      define: {
+        __APP_VERSION__: '"0.0-test"',
+        __APP_COMMIT__: '"testing"',
+        __APP_BUILT_AT__: '"2026-01-01T00:00:00.000Z"',
+      },
       // Keeps stack traces pointing at the real source rather than the bundle.
       sourcemap: 'inline',
       logLevel: 'error',

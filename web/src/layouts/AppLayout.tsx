@@ -62,6 +62,7 @@ import EditCourseDialog from '../features/course-settings/EditCourseDialog.tsx'
 import useRecentExercises from '../hooks/useRecentExercises.ts'
 import logoSvg from '../assets/logo.svg'
 import SystemMessageBanner from '../components/SystemMessageBanner.tsx'
+import UpdateAvailableBanner from '../components/UpdateAvailableBanner.tsx'
 import EnvironmentBadge from '../components/EnvironmentBadge.tsx'
 
 function slugify(s: string): string {
@@ -611,6 +612,12 @@ export default function AppLayout() {
             the endpoint requires a session — polling it while signed out is a guaranteed 401 once a
             minute. */}
         <SystemMessageBanner enabled={authenticated} />
+
+        {/* Under the system messages, because a maintenance notice outranks "there is a newer
+            build". Not gated on `authenticated`: this reads a static file rather than the API, so
+            there is no 401 to avoid, and somebody solving a public exercise without an account
+            benefits from a current bundle exactly as much as anyone else. */}
+        <UpdateAvailableBanner />
 
         <AppBar
           position="sticky"

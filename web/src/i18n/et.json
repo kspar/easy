@@ -84,6 +84,11 @@
   "environment": {
     "notProduction": "See ei ole päriskeskkond — siinseid andmeid võidakse igal ajal muuta või kustutada."
   },
+  "update": {
+    "available": "Lahendusest on saadaval uus versioon. Selle kasutuselevõtuks laadi leht uuesti — salvestamata töö redaktoris läheb kaotsi, nii et lõpeta enne pooleliolev tegevus.",
+    "reload": "Laadi uuesti",
+    "dismiss": "Mitte praegu"
+  },
   "courses": {
     "title": "Minu kursused",
     "titleAdmin": "Kõik kursused",

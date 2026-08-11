@@ -36,11 +36,41 @@ grading queue depth per executor, and free disk. Not Spring Actuator — see the
 that could only 403. Covered by `dev-harness/scripts/about-operating-info.mjs`, which checks both
 the admin view and that a teacher neither sees the panel nor calls the endpoint.
 
+### Telling a tab it is out of date
+
+The build writes the same three values to **`dist/version.json`** (EZ-1752), and
+`src/api/webVersion.ts` fetches it every five minutes and whenever the tab regains focus. A commit
+that differs from `__APP_COMMIT__` means the files behind this tab have been replaced, and
+`components/UpdateAvailableBanner.tsx` offers a reload.
+
+Four decisions worth knowing, because each is the answer to a way this goes wrong:
+
+- **It never reloads by itself.** There is a code editor in this app and a student's unsubmitted
+  solution lives in the page. Taking that away to install a bug fix would be a worse bug than the
+  one being fixed, and an invisible one — the work is just gone.
+- **The commit decides, not the version.** A fortnight of deploys off master are all `4.0`.
+  Different, not newer: two hashes have no order, and a rollback is a change a tab must hear about
+  for the same reasons a roll-forward is.
+- **A body that is not a build stamp means "nothing to say".** The SPA fallback answers a request
+  for a missing file with `index.html` and a **200**, not a 404, so this is the normal case under
+  `vite dev` and on any environment yet to deploy a build that has the file.
+- **The request carries a cache-buster as well as `cache: 'no-store'`.** Unlike `config.json` this
+  needs no `Cache-Control` from the server, which matters because a cached stamp fails silently —
+  it reports "no update" forever and looks exactly like being up to date.
+
+Dismissal is stored per commit in `localStorage`, so waving away today's release says nothing about
+next week's. Covered by `dev-harness/unit/web-version.mjs` (the comparison rules) and
+`dev-harness/scripts/web-update-banner.mjs` (the wiring and the buttons).
+
 ## Runtime configuration
 
 Environment-specific settings are fetched from **`/config.json` at boot**, not baked in at build
 time (EZ-1726). One built dist therefore serves every environment, and the artifact CI tested is
 the one that gets deployed.
+
+`version.json` is the mirror image of this file and deliberately so: `config.json` differs per
+environment and is therefore *stripped* from the artifact, while `version.json` is identical
+wherever the artifact goes, which is what makes it a usable build stamp.
 
 `public/config.json` holds the defaults and is what ends up in `dist/`:
 
