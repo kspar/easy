@@ -49,9 +49,14 @@ executor_images:
     # means. It is a *tag* of this same image rather than a separate build: the Dockerfile installs
     # the tiivad package, which is what runs a compiled TSL spec.
     #
-    # Production also has `tiivad:tsl-spec`, the legacy YAML flavour. Deliberately not here: dev has
-    # no imported exercises yet, and the TSL migration (doc/core/tsl-migration/) is converting those
-    # away. Add it here if an import brings some along.
+    # `tiivad:tsl-spec`, the legacy YAML flavour, is deliberately absent and now permanently so.
+    #
+    # This used to say "add it here if an import brings some along". The import did bring two —
+    # both scratch exercises by one author, on no course, with no submission ever recorded — and
+    # kspar removed their auto-assessment configuration in production on 2026-08-11. No exercise
+    # anywhere uses this flavour now, so the image is not wanted on any host: it exists only to
+    # grade a spec dialect that predates the JSON model `doc/core/tsl-migration/` converts between,
+    # and building it would put another image on the box that runs student code for nothing.
     tags:
       - tiivad:tsl-compose
   - name: silmused
