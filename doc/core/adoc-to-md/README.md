@@ -81,11 +81,45 @@ has no math extension, and there is no MathJax or KaTeX in `web/` any more — s
 already fail to render math in production. That is **EZ-1732 (Math in exercise text no longer renders: no MathJax or KaTeX in web/)** —
 not something this migration can fix.
 
-## Current state (2026-08-01)
+## Current state (2026-08-11): written on dev, not yet on production
 
-The dry run has been executed against the full production corpus — 1081 exercises, 83 seconds,
-nothing written to any database. The converter is settled; **no write has happened, and the write
-will be done against dev** — EZ-1723 (Set up a dev environment at dev.lahendus.ut.ee).
+**Dev is migrated.** 1044 of 1211 current exercise versions now carry Markdown; 37 are held; the
+rest never had AsciiDoc. `text_adoc` and `text_html` are untouched and no new `exercise_version`
+rows exist, so nothing a reader sees has changed and rollback is still one statement.
+
+The dry run against dev's imported copy reproduced the production numbers **exactly** — 996 clean,
+48 maths, 36 differing, 1 with no output — which is the strongest evidence available that the
+import is faithful and the converter is stable.
+
+What was written, per the decision taken on the day:
+
+| | Exercises | Written |
+| --- | --- | --- |
+| converted cleanly | 996 | yes |
+| maths — delimiter only (EZ-1732) | 48 | **yes** — `\(x\)` becomes `$x$`, which is what KaTeX and MathJax expect anyway, so this positions them for EZ-1732 rather than waiting on it |
+| text differs after round-trip | 36 | no — held for hand review |
+| conversion produced no output | 1 | no — wants its source fixed |
+
+The 37 held ones keep rendering from `text_html` exactly as before. They are not fragile while they
+wait: `ExercisePage.tsx` refuses to save a legacy exercise whose Markdown box is still empty, so the
+"open it and destroy it" path is closed.
+
+One difference from the August run worth knowing: the bare-ampersand repair fired on **18** docbook
+files here against 97 in production on 2026-08-01, with identical outcomes either side. The likely
+cause is a newer unpinned `asciidoctor` image escaping more of them itself. It changes nothing about
+what gets written, but it is the same class of drift as the `python:3` base that broke the pygrader
+image, and a reason to pin the converter images before the production run.
+
+### Production is still to do
+
+Everything needed is now built and rehearsed end to end. Production needs v4.0 deployed first, and
+should get the same sequence: export, dry run, review the flag list, `build_payload.py`,
+`writeback.py` without `--apply`, then with it. Keep the receipt — it is the rollback list.
+
+### How the converter got here (2026-08-01, against production)
+
+The dry run that settled it, kept because the reasoning still applies. The same numbers came back
+from dev ten days later.
 
 | Outcome | Exercises |
 | --- | --- |
@@ -114,31 +148,61 @@ Decisions taken:
 - **`codehl` highlighting** is dropped — nothing in `web/` has styled it since the WUI went.
 - **Maths** is EZ-1732's problem, not this one.
 
-## When dev exists
+## The sequence, as run on dev
+
+Done on 2026-08-11. The same order is what production wants.
 
 1. Restore an anonymised copy (`../anonymise-db/`), with v4.0 deployed so `text_md` exists.
-2. Re-run the dry run against dev and confirm the numbers still land near 92%.
-3. Work through the flagged list by hand — 5 block-title losses and 1 malformed source are the
-   only ones carrying real content risk; the other 31 are cosmetic.
-4. Decide on the 48 maths exercises: hold for EZ-1732, or migrate and accept `$…$`, which is what
-   both KaTeX and MathJax expect anyway.
+2. Re-run the dry run and confirm the numbers still land near 92%. They landed on the nose.
+3. Work through the flagged list by hand — the block-title losses and the one malformed source are
+   the only ones carrying real content risk. **Still outstanding**: 37 exercises on dev are waiting
+   for this, and nothing is at risk while they wait.
+4. Decide on the 48 maths exercises. **Decided: write them**, accepting `$…$` — the formula is
+   intact, the delimiter is the one KaTeX and MathJax expect, and nothing renders either form until
+   EZ-1732 lands, so writing them costs nothing and saves doing this twice.
 5. Then write, per below.
 
 ## Then the write
 
-Not built yet, deliberately — the dry run should be reviewed first. When it is:
+**4. Build the payload** — which exercises to write is a decision, so it is an argument:
 
-- current versions only (`valid_to IS NULL`)
-- `UPDATE` in place, no new `exercise_version` rows: the content is not changing, only the source
-  representation is being backfilled
-- leave `text_adoc` and `text_html` alone, so readers see no difference and rollback is
-  `UPDATE exercise_version SET text_md = NULL`
-- rehearse on dev (EZ-1723) before production
-- production needs v4.0 deployed first — the `text_md` column arrives with EZ-1729 (core: bootJar cannot start — asciidoctorj JRuby gems do not resolve from a nested jar)
+```sh
+python3 build_payload.py --out ./out --export /tmp/export.jsonl \
+                         --include ok,math --payload payload.jsonl
+```
+
+`ok` is what converted cleanly; `ok,math` adds the delimiter-only maths; `all-flagged` takes
+everything that produced output, including the ones that lose a block title, and is not advisable.
+
+**5. Write**, dry run first — it rolls back and tells you what it would have done:
+
+```sh
+python3 writeback.py --payload payload.jsonl                              # writes nothing
+python3 writeback.py --payload payload.jsonl --apply --receipt receipt.txt
+```
+
+Both scripts want to run where the database is, since the payload is exercise text.
+
+What the write does and refuses to do:
+
+- current versions only (`valid_to IS NULL`), `UPDATE` in place, no new `exercise_version` rows:
+  the content is not changing, only the source representation is being backfilled, and a new
+  version would put an edit nobody made into every affected exercise's history
+- `text_adoc` and `text_html` are left alone, so readers see no difference and rollback is
+  `UPDATE exercise_version SET text_md = NULL WHERE id IN (…)` over the receipt
+- every update carries `valid_to IS NULL AND text_md IS NULL`, so an exercise somebody saved
+  between the export and the write is skipped rather than overwritten with Markdown converted from
+  superseded AsciiDoc — and the skip is counted out loud rather than swallowed
+- it refuses a database whose name does not say it is a copy, like `../anonymise-db/` does
+- one transaction, so a failure leaves nothing half-written
+
+Production needs v4.0 deployed first — the `text_md` column arrives with EZ-1729 (core: bootJar cannot start — asciidoctorj JRuby gems do not resolve from a nested jar).
 
 ## Other files here
 
 - `corpus-profile.sql` — which constructs appear, and how often
 - `risk-buckets.sql` — each exercise bucketed once by its worst construct
-- `export.sql` — the dry run's input
+- `export.sql` — the dry run’s input
+- `build_payload.py` — turns a reviewed dry run into a write payload
+- `writeback.py` — the only step that writes
 - `anonymise-db/` (sibling directory) — unrelated, for dev data
