@@ -75,6 +75,184 @@ def fix_alerts(md: str) -> str:
     return GH_ALERT.sub(lambda m: f"> **{m.group(1).capitalize()}:** ", md)
 
 
+# --- collapsible blocks ------------------------------------------------------------------------
+#
+# `[%collapsible]` renders as a <details> widget: a clickable summary hiding the content. Teachers
+# use it for extra tasks and worked examples, and it is the one AsciiDoc construct in this corpus
+# whose *behaviour* matters rather than its text.
+#
+# It dies early. Asciidoctor's docbook backend has no collapsible concept, so the attribute is gone
+# by the time pandoc sees anything — every collapsible arrives as a plain example block,
+# indistinguishable from one that was never collapsible. The verification cannot see the loss
+# either: it compares visible text, and the text inside a <details> is present either way.
+#
+# So the fact is carried across by hand: sentinel the title before asciidoctor runs, then rewrite
+# the marked blocks after pandoc. Markdown can express the result — commonmark-java passes raw HTML
+# through and still parses the Markdown inside it, so `<details><summary>` needs nothing from core.
+SENTINEL = "EZCOLLAPSIBLE"
+SENTINEL_OPEN = "EZCOLLAPSIBLEOPEN"
+COLLAPSIBLE_ATTR = re.compile(r"^\[[^\]]*%collapsible[^\]]*\]$")
+# Asciidoctor's own default summary for a collapsible with no title.
+DEFAULT_SUMMARY = "Details"
+
+
+def mark_collapsibles(adoc: str) -> str:
+    """Tag each `[%collapsible]` block's title so it can be found again after conversion.
+
+    The title is the only thing that survives into the Markdown as identifiable text, so it is what
+    carries the mark. A block without one gets a title purely to have somewhere to carry it — which
+    is also honest, since Asciidoctor was already displaying "Details" for those.
+
+    Both orders occur in the corpus: title before the attribute line (693 blocks) and after it (3).
+    """
+    lines = adoc.split("\n")
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if not COLLAPSIBLE_ATTR.match(line.strip()):
+            out.append(line)
+            i += 1
+            continue
+
+        mark = SENTINEL_OPEN if "%open" in line else SENTINEL
+
+        def titled(candidate: str) -> bool:
+            return candidate.startswith(".") and len(candidate.strip()) > 1
+
+        # Look back past blank lines: a title separated from its block by one still belongs to it
+        # as far as Asciidoctor is concerned, and inserting a second title orphans the first —
+        # which is how exercise 809 lost its "Näited funktsiooni …" heading and got "Details".
+        back = len(out) - 1
+        while back >= 0 and not out[back].strip():
+            back -= 1
+
+        if back >= 0 and titled(out[back]):                # .Title [blank] [%collapsible]
+            out[back] = f".{mark} {out[back][1:]}"
+            out.append(line)
+        elif i + 1 < len(lines) and titled(lines[i + 1]):  # [%collapsible] then .Title
+            out.append(line)
+            out.append(f".{mark} {lines[i + 1][1:]}")
+            i += 1
+        else:                                              # no title at all
+            out.append(f".{mark}")
+            out.append(line)
+        i += 1
+    return "\n".join(out)
+
+
+INLINE_CODE = re.compile(r"`([^`]+)`")
+INLINE_STRONG = re.compile(r"\*\*([^*]+)\*\*")
+INLINE_EM = re.compile(r"(?<!\*)\*([^*]+)\*(?!\*)")
+INLINE_EM_UNDERSCORE = re.compile(r"(?<![\w\\])_([^_]+)_(?!\w)")
+INLINE_LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+
+
+def inline_md_to_html(text: str) -> str:
+    """Render the inline Markdown in a block title as HTML, for use inside `<summary>`.
+
+    `<summary>` is in CommonMark's HTML-block tag list, so everything inside it is raw: a title of
+    ``Näide faili `nimed.txt` sisust`` keeps its backticks and students read them. This came back as
+    48 regressions the first time the collapsible rewrite ran, all of them titles carrying inline
+    markup.
+
+    Deliberately handles four constructs and no more. Anything else stays literal, the exercise
+    fails the comparison, and it is held for a human — which is the correct outcome for a title
+    doing something unusual, and much better than a regex that half-understands the whole grammar.
+    """
+    def code(m: re.Match) -> str:
+        return f"<code>{m.group(1)}</code>"
+
+    # pandoc escapes Markdown punctuation with a backslash, so a title arrives as
+    # ``Näide funktsiooni \`failist\`e tööst``. Left in place, the backslashes end up either side of
+    # the <code> tags and are read out to the student. Unescaping first is also what makes the
+    # patterns below match at all.
+    text = re.sub(r"\\([^\w\s]|_)", r"\1", text)
+
+    parts = []
+    last = 0
+    for m in INLINE_CODE.finditer(text):
+        parts.append((text[last:m.start()], False))
+        parts.append((code(m), True))
+        last = m.end()
+    parts.append((text[last:], False))
+
+    rendered = []
+    for chunk, is_code in parts:
+        if is_code:
+            rendered.append(chunk)
+            continue
+        chunk = INLINE_LINK.sub(r'<a href="\2">\1</a>', chunk)
+        chunk = INLINE_STRONG.sub(r"<strong>\1</strong>", chunk)
+        chunk = INLINE_EM.sub(r"<em>\1</em>", chunk)
+        chunk = INLINE_EM_UNDERSCORE.sub(r"<em>\1</em>", chunk)
+        rendered.append(chunk)
+    return "".join(rendered)
+
+
+def _collapsible_at(lines: list[str], i: int) -> tuple[str, bool, int] | None:
+    """If an example block starts at `i` and is one of ours, return (summary, open, index after
+    its title div). pandoc puts each tag on its own line, which is what makes this line-based."""
+    if lines[i].strip() != '<div class="example">':
+        return None
+    j = i + 1
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+    if j >= len(lines) or lines[j].strip() != '<div class="title">':
+        return None
+    k = j + 1
+    while k < len(lines) and not lines[k].strip():
+        k += 1
+    if k >= len(lines):
+        return None
+    title = lines[k].strip()
+    if not title.startswith(SENTINEL):
+        return None
+    is_open = title.startswith(SENTINEL_OPEN)
+    summary = title[len(SENTINEL_OPEN if is_open else SENTINEL):].strip() or DEFAULT_SUMMARY
+    end = k + 1
+    while end < len(lines) and lines[end].strip() != "</div>":
+        end += 1
+    return summary, is_open, end + 1
+
+
+def collapsibles_to_details(md: str) -> str:
+    """Rewrite the marked example blocks into `<details>`, leaving every other div alone.
+
+    Closing tags are matched by depth rather than by the next `</div>`, because these blocks nest —
+    a collapsible extra task routinely contains an example block of its own.
+    """
+    lines = md.split("\n")
+    out: list[str] = []
+    # None means "this div closes as it was written"; a string is the replacement, indent included.
+    closers: list[str | None] = []
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if stripped.startswith("<div"):
+            # Indentation is load-bearing. These blocks nest inside list items, where the content
+            # sits four spaces in; emitting `<details>` at column 0 ends the list, and everything
+            # indented after it becomes an indented code block — fences and all, verbatim, on the
+            # page. That was ten of the regressions the first time this ran.
+            indent = lines[i][: len(lines[i]) - len(lines[i].lstrip())]
+            found = _collapsible_at(lines, i)
+            if found:
+                summary, is_open, i = found
+                out.append(f"{indent}<details{' open' if is_open else ''}>")
+                out.append(f"{indent}<summary>{inline_md_to_html(summary)}</summary>")
+                closers.append(f"{indent}</details>")
+                continue
+            closers.append(None)
+            out.append(lines[i])
+        elif stripped == "</div>":
+            replacement = closers.pop() if closers else None
+            out.append(replacement if replacement is not None else lines[i])
+        else:
+            out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
+
 def fix_dangling_breaks(md: str) -> str:
     """Drop a trailing backslash where CommonMark will not read it as a hard line break.
 
@@ -150,7 +328,7 @@ def convert_all(rows: list[dict], work: pathlib.Path) -> dict[int, dict]:
 
     for row in rows:
         (adoc_dir / f"{row['exercise_id']}.adoc").write_text(
-            strip_easy_inline(row["text_adoc"] or ""), encoding="utf-8")
+            mark_collapsibles(strip_easy_inline(row["text_adoc"] or "")), encoding="utf-8")
 
     attrs = []
     for a in EASY_ATTRS:
@@ -191,7 +369,9 @@ def convert_all(rows: list[dict], work: pathlib.Path) -> dict[int, dict]:
         if not md_file.exists():
             out[ex] = {"md": None, "error": "conversion produced no output"}
             continue
-        md = fix_dangling_breaks(fix_alerts(md_file.read_text(encoding="utf-8"))).strip()
+        md = fix_dangling_breaks(
+            collapsibles_to_details(fix_alerts(md_file.read_text(encoding="utf-8")))
+        ).strip()
         md_file.write_text(md, encoding="utf-8")
         out[ex] = {"md": md, "error": None}
     return out

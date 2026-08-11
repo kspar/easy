@@ -84,8 +84,9 @@ not something this migration can fix.
 ## Current state (2026-08-11): written on dev, not yet on production
 
 **Dev is migrated.** 1061 of 1211 current exercise versions now carry Markdown; 20 are held; the
-rest never had AsciiDoc. `text_adoc` and `text_html` are untouched and no new `exercise_version`
-rows exist, so nothing a reader sees has changed and rollback is still one statement.
+rest never had AsciiDoc. **436 of them carry a working `<details>` collapsible.** `text_adoc` and
+`text_html` are untouched and no new `exercise_version` rows exist, so nothing a reader sees has
+changed and rollback is still one statement.
 
 The dry run against dev's imported copy reproduced the production numbers **exactly** — 996 clean,
 48 maths, 36 differing, 1 with no output — which is the strongest evidence available that the
@@ -102,6 +103,35 @@ What was written, per the decision taken on the day:
 
 (1013 includes the 17 recovered by the backslash fix described next; the first write put in 1044 and the
 second added those 17.)
+
+### Collapsible blocks are preserved
+
+`[%collapsible]` is the one construct here whose *behaviour* matters, and it was being silently
+flattened: Asciidoctor's docbook backend has no collapsible concept, so every one of them arrived at
+pandoc as a plain example block. The verification could not see it either — it compares visible text,
+and the text inside a `<details>` is there either way.
+
+It is carried across now. `mark_collapsibles` sentinels each block's title before Asciidoctor runs,
+and `collapsibles_to_details` rewrites the marked blocks afterwards into
+`<details><summary>…</summary>`. **No core change was needed:** `MarkdownService` builds
+commonmark-java without `escapeHtml`, so raw HTML passes through *and* the Markdown inside it is
+still parsed — verified against `/v2/preview/markdown`.
+
+Four things this cost, each found by the conversion getting worse before it got better:
+
+- **Indentation is load-bearing.** These blocks nest inside list items, where content sits four
+  spaces in. Emitting `<details>` at column 0 ends the list, and everything after it becomes an
+  indented code block — fences printed verbatim to the student. Ten regressions.
+- **`<summary>` does not parse Markdown.** It is in CommonMark's HTML-block tag list, so a title of
+  ``Näide faili `nimed.txt` sisust`` keeps its backticks. 48 regressions, fixed by rendering the
+  title's inline Markdown to HTML — four constructs only, so anything unusual flags instead of being
+  guessed at.
+- **pandoc escapes punctuation** in titles, so the code spans arrived as ``\`…\` `` and had to be
+  unescaped first. `_` counts as a word character, which is its own small trap.
+- **A line starting with `.` is not always a title.** Requiring a blank line above it to prove
+  otherwise cost ten *more* exercises, because a title straight after a `====` delimiter is
+  perfectly valid. Reverted; the two exercises that do leak a sentinel are held for other reasons,
+  and `build_payload.py` now refuses to write any text containing one.
 
 ### Reviewing the held list found a converter bug, not 37 damaged exercises
 

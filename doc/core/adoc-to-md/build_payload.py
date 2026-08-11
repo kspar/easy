@@ -81,6 +81,14 @@ def main() -> int:
         if not text.strip():
             skipped["converted markdown is empty"] = skipped.get("converted markdown is empty", 0) + 1
             continue
+        # The collapsible rewrite marks blocks with a sentinel and removes it again. If one survives,
+        # the rewrite did not recognise its own marker and the exercise would go into the database
+        # with `EZCOLLAPSIBLE` in the middle of a sentence. Two exercises do this today and both are
+        # flagged for other reasons, so this has never fired — which is exactly when to add it.
+        if "EZCOLLAPSIBLE" in text:
+            skipped["conversion sentinel leaked into the text"] = (
+                skipped.get("conversion sentinel leaked into the text", 0) + 1)
+            continue
         if ex not in version_of:
             skipped["not in the export"] = skipped.get("not in the export", 0) + 1
             continue
