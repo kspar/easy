@@ -93,7 +93,22 @@ def main() -> int:
             skipped["not in the export"] = skipped.get("not in the export", 0) + 1
             continue
 
-        chosen.append({"exercise_id": ex, "version_id": version_of[ex], "text_md": text})
+        # The HTML the dry run rendered from this exact Markdown and then approved. Stored
+        # alongside, so `text_html` stops being Asciidoctor's output from years ago and starts
+        # being what this Markdown actually produces — without which the two disagree until some
+        # teacher saves the exercise and finds out on everyone's behalf.
+        html_path = args.out / "work" / "html" / f"{ex}.html"
+        if not html_path.exists():
+            skipped["no rendered html (re-run the dry run)"] = (
+                skipped.get("no rendered html (re-run the dry run)", 0) + 1)
+            continue
+        html = html_path.read_text(encoding="utf-8")
+        if not html.strip():
+            skipped["rendered html is empty"] = skipped.get("rendered html is empty", 0) + 1
+            continue
+
+        chosen.append({"exercise_id": ex, "version_id": version_of[ex],
+                       "text_md": text, "text_html": html})
 
     with args.payload.open("w", encoding="utf-8") as f:
         for row in chosen:

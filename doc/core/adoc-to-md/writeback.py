@@ -12,8 +12,11 @@ What it does, and does not do:
   * `UPDATE` in place, current versions only. The content is not changing; only the *source*
     representation is being backfilled, so a new `exercise_version` row would invent an edit that
     nobody made and put a bogus entry in every affected exercise's history.
-  * `text_adoc` and `text_html` are never touched. Readers see nothing change, and rollback is
-    `UPDATE exercise_version SET text_md = NULL` over the ids in the receipt.
+  * `text_adoc` is never touched — it is the source, and every improvement to the converter so far
+    has meant re-reading it. `text_html` **is** rewritten, with the exact HTML the dry run rendered
+    from this Markdown and approved, so that the two representations agree instead of drifting until
+    the first teacher who saves an exercise finds out on everyone's behalf.
+  * Rollback is the receipt: it carries each row's previous `text_md` and `text_html`.
   * Only exercises the dry run passed. Flagged ones are left null on purpose: a visible gap invites
     a look, a subtly mangled exercise does not.
 
@@ -38,7 +41,14 @@ Usage:
     python3 writeback.py --payload payload.jsonl --apply --allow-any-database   # escape hatch
     python3 writeback.py --payload payload.jsonl --apply --overwrite            # re-convert
 
-The payload is JSONL, one object per exercise: {"exercise_id", "version_id", "text_md"}.
+Why not `PUT /v2/exercises/{id}`, which would regenerate the HTML itself: it creates a new
+`exercise_version` per exercise, stamps the caller as its author, and does not carry `text_adoc`
+forward — so a thousand exercises would change hands, gain an edit nobody made, and lose the source
+this migration is derived from. It also re-inserts the auto-exercise and its assets, which is a lot
+of grading configuration to put at risk in order to fix a text field.
+
+The payload is JSONL, one object per exercise:
+{"exercise_id", "version_id", "text_md", "text_html"}.
 Built by `build_payload.py` from the dry run's report and converted Markdown.
 """
 
@@ -61,13 +71,14 @@ def load_payload(path: pathlib.Path) -> list[dict]:
         if not line.strip():
             continue
         row = json.loads(line)
-        missing = {"exercise_id", "version_id", "text_md"} - row.keys()
+        missing = {"exercise_id", "version_id", "text_md", "text_html"} - row.keys()
         if missing:
             sys.exit(f"{path}:{n} is missing {', '.join(sorted(missing))}")
         # An empty string would blank an exercise that currently renders. The converter never
         # produces one for a passing exercise, so this means the payload was built wrong.
-        if not row["text_md"].strip():
-            sys.exit(f"{path}:{n} (exercise {row['exercise_id']}) has empty text_md")
+        for field in ("text_md", "text_html"):
+            if not row[field].strip():
+                sys.exit(f"{path}:{n} (exercise {row['exercise_id']}) has empty {field}")
         rows.append(row)
     return rows
 
@@ -117,6 +128,12 @@ def main() -> int:
         )
         found, superseded, already_set = cur.fetchone()
 
+        # The previous values, read before anything is written, so the receipt can put them back.
+        # `RETURNING` gives the new row, not the old one, which is no use for a rollback.
+        cur.execute(
+            "SELECT id, text_md, text_html FROM exercise_version WHERE id = ANY(%s)", (ids,))
+        previous = {row[0]: (row[1], row[2]) for row in cur.fetchall()}
+
         # One transaction, so a failure in the middle leaves nothing half-written rather than a
         # corpus split between two representations.
         #
@@ -130,20 +147,22 @@ def main() -> int:
         # only thing that varies — one statement, one predicate, both readable on their own.
         # `IS DISTINCT FROM` rather than `!=` so that a row is reported as changed only when it
         # really changed, and re-running after a no-op converter tweak writes nothing.
-        predicate = ("ev.text_md IS DISTINCT FROM p.text_md" if args.overwrite
-                     else "ev.text_md IS NULL")
+        predicate = (
+            "(ev.text_md IS DISTINCT FROM p.text_md OR ev.text_html IS DISTINCT FROM p.text_html)"
+            if args.overwrite else "ev.text_md IS NULL")
         updated = psycopg2.extras.execute_values(
             cur,
             f"""
             UPDATE exercise_version ev
-               SET text_md = p.text_md
-              FROM (VALUES %s) AS p (version_id, text_md)
+               SET text_md = p.text_md,
+                   text_html = p.text_html
+              FROM (VALUES %s) AS p (version_id, text_md, text_html)
              WHERE ev.id = p.version_id::bigint
                AND ev.valid_to IS NULL
                AND {predicate}
             RETURNING ev.id
             """,
-            [(r["version_id"], r["text_md"]) for r in rows],
+            [(r["version_id"], r["text_md"], r["text_html"]) for r in rows],
             fetch=True,
         )
         updated_ids = [row[0] for row in updated]
@@ -173,9 +192,20 @@ def main() -> int:
             print("!! updated count does not reconcile with the skips — investigate before committing")
 
         if args.receipt and args.apply:
-            args.receipt.write_text("\n".join(str(i) for i in updated_ids) + "\n", encoding="utf-8")
-            print(f"receipt            : {args.receipt} "
-                  f"(rollback: UPDATE exercise_version SET text_md = NULL WHERE id IN (…))")
+            # JSONL with the previous values, not just the ids. text_html is now written too, so
+            # "set text_md back to NULL" is no longer a rollback — it would leave the exercise
+            # rendering from Markdown that is no longer there. The receipt carries what each row
+            # held before, which makes undoing this an UPDATE from the file.
+            #
+            # PRODUCTION CONTENT. It contains exercise text; keep it where the database is.
+            with args.receipt.open("w", encoding="utf-8") as f:
+                for version_id in updated_ids:
+                    was_md, was_html = previous.get(version_id, (None, None))
+                    f.write(json.dumps({"version_id": version_id,
+                                        "previous_text_md": was_md,
+                                        "previous_text_html": was_html}, ensure_ascii=False) + "\n")
+            print(f"receipt                : {args.receipt} "
+                  f"({len(updated_ids)} rows, with their previous text — this is the rollback)")
 
         if not args.apply:
             conn.rollback()

@@ -421,6 +421,10 @@ def main() -> int:
 
     converted = convert_all(rows, work)
 
+    # The rendered HTML, kept per exercise so the write can store the very output that was verified.
+    html_dir = work / "html"
+    html_dir.mkdir(parents=True, exist_ok=True)
+
     results, reasons = [], Counter()
     for i, row in enumerate(rows, 1):
         if i % 100 == 0:
@@ -434,6 +438,10 @@ def main() -> int:
         else:
             try:
                 rendered = render_markdown(conv["md"], args.core)
+                # Keep it. This is the HTML the comparison below approves, so storing *these bytes*
+                # in text_html is the only way to be sure the database holds what was verified
+                # rather than a second render that might differ. `writeback.py` reads it from here.
+                (html_dir / f"{ex}.html").write_text(rendered, encoding="utf-8")
             except Exception as e:  # noqa: BLE001 - one bad row must not end the run
                 entry |= {"status": "flagged", "reason": f"render failed: {e}"}
             else:

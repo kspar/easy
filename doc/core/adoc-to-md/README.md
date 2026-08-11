@@ -83,10 +83,40 @@ not something this migration can fix.
 
 ## Current state (2026-08-11): written on dev, not yet on production
 
-**Dev is migrated.** 1061 of 1211 current exercise versions now carry Markdown; 20 are held; the
-rest never had AsciiDoc. **436 of them carry a working `<details>` collapsible.** `text_adoc` and
-`text_html` are untouched and no new `exercise_version` rows exist, so nothing a reader sees has
-changed and rollback is still one statement.
+**Dev is migrated.** 1060 of 1211 current exercise versions carry Markdown; 21 are held; the rest
+never had AsciiDoc. 436 of them carry a working `<details>` collapsible. `text_adoc` is untouched
+and no new `exercise_version` rows exist.
+
+**`text_html` is rewritten too**, from the same Markdown — see below. Rollback is the receipt, which
+carries every row's previous `text_md` and `text_html`.
+
+### Why the HTML is rewritten rather than left alone
+
+The first pass wrote only `text_md` and left `text_html` as Asciidoctor had rendered it years ago.
+That is defensible — nothing a reader sees changes — but it leaves the two representations
+disagreeing, and the disagreement is not permanent: core regenerates `text_html` from `text_md` on
+every save, so the change was going to happen anyway, one exercise at a time, months apart, on the
+day some teacher fixed a typo. Doing it here means it happens once, under a verification, on a copy.
+
+**Not through `PUT /v2/exercises/{id}`**, which would regenerate the HTML itself and was the obvious
+suggestion. It creates a new `exercise_version` per exercise, stamps the caller as its author, and
+does not carry `text_adoc` forward — so a thousand exercises would change hands, gain an edit nobody
+made, and lose the source every re-run of this migration has depended on. It also re-inserts the
+auto-exercise and its assets, which is a great deal of grading configuration to disturb in order to
+fix a text field.
+
+Instead the write stores **the exact HTML the dry run rendered and approved**. That makes it safe by
+construction: an exercise is only written when its re-rendered Markdown matches the stored HTML in
+visible text, and that render is what gets stored. Two checks beyond the comparison, because a
+text diff cannot see either:
+
+- **Images: 0 lost, 0 gained** across all 1060.
+- **Links: one changed**, in an exercise whose source wraps a URL in a code span. Asciidoctor
+  auto-linked it *inside* the `<code>`; Markdown renders it as literal code, which is what the
+  backticks asked for. Same visible text, one URL no longer clickable.
+
+Nothing keys off the old markup: `web/` renders `text_html` straight into `dangerouslySetInnerHTML`
+and styles no Asciidoctor classes — no `listingblock`, no `admonitionblock`, no `.example`.
 
 The dry run against dev's imported copy reproduced the production numbers **exactly** — 996 clean,
 48 maths, 36 differing, 1 with no output — which is the strongest evidence available that the
@@ -176,7 +206,7 @@ Whether to chase these in the converter or fix them by hand is an open call. The
 punctuation ones are probably writable as they are; the joined blocks and the code-fence quoting
 are real conversion defects and would repeat on production.
 
-The 20 held ones keep rendering from `text_html` exactly as before. They are not fragile while they
+The 21 held ones keep rendering from `text_html` exactly as before. They are not fragile while they
 wait: `ExercisePage.tsx` refuses to save a legacy exercise whose Markdown box is still empty, so the
 "open it and destroy it" path is closed.
 
