@@ -75,6 +75,32 @@ def fix_alerts(md: str) -> str:
     return GH_ALERT.sub(lambda m: f"> **{m.group(1).capitalize()}:** ", md)
 
 
+def fix_dangling_breaks(md: str) -> str:
+    """Drop a trailing backslash where CommonMark will not read it as a hard line break.
+
+    pandoc writes hard breaks as a backslash at end of line. CommonMark honours that *within* a
+    block and nowhere else, so the same backslash on a block's final line is not a break — it is a
+    literal backslash, and students see it.
+
+    Found on dev while reviewing the exercises this flagged: it accounted for 17 of the 37, which
+    were otherwise going to be hand-edited one at a time on the theory that they had lost a block
+    title. They had lost nothing; the converter had added a stray character.
+
+    Narrow on purpose. Stripping every trailing backslash also removes the ones that *are* honoured,
+    deleting line breaks the author put there — and `visible_text` normalises whitespace, so the
+    comparison downstream cannot see that happen. A rule that only touches the last line of a block
+    is the difference between fixing this and quietly reflowing somebody's exercise.
+    """
+    lines = md.split("\n")
+    for i, line in enumerate(lines):
+        # `\\` at end of line is an escaped backslash the author wanted, not a break.
+        if line.endswith("\\") and not line.endswith("\\\\"):
+            following = lines[i + 1] if i + 1 < len(lines) else ""
+            if following.strip() == "":
+                lines[i] = line[:-1]
+    return "\n".join(lines)
+
+
 def visible_text(html: str) -> str:
     """Normalised visible text, for comparing a re-render against what production serves.
 
@@ -165,7 +191,7 @@ def convert_all(rows: list[dict], work: pathlib.Path) -> dict[int, dict]:
         if not md_file.exists():
             out[ex] = {"md": None, "error": "conversion produced no output"}
             continue
-        md = fix_alerts(md_file.read_text(encoding="utf-8")).strip()
+        md = fix_dangling_breaks(fix_alerts(md_file.read_text(encoding="utf-8"))).strip()
         md_file.write_text(md, encoding="utf-8")
         out[ex] = {"md": md, "error": None}
     return out

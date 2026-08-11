@@ -83,7 +83,7 @@ not something this migration can fix.
 
 ## Current state (2026-08-11): written on dev, not yet on production
 
-**Dev is migrated.** 1044 of 1211 current exercise versions now carry Markdown; 37 are held; the
+**Dev is migrated.** 1061 of 1211 current exercise versions now carry Markdown; 20 are held; the
 rest never had AsciiDoc. `text_adoc` and `text_html` are untouched and no new `exercise_version`
 rows exist, so nothing a reader sees has changed and rollback is still one statement.
 
@@ -95,12 +95,58 @@ What was written, per the decision taken on the day:
 
 | | Exercises | Written |
 | --- | --- | --- |
-| converted cleanly | 996 | yes |
+| converted cleanly | 1013 | yes |
 | maths — delimiter only (EZ-1732) | 48 | **yes** — `\(x\)` becomes `$x$`, which is what KaTeX and MathJax expect anyway, so this positions them for EZ-1732 rather than waiting on it |
-| text differs after round-trip | 36 | no — held for hand review |
+| text differs after round-trip | 19 | no — held for hand review |
 | conversion produced no output | 1 | no — wants its source fixed |
 
-The 37 held ones keep rendering from `text_html` exactly as before. They are not fragile while they
+(1013 includes the 17 recovered by the backslash fix described next; the first write put in 1044 and the
+second added those 17.)
+
+### Reviewing the held list found a converter bug, not 37 damaged exercises
+
+The first pass held 37. Reading them one by one was going to be the next job; reading them
+*together* was quicker and better. Almost half shared one symptom — a stray `\` in the rendered
+text — and it was not lost content at all but an added character.
+
+pandoc writes a hard line break as a trailing backslash. CommonMark honours that inside a block and
+nowhere else, so the same backslash on a block's **last** line renders as a literal backslash that
+students would see. `fix_dangling_breaks` drops exactly those. Re-running took the corpus from
+996 clean to 1013, and 17 of the held 37 became byte-identical to production.
+
+Two things made this safe rather than merely effective, and both are worth repeating on production:
+
+- **The rule is narrow.** Stripping *every* trailing backslash also removes the ones CommonMark does
+  honour, deleting line breaks the author wrote — and `visible_text` normalises whitespace, so the
+  comparison cannot see that happen. The blunt version "fixed" one exercise more, by silently
+  reflowing it.
+- **It was checked against what had already been written.** Of the 1044 rows already in the
+  database, the fix changed the Markdown of **zero**, and no previously-clean exercise regressed.
+  Purely additive — which matters because `writeback.py` skips rows that already have `text_md`, so
+  a fix that changed them would have left the old text in place and said nothing.
+
+### What is still held (20)
+
+Small, mixed, and each with a known symptom rather than a mystery:
+
+| Symptom | Exercises |
+| --- | --- |
+| maths, plus one other difference | 3 |
+| two blocks joined without a space (`word.Kui`) | 3 |
+| whitespace or punctuation only | 5 |
+| a link's label disappears | 2 |
+| code-fence quoting (`"""`) mangled | 2 |
+| table cells run together | 1 |
+| a trailing backslash the narrow rule does not catch | 1 |
+| zero-width spaces | 1 |
+| other small differences | 1 |
+| Asciidoctor produces no output at all | 1 |
+
+Whether to chase these in the converter or fix them by hand is an open call. The whitespace and
+punctuation ones are probably writable as they are; the joined blocks and the code-fence quoting
+are real conversion defects and would repeat on production.
+
+The 20 held ones keep rendering from `text_html` exactly as before. They are not fragile while they
 wait: `ExercisePage.tsx` refuses to save a legacy exercise whose Markdown box is still empty, so the
 "open it and destroy it" path is closed.
 
@@ -155,8 +201,9 @@ Done on 2026-08-11. The same order is what production wants.
 1. Restore an anonymised copy (`../anonymise-db/`), with v4.0 deployed so `text_md` exists.
 2. Re-run the dry run and confirm the numbers still land near 92%. They landed on the nose.
 3. Work through the flagged list by hand — the block-title losses and the one malformed source are
-   the only ones carrying real content risk. **Still outstanding**: 37 exercises on dev are waiting
-   for this, and nothing is at risk while they wait.
+   the only ones carrying real content risk. Doing it as a batch rather than one at a time is
+   what found the backslash bug. **Still outstanding**: 20 exercises on dev, and nothing is at risk
+   while they wait.
 4. Decide on the 48 maths exercises. **Decided: write them**, accepting `$…$` — the formula is
    intact, the delimiter is the one KaTeX and MathJax expect, and nothing renders either form until
    EZ-1732 lands, so writing them costs nothing and saves doing this twice.
