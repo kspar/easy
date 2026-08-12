@@ -1,8 +1,18 @@
 # Production content: exercise titles, and specs whose feedback messages teachers wrote.
 # This repo is public, so the export and everything derived from it stays local.
+#
+# Deliberately broader than the names the docs happen to use. The confirmation step in the runbook
+# re-explodes the corpus into a second tree, and every one of these directories is full of real
+# exercises — so a pattern that only matched the examples would leave the next person's `after/`
+# or `check-2/` untracked-but-committable. summary.txt is the only shareable output, and it lives
+# inside one of these.
 *.jsonl
-out/
+out*/
 from-*/
 migrated*/
-writeback.log
+after*/
+before*/
+check*/
+verify*/
+writeback*.log
 easy.log
