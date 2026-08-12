@@ -107,13 +107,24 @@ Exits non-zero and lists anything wrong:
   (`validateParseTree`) is never called outside its own `main()`. Flagging those would bury a real
   regression under a quarter of the corpus.
 
-Then compile the result. This is the check that actually proves something, and it needs the merged
-`:tsl` — see `Check.kt` usage in the scratch harness, or point the compiler at the tree:
+Then compile the result. This is the check that actually proves something, because the compiler is
+the only authority on what the compiler accepts — a migration can be reviewed, reasoned about and
+still be wrong about that:
+
+```sh
+./gradlew -q :tsl:compileSpecTree -PspecTree=doc/core/tsl-migration/migrated/exercises
+```
+
+`CompileSpecTree.kt` in `:tsl`, permanent rather than rebuilt per migration. Exits non-zero if
+anything failed.
 
 ```
 compiled OK : 721      (was 532 before migration)
 failed      : 0        (was 189)
 ```
+
+Run it on the un-migrated tree as well. Those two parenthesised numbers are the point: a harness
+that silently compiled nothing also reports zero failures.
 
 ## 5. Write back
 

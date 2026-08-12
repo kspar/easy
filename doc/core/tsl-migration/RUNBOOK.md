@@ -97,12 +97,20 @@ Must exit 0. Then compile every migrated spec — the check that actually proves
 sound, since it uses the real compiler rather than a guess about it:
 
 ```sh
-JAVA_HOME=$(/usr/libexec/java_home -v 25) ./gradlew -q -I <init-script> :tsl:tslRun \
-  -PtslArgs="doc/core/tsl-migration/migrated/exercises"
+JAVA_HOME=$(/usr/libexec/java_home -v 25) ./gradlew -q :tsl:compileSpecTree \
+  -PspecTree=doc/core/tsl-migration/migrated/exercises
 ```
 
-Expect `failed: 0`. (The rehearsal used a scratch harness for this; if it is gone, the equivalent
-is a small JVM main that walks the tree calling `compileTSL` on each `tsl.json`.)
+Expect `failed: 0`, and a non-zero exit if anything did not compile, so this can gate the rest.
+
+**Run it against the un-migrated tree too, and read that number first.** A harness that quietly
+compiled nothing reports zero failures and looks exactly like a success; the before number is what
+makes the after number mean anything. Against the 2026-08-12 dev corpus:
+
+```sh
+./gradlew -q :tsl:compileSpecTree -PspecTree=doc/core/tsl-migration/out/exercises   # 532 OK, 189 failed
+./gradlew -q :tsl:compileSpecTree -PspecTree=doc/core/tsl-migration/migrated/exercises   # 721 OK, 0 failed
+```
 
 ## 6. Dry run
 
