@@ -65,6 +65,61 @@ class UpdateExercise(private val markdownService: MarkdownService) {
         log.info { "Update exercise $exIdString by ${caller.id}" }
         val exerciseId = exIdString.idToLongOrInvalidReq()
 
+        val (reqModified, html) = prepare(exerciseId, req, caller)
+        updateExercise(exerciseId, caller.id, reqModified, html, preserveAttribution = false)
+    }
+
+    /**
+     * Rewrites an exercise's content without changing who last edited it, or when.
+     *
+     * The same replace as [controller] — it creates a version, so the previous one stays in the
+     * database and a single exercise can be rolled back by making it current again — but the new
+     * row takes the previous version's `author`, and its `valid_from` plus a millisecond, instead
+     * of stamping the caller and now. Those two columns are the only source of `last_modified` and
+     * `last_modified_by_id` (see ReadExercise, TeacherReadExerciseDetails and the library listing
+     * in ReadDir), so a rewrite is invisible on every surface that shows them.
+     *
+     * `valid_to` on the superseded row is still set to now, and deliberately: it is the only
+     * record that a rewrite happened at all, and ordering comes from `valid_from`, so the
+     * overlapping interval costs nothing and no query in core asks about one.
+     *
+     * That is what a mechanical change to a thousand exercises needs. The plain PUT would hand
+     * every one of them to whoever ran the script, date them all today, and reorder any list
+     * sorted by modification time — telling every teacher their exercises were edited by an admin
+     * on a day nobody touched them. Keeping the version is the other half: the rewrite is
+     * reversible per exercise, which is what makes running one unhurried.
+     *
+     * Admin-only, because that is exactly the power to edit someone's exercise without leaving a
+     * mark on it.
+     *
+     * Two things it carries forward that the plain PUT drops, both because a migration must change
+     * only what it was asked to:
+     *
+     * - `text_adoc`, the pre-EZ-1729 source. Nothing writes or renders it any more, but for
+     *   anything authored in adoc the current version's row is the only copy, and the Markdown
+     *   conversion is still being re-read from it.
+     * - text itself. `text_html` is regenerated from `text_md` on every save, so a request whose
+     *   `text_md` is null blanks an exercise that has rendered text and no Markdown source — a
+     *   real shape, for everything authored before EZ-1731. A rewrite refuses rather than quietly
+     *   emptying it, since the caller is a script and nobody is watching.
+     */
+    @Secured("ROLE_ADMIN")
+    @PutMapping("/admin/exercises/{exerciseId}/rewrite")
+    fun rewriteController(
+        @PathVariable("exerciseId") exIdString: String,
+        @Valid @RequestBody req: Req,
+        caller: EasyUser
+    ) {
+        log.info { "Rewrite exercise $exIdString by ${caller.id}, preserving attribution" }
+        val exerciseId = exIdString.idToLongOrInvalidReq()
+
+        val (reqModified, html) = prepare(exerciseId, req, caller)
+        updateExercise(exerciseId, caller.id, reqModified, html, preserveAttribution = true)
+    }
+
+    /** Validation, Markdown rendering and TSL compilation — everything both paths do identically. */
+    private fun prepare(exerciseId: Long, req: Req, caller: EasyUser): Pair<Req, String?> {
+
         caller.assertAccess { libraryExercise(exerciseId, DirAccessLevel.PRAW) }
 
         rejectLegacyContentFields("text_md", "text_adoc" to req.legacyTextAdoc, "text_html" to req.legacyTextHtml)
@@ -122,10 +177,16 @@ class UpdateExercise(private val markdownService: MarkdownService) {
         } else
             req
 
-        updateExercise(exerciseId, caller.id, reqModified, html)
+        return reqModified to html
     }
 
-    private fun updateExercise(exerciseId: Long, authorId: String, req: Req, html: String?) = transaction {
+    private fun updateExercise(
+        exerciseId: Long,
+        authorId: String,
+        req: Req,
+        html: String?,
+        preserveAttribution: Boolean,
+    ) = transaction {
         val now = DateTime.now()
 
         val newAutoExerciseId =
@@ -136,10 +197,22 @@ class UpdateExercise(private val markdownService: MarkdownService) {
 
             } else null
 
-        val lastVersionId = ExerciseVer
+        val previousVer = ExerciseVer
             .selectAll().where { ExerciseVer.exercise eq exerciseId and ExerciseVer.validTo.isNull() }
-            .map { it[ExerciseVer.id].value }
             .first()
+
+        val lastVersionId = previousVer[ExerciseVer.id].value
+
+        // Regenerating text_html from text_md means a request without text_md empties an exercise
+        // that has only rendered text. A person doing this in the editor sees it happen; a script
+        // rewriting a thousand exercises does not, so refuse instead.
+        if (preserveAttribution && html == null && !previousVer[ExerciseVer.textHtml].isNullOrEmpty()) {
+            throw InvalidRequestException(
+                "Rewriting exercise $exerciseId without text_md would blank its text, " +
+                        "since text_html is regenerated from text_md. It has no Markdown source to send back.",
+                ReqError.INVALID_PARAMETER_VALUE, notify = false
+            )
+        }
 
         ExerciseVer.update({ ExerciseVer.id eq lastVersionId }) {
             it[validTo] = now
@@ -147,8 +220,16 @@ class UpdateExercise(private val markdownService: MarkdownService) {
 
         ExerciseVer.insert {
             it[exercise] = exerciseId
-            it[author] = authorId
-            it[validFrom] = now
+            // A rewrite keeps the previous version's attribution, so the change is invisible to
+            // every read — all of which resolve the current version by `valid_to IS NULL` rather
+            // than by asking which version was valid at some instant.
+            it[author] = if (preserveAttribution) previousVer[ExerciseVer.author] else EntityID(authorId, Account)
+            // A millisecond later, not the same instant. Copying valid_from exactly would leave
+            // two rows in the chain that `ORDER BY valid_from` cannot separate, and version
+            // history is the thing this endpoint exists to keep usable. A millisecond sorts
+            // correctly and is below the resolution of anything that displays it.
+            it[validFrom] =
+                if (preserveAttribution) previousVer[ExerciseVer.validFrom].plusMillis(1) else now
             it[previous] = lastVersionId
             it[graderType] = req.graderType
             it[solutionFileName] = req.solutionFileName
@@ -156,6 +237,9 @@ class UpdateExercise(private val markdownService: MarkdownService) {
             it[title] = req.title
             it[textHtml] = html
             it[textMd] = req.textMd
+            // Read-only and unreachable through the API, so a rewrite is the one write that must
+            // carry it: for an adoc-authored exercise this row holds the only copy of the source.
+            it[textAdoc] = if (preserveAttribution) previousVer[ExerciseVer.textAdoc] else null
             it[autoExerciseId] = newAutoExerciseId
         }
 

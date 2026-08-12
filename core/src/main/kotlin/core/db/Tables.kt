@@ -39,11 +39,36 @@ object Exercise : LongIdTable("exercise") {
     val anonymousAutoassessTemplate = text("anonymous_autoassess_template").default("")
 }
 
+/**
+ * Versions of an exercise's content. The current one is the row with a null [ExerciseVer.validTo],
+ * and that is how every read in core finds it — none of them ask which version was valid at a given
+ * instant, which is what lets the ranges be what they are. See the note on [ExerciseVer.validFrom].
+ */
 object ExerciseVer : LongIdTable("exercise_version") {
     val exercise = reference("exercise_id", Exercise)
     val author = reference("author_id", Account)
     val previous = reference("previous_id", ExerciseVer).nullable()
     val autoExerciseId = reference("auto_exercise_id", AutoExercise).nullable()
+
+    /**
+     * **These ranges are not guaranteed to be mutually exclusive, and never were meant to be read
+     * as a history of what was live when.**
+     *
+     * An ordinary save closes the old row at `now` and opens the new one at `now`, so the two meet
+     * exactly. `PUT /v2/admin/exercises/{id}/rewrite` (UpdateExercise.rewriteController) instead
+     * gives the new row the old one's `valid_from` plus a millisecond, so that a mechanical
+     * migration does not look like an edit — which means the superseded row's `valid_to` sits
+     * *after* its successor's `valid_from`, and the two intervals overlap by however long the old
+     * version was actually current.
+     *
+     * Ordering is therefore always by `valid_from`, and the millisecond is what keeps that total.
+     *
+     * **Finding the rewrites, if it is ever necessary:** they are exactly the links where the
+     * superseded row's `valid_to` is strictly greater than its successor's `valid_from`. For an
+     * ordinary save the two are equal. That comparison is the only record that a rewrite happened —
+     * it leaves `author` and `valid_from` deliberately untouched — so `valid_to` is kept honest
+     * (the real wall-clock instant of the write) precisely to preserve it.
+     */
     val validFrom = datetime("valid_from")
     val validTo = datetime("valid_to").nullable()
     val graderType = enumerationByName("grader_type", 20, GraderType::class)
