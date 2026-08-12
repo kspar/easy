@@ -126,29 +126,46 @@ check(
   await waitUntil(() => page.getByText(/Configured in the exercise library/).isVisible()),
 )
 
-const typeField = page.getByRole('combobox', { name: 'Auto-assessment type' })
-check('the auto-assessment type is shown', (await typeField.innerText()).includes('Python Grader'))
-
-const maxTime = page.getByRole('textbox', { name: 'Max time (s)' })
-const maxMem = page.getByRole('textbox', { name: 'Max memory (MB)' })
-check('max time comes from the response, not the template', (await maxTime.inputValue()) === '12')
-check('max memory too', (await maxMem.inputValue()) === '44')
-check(
-  'the solution file name is shown',
-  (await page.getByRole('textbox', { name: 'Solution file name' }).inputValue()) === 'lahendus.py',
-)
-
-check(
-  'the grading script is rendered',
-  await waitUntil(async () => (await page.locator('.cm-content').first().innerText()).includes('grade.py')),
-)
-check('and the asset has its own file tab', await page.getByRole('tab', { name: 'helper.py' }).isVisible())
+// The five settings are one dense line here rather than five labelled inputs: they are read-only
+// on this page and were most of what the tab showed. Every value still has to be on screen.
+// Located as the one paragraph carrying the eval type, so the assertions below are about a single
+// line rather than five values scattered anywhere on the page. No data-testid: nothing else in
+// this app has one, and role/text is how the rest of these scripts locate things.
+const summary = () => page.locator('p').filter({ hasText: 'lahendus.py' }).first().innerText()
+check('the settings collapse to one line', await waitUntil(async () => (await summary()).includes('·')))
+for (const [what, value] of [
+  ['the solution file name', 'lahendus.py'],
+  ['the submission type', 'Text editor'],
+  ['the auto-assessment type', 'Python Grader'],
+  // Not the container template's defaults (7s/30MB) — these come from the response or not at all.
+  ['max time, from the response rather than the template', '12 s'],
+  ['max memory too', '44 MB'],
+]) {
+  check(`the summary carries ${what}`, (await summary()).includes(value))
+}
 
 // Read-only: the config belongs to the library exercise, so editing it here would change grading
-// for every other course using it.
-check('the limits are not editable here', await maxTime.isDisabled())
-check('nor is the solution file name', await page.getByRole('textbox', { name: 'Solution file name' }).isDisabled())
-check('nor is the type', (await typeField.getAttribute('aria-disabled')) === 'true')
+// for every other course using it. The inputs are absent rather than disabled.
+for (const name of ['Solution file name', 'Max time (s)', 'Max memory (MB)']) {
+  check(`there is no editable "${name}" field`, (await page.getByRole('textbox', { name }).count()) === 0)
+}
+check(
+  'nor a type selector',
+  (await page.getByRole('combobox', { name: 'Auto-assessment type' }).count()) === 0,
+)
+
+// The labels have to survive somewhere, or the line is five unexplained values.
+await page.getByText('lahendus.py', { exact: true }).hover()
+check(
+  'hovering a value names the field it came from',
+  await waitUntil(() => page.getByRole('tooltip').filter({ hasText: 'Solution file name' }).isVisible()),
+)
+
+check(
+  'the grading script is still rendered',
+  await waitUntil(async () => (await page.locator('.cm-content').first().innerText()).includes('grade.py')),
+)
+check('and the asset still has its own file tab', await page.getByRole('tab', { name: 'helper.py' }).isVisible())
 
 await shot('script-graded')
 
@@ -157,10 +174,7 @@ await shot('script-graded')
 courseExercise = tslGraded
 await openAssessmentTab()
 
-check(
-  'a TSL exercise shows as TSL',
-  (await page.getByRole('combobox', { name: 'Auto-assessment type' }).innerText()).includes('TSL'),
-)
+check('a TSL exercise shows as TSL', await waitUntil(async () => (await summary()).includes('TSL')))
 check(
   'and its spec renders in the builder rather than as raw JSON',
   await waitUntil(() => page.getByText('Adds two numbers').first().isVisible()),

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { Fragment, useEffect, useId, useMemo, useState } from 'react'
 import {
   Box,
   FormControl,
@@ -151,75 +151,126 @@ export default function AutoAssessTab({
     [unknownContainer],
   )
 
+  // Five labelled inputs is a lot of furniture for values that are set once and then read
+  // rarely — and on the course exercise page, which cannot edit them at all, it was most of
+  // what the tab showed. Collapsed to one line when not editing: every value still on screen,
+  // just small, with the labels in tooltips rather than in boxes. No control to discover,
+  // because the fields come back exactly when they become useful.
+  const summary = [
+    { label: t('library.solutionFileName'), value: draft.solutionFileName },
+    {
+      label: t('library.solutionFileType'),
+      value:
+        draft.solutionFileType === 'TEXT_EDITOR'
+          ? t('library.solutionTypeEditor')
+          : t('library.solutionTypeUpload'),
+    },
+    ...(hasAuto
+      ? [
+          { label: t('library.autoAssessType'), value: type?.name ?? unknownContainer ?? '–' },
+          { label: t('library.maxTimeSec'), value: draft.maxTimeSec === null ? '–' : `${draft.maxTimeSec} s` },
+          { label: t('library.maxMemMb'), value: draft.maxMemMb === null ? '–' : `${draft.maxMemMb} MB` },
+        ]
+      : []),
+  ]
+
   return (
     <Box display="flex" flexDirection="column" gap={2}>
-      <Box display="flex" gap={2} flexWrap="wrap">
-        <TextField
-          label={t('library.solutionFileName')}
-          value={draft.solutionFileName}
-          onChange={(e) => patch({ solutionFileName: e.target.value })}
-          disabled={!editing}
-          size="small"
-          sx={{ minWidth: 200 }}
-        />
-        <FormControl size="small" sx={{ minWidth: 180 }} disabled={!editing}>
-          <InputLabel id={fileTypeLabelId}>{t('library.solutionFileType')}</InputLabel>
-          <Select
-            labelId={fileTypeLabelId}
-            label={t('library.solutionFileType')}
-            value={draft.solutionFileType}
-            onChange={(e) => patch({ solutionFileType: e.target.value as SolutionFileType })}
-          >
-            <MenuItem value="TEXT_EDITOR">{t('library.solutionTypeEditor')}</MenuItem>
-            <MenuItem value="TEXT_UPLOAD">{t('library.solutionTypeUpload')}</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
-
-      <Box display="flex" gap={2} flexWrap="wrap" alignItems="flex-start">
-        <FormControl size="small" sx={{ minWidth: 220 }} disabled={!editing}>
-          <InputLabel id={evalTypeLabelId}>{t('library.autoAssessType')}</InputLabel>
-          <Select
-            labelId={evalTypeLabelId}
-            label={t('library.autoAssessType')}
-            value={draft.containerImage ?? ''}
-            onChange={(e) => changeType(e.target.value === '' ? null : e.target.value)}
-          >
-            {typeOptions.map((o) => (
-              <MenuItem key={o.value} value={o.value}>
-                {o.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        {hasAuto && (
-          <>
-            <TextField
-              label={t('library.maxTimeSec')}
-              value={draft.maxTimeSec ?? ''}
-              onChange={(e) => patch({ maxTimeSec: parseIntOrNull(e.target.value) })}
-              disabled={!editing}
-              size="small"
-              error={editing && draft.maxTimeSec === null}
-              sx={{ width: 130 }}
-            />
-            <TextField
-              label={t('library.maxMemMb')}
-              value={draft.maxMemMb ?? ''}
-              onChange={(e) => patch({ maxMemMb: parseIntOrNull(e.target.value) })}
-              disabled={!editing}
-              size="small"
-              error={editing && draft.maxMemMb === null}
-              sx={{ width: 130 }}
-            />
-          </>
-        )}
-      </Box>
-
-      {type?.helpText && (
-        <Typography variant="caption" color="text.secondary">
-          {type.helpText}
+      {!editing && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 1 }}
+        >
+          {summary.map((s, i) => (
+            <Fragment key={s.label}>
+              {i > 0 && (
+                <Box component="span" aria-hidden sx={{ opacity: 0.4 }}>
+                  ·
+                </Box>
+              )}
+              <Tooltip title={s.label}>
+                <Box component="span">{s.value}</Box>
+              </Tooltip>
+            </Fragment>
+          ))}
         </Typography>
+      )}
+
+      {/*
+      No `disabled={!editing}` on any of these any more: they only exist while editing, so the
+      read-only variant they used to render is now the summary above. Keeping the prop would
+      suggest a state this branch cannot be in.
+      */}
+      {editing && (
+        <>
+          <Box display="flex" gap={2} flexWrap="wrap">
+            <TextField
+              label={t('library.solutionFileName')}
+              value={draft.solutionFileName}
+              onChange={(e) => patch({ solutionFileName: e.target.value })}
+              size="small"
+              sx={{ minWidth: 200 }}
+            />
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel id={fileTypeLabelId}>{t('library.solutionFileType')}</InputLabel>
+              <Select
+                labelId={fileTypeLabelId}
+                label={t('library.solutionFileType')}
+                value={draft.solutionFileType}
+                onChange={(e) => patch({ solutionFileType: e.target.value as SolutionFileType })}
+              >
+                <MenuItem value="TEXT_EDITOR">{t('library.solutionTypeEditor')}</MenuItem>
+                <MenuItem value="TEXT_UPLOAD">{t('library.solutionTypeUpload')}</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+
+          <Box display="flex" gap={2} flexWrap="wrap" alignItems="flex-start">
+            <FormControl size="small" sx={{ minWidth: 220 }}>
+              <InputLabel id={evalTypeLabelId}>{t('library.autoAssessType')}</InputLabel>
+              <Select
+                labelId={evalTypeLabelId}
+                label={t('library.autoAssessType')}
+                value={draft.containerImage ?? ''}
+                onChange={(e) => changeType(e.target.value === '' ? null : e.target.value)}
+              >
+                {typeOptions.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>
+                    {o.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {hasAuto && (
+              <>
+                <TextField
+                  label={t('library.maxTimeSec')}
+                  value={draft.maxTimeSec ?? ''}
+                  onChange={(e) => patch({ maxTimeSec: parseIntOrNull(e.target.value) })}
+                  size="small"
+                  error={draft.maxTimeSec === null}
+                  sx={{ width: 130 }}
+                />
+                <TextField
+                  label={t('library.maxMemMb')}
+                  value={draft.maxMemMb ?? ''}
+                  onChange={(e) => patch({ maxMemMb: parseIntOrNull(e.target.value) })}
+                  size="small"
+                  error={draft.maxMemMb === null}
+                  sx={{ width: 130 }}
+                />
+              </>
+            )}
+          </Box>
+
+          {/* Guidance for choosing a container, so it goes with the chooser. */}
+          {type?.helpText && (
+            <Typography variant="caption" color="text.secondary">
+              {type.helpText}
+            </Typography>
+          )}
+        </>
       )}
 
       {!hasAuto && (

@@ -413,5 +413,44 @@ check('and its asset files', await page.getByRole('tab', { name: 'tester.py' }).
 check('no TSL builder for a non-TSL container', (await page.getByRole('tab', { name: 'Tests' }).count()) === 0)
 await shot('07-non-tsl-autoassess')
 
+// --- the settings are a summary until you edit -----------------------------------------------------
+// Five labelled inputs pushed the file editor most of a screen down for values that are set once.
+// Reading them still has to work, so the summary carries all five; editing still has to work, so
+// the inputs come back with Edit. No collapsible in between — the mode already says which is wanted.
+const settingsLine = () => page.locator('p').filter({ hasText: 'lahendus.py' }).first().innerText()
+check('the settings are one line while viewing', await waitUntil(async () => (await settingsLine()).includes('·')))
+for (const value of ['lahendus.py', 'Text editor', 'Python Grader', '7 s', '30 MB']) {
+  check(`the summary carries ${value}`, (await settingsLine()).includes(value))
+}
+check(
+  'and there is no labelled input to distract from the script',
+  (await page.getByRole('textbox', { name: 'Max time (s)' }).count()) === 0,
+)
+
+await page.getByRole('button', { name: 'Edit', exact: true }).click()
+check(
+  'editing brings the real fields back',
+  await waitUntil(() => page.getByRole('textbox', { name: 'Max time (s)' }).isVisible()),
+)
+check(
+  'with the values, not the container template defaults',
+  (await page.getByRole('textbox', { name: 'Max time (s)' }).inputValue()) === '7',
+)
+check(
+  'and they are editable',
+  !(await page.getByRole('textbox', { name: 'Solution file name' }).isDisabled()),
+)
+check(
+  'the summary steps aside rather than duplicating them',
+  (await page.locator('p').filter({ hasText: 'lahendus.py · Text editor' }).count()) === 0,
+)
+await shot('08-autoassess-editing')
+
+await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+check(
+  'leaving edit mode returns to the summary',
+  await waitUntil(async () => (await settingsLine()).includes('Python Grader')),
+)
+
 await browser.close()
 process.exit(check.summary() ? 0 : 1)
