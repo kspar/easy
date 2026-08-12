@@ -47,6 +47,12 @@ import time
 import urllib.error
 import urllib.request
 
+# The same parser explode.py uses, not a second opinion about it. 36 of the specs on dev are
+# accepted by kotlinx and rejected by `json.loads` — literal control characters in strings, and
+# missing commas between object members — so they compile and grade perfectly well while being
+# unreadable to Python. Comparing them with `json.loads` crashes the run on the first one.
+from explode import parse_spec
+
 RETIRED_MARKERS = ("_contains_", "_calls_", "_defines_", "_imports_", "_is_recursive", "_is_pure")
 NEW_TYPES = {"contains_test", "calls_test", "definition_test", "function_is_test"}
 KEPT = {"program_execution_test", "function_execution_test", "class_instance_test", "placeholder_test"}
@@ -169,7 +175,11 @@ def main():
             print(f"{eid}: skip — no tsl.json on the server (legacy YAML?)")
             skipped += 1
             continue
-        if json.loads(live["file_content"]) == json.loads(spec_text):
+        # Compared as parsed structures, so a spec that only differs in whitespace or in having
+        # gained the commas it was missing is recognised as already migrated. An unreadable live
+        # spec compares equal to nothing and is therefore written, which is the safe direction.
+        live_spec, _ = parse_spec(live["file_content"])
+        if live_spec is not None and live_spec == json.loads(spec_text):
             # Already the migrated spec: either it never needed migrating, or a previous run got
             # this far. Either way there is nothing to do, which is what makes a re-run safe.
             skipped += 1

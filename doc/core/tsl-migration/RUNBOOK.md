@@ -213,6 +213,9 @@ handler. A half-migrated corpus is not a broken one.
 
 ## Afterwards
 
+- **Exercise 741 is still on the old model** wherever this has been run, so it is the one exercise
+  that 400s when saved — as all 189 did before. Nothing regressed; it is simply the last one, and it
+  needs a `text_md` before it can go through the API at all.
 - Drop the legacy handlers from tiivad, and the back-compat that made this migration unhurried.
 - Re-pick the add-test presets in `web/src/features/library/tsl/tslPresets.ts` against
   `out/summary.txt`. They were chosen from a guess at which test types teachers use; the histogram
@@ -220,9 +223,35 @@ handler. A half-migrated corpus is not a broken one.
   wide margin and has no preset, while "Uses try/except" has one and five uses.
 - EZ-1742 collects the model cleanups this exercise surfaced, for muuli.
 
-## The one untested path
+## Run history
 
-Everything above was rehearsed against a local core using `--dev-user`, which sends `oidc_claim_*`
-headers to a core with auth disabled. The `--token` bearer path is the same code with different
-headers, but it has never actually run. Step 6's dry run is where that gets proven — do not skip
-it.
+**dev, 2026-08-12** — the whole thing, end to end, against `easyems_dev` on a core running
+`99ea668e`. 721 exercises exported, 189 needing migration, 810 tests converted; 532 compiled before
+and 721 after; **188 written**, 741 skipped. Afterwards: 720 on the new model, 1 (741) left, and the
+post-migration corpus compiles 720 with 741 the only failure.
+
+Attribution held across all 188: no author changed, none became the admin who ran it, every
+`valid_from` moved by exactly 1 ms, and nothing lost `text_adoc` or text. Eight teachers' names and
+dates from 2023-09-06 to 2026-01-30 survived untouched.
+
+Two things that only showed up against the real thing, both now fixed:
+
+- **`writeback.py` crashed on the first non-strict spec.** It compared the live spec with
+  `json.loads`, which 36 of the dev specs are rejected by — the exact failure `summary.txt` warns
+  about, in the one script that had not been taught about it. It now uses `explode.py`'s
+  `parse_spec`. It died before writing anything, so the cost was a dry run.
+- **The dev realm issues 60-second access tokens.** Shorter than a full run by two orders of
+  magnitude, so a pasted token cannot work; raised to 10 minutes on the realm for the run. A full
+  `--apply` takes about 3m15s, and the dry run 2m15s, so 10 minutes covers either but not both.
+
+Timings, for planning a production window: ~135s of GETs for 721 exercises, plus roughly 0.35s per
+write including `--delay`.
+
+## The bearer path
+
+Proven on the dev run above — `--token` against a real `auth-enabled: true` core, which until then
+had never actually run. Before that, everything had been rehearsed with `--dev-user` against a local
+auth-disabled core, and the note here said so.
+
+What is still worth doing rather than assuming: step 6's dry run, because it is the cheapest place
+to find out the token is wrong, expired, or short of `easy_role`.
