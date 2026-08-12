@@ -107,22 +107,38 @@ is a small JVM main that walks the tree calling `compileTSL` on each `tsl.json`.
 ## 6. Dry run
 
 ```sh
-python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN"
+python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN" \
+  --rewrite --skip 741
 ```
 
 Writes nothing. Confirms the token works, every exercise is reachable, and the count matches
-step 4.
+step 4 — it should say **would write: 189** (188 with 741 skipped). A larger number means
+`migrate.py` changed specs it should have left alone, and is a reason to stop.
+
+**`--rewrite` is not optional for a migration.** It writes through
+`PUT /v2/admin/exercises/{id}/rewrite`, which keeps the previous author and `valid_from` instead of
+stamping whoever ran the script and dating every exercise today. Needs admin. The README explains
+the rest of what it preserves.
+
+**`--skip 741`**, because 741 has rendered text and no Markdown source, and `text_html` is
+regenerated from `text_md` on every save. The rewrite endpoint refuses it rather than blanking
+10 KB of description — so without the skip the run stops there. Six other exercises are the same
+shape with an already-empty `text_html`; they pass the guard and lose nothing. What to do about 741
+is EZ-1731's question.
 
 ## 7. Write a few, then the rest
 
 ```sh
-python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN" --apply --limit 5
+python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN" \
+  --rewrite --skip 741 --apply --limit 5
 ```
 
-Then open one of those five in the editor and confirm it looks right and saves. Only then:
+Then open one of those five in the editor and confirm it looks right and saves — and that it does
+**not** now claim you edited it. Only then:
 
 ```sh
-python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN" --apply
+python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN" \
+  --rewrite --skip 741 --apply
 ```
 
 It stops at the first failure. Re-running skips whatever already carries the new spec, so fix the
@@ -152,6 +168,18 @@ directory. An admin account is the straightforward answer.
 
 **A run stopped halfway.** Nothing to undo. `writeback.log` lists what was written, and the script
 skips already-migrated exercises anyway, so the same command resumes.
+
+**Which exercises did the rewrite touch?** It leaves `author` and `valid_from` alone by design, so
+the only trace is `valid_to`: for a rewrite, the superseded row's `valid_to` is strictly *later* than
+its successor's `valid_from`, where an ordinary save leaves the two equal.
+
+```sql
+SELECT prev.exercise_id, prev.valid_to AS rewritten_at
+FROM exercise_version prev
+JOIN exercise_version next ON next.previous_id = prev.id
+WHERE prev.valid_to > next.valid_from
+ORDER BY prev.exercise_id;
+```
 
 **Rolling back one exercise.** The previous version is still in the database:
 

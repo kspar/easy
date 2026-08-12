@@ -119,16 +119,31 @@ failed      : 0        (was 189)
 
 ```sh
 # dry run — the default, writes nothing
-python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN"
+python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN" --rewrite
 
 # then, for real
-python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN" --apply
+python3 writeback.py --migrated ./migrated --url https://<host>/v2 --token "$TOKEN" --rewrite --apply
 ```
 
-Goes through `PUT /v2/exercises/{id}` rather than SQL. A direct `UPDATE` of `tsl.json` would leave
+Goes through the API rather than SQL. A direct `UPDATE` of `tsl.json` would leave
 the old generated Python in place — the scripts are compiled at save time and stored as separate
 assets — so the exercise would keep grading against the old spec until something re-saved it. The
 API compiles and stores both in one step, and rejects a bad spec instead of accepting it quietly.
+
+**`--rewrite`, not the plain `PUT /v2/exercises/{id}`.** Both replace the exercise and create a
+version, so either way the previous one survives and a single exercise can be rolled back. The
+difference is what the new version says about itself: the plain PUT stamps the caller as author and
+dates the change now, which for 189 exercises means handing every one of them to whoever ran this
+script, telling every teacher their work was edited by an admin on a day nobody touched it, and
+reordering any list sorted by modification time. `PUT /v2/admin/exercises/{id}/rewrite`
+(`UpdateExercise.rewriteController`, admin-only) keeps the previous author and `valid_from` — plus a
+millisecond, so version history still sorts — carries `text_adoc` forward, and refuses to blank an
+exercise whose `text_html` exists with no Markdown source to re-render from.
+
+That last guard is not hypothetical: **exercise 741 is exactly that shape**, and the plain PUT would
+have silently emptied 10 KB of description. Six others have `text_md` null too, but with an already
+empty `text_html`, so they pass the guard and lose nothing. Skip 741 with `--skip 741` and decide
+about it separately; it is EZ-1731's business, not this migration's.
 
 Two implementation details that are not obvious and matter:
 
@@ -163,6 +178,20 @@ Against a local core with an exercise put into a genuine pre-migration state (ol
 | re-run | skipped as already current, so an interrupted run resumes |
 | retired type in tree | aborted before any request |
 | server rejection | stopped the run, printed the 400 and its reason |
+
+And again for `--rewrite`, against the same kind of exercise but authored by a different account
+than the one running the script:
+
+| | |
+|---|---|
+| author | unchanged — still the teacher, not the admin who ran it |
+| `valid_from` | advanced by exactly 1 ms, so `ORDER BY valid_from` stays total |
+| `last_modified`, `last_modified_by_id` | unchanged as the API reports them |
+| version history | one new row, so the exercise is still rollback-able |
+| `text_adoc` | carried forward, unlike the plain PUT which nulls it |
+| no Markdown source | 400, and `text_html` still there afterwards |
+| a plain teacher calling it | 403 |
+| `--skip` | excluded without a request |
 
 Grading keeps working throughout. Exercises hold their already-generated Python, and tiivad 0.0.33
 still routes every legacy test type to its old handler — that back-compat is what makes this

@@ -9,6 +9,16 @@
 
 Dry run by default. `--apply` is the only thing that writes.
 
+**Which endpoint it writes through.** `--rewrite` sends `PUT /v2/admin/exercises/{id}/rewrite`
+instead of `PUT /v2/exercises/{id}`. Both replace the exercise and create a version, so either way
+the previous one stays in the database and a single exercise can be rolled back; the rewrite
+additionally keeps the previous version's author and its `valid_from` (plus a millisecond, so the
+chain still sorts), carries `text_adoc` forward, and refuses to blank an exercise that has rendered
+text but no Markdown source. That is what a mechanical change to hundreds of exercises wants: the
+plain PUT would hand every one of them to whoever ran this script and date them all today. It needs
+admin. Prefer it for migrations; the plain PUT remains the default so this script still describes
+what a teacher's save does.
+
 **Why it re-reads each exercise instead of using the export.** `PUT /v2/exercises/{id}` replaces
 the whole exercise, and requires `title`, `grader_type`, `solution_file_name` and
 `solution_file_type` — none of which the export captured, along with `text_md`. Rebuilding the
@@ -77,6 +87,18 @@ def main():
         help="username for oidc_claim_* headers instead of a token — only works against a core "
              "run with easy.core.auth-enabled=false, which is how this script is tested locally",
     )
+    ap.add_argument(
+        "--rewrite",
+        action="store_true",
+        help="write through PUT /v2/admin/exercises/{id}/rewrite, which preserves the previous "
+             "author and valid_from — needs admin. See the module docstring.",
+    )
+    ap.add_argument(
+        "--skip",
+        default="",
+        help="comma-separated exercise ids to leave alone, for the ones that need a decision "
+             "rather than a migration",
+    )
     ap.add_argument("--apply", action="store_true", help="actually write; omit for a dry run")
     ap.add_argument("--limit", type=int, help="stop after this many exercises")
     ap.add_argument("--delay", type=float, default=0.2, help="seconds between writes")
@@ -96,6 +118,7 @@ def main():
     )
 
     base = args.url.rstrip("/")
+    skip_ids = {s.strip() for s in args.skip.split(",") if s.strip()}
     dirs = sorted(
         (p for p in (args.migrated / "exercises").iterdir() if p.is_dir() and p.name.isdigit()),
         key=lambda p: int(p.name),
@@ -103,6 +126,10 @@ def main():
 
     if not args.apply:
         print("DRY RUN — nothing will be written. Add --apply to write.\n")
+    print(f"writing through {'/admin/exercises/{id}/rewrite' if args.rewrite else '/exercises/{id}'}")
+    if skip_ids:
+        print(f"skipping by request: {', '.join(sorted(skip_ids, key=int))}")
+    print()
 
     written = skipped = 0
     for i, d in enumerate(dirs):
@@ -111,6 +138,10 @@ def main():
             break
 
         eid = d.name
+        if eid in skip_ids:
+            print(f"{eid}: skip — excluded with --skip")
+            skipped += 1
+            continue
         spec_path = d / "tsl.json"
         if not spec_path.exists():
             continue
@@ -165,7 +196,10 @@ def main():
             written += 1
             continue
 
-        status, resp = request(f"{base}/exercises/{eid}", headers, method="PUT", body=payload)
+        write_url = (
+            f"{base}/admin/exercises/{eid}/rewrite" if args.rewrite else f"{base}/exercises/{eid}"
+        )
+        status, resp = request(write_url, headers, method="PUT", body=payload)
         if status != 200:
             print(f"{eid}: FAILED {status}: {json.dumps(resp)[:400]}")
             print(f"\nStopped at exercise {eid}. {written} written so far; see {args.log}.")
