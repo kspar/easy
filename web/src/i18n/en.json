@@ -345,6 +345,7 @@
     "permissionPRAWM": "Moderator",
     "emailNotFound": "No account found with this email",
     "you": "you",
+    "justAdded": "Just added",
     "recentlyViewed": "Recently viewed",
     "noMarkdownSource": "This exercise was written before Markdown and has no source text to load — the box below starts empty. Whatever you type replaces the exercise text entirely, so saving is blocked until you enter something.",
     "exerciseTextPlaceholder": "Exercise text in Markdown...",

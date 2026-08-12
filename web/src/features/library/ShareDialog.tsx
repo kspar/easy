@@ -18,6 +18,7 @@ import {
   Divider,
   CircularProgress,
   IconButton,
+  Chip,
   type SelectChangeEvent,
 } from '@mui/material'
 import {
@@ -27,6 +28,7 @@ import {
   ArrowBackOutlined,
 } from '@mui/icons-material'
 import { useDirAccesses, usePutDirAccess } from '../../api/library.ts'
+import { ANY_SUBJECT, markShared, readRecentShares, subjectOf } from './recentShares.ts'
 import { ApiResponseError } from '../../api/client.ts'
 import { useAuth } from '../../auth/useAuth.ts'
 import type {
@@ -106,6 +108,19 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
   const [emailError, setEmailError] = useState('')
   const [adding, setAdding] = useState(false)
 
+  // Who was shared with recently, so the rows can say so. Re-read after each add, and on a timer
+  // while the dialog is open so a mark disappears when it expires rather than when something else
+  // happens to re-render.
+  const [recent, setRecent] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    if (!open) return
+    const refresh = () => setRecent(readRecentShares(activeDirId))
+    refresh()
+    const timer = setInterval(refresh, 30_000)
+    return () => clearInterval(timer)
+  }, [open, activeDirId])
+
   function handleClose() {
     setEmail('')
     setEmailError('')
@@ -122,9 +137,15 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
     try {
       if (value.toLowerCase() === 'all' && isAdmin) {
         await putAccess.mutateAsync({ any_access: true, access_level: 'PR' })
+        if (activeDirId) markShared(activeDirId, ANY_SUBJECT)
       } else {
         await putAccess.mutateAsync({ email: value, access_level: 'PR' })
+        // Recorded by the email that was typed: the row it will appear in is identified by the
+        // account's email too, and the username is not known here.
+        const subject = subjectOf(value)
+        if (activeDirId && subject) markShared(activeDirId, subject)
       }
+      setRecent(readRecentShares(activeDirId))
       setEmail('')
     } catch (err) {
       if (err instanceof ApiResponseError && err.errorBody?.code === 'ACCOUNT_NOT_FOUND') {
@@ -165,6 +186,8 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
     access: DirAccessLevel
     isCurrentUser: boolean
     isAnyAccess: boolean
+    /** Matches what a share was recorded under; null for rows that cannot be added from here. */
+    subject: string | null
   }> = []
 
   if (data) {
@@ -178,6 +201,7 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
         access: data.direct_any.access,
         isCurrentUser: false,
         isAnyAccess: true,
+        subject: ANY_SUBJECT,
       })
     }
 
@@ -192,6 +216,7 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
         access: acc.access,
         isCurrentUser: isSelf,
         isAnyAccess: false,
+        subject: subjectOf(acc.email),
       })
     }
 
@@ -205,6 +230,8 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
         access: grp.access,
         isCurrentUser: false,
         isAnyAccess: false,
+        // Groups cannot be added through this dialog, so nothing can ever mark one.
+        subject: null,
       })
     }
   }
@@ -368,7 +395,11 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
             {/* Direct permissions */}
             {directRows.length > 0 && (
               <List dense disablePadding>
-                {directRows.map((row) => (
+                {directRows.map((row) => {
+                  // Both a tint and a chip: the tint is what makes the row findable while scanning
+                  // a long list, the chip is what says why it looks different.
+                  const isNew = row.subject != null && recent[row.subject] != null
+                  return (
                   <ListItem
                     key={row.key}
                     secondaryAction={
@@ -396,7 +427,15 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
                         </MenuItem>
                       </Select>
                     }
-                    sx={{ pr: 18 }}
+                    sx={{
+                      pr: 18,
+                      borderRadius: 1,
+                      ...(isNew && {
+                        bgcolor: 'action.selected',
+                        // The tint alone reads as "selected"; the rule says "changed".
+                        boxShadow: (theme) => `inset 3px 0 0 ${theme.palette.primary.main}`,
+                      }),
+                    }}
                   >
                     <ListItemAvatar sx={{ minWidth: 40 }}>
                       <Avatar sx={{ width: 32, height: 32, bgcolor: 'action.selected' }}>
@@ -404,7 +443,23 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
                       </Avatar>
                     </ListItemAvatar>
                     <ListItemText
-                      primary={row.label}
+                      primary={
+                        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+                          {row.label}
+                          {isNew && (
+                            <Chip
+                              // A span: this sits inside ListItemText's primary, which renders as
+                              // a <p>, and a Chip is a <div> by default — invalid HTML that React
+                              // warns about at runtime.
+                              component="span"
+                              label={t('library.justAdded')}
+                              size="small"
+                              color="primary"
+                              sx={{ height: 18, fontSize: '0.6875rem' }}
+                            />
+                          )}
+                        </Box>
+                      }
                       secondary={row.secondary || undefined}
                       slotProps={{
                         primary: { variant: 'body2' },
@@ -412,7 +467,8 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
                       }}
                     />
                   </ListItem>
-                ))}
+                  )
+                })}
               </List>
             )}
 

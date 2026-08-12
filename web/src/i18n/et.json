@@ -345,6 +345,7 @@
     "permissionPRAWM": "Moderaator",
     "emailNotFound": "Selle emailiga kontot ei leitud",
     "you": "sina",
+    "justAdded": "Äsja lisatud",
     "recentlyViewed": "Hiljuti vaadatud",
     "noMarkdownSource": "See ülesanne on kirjutatud enne Markdowni ja sellel puudub lähtetekst — allolev kast on tühi. Kõik, mille sisestad, asendab ülesande teksti täielikult, seetõttu on salvestamine blokeeritud kuni midagi sisestad.",
     "exerciseTextPlaceholder": "Ülesande tekst Markdownis...",

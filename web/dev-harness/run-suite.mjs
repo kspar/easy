@@ -49,6 +49,7 @@ const SCRIPTS = [
   'library-exercise-tsl-static.mjs',
   'library-exercise-ui.mjs',
   'library-exercise-markdown.mjs',
+  'library-share-recent.mjs',
   'embed-exercise.mjs',
   'course-exercise-embed.mjs',
   'course-exercise-retry-autoassess.mjs',
