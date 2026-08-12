@@ -251,8 +251,9 @@ export default function TslTestCard({
                   </MenuItem>
                 )),
               ])}
-              {/* Keeps an unsupported type selectable so the dropdown shows the truth rather than
-                  silently reading as one of the three implemented ones. */}
+              {/* Every type this editor knows has a form, so this only fires for a spec written
+                  against one it does not. Kept selectable-but-disabled so the dropdown shows the
+                  truth rather than silently reading as one of the types above. */}
               {!isEditableType(test.type) && (
                 <MenuItem value={test.type} disabled>
                   {test.type}

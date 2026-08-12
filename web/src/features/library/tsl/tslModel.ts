@@ -15,10 +15,9 @@
  * each subclass's `@SerialName`.
  *
  * The TSL model collapsed 39 narrow test types into 4 parameterised ones (EZ-1607), so the whole
- * universe is now 8 types rather than 43 and full form coverage is actually reachable. Done so
- * far: `placeholder_test`, `program_execution_test`, `function_execution_test`, `contains_test`.
- * Anything else still falls back to raw JSON, preserved byte-for-byte. See `TEST_TYPES` for how
- * to add more.
+ * universe is now 8 types rather than 43 — and all 8 have a visual form. The raw JSON fallback
+ * stays for specs written against a type this editor does not know, which it round-trips
+ * byte-for-byte. See `TEST_TYPES` for how to add a ninth.
  */
 
 export type CheckType = 'ALL_OF_THESE' | 'ANY_OF_THESE' | 'MISSING_AT_LEAST_ONE_OF_THESE' | 'NONE_OF_THESE'

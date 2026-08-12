@@ -823,24 +823,6 @@ export function useCreateGroup(courseId: string) {
   })
 }
 
-export function useDeleteGroup(courseId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (groupId: string) =>
-      apiFetch(`/courses/${courseId}/groups/${groupId}`, {
-        method: 'DELETE',
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['courses', courseId, 'groups'],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['courses', courseId, 'participants'],
-      })
-    },
-  })
-}
-
 export function useDeleteGroups(courseId: string) {
   const queryClient = useQueryClient()
   return useMutation({
