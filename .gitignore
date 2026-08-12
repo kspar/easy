@@ -3,6 +3,11 @@
 *.iml
 *.iws
 
+# Claude Code's working directory. Two separate reasons, and the second is the sharp one:
+# settings.local.json is per-machine preference, and .claude/worktrees/ holds entire checkouts of
+# this repository. Committing that nests a copy of the repo inside itself.
+.claude/
+
 
 out/
 build/
