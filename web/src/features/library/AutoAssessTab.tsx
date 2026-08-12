@@ -265,9 +265,9 @@ export default function AutoAssessTab({
           </Box>
 
           {/* Guidance for choosing a container, so it goes with the chooser. */}
-          {type?.helpText && (
+          {type?.helpTextKey && (
             <Typography variant="caption" color="text.secondary">
-              {type.helpText}
+              {t(type.helpTextKey)}
             </Typography>
           )}
         </>

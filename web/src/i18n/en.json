@@ -363,6 +363,7 @@
     "maxTimeSec": "Max time (s)",
     "maxMemMb": "Max memory (MB)",
     "noAutoAssess": "This exercise has no auto-assessment — it is graded by a teacher.",
+    "autoEvalHelpPygrader": "Python Grader is not recommended for new auto-assessments, but the library is available here: https://github.com/kspar/python-grader",
     "evalScript": "evaluate.sh",
     "addAssetFile": "Add file",
     "removeAssetFile": "Remove file",

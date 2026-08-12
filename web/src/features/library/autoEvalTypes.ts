@@ -12,8 +12,15 @@ export interface AutoEvalType {
   allowedTime: number
   allowedMemory: number
   editor: 'TSL' | 'CODE'
-  /** Shown under the type selector; plain text, not markup. */
-  helpText?: string
+  /**
+   * Translation key for the note under the type selector; plain text, not markup.
+   *
+   * A key rather than the sentence itself, because this file is imported by components that
+   * render in either language and the sentence used to be hardcoded Estonian — which showed
+   * untranslated in the English UI and could not be spotted by a type checker. `fallbackLng`
+   * is `et`, so a key missing from `en.json` reproduces exactly that: add both.
+   */
+  helpTextKey?: string
   evaluateScript: string
   assets: Record<string, string>
 }
@@ -69,8 +76,7 @@ export const AUTO_EVAL_TYPES: AutoEvalType[] = [
     allowedTime: 7,
     allowedMemory: 30,
     editor: 'CODE',
-    helpText:
-      'Uute automaatkontrollide koostamist Python Graderiga ei soovita, aga teegi leiab siit: https://github.com/kspar/python-grader',
+    helpTextKey: 'library.autoEvalHelpPygrader',
     evaluateScript: 'cd student-submission\npython -m grader.easy',
     assets: {
       'tester.py': [

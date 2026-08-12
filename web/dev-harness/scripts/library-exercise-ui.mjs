@@ -440,6 +440,14 @@ check(
   'and they are editable',
   !(await page.getByRole('textbox', { name: 'Solution file name' }).isDisabled()),
 )
+
+// The container note was hardcoded Estonian and rendered untranslated in the English UI. Asserting
+// the Estonian is *absent* is the half that matters: `fallbackLng` is `et`, so a key missing from
+// en.json silently reproduces the original bug, and a check for English text alone would still see
+// something plausible on screen.
+const helpText = await page.getByText(/Python Grader/).last().innerText()
+check('the container note is translated', helpText.includes('not recommended for new auto-assessments'))
+check('and does not fall back to Estonian', !helpText.includes('ei soovita'))
 check(
   'the summary steps aside rather than duplicating them',
   (await page.locator('p').filter({ hasText: 'lahendus.py · Text editor' }).count()) === 0,

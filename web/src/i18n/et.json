@@ -363,6 +363,7 @@
     "maxTimeSec": "Max aeg (s)",
     "maxMemMb": "Max mälu (MB)",
     "noAutoAssess": "Sellel ülesandel pole automaatkontrolli — seda hindab õpetaja.",
+    "autoEvalHelpPygrader": "Uute automaatkontrollide koostamist Python Graderiga ei soovita, aga teegi leiab siit: https://github.com/kspar/python-grader",
     "evalScript": "evaluate.sh",
     "addAssetFile": "Lisa fail",
     "removeAssetFile": "Eemalda fail",
