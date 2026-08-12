@@ -19,9 +19,12 @@ const EX = '9001'
 const OLDER = 'print("older attempt")'
 const LATEST = 'print("the last thing I tested")'
 
+// grade/feedback are stored per attempt (EZ-1756). Null on the oldest one, which is what an
+// executor failure looks like — and what every row predating that change looks like.
 let submissions = [
-  { id: '2', solution: LATEST, created_at: '2026-08-11T09:00:00.000Z' },
-  { id: '1', solution: OLDER, created_at: '2026-08-02T09:00:00.000Z' },
+  { id: '3', solution: LATEST, grade: 75, feedback: 'Two of four tests passed', created_at: '2026-08-11T09:00:00.000Z' },
+  { id: '2', solution: OLDER, grade: 40, feedback: 'One of four tests passed', created_at: '2026-08-02T09:00:00.000Z' },
+  { id: '1', solution: 'print("never graded")', grade: null, feedback: null, created_at: '2026-08-01T09:00:00.000Z' },
 ]
 
 const exercise = {
@@ -73,7 +76,13 @@ await fakeApi(page, [
     ({ body }) => {
       graded.push(body.solution)
       submissions = [
-        { id: String(submissions.length + 1), solution: body.solution, created_at: '2026-08-12T18:00:00.000Z' },
+        {
+          id: String(submissions.length + 1),
+          solution: body.solution,
+          grade: 100,
+          feedback: 'All tests passed',
+          created_at: '2026-08-12T18:00:00.000Z',
+        },
         ...submissions,
       ]
       return { grade: 100, feedback: 'All tests passed' }
@@ -129,25 +138,49 @@ await page.getByText('Previous tests').click()
 // on when the suite runs. Newest first, so the last row is the older attempt.
 // Scoped to the collapse: the left nav is built from ListItemButtons too.
 const previousRows = page.locator('.MuiCollapse-root .MuiListItemButton-root')
-check('both previous attempts are listed', (await previousRows.count()) === 2)
-await previousRows.last().click()
+check('every previous attempt is listed', (await previousRows.count()) === 3)
+
+// The result each attempt got, so the history says what happened and not merely that it happened.
+const rowText = await previousRows.allInnerTexts()
+check('each attempt shows the grade it got', rowText[0].includes('75 / 100'), rowText[0])
+check('and the one that never graded says so', rowText[2].includes('Not graded'), rowText[2])
+
+await previousRows.nth(1).click()
 check(
   'clicking a previous test loads that solution',
   await waitUntil(async () => (await editor().innerText()).includes('older attempt')),
 )
+check(
+  'and shows the feedback that solution actually got',
+  await waitUntil(() => page.getByText('One of four tests passed').isVisible()),
+)
+
+// An ungraded attempt must not leave the previous one's feedback sitting above a different solution.
+await previousRows.last().click()
+check(
+  'picking an ungraded attempt clears the stale feedback',
+  await waitUntil(async () => (await page.getByText('One of four tests passed').count()) === 0),
+)
 
 // --- running a test ---------------------------------------------------------------------------
 
+// Whatever the last click left in the editor — the ungraded attempt.
 await page.getByRole('button', { name: 'Run tests' }).click()
 check(
   'running tests grades what is in the editor',
-  await waitUntil(() => graded.length === 1 && graded[0].includes('older attempt')),
+  await waitUntil(() => graded.length === 1 && graded[0].includes('never graded')),
   graded[0],
 )
 check('and shows the feedback', await waitUntil(() => page.getByText('All tests passed').isVisible()))
 check(
   'the history picks up the run that just happened',
-  await waitUntil(() => page.getByText('Previous tests (3)').isVisible()),
+  await waitUntil(() => page.getByText('Previous tests (4)').isVisible()),
+)
+check(
+  'and carries its grade',
+  await waitUntil(async () =>
+    (await page.locator('.MuiCollapse-root .MuiListItemButton-root').first().innerText()).includes('100 / 100'),
+  ),
 )
 await shot('02-after-run')
 

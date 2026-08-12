@@ -281,6 +281,9 @@ export interface TeacherSubmissionDetailResp {
 export interface TeacherTestSubmissionResp {
   id: string
   solution: string
+  /** Null when the run produced no result — an executor failure, or a submission predating EZ-1756. */
+  grade: number | null
+  feedback: string | null
   created_at: string
 }
 

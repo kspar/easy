@@ -343,6 +343,12 @@ object TeacherSubmission : LongIdTable("teacher_submission") {
     val exercise = reference("exercise_id", Exercise)
     val createdAt = datetime("created_at")
     val solution = text("solution")
+
+    // The result of testing this solution. Nullable because the row is written before the grading
+    // it describes: a submission whose executor never answered keeps the solution and has no
+    // result, which is what lets a teacher retry it instead of retyping it. See changeset 120826-1.
+    val grade = integer("grade").nullable()
+    val feedback = text("feedback").nullable()
 }
 
 object FeedbackSnippet : LongIdTable("feedback_snippet") {

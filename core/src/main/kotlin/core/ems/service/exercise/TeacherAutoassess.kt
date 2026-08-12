@@ -19,9 +19,10 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.isNull
-import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
@@ -64,7 +65,7 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
                 libraryExercise(exerciseId, DirAccessLevel.PR)
         }
 
-        val submissionTime = insertTeacherSubmission(exerciseId, dto.solution, caller.id)
+        val (submissionId, submissionTime) = insertTeacherSubmission(exerciseId, dto.solution, caller.id)
 
         val aaId = getAutoExerciseId(exerciseId)
             ?: throw InvalidRequestException(
@@ -75,9 +76,12 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
         val aaResult = runBlocking {
             autoGradeScheduler.submitAndAwait(aaId, dto.solution, PriorityLevel.AUTHENTICATED)
         }
-        // TODO: maybe should save auto assessments as well and follow the scheme as with student submit:
-        // this service submits and returns
-        // and another service .../await will wait for the assessment to finish and return the result
+
+        // Recorded against the row inserted above rather than inserted with it, because the row has
+        // to exist before this line: if grading throws, the teacher still has the solution in their
+        // history to retry. The result is therefore an update, and a submission with no result is a
+        // normal state rather than a broken one.
+        saveResult(submissionId, aaResult.grade, aaResult.feedback)
 
         return Resp(aaResult.grade, aaResult.feedback, submissionTime)
     }
@@ -90,16 +94,23 @@ class TeacherAutoassess(val autoGradeScheduler: AutoGradeScheduler) {
             .single()?.value
     }
 
-    private fun insertTeacherSubmission(exerciseId: Long, solution: String, teacherId: String): DateTime =
+    private fun insertTeacherSubmission(exerciseId: Long, solution: String, teacherId: String): Pair<Long, DateTime> =
         transaction {
             val now = DateTime.now()
 
-            TeacherSubmission.insert {
+            val id = TeacherSubmission.insertAndGetId {
                 it[TeacherSubmission.solution] = solution
                 it[createdAt] = now
                 it[exercise] = exerciseId
                 it[teacher] = teacherId
             }
-            now
+            id.value to now
         }
+
+    private fun saveResult(submissionId: Long, grade: Int, feedback: String?) = transaction {
+        TeacherSubmission.update({ TeacherSubmission.id eq submissionId }) {
+            it[TeacherSubmission.grade] = grade
+            it[TeacherSubmission.feedback] = feedback
+        }
+    }
 }

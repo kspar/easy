@@ -219,4 +219,30 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="120826-1" author="kspar">
+        <comment>
+            Keep the auto-assessment result with each teacher test submission.
+
+            The solution was stored and the grade thrown away, so the testing tab could list what a
+            teacher had tried but not what happened when they did — and re-reading a previous
+            attempt meant running it again to find out. The same two columns anonymous_submission
+            already carries for the same reason.
+
+            Both nullable, unlike anonymous_submission's grade. That table is written after grading
+            succeeds, so a grade always exists by the time there is a row; teacher_submission is
+            written before, and deliberately: when the executor is down, the teacher still has
+            their solution in the history and can retry it rather than retyping it. Null therefore
+            means "not graded" — an executor failure, and every row that existed before this
+            changeset.
+        </comment>
+        <addColumn tableName="teacher_submission">
+            <column name="grade" type="int">
+                <constraints nullable="true"/>
+            </column>
+            <column name="feedback" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

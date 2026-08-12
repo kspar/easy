@@ -27,7 +27,11 @@ import {
 } from '../../api/exercises.ts'
 import AutoTestResults from './AutoTestResults.tsx'
 import RelativeTime from '../../components/RelativeTime.tsx'
-import type { GraderType, TeacherAutoassessResp } from '../../api/types.ts'
+import type {
+  GraderType,
+  TeacherAutoassessResp,
+  TeacherTestSubmissionResp,
+} from '../../api/types.ts'
 
 export default function TeacherTestingTab({
   exerciseId,
@@ -129,15 +133,18 @@ export default function TeacherTestingTab({
     })
   }, [autoassess])
 
-  const handleLoadPreviousSolution = useCallback((solution: string) => {
+  const handleLoadPreviousSolution = useCallback((sub: TeacherTestSubmissionResp) => {
     const view = viewRef.current
     if (view) {
       view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: solution },
+        changes: { from: 0, to: view.state.doc.length, insert: sub.solution },
       })
       // So a later rebuild keeps the one that was picked, rather than reverting to the newest.
-      contentRef.current = solution
+      contentRef.current = sub.solution
     }
+    // The result that this solution got, not whatever is currently on screen — leaving the last
+    // run's feedback above a different solution is worse than showing none.
+    setResult(sub.grade === null ? null : { grade: sub.grade, feedback: sub.feedback })
   }, [])
 
   const isAutoGraded = graderType === 'AUTO'
@@ -251,11 +258,19 @@ export default function TeacherTestingTab({
               {previousSubs.map((sub) => (
                 <ListItemButton
                   key={sub.id}
-                  onClick={() => handleLoadPreviousSolution(sub.solution)}
-                  sx={{ borderRadius: 1, py: 0.75 }}
+                  onClick={() => handleLoadPreviousSolution(sub)}
+                  sx={{ borderRadius: 1, py: 0.75, gap: 2 }}
                 >
                   <Typography variant="body2" color="text.secondary">
                     <RelativeTime date={sub.created_at} />
+                  </Typography>
+                  <Box sx={{ flex: 1 }} />
+                  {/*
+                  No pass/fail colouring: the threshold that decides that belongs to a course, and
+                  this tab is also opened from the library where there is no course to ask.
+                  */}
+                  <Typography variant="body2" color="text.secondary">
+                    {sub.grade === null ? t('exercises.notGraded') : `${sub.grade} / 100`}
                   </Typography>
                 </ListItemButton>
               ))}

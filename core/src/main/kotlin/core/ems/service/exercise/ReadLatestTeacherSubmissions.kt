@@ -25,6 +25,10 @@ class ReadLatestTeacherSubmissions {
     data class RespSubmission(
         @get:JsonProperty("id") val id: String,
         @get:JsonProperty("solution") val solution: String,
+        // Null when the run never produced one — an executor failure, or any submission made
+        // before the result was stored at all (changeset 120826-1).
+        @get:JsonProperty("grade") val grade: Int?,
+        @get:JsonProperty("feedback") val feedback: String?,
         @get:JsonSerialize(using = DateTimeSerializer::class)
         @get:JsonProperty("created_at") val submissionTime: DateTime
     )
@@ -67,6 +71,8 @@ class ReadLatestTeacherSubmissions {
                     RespSubmission(
                         it[TeacherSubmission.id].value.toString(),
                         it[TeacherSubmission.solution],
+                        it[TeacherSubmission.grade],
+                        it[TeacherSubmission.feedback],
                         it[TeacherSubmission.createdAt]
                     )
                 }
