@@ -50,6 +50,28 @@ export default function TeacherTestingTab({
   const [result, setResult] = useState<TeacherAutoassessResp | null>(null)
   const [prevSubsOpen, setPrevSubsOpen] = useState(false)
 
+  // Newest first, and only this teacher's, so [0] is the last thing *you* tested. See
+  // ReadLatestTeacherSubmissions.
+  const latestSubmission = previousSubs?.[0]
+  const latestSolution = latestSubmission?.solution
+
+  /**
+   * What the editor should hold, kept outside CodeMirror because the view gets destroyed and
+   * rebuilt — on a theme change, a language change, and when the previous attempt arrives.
+   *
+   * Every test run is already stored server-side per teacher, and wui opened this tab with the
+   * last one loaded; this app opened it empty, so returning to a tab meant retyping the solution
+   * you had just tested. Null means "nothing typed yet", which is what lets the fetched attempt
+   * seed the editor without overwriting work in progress.
+   */
+  const contentRef = useRef<string | null>(null)
+
+  // A different exercise is a different solution; without this, switching exercises would carry
+  // the previous one's text across.
+  useEffect(() => {
+    contentRef.current = null
+  }, [exerciseId])
+
   // Initialize editor
   useEffect(() => {
     if (!editorContainerRef.current) return
@@ -73,7 +95,9 @@ export default function TeacherTestingTab({
       }
 
       const state = EditorState.create({
-        doc: '',
+        // Typed text wins over the fetched attempt: contentRef is only null until something is
+        // in the editor, so this cannot overwrite a solution being written.
+        doc: contentRef.current ?? latestSolution ?? '',
         extensions,
       })
 
@@ -85,10 +109,14 @@ export default function TeacherTestingTab({
 
     return () => {
       cancelled = true
+      // Carry the content over the rebuild. Toggling dark mode used to empty this editor
+      // silently, which is a bad way to lose a solution you were about to test.
+      const text = viewRef.current?.state.doc.toString()
+      if (text) contentRef.current = text
       viewRef.current?.destroy()
       viewRef.current = null
     }
-  }, [theme.palette.mode, solutionFileName, t])
+  }, [theme.palette.mode, solutionFileName, t, latestSolution])
 
   const handleRunTests = useCallback(() => {
     const solution = viewRef.current?.state.doc.toString() ?? ''
@@ -107,6 +135,8 @@ export default function TeacherTestingTab({
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: solution },
       })
+      // So a later rebuild keeps the one that was picked, rather than reverting to the newest.
+      contentRef.current = solution
     }
   }, [])
 
@@ -132,6 +162,18 @@ export default function TeacherTestingTab({
           <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
             {solutionFileName}
           </Typography>
+          {/*
+          Says why the editor is not empty. Without it a restored solution looks like something
+          the teacher typed and forgot, and "Run tests" would silently retest an old attempt.
+          */}
+          {latestSubmission && (
+            <>
+              <Box sx={{ flex: 1 }} />
+              <Typography variant="caption" color="text.secondary">
+                {t('submission.lastTested')} <RelativeTime date={latestSubmission.created_at} />
+              </Typography>
+            </>
+          )}
         </Box>
         <Box
           ref={editorContainerRef}

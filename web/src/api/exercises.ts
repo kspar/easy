@@ -710,12 +710,21 @@ export function useMarkSubmissionsSeen(
 }
 
 export function useTeacherAutoassess(exerciseId: string) {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (solution: string) =>
       apiFetch<TeacherAutoassessResp>(
         `/exercises/${exerciseId}/testing/autoassess`,
         { method: 'POST', body: { solution } },
       ),
+    // The server stores every test run, so the run just made is now part of the history the
+    // testing tab reads back. Without this the count and the "last tested" time stay behind by
+    // one run until something else refetches.
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['exercises', exerciseId, 'testing', 'autoassess', 'submissions'],
+      })
+    },
   })
 }
 

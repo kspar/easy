@@ -53,6 +53,7 @@ const SCRIPTS = [
   'course-exercise-embed.mjs',
   'course-exercise-retry-autoassess.mjs',
   'course-exercise-assessment.mjs',
+  'course-exercise-teacher-testing.mjs',
   'similarity-page.mjs',
   'terms-redirect.mjs',
   'grade-table.mjs',

@@ -83,6 +83,31 @@ export default defineConfig({
     __APP_BUILT_AT__: JSON.stringify(BUILD.builtAt),
   },
   plugins: [react(), versionManifest()],
+  /**
+   * The CodeMirror language modes, pre-bundled rather than discovered.
+   *
+   * `languageFromFilename` imports these at runtime, one per file extension, so in dev Vite meets
+   * them for the first time when a `.py` file is opened — and answers that first request with a
+   * 504 "Outdated Optimize Dep" while it re-optimizes. A browser reloads and moves on; the code
+   * does not, because the import failing leaves the editor never created. So the symptom was a
+   * teacher's testing tab with no editor in it, and it took a browser test opening a `.py` file to
+   * see it at all: every other editor in the app happens to open on `evaluate.sh` or `tsl.json`.
+   *
+   * Listing them here means the server pre-bundles all of them at startup, so no request ever
+   * races an optimizer pass. Keep in step with `languageFromFilename` — a mode missing from this
+   * list still works in a browser and still fails a test.
+   */
+  optimizeDeps: {
+    include: [
+      '@codemirror/lang-python',
+      '@codemirror/lang-javascript',
+      '@codemirror/lang-java',
+      '@codemirror/lang-cpp',
+      '@codemirror/lang-html',
+      '@codemirror/lang-css',
+      '@codemirror/lang-sql',
+    ],
+  },
   server: {
     proxy: {
       '/v2': {

@@ -262,6 +262,7 @@
     "runTests": "Käivita testid",
     "testSolution": "Testi oma lahendust",
     "previousTests": "Varasemad testid",
+    "lastTested": "Viimati testitud",
     "noTestsYet": "Teste pole veel käivitatud",
     "unseen": "Uus",
     "searchStudents": "Otsi tudengit...",

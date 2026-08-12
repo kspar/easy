@@ -262,6 +262,7 @@
     "runTests": "Run tests",
     "testSolution": "Test your solution",
     "previousTests": "Previous tests",
+    "lastTested": "Last tested",
     "noTestsYet": "No test results yet",
     "unseen": "New",
     "searchStudents": "Search students...",
