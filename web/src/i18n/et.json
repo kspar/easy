@@ -258,7 +258,7 @@
     "preview": "Eelvaade",
     "activity": "Tagasiside",
     "noActivity": "Varasem tegevus puudub",
-    "assessmentPlaceholder": "Automaathindamise seadistus ilmub siia.",
+    "assessmentReadOnly": "Seadistatakse ülesannete kogus ja on ühine kõigile kursustele, mis seda ülesannet kasutavad.",
     "runTests": "Käivita testid",
     "testSolution": "Testi oma lahendust",
     "previousTests": "Varasemad testid",

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Typography,
   CircularProgress,
@@ -62,6 +62,8 @@ import AutogradeAnimation from './AutogradeAnimation.tsx'
 import SubmissionsList from './SubmissionsList.tsx'
 import StudentGradingView from './StudentGradingView.tsx'
 import TeacherTestingTab from './TeacherTestingTab.tsx'
+import AutoAssessTab from '../library/AutoAssessTab.tsx'
+import { autoAssessDraftFrom } from '../library/exerciseDraft.ts'
 
 function GradeBanner({
   submissions,
@@ -699,6 +701,10 @@ function TeacherRightPane({
   // Tab state: 0=Students, 1=Testing, 2=Assessment
   const [tabIndex, setTabIndex] = useState(0)
 
+  // No state behind it: the assessment tab only displays. Memoised because AutoAssessTab derives
+  // its open file and eval type from the draft's identity.
+  const autoAssessDraft = useMemo(() => autoAssessDraftFrom(exercise), [exercise])
+
   // When student param is set, auto-switch to Students tab
   useEffect(() => {
     if (selectedStudentId) {
@@ -763,18 +769,24 @@ function TeacherRightPane({
         />
       )}
 
-      {/* Assessment tab */}
+      {/*
+      Assessment tab. Was a placeholder promising that the auto-assessment configuration would
+      appear here, next to two chips repeating what the header already says. The server had been
+      sending the whole configuration all along — grading script, container, limits and assets, for
+      every AUTO exercise — and it was TeacherExerciseDetails that failed to declare any of it, so
+      there was no typed way to render what the placeholder was describing.
+
+      The library page's own component, read-only. Read-only because the configuration belongs to
+      the library exercise rather than to this course's use of it: editing it here would silently
+      change grading for every other course that uses the same exercise. The header already links
+      to the library for anyone with access, which is where that edit belongs.
+      */}
       {tabIndex === 2 && (
-        <Box sx={{ py: 4, textAlign: 'center' }}>
-          <Typography color="text.secondary">
-            {t('submission.assessmentPlaceholder')}
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+            {t('submission.assessmentReadOnly')}
           </Typography>
-          {exercise.grader_type === 'AUTO' && (
-            <Box sx={{ mt: 2, display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Chip label={`${t('exercises.gradedAutomatically')}`} size="small" variant="outlined" />
-              <Chip label={exercise.solution_file_name} size="small" variant="outlined" />
-            </Box>
-          )}
+          <AutoAssessTab draft={autoAssessDraft} editing={false} onChange={() => {}} />
         </Box>
       )}
     </Box>

@@ -185,15 +185,29 @@ export interface TeacherExerciseDetails {
   title: string
   title_alias: string | null
   text_html: string | null
+  text_md: string | null
   instructions_html: string | null
+  instructions_md: string | null
   soft_deadline: string | null
   hard_deadline: string | null
   grader_type: GraderType
   solution_file_name: string
   solution_file_type: SolutionFileType
   threshold: number
+  last_modified: string
   student_visible: boolean
   student_visible_from: string | null
+  assessments_student_visible: boolean
+  // The auto-assessment configuration. Sent for every AUTO exercise regardless of library access,
+  // and these were missing here long after the server was returning them — which is why the
+  // course exercise's assessment tab was a placeholder: there was no typed way to reach the data
+  // it was meant to show.
+  grading_script: string | null
+  container_image: string | null
+  max_time_sec: number | null
+  max_mem_mb: number | null
+  assets: LibraryExerciseAsset[] | null
+  executors: { id: string; name: string }[] | null
   has_lib_access: boolean
   exception_students: ExceptionStudent[] | null
   exception_groups: ExceptionGroup[] | null

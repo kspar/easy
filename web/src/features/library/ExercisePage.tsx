@@ -45,6 +45,7 @@ import ExerciseTextTab from './ExerciseTextTab.tsx'
 import AutoAssessTab from './AutoAssessTab.tsx'
 import {
   assetsForSave,
+  autoAssessDraftFrom,
   isAutoAssessValid,
   isExerciseTextValid,
   mergeField,
@@ -64,13 +65,7 @@ function draftFrom(ex: LibraryExerciseDetail): Draft {
   return {
     title: ex.title,
     textMd: ex.text_md ?? '',
-    solutionFileName: ex.solution_file_name,
-    solutionFileType: ex.solution_file_type,
-    containerImage: ex.container_image,
-    maxTimeSec: ex.max_time_sec,
-    maxMemMb: ex.max_mem_mb,
-    gradingScript: ex.grading_script ?? '',
-    assets: ex.assets ?? [],
+    ...autoAssessDraftFrom(ex),
   }
 }
 

@@ -258,7 +258,7 @@
     "preview": "Preview",
     "activity": "Feedback",
     "noActivity": "No previous activity",
-    "assessmentPlaceholder": "Auto-assessment configuration will appear here.",
+    "assessmentReadOnly": "Configured in the exercise library, and shared by every course using this exercise.",
     "runTests": "Run tests",
     "testSolution": "Test your solution",
     "previousTests": "Previous tests",
