@@ -97,6 +97,32 @@ Pick a fixture that makes the side effects no-ops where you can. Joining as a st
 already has access to the course means the `insertIgnore` does nothing, so the only mutation
 left is the one under test.
 
+## Checks kept as scripts
+
+`articles-check.sh` in this directory is the pattern written down: a run of curl calls against a
+local core, asserting one endpoint family end to end, cleaning up after itself so it can be run
+repeatedly.
+
+```sh
+JAVA_HOME=$(/usr/libexec/java_home -v 25) ./gradlew :core:bootRun --args='--server.port=8099'
+doc/core/articles-check.sh
+```
+
+It exists because of what it checks: whether an unpublished article is invisible to non-admins and
+to the internet. That rule lives in a SQL predicate, so exercising it needs a database and a running
+application — and CI runs `./gradlew :core:test -PexcludeTags=db`, so the JUnit version of this
+would be written, tagged, and then never run. A script that is honestly manual beats a test that
+looks like coverage and is skipped.
+
+**EZ-1715 is the issue that gives the suite a database.** When it lands, these scripts are the
+specification to port, not work to redo.
+
+Worth copying if you write another: assert the *absence* of things as well as their presence (that
+the public payload has no `text_md` and no username is half of what makes it correct), and assert
+that two different failures answer identically where that is the design — a draft and a nonexistent
+id return the same error on purpose, and a test that only checks "not 200" would not notice them
+drifting apart.
+
 ## What this doesn't cover
 
 Nothing here exercises real Keycloak or token verification (`EasyUserJwtConverter`) — the
