@@ -31,9 +31,12 @@ class ReadArticleDetailsController(private val cachingService: CachingService) {
         @get:JsonProperty("owner") val owner: RespUser,
         @get:JsonProperty("author") val author: RespUser,
         @get:JsonProperty("text_html") val textHtml: String?,
+        // The editor's source, for the editor only. A reader gets text_html, and this endpoint is
+        // reachable without a login — see the cache-key note in CachingService.
+        @get:JsonInclude(JsonInclude.Include.NON_NULL)
         @get:JsonProperty("text_md") val textMd: String?,
         @get:JsonInclude(JsonInclude.Include.NON_NULL)
-        @get:JsonProperty("public") val public: Boolean?,
+        @get:JsonProperty("published") val published: Boolean?,
         @get:JsonInclude(JsonInclude.Include.NON_NULL)
         @get:JsonProperty("aliases") val assets: List<RespAlias>?
     ) : Serializable
@@ -46,7 +49,10 @@ class ReadArticleDetailsController(private val cachingService: CachingService) {
     ) : Serializable
 
     data class RespUser(
-        @get:JsonProperty("id") val id: String,
+        // A username, so admin-only: this endpoint is readable without a login, and publishing
+        // staff usernames to the internet buys nothing. The name is what a byline needs.
+        @get:JsonInclude(JsonInclude.Include.NON_NULL)
+        @get:JsonProperty("id") val id: String?,
         @get:JsonProperty("given_name") val givenName: String,
         @get:JsonProperty("family_name") val familyName: String
     ) : Serializable

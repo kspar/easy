@@ -38,7 +38,7 @@ class CreateArticleController(private val markdownService: MarkdownService, priv
         @param:JsonProperty("text_md", required = false) @field:Size(max = 300000) val textMd: String?,
         // Rejected, never read — see rejectLegacyContentFields (EZ-1730).
         @param:JsonProperty("text_adoc", required = false) val legacyTextAdoc: String? = null,
-        @param:JsonProperty("public", required = true) val public: Boolean
+        @param:JsonProperty("published", required = true) val published: Boolean
     )
 
     data class Resp(@param:JsonProperty("id") val id: String)
@@ -61,7 +61,7 @@ class CreateArticleController(private val markdownService: MarkdownService, priv
 
         val articleId = Article.insertAndGetId {
             it[owner] = ownerId
-            it[public] = req.public
+            it[published] = req.published
             it[createdAt] = time
         }
 

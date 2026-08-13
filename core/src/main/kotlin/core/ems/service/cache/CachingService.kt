@@ -45,10 +45,22 @@ class CachingService(val cacheManager: CacheManager) {
         cacheManager.getCache(accountCache)?.evict(username)
     }
 
+    /**
+     * The current version of an article, by id or alias.
+     *
+     * **`isAdmin` is the only input that may change this payload.** Anonymous and signed-in
+     * non-admin callers share one cache entry — they are both `isAdmin = false` — so they must get
+     * byte-identical responses. If a third viewer class ever needs something different, widen the
+     * key *first*: otherwise whichever caller populates the entry decides what the other one sees,
+     * request order becomes the access control, and nothing fails loudly enough to notice.
+     */
     @Cacheable(articleCache)
     fun selectLatestArticleVersion(articleIdOrAlias: String, isAdmin: Boolean): ReadArticleDetailsController.Resp =
         transaction {
 
+            // Deliberately not filtered on published: an unpublished article's alias still resolves
+            // to an id, and the main query below then finds nothing. Filtering here as well would
+            // be a second place for the visibility rule to live.
             val articleId = ArticleAlias.select(ArticleAlias.article)
                 .where { ArticleAlias.id eq articleIdOrAlias }
                 .map { it[ArticleAlias.article].value }
@@ -72,7 +84,7 @@ class CachingService(val cacheManager: CacheManager) {
                     ArticleVersion.author,
                     ArticleVersion.textHtml,
                     ArticleVersion.textMd,
-                    Article.public,
+                    Article.published,
                     Account.id,
                     Account.givenName,
                     Account.familyName,
@@ -80,7 +92,16 @@ class CachingService(val cacheManager: CacheManager) {
                     authorAlias[Account.givenName],
                     authorAlias[Account.familyName]
                 )
-                .where { Article.id eq articleId and ArticleVersion.validTo.isNull() }
+                // A draft is filtered out rather than found and refused, so it produces the exact
+                // ENTITY_WITH_ID_NOT_FOUND that a nonexistent id produces — one code path, so the
+                // two answers cannot drift apart. That matters here more than usual: aliases are
+                // short guessable words on an endpoint reachable with no account, so a
+                // distinguishable "forbidden" would turn the alias namespace into a dictionary
+                // attack, and for a draft the title is usually the whole secret.
+                .where {
+                    val current = Article.id eq articleId and ArticleVersion.validTo.isNull()
+                    if (isAdmin) current else current and (Article.published eq true)
+                }
                 .map {
                     ReadArticleDetailsController.Resp(
                         it[Article.id].value.toString(),
@@ -89,18 +110,18 @@ class CachingService(val cacheManager: CacheManager) {
                         it[ArticleVersion.validFrom],
 
                         ReadArticleDetailsController.RespUser(
-                            it[Account.id].value,
+                            if (isAdmin) it[Account.id].value else null,
                             it[Account.givenName],
                             it[Account.familyName]
                         ),
                         ReadArticleDetailsController.RespUser(
-                            it[authorAlias[Account.id]].value,
+                            if (isAdmin) it[authorAlias[Account.id]].value else null,
                             it[authorAlias[Account.givenName]],
                             it[authorAlias[Account.familyName]]
                         ),
                         it[ArticleVersion.textHtml],
-                        it[ArticleVersion.textMd],
-                        if (isAdmin) it[Article.public] else null,
+                        if (isAdmin) it[ArticleVersion.textMd] else null,
+                        if (isAdmin) it[Article.published] else null,
                         if (isAdmin) selectArticleAliases(it[Article.id].value) else null
                     )
                 }.singleOrInvalidRequest()

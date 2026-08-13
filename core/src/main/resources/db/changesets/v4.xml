@@ -245,4 +245,26 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="130826-1" author="kspar">
+        <comment>
+            Rename article.public to article.published.
+
+            The column was written by create and update and read by nothing at all, so "public"
+            described an intention rather than a behaviour: any signed-in user could read any
+            article, and a draft was a draft only in the author's head. This changeset ships with
+            the code that starts enforcing it, and the rename is the point — "published" says what
+            the flag now decides, in the same word the API and the UI use.
+
+            "Public" was also the wrong word for the new meaning. Published means readable by
+            anyone, including someone who has never logged in, which is more than the old name
+            implied to anyone reading it next to exercise.public.
+
+            No backfill: a rename carries the values across, both spellings mean the same thing,
+            and there are no rows to carry in any case. No constraint work either — the column is
+            boolean NOT NULL with no default, and no index, foreign key or check names it, so a
+            rename leaves nothing pointing at a name that no longer exists.
+        </comment>
+        <renameColumn tableName="article" oldColumnName="public" newColumnName="published"/>
+    </changeSet>
+
 </databaseChangeLog>

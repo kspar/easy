@@ -375,7 +375,11 @@ object LogReport : LongIdTable("log_report") {
 object Article : LongIdTable("article") {
     val owner = reference("owner_id", Account)
     val createdAt = datetime("created_at")
-    val public = bool("public")
+
+    // Whether anyone may read it, including someone with no account. False is a draft: visible to
+    // admins only. Enforced in CachingService.selectLatestArticleVersion — before changeset
+    // 130826-1 this was called `public` and nothing read it at all.
+    val published = bool("published")
 }
 
 object ArticleVersion : LongIdTable("article_version") {

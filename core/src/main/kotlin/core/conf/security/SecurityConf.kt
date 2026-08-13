@@ -105,7 +105,17 @@ class SecurityConf {
                     // What is deployed (EZ-1709). Unauthenticated so that whoever is reporting a
                     // bug can read it off the About page — including someone who cannot log in,
                     // which is the report that needs a version most.
-                    "/*/unauth/versions"
+                    "/*/unauth/versions",
+                    // Published articles are public content: the FAQ and the guides, one of which
+                    // is about logging in and is therefore needed by someone who cannot. Drafts
+                    // are unreachable through it — the handler holds no caller, passes
+                    // isAdmin = false, and the query filters on published.
+                    //
+                    // One trailing segment, not `/**`: if anyone later adds
+                    // /unauth/articles/{id}/something, it should fall through to
+                    // anyRequest().authenticated() and fail closed rather than be public because
+                    // this line was broader than it needed to be.
+                    "/*/unauth/articles/*"
                 ).permitAll()
                     // All other services require auth == any role by default
                     .anyRequest().authenticated()

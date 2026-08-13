@@ -41,7 +41,7 @@ class UpdateArticleController(private val markdownService: MarkdownService, priv
         @param:JsonProperty("text_md", required = false) @field:Size(max = 300000) val textMd: String?,
         // Rejected, never read — see rejectLegacyContentFields (EZ-1730).
         @param:JsonProperty("text_adoc", required = false) val legacyTextAdoc: String? = null,
-        @param:JsonProperty("public", required = true) val public: Boolean
+        @param:JsonProperty("published", required = true) val published: Boolean
     )
 
 
@@ -64,7 +64,7 @@ class UpdateArticleController(private val markdownService: MarkdownService, priv
         val time = DateTime.now()
 
         Article.update({ Article.id eq articleId }) {
-            it[public] = req.public
+            it[published] = req.published
         }
 
         val lastVersionId = ArticleVersion
