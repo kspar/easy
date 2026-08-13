@@ -2,7 +2,9 @@ package core.ems.service.cache
 
 import core.db.*
 import core.ems.service.article.ReadArticleDetailsController
+import core.ems.service.article.ReadArticlesController
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.selectAllAliasesByArticle
 import core.ems.service.selectArticleAliases
 import core.ems.service.singleOrInvalidRequest
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -43,6 +45,45 @@ class CachingService(val cacheManager: CacheManager) {
     fun evictAccountCache(username: String) {
         log.debug { "Evicting 'account' cache for $username." }
         cacheManager.getCache(accountCache)?.evict(username)
+    }
+
+    /**
+     * Every article, newest-looking first by title, for the admin index.
+     *
+     * Deliberately in the same cache region as [selectLatestArticleVersion] — every article write
+     * path already calls `invalidate(articleCache)`, so this is correctly invalidated by code that
+     * already exists. A region of its own would be one more place to remember, and the one that
+     * gets forgotten serves a deleted article's title forever.
+     */
+    @Cacheable(articleCache)
+    fun selectArticles(): ReadArticlesController.Resp = transaction {
+        val aliases = selectAllAliasesByArticle()
+
+        ReadArticlesController.Resp(
+            Article.innerJoin(ArticleVersion)
+                .select(
+                    Article.id,
+                    Article.createdAt,
+                    Article.published,
+                    ArticleVersion.title,
+                    ArticleVersion.validFrom,
+                )
+                .where { ArticleVersion.validTo.isNull() }
+                // Titles are not unique, so the id tiebreaker is what makes the order stable
+                // rather than merely sorted.
+                .orderBy(ArticleVersion.title to SortOrder.ASC, Article.id to SortOrder.ASC)
+                .map {
+                    val id = it[Article.id].value
+                    ReadArticlesController.ArticleResp(
+                        id.toString(),
+                        it[ArticleVersion.title],
+                        aliases[id].orEmpty(),
+                        it[Article.createdAt],
+                        it[ArticleVersion.validFrom],
+                        it[Article.published],
+                    )
+                }
+        )
     }
 
     /**

@@ -39,6 +39,30 @@ private fun articleAliasExists(articleId: Long, alias: String): Boolean = transa
         .count() == 1L
 }
 
+fun assertArticleIsNotPublished(articleId: Long) {
+    val published = transaction {
+        Article.select(Article.published).where { Article.id eq articleId }.map { it[Article.published] }.single()
+    }
+    if (published) {
+        throw InvalidRequestException(
+            "Article $articleId is published and cannot be deleted. Unpublish it first.",
+            ReqError.ARTICLE_PUBLISHED
+        )
+    }
+}
+
+/**
+ * Every article's aliases in one query, for the listing.
+ *
+ * Unfiltered rather than restricted to the ids being listed: the table holds tens of rows, so an
+ * `IN` list would be more code and no less work. The alternative — one query per article — is what
+ * the endpoint this replaces did.
+ */
+fun selectAllAliasesByArticle(): Map<Long, List<String>> = transaction {
+    ArticleAlias.select(ArticleAlias.article, ArticleAlias.id)
+        .groupBy({ it[ArticleAlias.article].value }, { it[ArticleAlias.id].value })
+}
+
 fun selectArticleAliases(articleId: Long): List<ReadArticleDetailsController.RespAlias> = transaction {
     ArticleAlias.select(ArticleAlias.id, ArticleAlias.createdAt, ArticleAlias.owner)
         .where { ArticleAlias.article eq articleId }

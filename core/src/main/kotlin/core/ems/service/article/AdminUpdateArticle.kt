@@ -12,6 +12,9 @@ import core.ems.service.assertArticleExists
 import core.ems.service.cache.CachingService
 import core.ems.service.cache.articleCache
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.singleOrInvalidRequest
+import core.exception.InvalidRequestException
+import core.exception.ReqError
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
@@ -67,10 +70,26 @@ class UpdateArticleController(private val markdownService: MarkdownService, priv
             it[published] = req.published
         }
 
-        val lastVersionId = ArticleVersion
+        // singleOrInvalidRequest, not first(): on an empty result first() throws
+        // NoSuchElementException, which lands as a 500 and an admin notification e-mail for what is
+        // at worst a client error. It also catches the two-open-versions case that first() would
+        // silently pick one of.
+        val previousVer = ArticleVersion
             .selectAll().where { ArticleVersion.article eq articleId and ArticleVersion.validTo.isNull() }
-            .map { it[ArticleVersion.id].value }
-            .first()
+            .toList()
+            .singleOrInvalidRequest()
+        val lastVersionId = previousVer[ArticleVersion.id].value
+
+        // text_html is regenerated from text_md on every save, so a request without text_md empties
+        // the article — and the old text then survives only in a version history no endpoint
+        // exposes. UpdateExercise guards the same way for the same reason.
+        if (html == null && !previousVer[ArticleVersion.textHtml].isNullOrEmpty()) {
+            throw InvalidRequestException(
+                "Updating article $articleId without text_md would blank its text, since text_html " +
+                        "is regenerated from text_md.",
+                ReqError.INVALID_PARAMETER_VALUE, notify = false
+            )
+        }
 
         ArticleVersion.update({ ArticleVersion.id eq lastVersionId }) {
             it[validTo] = time
