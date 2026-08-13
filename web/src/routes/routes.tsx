@@ -18,6 +18,8 @@ import EmbedExercisePage from '../features/embed/EmbedExercisePage.tsx'
 import TermsRedirect from '../features/terms/TermsRedirect.tsx'
 import AccountSettingsPage from '../features/account/AccountSettingsPage.tsx'
 import SystemMessagesPage from '../features/admin/SystemMessagesPage.tsx'
+import ArticlesPage from '../features/articles/ArticlesPage.tsx'
+import ArticlePage from '../features/articles/ArticlePage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -145,6 +147,24 @@ const router = createBrowserRouter([
             <JoinByLinkPage isMoodle />
           </RequireAuth>
         ),
+      },
+      {
+        // Admin-only, and enforced here rather than only by hiding the nav entry: the list endpoint
+        // behind it is @Secured to ROLE_ADMIN, so anyone else reaching this URL would get a page of
+        // failed requests instead of being sent somewhere sensible.
+        path: 'articles',
+        element: (
+          <RequireAuth allowedRoles={['admin']}>
+            <ArticlesPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        // No RequireAuth, like `about` below: a published article is public, and the alias is short
+        // enough to write on a slide precisely so that someone without an account can follow it.
+        // Core serves those readers from /unauth/articles, which cannot return a draft.
+        path: 'a/:alias',
+        element: <ArticlePage />,
       },
       {
         path: 'about',

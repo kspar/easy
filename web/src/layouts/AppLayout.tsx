@@ -37,6 +37,7 @@ import {
   AccountCircleOutlined,
   Menu as MenuIcon,
   SchoolOutlined,
+  ArticleOutlined,
   LibraryBooksOutlined,
   DarkModeOutlined,
   LightModeOutlined,
@@ -341,6 +342,27 @@ export default function AppLayout() {
             </ListItemIcon>
             <ListItemText
               primary={t('nav.exerciseLibrary')}
+              primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+            />
+          </ListItemButton>
+        )}
+
+        {/*
+        Admin-only: articles are authored by admins and read by everyone from a direct link, so
+        nobody else needs the index. A real anchor rather than the onClick+navTo its neighbours
+        use, so ctrl-click opens a tab — see the links rule in CLAUDE.md.
+        */}
+        {activeRole === 'admin' && (
+          <ListItemButton
+            component={RouterLink}
+            to="/articles"
+            selected={isActive('/articles')}
+          >
+            <ListItemIcon>
+              <ArticleOutlined color={isActive('/articles') ? 'primary' : 'action'} />
+            </ListItemIcon>
+            <ListItemText
+              primary={t('nav.articles')}
               primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
             />
           </ListItemButton>

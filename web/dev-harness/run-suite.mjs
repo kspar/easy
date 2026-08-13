@@ -50,6 +50,7 @@ const SCRIPTS = [
   'library-exercise-ui.mjs',
   'library-exercise-markdown.mjs',
   'library-share-recent.mjs',
+  'articles.mjs',
   'embed-exercise.mjs',
   'course-exercise-embed.mjs',
   'course-exercise-retry-autoassess.mjs',
