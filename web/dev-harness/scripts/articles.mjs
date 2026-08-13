@@ -136,16 +136,20 @@ check('and the published flag', puts[0]?.published === true)
 
 await page.getByRole('button', { name: 'Edit' }).click()
 await waitUntil(() => page.getByPlaceholder('faq').isVisible())
-await page.getByPlaceholder('faq').fill('how-to')
+const aliasBox = page.getByPlaceholder('how-to-log-in')
+// All digits is the one spelling that must stay rejected: the read path resolves an alias before
+// falling back to a numeric id, so `2023` would shadow the article with that id.
+await aliasBox.fill('2023')
 await page.getByRole('button', { name: 'Add' }).click()
 check(
-  'a hyphenated alias is refused before it is sent',
+  'an all-digit alias is refused before it is sent',
   await waitUntil(() => page.getByText(/at least one letter/).isVisible()) && posted.length === 0,
 )
-await page.getByPlaceholder('faq').fill('how_to')
+
+await aliasBox.fill('how-to-log-in')
 await page.getByRole('button', { name: 'Add' }).click()
-check('a valid one is sent', await waitUntil(() => posted.length === 1), JSON.stringify(posted[0] ?? {}))
-check('with the alias', posted[0]?.alias === 'how_to')
+check('a hyphenated alias is accepted', await waitUntil(() => posted.length === 1), JSON.stringify(posted[0] ?? {}))
+check('with the alias', posted[0]?.alias === 'how-to-log-in')
 
 // --- the public view, with no session at all -------------------------------------------------------
 

@@ -32,7 +32,17 @@ class CreateArticleAliasController(private val cachingService: CachingService) {
         @param:JsonProperty("alias", required = true)
         @field:NotBlank
         @field:Size(max = 100)
-        @field:Pattern(regexp = "\\w*[a-zA-Z]\\w*")
+        // Letters, digits, underscores and hyphens, with at least one letter.
+        //
+        // The hyphen is the point of the whole feature: an alias exists so the URL can be written
+        // on a slide or read down a phone, and `/a/how-to-log-in` is how a URL is spelled. The
+        // original pattern was \w-only, which quietly forced how_to_log_in.
+        //
+        // At least one letter, still, and that is load-bearing rather than cosmetic: the read path
+        // resolves an alias first and falls back to parsing the segment as a numeric id, so an
+        // all-digit alias would shadow the article whose id it matches. Requiring a letter makes
+        // the two namespaces disjoint, so the lookup order cannot matter. See EZ-1762.
+        @field:Pattern(regexp = "[\\w-]*[a-zA-Z][\\w-]*")
         val alias: String
     )
 

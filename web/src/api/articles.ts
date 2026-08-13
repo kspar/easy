@@ -2,8 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client.ts'
 import { useAuth } from '../auth/useAuth.ts'
 
-/** What an alias may look like, mirroring core's `@Pattern` so the error arrives before the request. */
-export const ALIAS_PATTERN = /^\w*[a-zA-Z]\w*$/
+/**
+ * What an alias may look like, mirroring core's `@Pattern` so the error arrives before the request.
+ *
+ * At least one letter is not a style rule: core resolves an alias before falling back to a numeric
+ * id, so an all-digit alias would shadow the article whose id it matches.
+ */
+export const ALIAS_PATTERN = /^[\w-]*[a-zA-Z][\w-]*$/
 
 export interface ArticleUser {
   /** A username. Admin-only, so absent for everyone else — including anonymous readers. */
