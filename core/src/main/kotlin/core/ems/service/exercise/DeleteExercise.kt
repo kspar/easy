@@ -49,8 +49,11 @@ class DeleteExercise {
     private fun deleteExercise(exId: Long) = transaction {
         // Delete related stuff
         TeacherSubmission.deleteWhere { TeacherSubmission.exercise eq exId }
-        StoredFile.deleteWhere { StoredFile.exercise eq exId }
         AnonymousSubmission.deleteWhere { AnonymousSubmission.exercise eq exId }
+
+        // Not the exercise's images: stored_file no longer records what a file belongs to, and
+        // StoredFileSweep is the only thing that deletes an object. An image that appeared only in
+        // this exercise's text is unreferenced from here on and goes on the next nightly run.
 
         // Delete exercise
         deleteVersions(exId)

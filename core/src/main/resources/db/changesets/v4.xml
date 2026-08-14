@@ -267,4 +267,75 @@
         <renameColumn tableName="article" oldColumnName="public" newColumnName="published"/>
     </changeSet>
 
+    <changeSet id="140826-1" author="kspar">
+        <comment>
+            Move uploaded files out of the database and stop pretending to know what they belong to.
+
+            The bytes lived in stored_file.data as bytea. They now live in object storage under the
+            row id, which is also the storage key and a segment of the URL the file is served from —
+            one identifier instead of three that could disagree. Dropping the column is the storage
+            change; there is nothing else to it.
+
+            usage_confirmed goes because it never worked. It was set false on upload and true by
+            five copy-pasted blocks that substring-matched file ids against rendered HTML, and then
+            read by nothing at all: no cron, no query, no endpoint. A file that was uploaded and
+            never used stayed forever, and a file whose image was later deleted from the text stayed
+            marked as used, because nothing ever set it back. It described an intention, like
+            article.public did before the changeset above it.
+
+            exercise_id and article_id go for a subtler reason, and this is the part worth
+            understanding before adding them back. There are sixteen columns across seven tables where
+            someone can paste an image — exercise and article versions, course exercise
+            instructions, teacher feedback, inline comments, feedback snippets — and stored_file had
+            columns for two of them. So a file pasted into teacher feedback had no reference at all
+            and looked, to anything that cared, exactly like an abandoned upload. Adding a column
+            per rich-text field is a race nobody wins. Instead nothing points anywhere and a nightly
+            sweep looks for the id in every column it could be in, which makes all sixteen identical
+            and needs no schema change when a seventeenth appears.
+
+            What that gives up is immediate deletion: delete an exercise and its images survive
+            until the sweep runs. A storage delay, and nothing else.
+
+            persistent marks a file the sweep must not touch because its only reference lives
+            somewhere unscannable — a PDF linked from an e-mail, an asset named in configuration. It
+            does not mean "important", and the column comment in Tables.kt says so at length,
+            because that misreading ends with everything marked persistent and nothing reaped.
+
+            type becomes mime_type, which is what it holds and has always held.
+
+            The foreign key renamed at the end has been misnamed since v3.xml: fk_stored_file_teacher
+            has pointed at account, not teacher, ever since the teacher table was dropped. Renaming
+            a constraint is normally not worth a migration; at zero rows it costs nothing, and the
+            alternative is leaving a name that sends the next reader looking for a table that has
+            not existed for years.
+
+            No backfill and no data migration anywhere in this changeset, because there are no rows:
+            stored_file is empty locally, empty on dev — which is an anonymised copy of production
+            that deliberately preserves this table — and the web app has never had an upload
+            affordance, so nothing but curl could ever have created one. Every destructive change
+            here is free exactly once, and this is that once.
+        </comment>
+
+        <dropForeignKeyConstraint baseTableName="stored_file" constraintName="fk_stored_file_exercise"/>
+        <dropForeignKeyConstraint baseTableName="stored_file" constraintName="fk_stored_file_article"/>
+
+        <dropColumn tableName="stored_file" columnName="exercise_id"/>
+        <dropColumn tableName="stored_file" columnName="article_id"/>
+        <dropColumn tableName="stored_file" columnName="usage_confirmed"/>
+        <dropColumn tableName="stored_file" columnName="data"/>
+
+        <renameColumn tableName="stored_file" oldColumnName="type" newColumnName="mime_type"/>
+
+        <addColumn tableName="stored_file">
+            <column name="persistent" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropForeignKeyConstraint baseTableName="stored_file" constraintName="fk_stored_file_teacher"/>
+        <addForeignKeyConstraint baseTableName="stored_file" baseColumnNames="created_by_id"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_stored_file_owner" onUpdate="CASCADE"/>
+    </changeSet>
+
 </databaseChangeLog>

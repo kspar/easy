@@ -4741,41 +4741,16 @@
       ],
       "request": {
         "method": "GET",
-        "header": [
-          {
-            "key": "oidc_claim_preferred_username",
-            "value": "fp",
-            "type": "text"
-          },
-          {
-            "key": "oidc_claim_email",
-            "value": "foo@bar.com",
-            "type": "text"
-          },
-          {
-            "key": "oidc_claim_given_name",
-            "value": "Fred",
-            "type": "text"
-          },
-          {
-            "key": "oidc_claim_family_name",
-            "value": "Pansen",
-            "type": "text"
-          },
-          {
-            "key": "oidc_claim_easy_role",
-            "value": "admin",
-            "type": "text"
-          }
-        ],
+        "header": [],
         "url": {
-          "raw": "{{EMSBASE}}/resource/nonexistent-file-id",
+          "raw": "{{EMSBASE}}/resource/nonexistentfilenosuchkeyaaa/example.png",
           "host": [
             "{{EMSBASE}}"
           ],
           "path": [
             "resource",
-            "nonexistent-file-id"
+            "nonexistentfilenosuchkeyaaa",
+            "example.png"
           ]
         }
       },

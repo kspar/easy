@@ -100,6 +100,50 @@
     quiet: true
   when: not easy_core_allow_real_outbound | bool
 
+- name: Refuse object storage on an environment that may not reach real systems
+  # An S3 bucket is a real external system, and this one is not read-only from our side: the nightly
+  # sweep lists it and deletes objects that have no matching database row.
+  ansible.builtin.assert:
+    that: easy_core_storage_backend != 's3'
+    fail_msg: >-
+      easy_core_storage_backend is 's3' while easy_core_allow_real_outbound is false. The stored-file
+      sweep lists that bucket and deletes objects with no row in this host's database, so pointing a
+      half-configured environment at a real bucket is a destructive operation, not a read.
+    quiet: true
+  when: not easy_core_allow_real_outbound | bool
+
+- name: Refuse to continue without the S3 values that have no safe default
+  ansible.builtin.assert:
+    that: vars[item] is defined and (vars[item] | string | length > 0)
+    fail_msg: >-
+      {{ item }} is not set and the storage backend is s3. public-base-url is what /v2/resource
+      redirects to — without it every image on the site 404s.
+    quiet: true
+  loop:
+    - easy_core_storage_s3_bucket
+    - easy_core_storage_s3_public_base_url
+  when: easy_core_storage_backend == 's3'
+
+- name: Refuse to share production's bucket
+  # The reason this is not obvious: dev's database is an anonymised copy of production's, so most
+  # keys match and nothing looks wrong — until production uploads a file, which has no row in dev's
+  # database, and dev's sweep collects it as an orphaned object that night. Objects are also public
+  # and permanent, so there is no second copy to restore from.
+  ansible.builtin.assert:
+    that: easy_core_storage_s3_bucket != easy_core_storage_prod_bucket
+    fail_msg: >-
+      easy_core_storage_s3_bucket is '{{ easy_core_storage_s3_bucket }}', which is production's
+      bucket, and this environment is not production. The nightly sweep deletes objects that have no
+      row in THIS host's database — and production's newer uploads have none here. Give this
+      environment its own bucket.
+    quiet: true
+  when:
+    - easy_core_storage_backend == 's3'
+    - not easy_core_allow_real_outbound | bool
+    # Skipped while unset — see the default. This guard only exists once someone has told this
+    # repository, or an environment's group_vars, what production's bucket is called.
+    - easy_core_storage_prod_bucket | length > 0
+
 - name: Refuse a mail host that could deliver
   ansible.builtin.assert:
     that: >-
@@ -182,6 +226,12 @@
           (("spring", "datasource", "password"), lambda: secrets.token_urlsafe(33)),
           (("easy", "core", "keycloak", "client-secret"), lambda: "CHANGEME-no-realm-yet"),
           (("easy", "core", "moodle-sync", "wstoken"), lambda: "CHANGEME-no-moodle-token"),
+          # Deliberately NOT here: easy.core.storage.s3.access-key / secret-key. They belong in this
+          # file when they exist — the credential grep at the end of this role would fail the run if
+          # they appeared in the managed config — but most environments should use an instance role
+          # and have no such credential at all. Creating them as CHANGEME placeholders would then
+          # fail the "no placeholders where real credentials are expected" assertion on exactly the
+          # environments that are correctly configured. Add them by hand where they are needed.
       ]
 
       doc = yaml.safe_load(path.read_text()) if path.exists() else {}
@@ -215,7 +265,7 @@
   ansible.builtin.shell:
     cmd: >-
       set -o pipefail;
-      grep -oE '^[[:space:]]*(password|client-secret|wstoken):' {{ easy_core_secrets_path | quote }}
+      grep -oE '^[[:space:]]*(password|client-secret|wstoken|access-key|secret-key):' {{ easy_core_secrets_path | quote }}
       | tr -d ' :' | sort -u
     # Without this the module runs under dash, which has no `set -o pipefail`, so the whole command
     # errors and — with failed_when off — hands back empty output that reads as "no keys found".
@@ -261,6 +311,10 @@
       - "'password' in easy_core_secret_keys.stdout_lines"
       - "'client-secret' in easy_core_secret_keys.stdout_lines"
       - "'wstoken' in easy_core_secret_keys.stdout_lines"
+      # Not asserted: access-key and secret-key. The Python above creates them so the file has a
+      # place for them, but an environment using an instance role has no such credential to hold and
+      # should not be blocked for it. A placeholder there is reported like the others.
+
     fail_msg: >-
       {{ easy_core_secrets_path }} is missing keys core needs — found
       {{ easy_core_secret_keys.stdout_lines | default([]) | join(', ') | default('nothing', true) }}.

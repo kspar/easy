@@ -35,4 +35,17 @@ easy_nginx_proxy_read_timeout: 300s
 
 # Submissions are text, but exercise assets are uploaded through core and the default 1m would reject
 # them with a 413 that says nothing useful to the person uploading.
+#
+# This is the ceiling for everything EXCEPT POST /v2/files, which has its own below. Keeping it low
+# here is the point: file upload is one endpoint, and raising the global limit to suit it would give
+# every other endpoint the same allowance for nothing.
 easy_nginx_max_body_size: 32m
+
+# POST /v2/files only. Has to be at least easy_core_upload_max_bytes_admin, or nginx rejects an
+# upload core would have accepted — and it does so with a 413 before core sees it, so the error the
+# uploader gets is nginx's rather than the useful one about role limits.
+easy_nginx_upload_max_body_size: 1g
+
+# Uploading a gigabyte over a domestic connection takes minutes. With the ordinary 300s the failure
+# is a 504 partway through a transfer that was progressing normally.
+easy_nginx_upload_timeout: 900s

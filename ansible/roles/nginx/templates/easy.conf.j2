@@ -66,6 +66,27 @@ server {
         try_files $uri =404;
     }
 
+    # Uploaded images, on the web origin. The URL stored inside an exercise or an article is
+    # RELATIVE — /v2/resource/<key>/<filename> — so that the same content renders in every
+    # environment; that is the whole reason core serves the file from its own domain rather than
+    # writing a bucket URL into the HTML.
+    #
+    # Production serves web and API from one origin, so it needs nothing. Here they are two, and
+    # without this an <img> would fall through to the SPA location below and be answered with
+    # index.html — a broken image whose response is a 200 full of HTML, which is a confusing thing
+    # to debug.
+    #
+    # Only /v2/resource/, not /v2/. The API belongs on its own origin, where CORS is configured;
+    # proxying all of it here would quietly give the app a second, unconfigured way to reach core.
+    location /v2/resource/ {
+        proxy_pass http://{{ easy_nginx_api_upstream }};
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     # A single-page app: every route that is not a real file is index.html, and index.html itself
     # must never be cached or a deploy does not reach anyone still holding the old one.
     location / {
@@ -111,6 +132,28 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
 
     client_max_body_size {{ easy_nginx_max_body_size }};
+
+    # File uploads, and the only endpoint allowed to be large. The ceiling stays low everywhere else
+    # deliberately: raising the global limit to accommodate one endpoint hands every other endpoint
+    # the same allowance. Core enforces the real, per-role limits (20 MB teacher / 1 GB admin) after
+    # the request arrives — this is what stops an oversized body reaching it at all.
+    location = /v2/files {
+        client_max_body_size {{ easy_nginx_upload_max_body_size }};
+
+        proxy_pass http://{{ easy_nginx_api_upstream }};
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host;
+
+        # A gigabyte over a slow connection takes longer than the default read timeout, and the
+        # failure mode is a 504 partway through an upload that was going fine.
+        proxy_read_timeout {{ easy_nginx_upload_timeout }};
+        proxy_send_timeout {{ easy_nginx_upload_timeout }};
+        proxy_request_buffering on;
+    }
 
     location / {
         proxy_pass http://{{ easy_nginx_api_upstream }};

@@ -19,7 +19,12 @@
 --   course.course_code, course.moodle_short_name, course_group.name - organisational, not personal.
 --   group.name          - implicit groups are named after the account username, which we keep.
 --   stored_file         - exercise and article attachments, teacher-authored. Review if that
---                         assumption ever stops holding; the column is bytea and unbounded.
+--                         assumption ever stops holding. Metadata only since EZ-1571 — the bytes
+--                         live in object storage, so a dump no longer carries them and a restored
+--                         database references objects in whatever bucket THIS environment is
+--                         configured with. Expect broken images on an imported database, and note
+--                         that the nightly sweep will collect rows whose content did not come with
+--                         them.
 --   feedback_snippet    - teachers' own reusable phrases, not written about anyone in particular.
 --   teacher_submission.solution - the teacher's model solution, not student work.
 

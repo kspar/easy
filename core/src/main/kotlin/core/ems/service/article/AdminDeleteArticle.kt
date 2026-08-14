@@ -4,7 +4,6 @@ import core.conf.security.EasyUser
 import core.db.Article
 import core.db.ArticleAlias
 import core.db.ArticleVersion
-import core.db.StoredFile
 import core.ems.service.assertArticleExists
 import core.ems.service.assertArticleIsNotPublished
 import core.ems.service.cache.CachingService
@@ -57,21 +56,12 @@ class DeleteArticleController(private val cachingService: CachingService) {
     private fun deleteArticle(articleId: Long) = transaction {
         ArticleAlias.deleteWhere { ArticleAlias.article eq articleId }
 
-        // The images go with the article, and this is the only chance to reclaim them: nothing in
-        // core/ems/cron reaps stored files, and usage_confirmed is read by nothing, so merely
-        // nulling article_id would strand a bytea blob that nothing can reach and nothing will
-        // ever delete. DeleteExercise does the same. Logged so a backup can put them back.
-        //
-        // Known edge: stored_file.article_id is set once, when a file is first referenced, so an
-        // image pasted into a second article still belongs to the first and would go with it.
-        // Theoretical while the corpus is this small; a real flaw in the single-valued model.
-        val fileIds = StoredFile.select(StoredFile.id)
-            .where { StoredFile.article eq articleId }
-            .map { it[StoredFile.id].value }
-        if (fileIds.isNotEmpty()) {
-            log.info { "Deleting ${fileIds.size} stored file(s) with article $articleId: $fileIds" }
-            StoredFile.deleteWhere { StoredFile.article eq articleId }
-        }
+        // Nothing here touches the article's images. stored_file no longer records what a file
+        // belongs to, and StoredFileSweep is the only thing that deletes an object — so an image
+        // that was only in this article becomes unreferenced now and is reaped on the next nightly
+        // run. That also fixes the flaw this code used to carry: article_id was set once, when a
+        // file was first referenced, so an image pasted into a second article still belonged to the
+        // first and was deleted along with it.
 
         // Break the self-reference before the rows go. Postgres would in fact accept deleting the
         // whole chain in one statement — NO ACTION is checked at end-of-statement, which is what

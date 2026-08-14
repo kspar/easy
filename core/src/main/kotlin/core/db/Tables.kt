@@ -404,18 +404,53 @@ object ArticleAlias : IdTable<String>("article_alias") {
     val owner = reference("created_by_id", Account)
 }
 
+/**
+ * Metadata for an uploaded file. **The bytes are not here** — they live in object storage under
+ * [id], which is simultaneously the row id, the storage key and the last-but-one segment of the
+ * URL the file is served from (`/v2/resource/<id>/<filename>`). One identifier, three uses.
+ *
+ * **There is deliberately no reference to whatever the file is attached to.** A file reference can
+ * appear in sixteen columns across seven tables, and a foreign key can only ever model the ones
+ * somebody thought of — which is how it was before: this table had `exercise_id` and `article_id`,
+ * so a file pasted into teacher feedback had no reference at all and looked exactly like an
+ * abandoned upload. Instead nothing points anywhere, and one nightly sweep
+ * (`core.ems.cron.StoredFileSweep`) decides what is garbage by looking for the key in every column
+ * it could appear in. The cost is that deletion is not immediate: delete an exercise and its images
+ * survive until the sweep runs.
+ */
 object StoredFile : IdTable<String>("stored_file") {
+    /**
+     * 160 CSPRNG bits, base64url, 27 characters — `core.ems.service.storage.newStorageKey`.
+     *
+     * Unguessable by design and not by accident: stored objects are publicly readable and the read
+     * endpoint checks no permissions, so this id *is* the credential for the file it names.
+     */
     override val id: Column<EntityID<String>> = text("id").entityId()
     override val primaryKey = PrimaryKey(id)
-    val exercise = reference("exercise_id", Exercise).nullable()
-    val article = reference("article_id", Article).nullable()
-    val usageConfirmed = bool("usage_confirmed")
-    val type = text("type")
+    val mimeType = text("mime_type")
     val sizeBytes = long("size_bytes")
     val filename = text("filename")
-    val data = binary("data")
     val createdAt = datetime("created_at")
     val owner = reference("created_by_id", Account)
+
+    /**
+     * **"Referenced somewhere the sweep cannot check" — not "important".**
+     *
+     * The sweep finds references by looking for the id inside our own content columns. Some files
+     * are referenced by things it cannot see: a PDF linked from an e-mail, a slide or a syllabus, a
+     * branding asset named in configuration rather than content. Marking those persistent is the
+     * only way they survive; the same argument as article aliases, where a URL someone wrote down
+     * elsewhere is a real reference we have no record of.
+     *
+     * The misreading to guard against is "do not lose this", which ends with everything marked
+     * persistent and nothing ever reaped. A persistent file is **never** cleaned up, by definition,
+     * which is why it is admin-only, expected to be rare, and listed by
+     * `GET /v2/files/metadata?persistent=true` so that it is auditable rather than invisible.
+     *
+     * A file referenced from a column the sweep *could* scan does not want this flag — the honest
+     * fix there is to add the column to the scan list.
+     */
+    val persistent = bool("persistent")
 }
 
 object Group : LongIdTable("group") {

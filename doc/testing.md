@@ -26,7 +26,7 @@ Counted, not estimated:
 
 | | Size | Tests |
 | --- | --- | --- |
-| **core** | 111 `@RestController` classes | 5 test files, 29 `@Test` methods |
+| **core** | 111 `@RestController` classes | 6 test files, 34 `@Test` methods |
 | **web** | 96 `.ts`/`.tsx` files | 3 unit files, 9 browser scripts |
 | **tsl / tsl-common** | the TSL compiler | none |
 | **aae** | the executor | none |
@@ -42,10 +42,17 @@ Nearly all of the property checks belong to one module — the markdown editing 
 not misplaced effort (they found real bugs, repeatedly) but it means the totals say very little
 about breadth.
 
-On the core side, **20 of the 29 tests run in CI**. The other 9 are tagged `db` and skipped,
+On the core side, **25 of the 34 tests run in CI**. The other 9 are tagged `db` and skipped,
 because they need a PostgreSQL instance and the gitignored `core/src/test/resources/application.yaml`
 — EZ-1715 (Run core tests in CI with a postgres service container). That issue is the single
 biggest unlock in this document: almost every kind of backend test below is blocked behind it.
+
+**And skipped is not the same as passing.** Those 9 are the whole of
+`ValidateSelectAllCourseExercisesLatestSubmissions`, and two of them fail most of the time — the
+fixture gives two submissions `DateTime.now()` back to back, so they can share a millisecond and
+"the latest submission" is then a coin toss between grade 71 and grade 81. Measured at 4 failures
+in 5 consecutive runs on 2026-08-14, on code that had nothing to do with them — EZ-1763. Nobody
+noticed because CI has never run them, which is the argument for EZ-1715 in one sentence.
 
 ---
 

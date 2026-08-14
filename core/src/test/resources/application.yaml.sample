@@ -90,6 +90,29 @@ easy:
         url: "<url>"
         wsfunction: "local_ut_custom_update_manual_grades"
 
+    # The local backend, into a temp directory, so a test context needs no AWS anything. The sweep
+    # is pinned to the never-date like everything else here, and would report rather than delete
+    # even if it did fire.
+    storage:
+      backend: "local"
+      local:
+        dir: "/tmp/easy-files-test"
+      s3:
+        bucket: ""
+        region: "eu-north-1"
+        endpoint: ""
+        public-base-url: ""
+
+    upload:
+      max-bytes:
+        teacher: 20971520
+        admin: 1073741824
+
+    stored-file-sweep:
+      cron: "0 0 5 31 2 ?"
+      grace-hours: 24
+      delete: false
+
     pending-access:
       clean:
         cron: "0 0 5 31 2 ?"

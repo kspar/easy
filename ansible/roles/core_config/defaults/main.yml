@@ -124,6 +124,49 @@ easy_core_moodle_users_wsfunction: local_ut_custom_get_course_groups_users
 easy_core_moodle_grades_wsfunction: local_ut_custom_update_manual_grades
 easy_core_moodle_format: json
 
+# --- file storage -------------------------------------------------------------------------------------
+# `local` by default, because an S3 bucket is a real external system and this role's whole posture is
+# that a host which has not been told what to do cannot reach one. The outbound-safety catch below
+# refuses `s3` unless easy_core_allow_real_outbound says this environment may.
+easy_core_storage_backend: local
+easy_core_storage_local_dir: /srv/easy/files
+
+# No default for the bucket. Two reasons, and the second is the one that bites: an S3 bucket is
+# shared-nothing only if you make it so, and dev's database is an anonymised copy of production's.
+# Point dev at production's bucket and dev's nightly sweep — which lists the bucket and deletes
+# objects with no matching row — will happily delete production's files, because production's newer
+# uploads have no row in dev's database. That is the same shape as the executor rows in §3.6 of
+# doc/dev-environment.md: a destructive path that arrives through configuration rather than code.
+# easy_core_storage_s3_bucket — asserted when the backend is s3, and asserted to differ from prod's.
+easy_core_storage_s3_region: eu-north-1
+# Empty for real AWS; set to run against MinIO or another S3-compatible server.
+easy_core_storage_s3_endpoint: ""
+# easy_core_storage_s3_public_base_url — no default; it is what /v2/resource redirects to, so a wrong
+# value is every image on the site 404ing.
+easy_core_storage_s3_public_base_url: ""
+
+# The bucket a non-production environment must never be pointed at. Empty by default and the guard
+# is skipped when it is empty — deliberately, because this repository is public and a real bucket
+# name in it is reconnaissance for no benefit. Set it in the environment's group_vars once a
+# production bucket exists, and the guard starts working.
+#
+# The name is not a secret in the Kerckhoffs sense: anonymous ListBucket is denied, so knowing the
+# bucket without knowing a key gets you nothing. It is simply not ours to publish.
+easy_core_storage_prod_bucket: ""
+
+# 20 MB for teachers, 1 GB for admins. The larger also becomes spring.servlet.multipart.max-file-size
+# and nginx's client_max_body_size on /v2/files, since a per-role limit can only be enforced after
+# the request has been accepted.
+easy_core_upload_max_bytes_teacher: 20971520
+easy_core_upload_max_bytes_admin: 1073741824
+
+# The sweep. Deleting is OFF by default and should stay off on a new environment until someone has
+# read a night or two of what it reports — with no reference columns on stored_file, a content column
+# missing from its scan list means permanently deleting a file that is in use.
+easy_core_stored_file_sweep_cron: "0 0 4 * * *"
+easy_core_stored_file_sweep_grace_hours: 24
+easy_core_stored_file_sweep_delete: false
+
 # --- internal timers, left alone ---------------------------------------------------------------------
 # Deliberately on everywhere, including dev: these touch nothing outside the host, and dev is
 # the right place to find out they misbehave.

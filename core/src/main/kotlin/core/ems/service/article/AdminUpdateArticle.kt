@@ -5,7 +5,6 @@ import core.conf.security.EasyUser
 import core.db.Account
 import core.db.Article
 import core.db.ArticleVersion
-import core.db.StoredFile
 import core.ems.service.MarkdownService
 import core.ems.service.rejectLegacyContentFields
 import core.ems.service.assertArticleExists
@@ -105,16 +104,5 @@ class UpdateArticleController(private val markdownService: MarkdownService, priv
             it[author] = EntityID(authorId, Account)
         }
 
-        if (html != null) {
-            val inUse = StoredFile.select(StoredFile.id)
-                .where { StoredFile.usageConfirmed eq false }
-                .map { it[StoredFile.id].value }
-                .filter { html.contains(it) }
-
-            StoredFile.update({ StoredFile.id inList inUse }) {
-                it[StoredFile.usageConfirmed] = true
-                it[StoredFile.article] = EntityID(articleId, Article)
-            }
-        }
     }
 }

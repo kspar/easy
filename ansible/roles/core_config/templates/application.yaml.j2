@@ -48,6 +48,14 @@ spring:
     ## imported secrets file rather than here — same rule as the database password. Spring treats
     ## both as optional, so their absence means "no auth" rather than "empty credentials".
 {% endif %}
+  servlet:
+    multipart:
+      ## The ceiling for POST /v2/files. Global, so it must be at least the larger of the two
+      ## per-role limits below — the role check happens in the handler, after the request has been
+      ## spooled to a temp file. nginx's client_max_body_size is what stops an oversized request
+      ## reaching core at all, and the two are set together in roles/nginx.
+      max-file-size: {{ easy_core_upload_max_bytes_admin }}
+      max-request-size: {{ easy_core_upload_max_bytes_admin }}
   jackson:
     deserialization:
       FAIL_ON_NULL_FOR_PRIMITIVES: true
@@ -104,6 +112,38 @@ easy:
         ## whether "sync grades" can write into a real gradebook.
         url: "{{ easy_core_moodle_grades_url }}"
         wsfunction: "{{ easy_core_moodle_grades_wsfunction }}"
+
+    ## Where the bytes of uploaded files live. `local` is a directory on this host; `s3` is a bucket
+    ## whose objects are publicly readable, which is the deployed answer (EZ-1571).
+    ##
+    ## No `access-key:` or `secret-key:` here — they are imported from the secrets file with the
+    ## database password, and the role's credential grep would fail this file if they were not.
+    ## Better still is an instance role, which needs neither.
+    storage:
+      backend: "{{ easy_core_storage_backend }}"
+      local:
+        dir: "{{ easy_core_storage_local_dir }}"
+      s3:
+        ## The bucket must serve objects publicly and must DENY anonymous ListBucket. The whole
+        ## scheme rests on keys being unguessable, and a public listing hands them out — that is the
+        ## easiest part of this to get wrong and the only part that cannot be fixed after the fact.
+        bucket: "{{ easy_core_storage_s3_bucket }}"
+        region: "{{ easy_core_storage_s3_region }}"
+        endpoint: "{{ easy_core_storage_s3_endpoint }}"
+        public-base-url: "{{ easy_core_storage_s3_public_base_url }}"
+
+    upload:
+      max-bytes:
+        teacher: {{ easy_core_upload_max_bytes_teacher }}
+        admin: {{ easy_core_upload_max_bytes_admin }}
+
+    ## The only thing that deletes an uploaded file, and — with no reference columns on stored_file —
+    ## the only thing that decides one is garbage. `delete: false` makes it report instead, which is
+    ## where a new environment should stay until someone has read a night or two of that output.
+    stored-file-sweep:
+      cron: "{{ easy_core_stored_file_sweep_cron }}"
+      grace-hours: {{ easy_core_stored_file_sweep_grace_hours }}
+      delete: {{ easy_core_stored_file_sweep_delete | bool | lower }}
 
     exercise-index-normalisation:
       cron: "{{ easy_core_exercise_index_cron }}"

@@ -99,20 +99,29 @@ left is the one under test.
 
 ## Checks kept as scripts
 
-`articles-check.sh` in this directory is the pattern written down: a run of curl calls against a
-local core, asserting one endpoint family end to end, cleaning up after itself so it can be run
-repeatedly.
+`articles-check.sh` and `files-check.sh` in this directory are the pattern written down: a run of
+curl calls against a local core, asserting one endpoint family end to end, cleaning up after itself
+so it can be run repeatedly.
 
 ```sh
 JAVA_HOME=$(/usr/libexec/java_home -v 25) ./gradlew :core:bootRun --args='--server.port=8099'
 doc/core/articles-check.sh
+doc/core/files-check.sh
 ```
 
-It exists because of what it checks: whether an unpublished article is invisible to non-admins and
-to the internet. That rule lives in a SQL predicate, so exercising it needs a database and a running
-application — and CI runs `./gradlew :core:test -PexcludeTags=db`, so the JUnit version of this
-would be written, tagged, and then never run. A script that is honestly manual beats a test that
-looks like coverage and is skipped.
+They exist because of what they check. `articles-check.sh` checks whether an unpublished article is
+invisible to non-admins and to the internet — a rule that lives in a SQL predicate.
+`files-check.sh` checks that an uploaded file is fetchable with no session at all, which is a
+filesystem, a database and a security filter chain agreeing. Both need a running application, and CI
+runs `./gradlew :core:test -PexcludeTags=db`, so the JUnit version of either would be written,
+tagged, and then never run. A script that is honestly manual beats a test that looks like coverage
+and is skipped.
+
+**What a script cannot replace.** `RichTextColumnsTest` is deliberately *not* one of these: it
+guards the list of columns the stored-file sweep scans, and getting that wrong deletes files that are
+in use. So it is written to need no database — reflection over the Exposed table objects rather than
+a query against `information_schema` — precisely so that it runs on every push. When a check has to
+run, that is the shape to reach for; a script is for what genuinely cannot.
 
 **EZ-1715 is the issue that gives the suite a database.** When it lands, these scripts are the
 specification to port, not work to redo.

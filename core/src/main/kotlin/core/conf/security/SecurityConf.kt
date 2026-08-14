@@ -115,7 +115,18 @@ class SecurityConf {
                     // /unauth/articles/{id}/something, it should fall through to
                     // anyRequest().authenticated() and fail closed rather than be public because
                     // this line was broader than it needed to be.
-                    "/*/unauth/articles/*"
+                    "/*/unauth/articles/*",
+                    // Uploaded files — the images inside all of the above. An anonymously readable
+                    // article whose screenshot 401s is not anonymously readable, and the same goes
+                    // for anonymous exercise embeds. Reads carry no permission check by decision
+                    // (EZ-1571): objects are public and the key is the only secret.
+                    //
+                    // Not under /unauth/, which is the one place this codebase breaks that
+                    // convention. This URL is written into stored HTML permanently and the whole
+                    // point of serving it from our own domain was never having to rewrite content
+                    // later, so it is kept as short as it will ever need to be. Two segments, not
+                    // `/**`, so anything deeper still fails closed.
+                    "/*/resource/*/*"
                 ).permitAll()
                     // All other services require auth == any role by default
                     .anyRequest().authenticated()

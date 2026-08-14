@@ -126,18 +126,6 @@ class AddExerciseToCourseCont(private val markdownService: MarkdownService) {
                 it[titleAlias] = body.titleAlias
             }
 
-            if (html != null) {
-                val inUse = StoredFile.select(StoredFile.id)
-                    .where { StoredFile.usageConfirmed eq false }
-                    .map { it[StoredFile.id].value }
-                    .filter { html.contains(it) }
-
-                StoredFile.update({ StoredFile.id inList inUse }) {
-                    it[StoredFile.usageConfirmed] = true
-                    it[StoredFile.exercise] = EntityID(exerciseId, Exercise)
-                }
-            }
-
             id.value
         }
 }

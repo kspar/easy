@@ -25,6 +25,14 @@ spring:
             required: true
     username: "<username>"
     password: "<password>"
+  servlet:
+    multipart:
+      # File uploads (POST /v2/files). This ceiling is global, so it has to be the larger of the two
+      # per-role limits in easy.core.upload.max-bytes — the role check happens in the handler, by
+      # which point the request has already been spooled to a temp file. nginx's
+      # client_max_body_size is the bound that stops an oversized request reaching core at all.
+      max-file-size: 1GB
+      max-request-size: 1GB
   jackson:
     deserialization:
       FAIL_ON_NULL_FOR_PRIMITIVES: true
@@ -95,6 +103,48 @@ easy:
       grades:
         url: "<url>"
         wsfunction: "local_ut_custom_update_manual_grades"
+
+    # Where the bytes of uploaded files live. `local` writes them to a directory and needs no AWS
+    # account, no credentials and no network — it is what a laptop and CI run on, and what
+    # doc/core/files-check.sh exercises. `s3` is for anything deployed.
+    storage:
+      backend: "local"    # local | s3
+      local:
+        dir: "/tmp/easy-files"
+      s3:
+        # The bucket's objects must be publicly readable and its listing must NOT be — the whole
+        # scheme rests on keys being unguessable, and a public ListBucket hands them out.
+        bucket: "<bucket>"
+        region: "eu-north-1"
+        # Empty for real AWS. Set it to run against MinIO or another S3-compatible server.
+        endpoint: ""
+        # What /v2/resource redirects to, e.g. https://<bucket>.s3.<region>.amazonaws.com
+        public-base-url: "<public-base-url>"
+        # Optional. Omit to use the SDK's default chain (environment, profile, instance role),
+        # which is the better answer anywhere that can have one. Where it cannot, these go in the
+        # imported secrets file — never in a config file that is in git.
+        # access-key: "<access-key>"
+        # secret-key: "<secret-key>"
+
+    upload:
+      # Per role, in bytes: 20 MB and 1 GB. spring.servlet.multipart.max-file-size has to be at
+      # least the larger of the two, and nginx's client_max_body_size at least that again.
+      max-bytes:
+        teacher: 20971520
+        admin: 1073741824
+
+    # Collects uploaded files that no content references any more. Read the KDoc on StoredFileSweep
+    # before changing any of this: with no reference columns left, this job is the only thing that
+    # decides a file is garbage, and a missed content column means deleting a file that is in use.
+    stored-file-sweep:
+      cron: "0 0 4 * * *"
+      # How long a file is left alone after upload, for the case of an editor that has not been
+      # saved yet — that file is referenced by nothing anywhere and would otherwise be collected
+      # out from under whoever is still typing.
+      grace-hours: 24
+      # False reports what it would delete and touches nothing. Turn it on deliberately, after
+      # reading a night or two of that output, not as part of first deployment.
+      delete: false
 
     exercise-index-normalisation:
       cron: "0 5 3 * * *"
