@@ -1,13 +1,17 @@
 package core.testing
 
 import core.db.Account
+import core.db.AccountGroup
 import core.db.AutoGradeStatus
 import core.db.Course
 import core.db.CourseExercise
 import core.db.Dir
+import core.db.DirAccessLevel
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
+import core.db.Group
+import core.db.GroupDirAccess
 import core.db.SolutionFileType
 import core.db.StudentCourseAccess
 import core.db.Submission
@@ -15,6 +19,10 @@ import core.db.TeacherCourseAccess
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.update
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
 import org.joda.time.DateTime
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
@@ -123,10 +131,26 @@ object Fixtures {
     fun exercise(
         title: String,
         ownerId: String,
-        dirId: Long = dir(name = title),
+        parentDirId: Long? = null,
         public: Boolean = true,
         anonymousAutoassessEnabled: Boolean = false,
     ): Long {
+        // Mirrors CreateExercise: an exercise owns an *implicit* dir whose **name is the exercise
+        // id**, and `getImplicitDirFromExercise` finds it by that name rather than by following
+        // `Exercise.dir`. A fixture that merely pointed the exercise at some dir therefore looked
+        // right and made every library-access check throw NoSuchElementException on `single()`.
+        //
+        // The placeholder-then-rename is production's own chicken-and-egg dance: the name needs an
+        // id that does not exist until the row is inserted.
+        val at = TestClock.next()
+        val dirId = Dir.insertAndGetId {
+            it[name] = "fixture-placeholder"
+            it[isImplicit] = true
+            if (parentDirId != null) it[parentDir] = EntityID(parentDirId, Dir)
+            it[createdAt] = at
+            it[modifiedAt] = at
+        }.value
+
         val exerciseId = Exercise.insertAndGetId {
             it[dir] = EntityID(dirId, Dir)
             it[owner] = EntityID(ownerId, Account)
@@ -145,6 +169,16 @@ object Fixtures {
             it[solutionFileName] = "solution.py"
             it[solutionFileType] = SolutionFileType.TEXT_EDITOR
         }
+
+        // The rename that makes getImplicitDirFromExercise able to find it.
+        Dir.update({ Dir.id eq dirId }) { it[name] = exerciseId.toString() }
+
+        // And the grant that makes the owner able to *reach* it — CreateExercise ends with exactly
+        // this, and leaving it out built exercises nobody owned in any useful sense. It made the
+        // most-travelled branch of `libraryExercise` — an author opening their own exercise —
+        // impossible to test, and quietly weakened every "no access before the grant" assertion,
+        // which held because nobody had access rather than because ownership was being checked.
+        grantDirAccess(implicitGroupOf(ownerId), dirId, DirAccessLevel.PRAWM)
         return exerciseId
     }
 
@@ -183,6 +217,65 @@ object Fixtures {
             it[CourseExercise.titleAlias] = titleAlias
         }.value
     }
+
+    /**
+     * A group, and the account-to-group and group-to-dir rows that make library access work.
+     *
+     * Dir access is never granted to an account directly — it is granted to a *group*, and every
+     * account has an implicit group of its own. So "give this teacher read access to that dir"
+     * is three rows, which is exactly the sort of thing a test should not have to remember.
+     */
+    fun group(name: String, implicit: Boolean = false): Long = Group.insertAndGetId {
+        it[Group.name] = name
+        it[isImplicit] = implicit
+        it[createdAt] = TestClock.next()
+    }.value
+
+    fun addToGroup(accountId: String, groupId: Long, isManager: Boolean = false) {
+        AccountGroup.insert {
+            it[account] = EntityID(accountId, Account)
+            it[group] = EntityID(groupId, Group)
+            it[AccountGroup.isManager] = isManager
+            it[createdAt] = TestClock.next()
+        }
+    }
+
+    fun grantDirAccess(groupId: Long, dirId: Long, level: DirAccessLevel) {
+        GroupDirAccess.insert {
+            it[group] = EntityID(groupId, Group)
+            it[dir] = EntityID(dirId, Dir)
+            it[GroupDirAccess.level] = level
+            it[createdAt] = TestClock.next()
+        }
+    }
+
+    /**
+     * The account's implicit group, created once and reused.
+     *
+     * Production gives every account **exactly one** implicit group, named the account id
+     * (`account_checkin.kt`), and `getImplicitGroupFromAccount` finds it with
+     * `name eq accountId and isImplicit` followed by `.single()`. An earlier version of this file
+     * minted a fresh group per grant with a decorated name, which broke that invariant two ways: no
+     * fixture account had the group production guarantees, and a second grant produced a second
+     * group — so any test driving `CreateExercise`, `CreateDir` or `PutDirAccess` would have died on
+     * that `.single()` rather than exercising the endpoint.
+     */
+    fun implicitGroupOf(accountId: String): Long {
+        val existing = Group
+            .select(Group.id)
+            .where { Group.name eq accountId and Group.isImplicit }
+            .map { it[Group.id].value }
+            .singleOrNull()
+        if (existing != null) return existing
+
+        val id = group(accountId, implicit = true)
+        addToGroup(accountId, id)
+        return id
+    }
+
+    /** The common case: give one account one access level to one dir, via its implicit group. */
+    fun giveDirAccess(accountId: String, dirId: Long, level: DirAccessLevel) =
+        grantDirAccess(implicitGroupOf(accountId), dirId, level)
 
     fun enrolStudent(courseId: Long, studentId: String) {
         StudentCourseAccess.insert {
