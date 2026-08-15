@@ -44,7 +44,10 @@ const exercise = {
   title: 'Sum of two numbers',
   text_html: '<p>Read two numbers and print their sum.</p>',
   text_md: 'Read two numbers and print their sum.',
-  anonymous_autoassess_template: null,
+  // Empty string, not null: core has sent this non-nullable since changeset 020826-1, which
+  // gave "no template" a single spelling. The contract check against doc/core/api-shapes.json
+  // caught this fixture still describing a response core cannot produce.
+  anonymous_autoassess_template: '',
   grading_script: 'cd student-submission\npython generated_0.py',
   container_image: 'tiivad:tsl-compose',
   max_time_sec: 7,

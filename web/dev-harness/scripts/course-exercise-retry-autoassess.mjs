@@ -91,7 +91,18 @@ await fakeApi(page, [
   })],
 
   [`/exercises/${CE}/submissions/all/students/${STUDENT}`, () => ({
-    submissions: [{ id: SUB, created_at: '2026-08-01T10:00:00.000Z', grade: retried ? 100 : 0, seen: true }],
+    // `grade` is a GradeResp object here, not a number — core's ReadAllSubmissionsByStudent sends
+    // one, and web/src/api/types.ts declares `GradeResp | null`. This fixture used to send a bare
+    // number, so anything reading `submission.grade.grade` was reading `undefined` and the script
+    // was exercising a state the app cannot actually be in. Caught by the contract check.
+    //
+    // `seen` is dropped for the same reason: this endpoint does not send it. `status` and
+    // `submission_number` are still absent, which is fine — a partial stub is normal.
+    submissions: [{
+      id: SUB,
+      created_at: '2026-08-01T10:00:00.000Z',
+      grade: retried ? { grade: 100, is_autograde: true, is_graded_directly: true } : null,
+    }],
   })],
 
   [`/students/${STUDENT}/activities`, () => ({ teacher_activities: [] })],

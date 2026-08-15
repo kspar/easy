@@ -2,8 +2,9 @@
 // a faked backend. See doc/web/browser-testing.md for the why and the gotchas.
 import { chromium } from 'playwright'
 import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
-import { mkdirSync } from 'node:fs'
+import { basename, dirname, join } from 'node:path'
+import { mkdirSync, readFileSync } from 'node:fs'
+import { checkResponse } from './contract.mjs'
 
 export const BASE_URL = process.env.HARNESS_URL ?? 'http://localhost:5199'
 
@@ -81,7 +82,7 @@ export const json = (route, body, status = 200) =>
  * Everything unmatched is fulfilled with {} — an unstubbed request otherwise
  * leaves the page loading forever with no error.
  */
-export async function fakeApi(page, handlers, { log = true } = {}) {
+export async function fakeApi(page, handlers, { log = true, contract = true } = {}) {
   const calls = []
 
   await page.route('**/v2/**', async (route) => {
@@ -102,6 +103,7 @@ export async function fakeApi(page, handlers, { log = true } = {}) {
       if (!matches) continue
       const result = await handler({ route, url, method, body })
       if (result === undefined) return // handler fulfilled it
+      if (contract) recordContractIssues(method, url, result, body)
       return json(route, result)
     }
 
@@ -110,6 +112,46 @@ export async function fakeApi(page, handlers, { log = true } = {}) {
   })
 
   return calls
+}
+
+/**
+ * Contract issues found while answering stubbed requests, collected across the whole script.
+ *
+ * Module-level rather than returned from `fakeApi`, so that `check.summary()` can report them
+ * without any script having to ask. That is what makes this retrofit all 28 existing scripts
+ * without editing one of them — a script that had to opt in would mean 28 edits now and a tax on
+ * writing the 29th.
+ */
+const contractIssues = []
+
+/**
+ * This script's allowed number of contract warnings, or null if it has no entry.
+ *
+ * Keyed by script filename, read fresh each run. A script with no entry is not ratcheted — new
+ * scripts should not have to think about this on the day they are written, and the entry gets added
+ * once its number settles.
+ */
+function contractBudget() {
+  const script = basename(process.argv[1] ?? '')
+  // Deliberately NOT wrapped in a try. A bare catch here could not tell "this script has no entry"
+  // — the intended case — from "the baseline file is unreadable", and the second silently turns the
+  // ratchet into a no-op for all 27 scripts while the suite stays green. That is precisely the
+  // failure the ratchet exists to prevent, so a trailing comma or a bad merge must be loud.
+  const budgets = JSON.parse(readFileSync(join(HERE, 'contract-baseline.json'), 'utf8'))
+  return Object.prototype.hasOwnProperty.call(budgets, script) ? budgets[script] : null
+}
+
+function recordContractIssues(method, url, responseBody, requestBody) {
+  try {
+    contractIssues.push(...checkResponse(method, url, responseBody, requestBody))
+  } catch (e) {
+    // Its own severity, not 'warn'. Recording a checker crash as a warning was actively harmful in
+    // both directions: for a script with a budget of 0 it read as "new fixture drift" and pointed
+    // the reader at the wrong file, and for a script with a budget of 40 it collapsed 40 real
+    // warnings into 1, printed "below budget — lower this script's entry", and invited somebody to
+    // ratchet the whole mechanism down to nothing. A broken checker fails, and says it is broken.
+    contractIssues.push({ severity: 'broken', message: `contract checker itself failed: ${e.message}` })
+  }
 }
 
 /** Assert helper that records rather than throws, so one run reports everything. */
@@ -121,6 +163,54 @@ export function checker() {
     return ok
   }
   check.summary = () => {
+    // Contract findings are folded in here, so every script reports them without knowing they
+    // exist. Deduplicated: the same endpoint is often stubbed many times in one run, and thirty
+    // copies of one message is a wall people learn to scroll past.
+    const seen = new Set()
+    const unique = contractIssues.filter((i) => !seen.has(i.message) && seen.add(i.message))
+    const broken = unique.filter((i) => i.severity === 'broken')
+    const fails = unique.filter((i) => i.severity === 'fail')
+    // `broken` is excluded from the count on purpose: a crashed checker produces no warnings, and
+    // letting that read as "warnings went down" is how the baseline would get ratcheted to zero.
+    const warns = unique.filter((i) => i.severity === 'warn')
+
+    for (const b of broken) {
+      results.push({ label: `contract: ${b.message}`, ok: false, detail: 'the check did not run — this is not a fixture problem' })
+      console.log(`  ❌ contract: ${b.message}`)
+    }
+    for (const f of fails) {
+      results.push({ label: `contract: ${f.message}`, ok: false, detail: '' })
+      console.log(`  ❌ contract: ${f.message}`)
+    }
+    if (warns.length) {
+      console.log(`\n  ⚠️  ${warns.length} contract warning(s) — absent fields (normal for a partial stub) or fields core does not send:`)
+      for (const w of warns.slice(0, 15)) console.log(`     ${w.message}`)
+      if (warns.length > 15) console.log(`     … and ${warns.length - 15} more`)
+    }
+
+    // Ratchet: the count may fall, never rise. Without this the warnings are a list nobody reads
+    // and new fixture drift joins it silently. With it, paying debt down is rewarded (the baseline
+    // must be lowered in the same commit) and adding debt is a build failure.
+    // Skipped when the checker itself broke: the count is meaningless then, and "below budget" would
+    // be an invitation to lower it.
+    const budget = broken.length ? null : contractBudget()
+    if (budget !== null) {
+      check(
+        `contract warnings within budget (${warns.length} ≤ ${budget})`,
+        warns.length <= budget,
+        warns.length > budget
+          ? `new fixture drift. Fix it, or if it is deliberate raise the entry for this script in ` +
+            `dev-harness/contract-baseline.json and say why in the commit`
+          : '',
+      )
+      if (warns.length < budget) {
+        console.log(
+          `  ↓ contract warnings are below budget (${warns.length} < ${budget}) — lower this script's ` +
+          `entry in contract-baseline.json to ${warns.length} so the ground gained is kept`,
+        )
+      }
+    }
+
     const failed = results.filter((r) => !r.ok)
     console.log(
       `\n${results.length - failed.length}/${results.length} checks passed`,

@@ -91,6 +91,12 @@ tasks.test {
             ?.forEach { excludeTags(it) }
     }
 
+    // Forwarded into the test JVM, which does not inherit Gradle's own system properties.
+    // `-Pcontract.write=true` makes GenerateApiShapes rewrite doc/core/api-shapes.json instead of
+    // asserting against it; without this the flag is silently ignored and the test just fails,
+    // which is a confusing way to be told the command was right.
+    (project.findProperty("contract.write") as String?)?.let { systemProperty("contract.write", it) }
+
     // Gradle prints nothing when tests pass, so "3 passed" and "0 matched the filter" look
     // identical in CI. With the exclusion above driven by a property, a typo would silently run
     // nothing and still go green, so report the count and fail on zero.

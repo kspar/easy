@@ -251,18 +251,27 @@ still match what core returns. The failure mode is a green suite and a broken ap
 live example on record: a fixture kept `anonymous_autoassess_template: null` after the column became
 non-nullable, and nothing noticed because both sides were mocked.
 
-**Decided (EZ-1770), and the important correction: this depends on nothing.** The previous version
-of this document implied everything backend-adjacent was blocked behind EZ-1715. It is not — core's
-DTOs carry `@get:JsonProperty` wire names explicitly and Kotlin nullability is visible to
-`kotlin-reflect`, so a shape descriptor is recoverable by **reflection with no database and no
-Spring context**. That was this document's single most consequential inaccuracy.
+**Done 2026-08-15 (EZ-1770).** `doc/core/api-shapes.json` is generated from core's Kotlin by
+reflection and committed: 122 endpoints, 189 types, 182 nullable fields. A plain `@Test` regenerates
+it and fails if the committed file differs.
 
-The design: a plain `@Test` emits `doc/core/api-shapes.json` and fails if the committed file differs.
-The reason that beats generating OpenAPI is not size — it is that **the artefact is a file in git, so
-the diff is the review**. When a column becomes non-nullable, the PR shows `"nullable": true → false`
-on one line, and a human catches it before any fixture is touched. Web-side validation hooks into
-`fakeApi` and derives endpoint identity from the request URL, so every existing script is retrofitted
-with no edits.
+The reason that beats generating OpenAPI is not size — it is that **the artefact is a file in git,
+so the diff is the review**. When a column becomes non-nullable, the pull request shows
+`"nullable": true → false` on one line, and a human catches it before any fixture is touched.
+Web-side validation hooks into `fakeApi` and derives endpoint identity from the request URL, so all
+28 existing scripts were retrofitted with **no edits to any of them**.
+
+**It found the bug this section was written about.** Two fixtures still carried
+`anonymous_autoassess_template: null` after changeset `020826-1` made the column non-nullable —
+the exact example named above, still live, found on the first full run.
+
+The severity ladder took two attempts, and the first one is the more instructive. Making a *missing*
+non-nullable field a failure is the obvious rule, and it produced 19 failures in one script, **every
+one of them correct behaviour**: a script stubs the fields the page reads and omits the rest, which
+is how you write a legible fixture, not drift. The line belongs at **values that are actually
+wrong** — `null` in a non-nullable field, a wrong type, an enum value core cannot produce. Absent
+and unknown keys are warnings, ratcheted per script in `dev-harness/contract-baseline.json` so the
+count can fall but never rise.
 
 ### Migration tests — have none, and we now have a reason to want them
 
