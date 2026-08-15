@@ -28,7 +28,10 @@ import tools.jackson.module.kotlin.jacksonObjectMapper
 
 
 @Service
-class MoodleGradesSyncService(restTemplateBuilder: RestTemplateBuilder) {
+class MoodleGradesSyncService(
+    restTemplateBuilder: RestTemplateBuilder,
+    private val courseAllowlist: MoodleCourseAllowlist,
+) {
     private val log = KotlinLogging.logger {}
     private val restTemplate = restTemplateBuilder.build()
 
@@ -79,7 +82,11 @@ class MoodleGradesSyncService(restTemplateBuilder: RestTemplateBuilder) {
                     val shortname = this[Course.moodleShortName]
                     val isGradesSynced = this[Course.moodleSyncGrades]
 
-                    if (!shortname.isNullOrBlank() && isGradesSynced) {
+                    // isAllowed rather than assertAllowed: this runs on every grade in the ordinary
+                    // flow, so on an environment with an allowlist it would otherwise throw
+                    // constantly for every course not on it. The throw stays at the send site, where
+                    // reaching it means something got past this and is worth an alarm.
+                    if (!shortname.isNullOrBlank() && isGradesSynced && courseAllowlist.isAllowed(shortname)) {
                         val singleExercise = selectSingleCourseExerciseSubmission(
                             this[Course.id].value,
                             this[CourseExercise.id].value,
@@ -129,6 +136,9 @@ class MoodleGradesSyncService(restTemplateBuilder: RestTemplateBuilder) {
      * Send grade request to Moodle. Excepts response body from Moodle to contain 'done'.
      */
     private fun sendMoodleGradeRequest(req: MoodleReq) {
+        // The one that matters most: grades reach Moodle from ordinary grading, not from an
+        // endpoint, so this is the only place every path passes through.
+        courseAllowlist.assertAllowed(req.shortname)
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
         val map: MultiValueMap<String, String> = LinkedMultiValueMap()

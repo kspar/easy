@@ -31,7 +31,11 @@ import org.springframework.web.client.RestClientException
 data class MoodleSyncedStudents(val syncedPendingStudents: Int)
 
 @Service
-class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBuilder: RestTemplateBuilder) {
+class MoodleStudentsSyncService(
+    val mailService: SendMailService,
+    restTemplateBuilder: RestTemplateBuilder,
+    private val courseAllowlist: MoodleCourseAllowlist,
+) {
     private val log = KotlinLogging.logger {}
     private val restTemplate = restTemplateBuilder.build()
 
@@ -87,6 +91,8 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
     )
 
     private fun queryStudents(moodleShortName: String): MoodleResponse {
+        // Last thing before the request is built, so no caller can route around it.
+        courseAllowlist.assertAllowed(moodleShortName)
         log.info { "Connecting Moodle ($moodleSyncUrl) for course linking..." }
 
         val headers = HttpHeaders()
@@ -295,6 +301,12 @@ class MoodleStudentsSyncService(val mailService: SendMailService, restTemplateBu
                 Course.moodleShortName.isNotNull() and
                         Course.moodleShortName.neq("") and
                         Course.moodleSyncStudents
+            }.filter {
+                // Skipped quietly rather than left to throw at the send site: without this the cron
+                // would abort on the first course that is not on the allowlist and never reach the
+                // ones that are.
+                val shortname = it[Course.moodleShortName]
+                shortname != null && courseAllowlist.isAllowed(shortname)
             }.forEach {
                 val courseId = it[Course.id].value
                 log.info { "Cron Moodle syncing students on course $courseId" }

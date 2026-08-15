@@ -89,6 +89,14 @@ easy:
       grades:
         url: "<url>"
         wsfunction: "local_ut_custom_update_manual_grades"
+      # Moodle course shortnames this environment may contact, comma-separated. EMPTY MEANS
+      # UNRESTRICTED, which is what production wants — it syncs whatever teachers have linked.
+      #
+      # Set it on any environment that must reach a real Moodle without being trusted with all of
+      # it. Enforced immediately before the request is built, which matters because grades do not
+      # reach Moodle through an endpoint at all: ordinary grading pushes them, so a check on the
+      # sync endpoints would cover almost nothing.
+      course-allowlist: ""
 
     # The local backend, into a temp directory, so a test context needs no AWS anything. The sweep
     # is pinned to the never-date like everything else here, and would report rather than delete

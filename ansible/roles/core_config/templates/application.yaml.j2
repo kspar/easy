@@ -108,10 +108,15 @@ easy:
         cron: "{{ easy_core_moodle_users_cron }}"
         wsfunction: "{{ easy_core_moodle_users_wsfunction }}"
       grades:
-        ## Reachable from a manual endpoint as well as a cron, so this URL is the thing that decides
-        ## whether "sync grades" can write into a real gradebook.
+        ## Not only a manual endpoint and a cron — there is no grades cron at all, and
+        ## syncSingleGradeToMoodle is called from ordinary grading (submissions.kt, TeacherPostGrade,
+        ## TeacherRetryAutoassess). So on an environment with a real URL here, anyone submitting or
+        ## grading anything writes to that gradebook. The allowlist below is the thing that bounds it.
         url: "{{ easy_core_moodle_grades_url }}"
         wsfunction: "{{ easy_core_moodle_grades_wsfunction }}"
+      ## Comma-separated course shortnames, empty meaning unrestricted. Enforced immediately before
+      ## the request is built, so it covers the grading paths above and not just the endpoints.
+      course-allowlist: "{{ easy_core_moodle_course_allowlist }}"
 
     ## Where the bytes of uploaded files live. `local` is a directory on this host; `s3` is a bucket
     ## whose objects are publicly readable, which is the deployed answer (EZ-1571).

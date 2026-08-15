@@ -151,6 +151,40 @@ WHERE s.latest_teacher_pseudonym = m.old_pseudonym;
 UPDATE student_course_access SET moodle_username = NULL WHERE moodle_username IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
+-- Moodle links. Cut every one of them.
+-- ---------------------------------------------------------------------------
+--
+-- This is the same class of hazard as production's executor rows (§3.6): a destructive path that
+-- arrives in the *data* rather than the configuration, so no amount of care in group_vars prevents
+-- it. Shortnames used to be kept here as "organisational, not personal", which is true and beside
+-- the point — what matters is that they are what makes a course reachable.
+--
+-- Two paths they feed, and the second is the one that surprised us:
+--
+--   * the student-sync cron iterates EVERY course with a shortname and moodle_sync_students, so on
+--     a restored copy of production that is every real course;
+--   * grades have no cron at all. syncSingleGradeToMoodle is called from ordinary grading, so on an
+--     environment pointed at a real Moodle, a tester submitting one solution writes to a real
+--     gradebook. Pinning crons does nothing about it.
+--
+-- Nulling moodle_username above already stops grade rows being built, since the payload is keyed on
+-- it — but that is a happy accident of anonymisation, not a link that was deliberately cut. This is
+-- the deliberate one.
+--
+-- Re-link by hand, on the one course you mean to test with. easy.core.moodle-sync.course-allowlist
+-- is the second lock: it bounds which shortnames the application will contact at all.
+
+UPDATE course
+SET moodle_short_name = NULL,
+    moodle_sync_students = false,
+    moodle_sync_grades = false,
+    moodle_sync_students_in_progress = false,
+    moodle_sync_grades_in_progress = false
+WHERE moodle_short_name IS NOT NULL
+   OR moodle_sync_students
+   OR moodle_sync_grades;
+
+-- ---------------------------------------------------------------------------
 -- Pure-PII rows: people invited who never registered, so there is no account to pseudonymise
 -- and nothing of testing value in keeping them. Child table first (FK on moodle_username).
 -- ---------------------------------------------------------------------------

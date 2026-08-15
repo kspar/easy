@@ -119,6 +119,18 @@ easy_core_mail_sys_to: "root@localhost"
 # No default for the URLs or the token. `moodle-sync.grades.url` is reachable from a *manual*
 # endpoint (`SyncMoodleAllGrades.kt`) as well as a cron, so pinning the cron alone does not stop a
 # tester clicking "sync grades" and writing into a real gradebook.
+# Moodle course shortnames this environment may contact, comma-separated. Empty is UNRESTRICTED,
+# which is right for production — it syncs whatever teachers have linked, and an allowlist there
+# would be a list nobody maintains.
+#
+# An environment that must reach a real Moodle without being trusted with all of it sets this. Note
+# where it is enforced: immediately before the request is built, not at the sync endpoints, because
+# grades never pass through an endpoint — ordinary grading pushes them.
+#
+# A real course name belongs in the environment's gitignored inventory rather than in group_vars,
+# which is committed to a public repository.
+easy_core_moodle_course_allowlist: ""
+
 easy_core_moodle_users_cron: "{{ easy_core_never_cron }}"
 easy_core_moodle_users_wsfunction: local_ut_custom_get_course_groups_users
 easy_core_moodle_grades_wsfunction: local_ut_custom_update_manual_grades
