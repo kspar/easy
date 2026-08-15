@@ -154,3 +154,87 @@ rather than the SPA's `index.html`, which proves the nginx location.
 A newly installed key reports `ServiceName: N/A` from `aws iam get-access-key-last-used` until
 something actually calls S3. The sweep's orphan pass calls `ListBucket` on its nightly run, so a
 working credential proves itself by the next morning and a broken one is loud in the journal.
+
+`s3-check.sh` runs all of this against a deployed environment, minting its own token — 18 assertions,
+and it is the thing to run after standing up a new bucket.
+
+---
+
+# Doing this for production
+
+Everything above applies. What follows is what is *different*, and the first item is the one to
+decide before anything else.
+
+## Read this before creating a production bucket
+
+**Objects are public and their URLs never expire.** That was decided knowingly (EZ-1571) and it is
+fine for dev, where the content is anonymised and disposable. On production the same setting means:
+
+> An image pasted into an exercise or an article is readable by anyone who has the URL, from the
+> moment it is uploaded — including while the exercise is unreleased, and including after the
+> exercise is deleted, until the sweep runs. The URL leaks through crawlers on published articles,
+> through third-party pages that embed exercises, and through our own access logs.
+
+The key is 160 random bits, so nobody guesses one. But there is no revocation, and no permission
+check. If any real teaching material would be a problem under that rule, **this design is the wrong
+one for it** and the answer is a permission check plus signed URLs in `/v2/resource/...` — not a
+tweak to the bucket. The URL shape was chosen so that switch never has to touch stored content.
+
+## Enable versioning here, unlike dev
+
+Dev leaves versioning off because the sweep's whole job is to free space. Production has the opposite
+problem: **the bucket is the only copy.** Nothing else holds those bytes — the database has metadata,
+and `pg_dump` will not bring an image back. A bug in the sweep's column list deletes content that
+teachers wrote, permanently.
+
+So on production:
+
+- **versioning on**, which turns every sweep deletion into a recoverable delete marker;
+- a **lifecycle rule expiring noncurrent versions** after something like 30 days, so space is still
+  reclaimed and the safety net has a defined cost.
+
+That combination is not available after the fact for objects already deleted, so it is a
+before-first-upload decision.
+
+Keep `easy_core_stored_file_sweep_delete: false` for the first weeks regardless, and read what it
+reports. `RichTextColumnsTest` guards the column list at build time, but a report you have actually
+read is worth more than a test you assume ran.
+
+## Arm the guard that protects it
+
+Set `easy_core_storage_prod_bucket` to production's bucket name **in each environment's gitignored
+inventory**. It is empty by default, and while empty the guard that stops a non-production host
+being pointed at production's bucket does nothing. Dev's sweep deletes objects that have no row in
+*dev's* database — and dev's database is an anonymised copy, so everything production uploaded since
+the last import has no row there. That is the failure this prevents, and it is silent and total.
+
+Production sets `easy_core_allow_real_outbound: true`, which skips that guard for production itself.
+Correct — production is allowed its own bucket — but it means the guard only ever protects the other
+environments, so it has to be set *there*.
+
+## What production does not need
+
+- **No web-vhost proxy for `/v2/resource/`.** Production serves web and API from one origin
+  (`emsRoot` is `/v2`), so the relative URLs in stored content resolve without help. That location
+  block exists in `roles/nginx` only because dev splits the two.
+- **No bucket in a second region, no CDN.** One redirect to a public object, cached for a year.
+
+## What production does need that dev did not
+
+- **A body-size limit in Apache, not nginx.** Production still runs Apache/2.4.52 while dev has moved
+  to nginx, so the equivalent of `client_max_body_size` on `/v2/files` is `LimitRequestBody` in the
+  matching `<Location>`. Without it the admin upload ceiling is whatever Apache defaults to, and the
+  error a teacher sees comes from the proxy rather than from core's role-aware message.
+- **Its own IAM user**, on the same narrow policy, separate from every other environment's — so a
+  leaked dev key cannot touch production's objects.
+- **A billing alarm.** Egress from a public bucket is the one line item that can surprise you, and
+  the URLs are permanent.
+
+## Migration: there is none
+
+`stored_file` was empty everywhere when this shipped, so no bytes ever lived in the database in
+production and nothing has to be moved out of it. The `140826-1` changeset drops the `data` column on
+a table with no rows. If that ever stops being true — if this is read years later against a database
+that does have rows — the migration is: read each `data` blob, `PutObject` it under its existing id,
+verify, then drop the column. Do not drop first.
+
