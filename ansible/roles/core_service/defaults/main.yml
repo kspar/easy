@@ -38,6 +38,15 @@ easy_core_java_opts: ""
 # `NOPASSWD: /usr/bin/systemctl restart easy-core` and nothing wider.
 easy_core_deploy_users: []
 
+# A root-owned reader for core's journal, granted NOPASSWD alongside the restart. It exists because
+# the unit cannot be pinned in sudoers: journalctl takes `-u` repeatedly, and a sudoers wildcard
+# matches the whole rest of the command line, so any rule permissive enough to allow a time window
+# also permits a second `-u` — and the auth log with it.
+#
+# It is also what makes an unattended agent able to read a cron job's output the next morning, which
+# the fixed `-n 40` grant cannot: forty lines is a few minutes of traffic on a busy host.
+easy_core_log_helper_path: /usr/local/bin/easy-core-log
+
 # The group that owns write access to the release tree. Separate from the service account on purpose:
 # core needs to read the jar, deployers need to replace it, and those are different privileges.
 easy_core_deploy_group: easy-deploy

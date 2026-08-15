@@ -12,7 +12,19 @@
 # The journalctl line exists because the script fetches core's log when a deploy fails. Without the
 # grant that prompts for a password, the prompt cannot be answered non-interactively, and the error
 # is swallowed — so a failed deploy would print no diagnostics at exactly the moment they matter.
+#
+# `easy-core-log` is the same privilege for a wider time window, and it is a script rather than a
+# third journalctl line for a reason worth knowing: journalctl accepts `-u` repeatedly and ORs the
+# units, and a sudoers wildcard matches the entire rest of the command line — so
+# `journalctl -u {{ easy_core_service_name }} *` would also permit `... -u ssh`, i.e. the auth log.
+# The unit can only be pinned outside sudoers. The script is root-owned and must stay unwritable by
+# these accounts, or the grant becomes equivalent to root.
+#
+# The fixed `-n 40` line stays because deploy/deploy-dev.sh spells exactly that, and a deploy failing
+# for want of a sudo password is the failure this whole file exists to prevent.
 {% for user in easy_core_deploy_users %}
 {{ user }} ALL=(root) NOPASSWD: /usr/bin/systemctl restart {{ easy_core_service_name }}
 {{ user }} ALL=(root) NOPASSWD: /usr/bin/journalctl -u {{ easy_core_service_name }} -n 40 --no-pager
+{{ user }} ALL=(root) NOPASSWD: {{ easy_core_log_helper_path }}
+{{ user }} ALL=(root) NOPASSWD: {{ easy_core_log_helper_path }} *
 {% endfor %}

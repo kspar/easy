@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/core_service) — local edits are overwritten.
+#
+# Reads core's journal, and only core's journal.
+#
+# **Why a wrapper instead of a wider sudoers rule.** The obvious change is to allow
+# `journalctl -u easy-core *`, and it does not work: journalctl takes `-u` more than once and ORs
+# the units, so that pattern also matches `journalctl -u easy-core --since yesterday -u ssh`, which
+# is the authentication log. sudoers wildcards match the whole remaining command line, so there is
+# no way to say "any time window, but only this unit" in sudoers alone. Pinning the unit in a
+# root-owned script and validating the rest is the way to say it.
+#
+# The security property is that this file is root-owned and not writable by the accounts granted
+# NOPASSWD on it. If that ever stops being true the grant becomes equivalent to root.
+#
+#   easy-core-log                       last 200 lines
+#   easy-core-log -n 500
+#   easy-core-log --since "2026-08-16 04:00"
+#   easy-core-log --since -2h -n 1000
+#
+set -euo pipefail
+
+UNIT={{ easy_core_service_name }}
+lines=200
+since=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n)
+      shift
+      [ $# -gt 0 ] || { echo "easy-core-log: -n needs a value" >&2; exit 2; }
+      if ! [[ "$1" =~ ^[0-9]+$ ]] || [ "$1" -gt 20000 ]; then
+        echo "easy-core-log: -n takes a number up to 20000" >&2; exit 2
+      fi
+      lines="$1"
+      ;;
+    --since)
+      shift
+      [ $# -gt 0 ] || { echo "easy-core-log: --since needs a value" >&2; exit 2; }
+      # Dates, clock times and the relative forms journalctl understands ("yesterday", "-2h").
+      #
+      # This is defence in depth, not the actual guarantee. What makes a value harmless is that it
+      # is placed in an argv array below and passed as a single element, so `--since "x -u ssh"`
+      # reaches journalctl as one unparseable timestamp rather than as two options — verified, it
+      # answers "Failed to parse timestamp". The charset check just refuses it a step earlier.
+      if ! [[ "$1" =~ ^[A-Za-z0-9\ :+-]+$ ]]; then
+        echo "easy-core-log: --since accepts letters, digits, spaces, ':', '+' and '-' only" >&2; exit 2
+      fi
+      since="$1"
+      ;;
+    *)
+      echo "easy-core-log: only -n and --since are accepted (got '$1')" >&2; exit 2
+      ;;
+  esac
+  shift
+done
+
+args=(-u "$UNIT" --no-pager -n "$lines")
+if [ -n "$since" ]; then
+  args+=(--since "$since")
+fi
+
+exec /usr/bin/journalctl "${args[@]}"

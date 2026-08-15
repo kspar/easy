@@ -114,6 +114,32 @@
     validate: "systemd-analyze verify %s"
   notify: Restart core service
 
+- name: Install the journal reader the sudoers grant points at
+  # Before the sudoers file that references it, so the grant never names a path that does not exist.
+  # root:root 0755 is the security property, not a convention: the accounts granted NOPASSWD on this
+  # script must not be able to rewrite it, or the grant is equivalent to root.
+  ansible.builtin.template:
+    src: easy-core-log.j2
+    dest: "{{ easy_core_log_helper_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+  when: easy_core_deploy_users | length > 0
+
+- name: Check the journal reader refuses what it is supposed to refuse
+  # A validating wrapper that does not actually validate is worse than no wrapper, because the
+  # sudoers comment now claims a property nobody re-tested. Cheap to assert, so assert it.
+  ansible.builtin.command:
+    cmd: "{{ easy_core_log_helper_path }} {{ item }}"
+  register: easy_core_log_probe
+  changed_when: false
+  failed_when: easy_core_log_probe.rc == 0
+  loop:
+    - "-u ssh"
+    - "--since 'yesterday -u ssh'"
+    - "--follow"
+  when: easy_core_deploy_users | length > 0
+
 - name: Let the deploy account restart core without a password
   # The single grant deploy/deploy-dev.sh needs. Scoped to one exact command: a deploy should be
   # able to restart core and do nothing else with root.
