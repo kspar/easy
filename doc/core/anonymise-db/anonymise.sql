@@ -16,7 +16,12 @@
 --                         dev IdP has registration disabled, and an admin creating a dev-realm
 --                         user whose username matches an imported teacher is the auditable way
 --                         to get realistic teacher access on dev. See doc/dev-environment.md.
---   course.course_code, course.moodle_short_name, course_group.name - organisational, not personal.
+--   course.course_code, course_group.name - organisational, not personal.
+--
+-- course.moodle_short_name USED TO BE on that list, for the same reason, and that reasoning was
+-- correct about privacy and wrong about what matters. A shortname is not personal data; it is the
+-- thing that makes a course reachable from this database, and the sync paths key on it. It is now
+-- cleared along with the sync flags, below.
 --   group.name          - implicit groups are named after the account username, which we keep.
 --   stored_file         - exercise and article attachments, teacher-authored. Review if that
 --                         assumption ever stops holding. Metadata only since EZ-1571 — the bytes

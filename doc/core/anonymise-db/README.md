@@ -80,6 +80,7 @@ If your dev database genuinely has another name, prefer renaming it. The escape 
 | `stats_submission.student_pseudonym`, `latest_teacher_pseudonym` | Follow the new pseudonyms. This table stores pseudonyms rather than account ids, so it has to be remapped or the statistics point at pseudonyms that no longer exist |
 | `student_course_access.moodle_username` | Nulled |
 | `student_moodle_pending_access` (+ course group child) | Deleted. Invitations to people who never registered: pure PII, no account to pseudonymise, nothing of testing value |
+| `course.moodle_short_name` and the four `moodle_sync_*` flags | Cleared on every course. **Not a privacy measure** — see below |
 | `course_invite_link` | Deleted. Live tokens; a tester can make a new invite in one click |
 | `log_report` | Deleted. Client error reports, free text tied to a user id |
 
@@ -129,13 +130,43 @@ Most setups will want to keep submissions and accept the residual risk, since gr
 comparison and the auto-assessment path all want real code of varying quality. Run this if the host
 is shared more widely than the team.
 
+## Cutting the Moodle links, which is not about privacy
+
+Every `course.moodle_short_name` is nulled and all four `moodle_sync_*` flags set false. A shortname
+is not personal data — it was on the "deliberately not touched" list below for years, as
+"organisational" — and that was right about privacy and wrong about what matters. **The shortname is
+what makes a course reachable from this database.** Two paths use it, and the second is the one worth
+knowing:
+
+- the student-sync cron iterates **every** course with a shortname and `moodle_sync_students`. On a
+  restored production dump that is every real course.
+- **grades have no cron at all.** `syncSingleGradeToMoodle` is called from ordinary grading —
+  `submissions.kt`, `TeacherPostGrade`, `TeacherRetryAutoassess` — so on a host pointed at a real
+  Moodle, one tester submitting one solution writes into a real gradebook. Pinning crons does
+  nothing about that path, and neither does guarding the sync endpoints.
+
+This is the same class of hazard as production's `executor` rows (`doc/dev-environment.md` §3.6): a
+destructive path that arrives in the **data**, so no amount of care in `group_vars` prevents it.
+
+Nulling `student_course_access.moodle_username` above already stopped grade payloads being built,
+since they are keyed on it — but that was a happy accident of anonymisation rather than a link
+anybody had decided to cut. This is the deliberate one.
+
+To test the Moodle integration, re-link exactly one course by hand and set
+`easy.core.moodle-sync.course-allowlist` to its shortname; that setting bounds which courses the
+application will contact at all, and is enforced immediately before the request is built rather than
+at the endpoints, for the reason above.
+
 ## Deliberately not touched
 
 - `stored_file` — exercise and article attachments, teacher-authored. Revisit if that assumption
-  stops holding; the column is `bytea` and unbounded.
+  stops holding. Metadata only since EZ-1571: the bytes are in object storage, so a dump no longer
+  carries them and a restored database points at whichever bucket *this* environment is configured
+  with. Expect broken images, and note the nightly sweep will collect rows whose objects did not
+  come with them.
 - `feedback_snippet` — teachers' own reusable phrases, not written about anyone in particular.
 - `teacher_submission.solution` — the teacher's model solution, not student work.
-- `course.course_code`, `course.moodle_short_name`, `course_group.name` — organisational.
+- `course.course_code`, `course_group.name` — organisational.
 - `group.name` — implicit groups are named after the account username, which is preserved.
 
 ## Verification

@@ -31,8 +31,10 @@ The rest are on you:
 - **Never run `./gradlew test` on the host, and never put `core/src/test/resources/application.yaml`
   there.** It runs Liquibase `dropAll()`. (§3.5)
 - **Nightly `pg_dump`.** The data drifts and cannot be regenerated from prod. (§3.5)
-- **Moodle sync must not reach real Moodle.** Dead URLs *and* pinned crons — grade sync also has a
-  manual endpoint a tester can click. (§5)
+- **Moodle sync must not reach real Moodle.** Dead URLs, pinned crons, an empty-means-unrestricted
+  `course-allowlist`, and anonymisation clearing every `moodle_short_name`. Four locks because the
+  obvious ones miss the real path: **grades have no cron and need no endpoint** — ordinary grading
+  pushes them, so a tester submitting one solution is enough. (§5)
 - **A production import brings production's `executor` rows with it.** They must be deleted before
   core is allowed to start, or a tester's submission is dispatched to a production grader.
   `import-prod-dump.yml` does it; a hand-run `pg_restore` does not. (§3.6, §5)
@@ -136,6 +138,12 @@ block in `core/src/main/resources/application.yaml.sample` for why both `jwk-set
 A single `pg_dump` of prod, anonymised, restored into the dev postgres once at setup. After
 that dev is its own world: testers' courses and submissions accumulate and are never
 overwritten by a refresh.
+
+**The database is no longer the whole of the data.** Since EZ-1571 uploaded files live in an S3
+bucket and `stored_file` holds only metadata, so a dump carries the rows and not the bytes. Dev has
+its own bucket — it must, because the nightly sweep deletes objects with no row in *this* host's
+database, and an imported database does not know about anything production uploaded since. Expect
+imported content to have broken images, and see `doc/core/s3-setup.md`.
 
 ### 3.2 How the anonymisation runs
 
@@ -245,6 +253,13 @@ A dump is the whole database, including rows that describe the *environment* rat
   no credentials. The playbook deletes them between the restore and core's first start, then re-runs
   the executor role's `register_in_db.yml` to put dev's own row back. That file was split out of the
   role for this: re-registering should not mean rebuilding four Docker images.
+- **`course.moodle_short_name` and the `moodle_sync_*` flags.** Production's links to production's
+  Moodle courses. Cut by `anonymise.sql` rather than by the playbook, because they belong to the
+  same pass that removes the other identifiers — but they are on this list, not the privacy list:
+  a shortname is not personal data, it is what makes a course *reachable*. Left in place, the
+  student-sync cron would iterate every real course, and — since grades are pushed by ordinary
+  grading rather than by a cron — a tester submitting one solution would write into a real
+  gradebook. `doc/core/anonymise-db/README.md` has the full argument.
 - **`databasechangelog`.** Production's — and this turned out to be the interesting one. See below.
 
 The testdata rows themselves go: exercise 9001 and the three test accounts are replaced by real
@@ -435,8 +450,8 @@ This list is the actual "non-destructive" work — a separate database is the ea
 
 | Risk | Path | Treatment |
 | --- | --- | --- |
-| **Grades written into real Moodle** | `POST /courses/{id}/moodle/grades` (`SyncMoodleAllGrades.kt:22`) — a **manual** endpoint, plus the cron | Pinning the cron is **not enough**. Point `easy.core.moodle-sync.grades.url` at a dead local address *and* pin the cron. A tester clicking "sync grades" must not reach the real gradebook |
-| **Real Moodle read + student invites** | `SyncMoodleAllStudents.kt:22`, `moodle-sync.users.url` | Same: dead URL + pinned cron. A read is harmless, but it pulls real names back into the anonymised DB |
+| **Grades written into real Moodle** | **There is no grades cron.** `syncSingleGradeToMoodle` is called from ordinary grading — `submissions.kt:138`, `TeacherPostGrade.kt:63`, `TeacherRetryAutoassess.kt:105` — as well as the manual `POST /courses/{id}/moodle/grades` | Pinning crons does **nothing** here, and neither does guarding the endpoint: any tester submitting or grading anything would write to the gradebook. Three locks, none sufficient alone — a dead `grades.url`; `easy.core.moodle-sync.course-allowlist`, enforced immediately before the request is built so it covers the grading paths; and anonymisation clearing every `moodle_short_name`, so no course is linked at all |
+| **Real Moodle read + student invites** | `SyncMoodleAllStudents.kt:22`, `moodle-sync.users.url`, and a cron that iterates **every** course with a shortname — on a restored dump, every real course | Dead URL, pinned cron, allowlist, and cleared shortnames as above. A read is not harmless: it writes real names and usernames back into a database we deliberately anonymised |
 | **Mass account deletion, in the DB and in Keycloak** | `DeleteInactiveUsers` (`core/src/main/kotlin/core/ems/cron/delete_inactive_users.kt`) deletes students idle 2y / teachers 5y, then deletes them from Keycloak via the admin API | Imported `last_seen` values are historical, so the **first cron run would delete a large slice of the imported data and hit the configured Keycloak**. Pin `easy.core.keycloak.cron` to the never-date, and give dev's Keycloak client a service account **without** user-delete permission |
 | **Email to real people** | `SendMailService`, `easy.core.mail.*` | Run a local catch-all (mailpit) and point `spring.mail` at it, so email stays testable but cannot escape. Simpler alternative: `mail.user.enabled: false` and `mail.sys.enabled: false` |
 | **Wrong IDP** | `easy.core.keycloak.base-url` | Must be the dev IDP. Combined with the delete cron above, a copy-paste of prod's value here is the worst single mistake available on this host |

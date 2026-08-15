@@ -109,6 +109,9 @@ doc/core/articles-check.sh
 doc/core/files-check.sh
 ```
 
+`files-check.sh` runs against either storage backend and says which it found; `s3-setup.md` in this
+directory covers pointing a core at a real bucket.
+
 They exist because of what they check. `articles-check.sh` checks whether an unpublished article is
 invisible to non-admins and to the internet — a rule that lives in a SQL predicate.
 `files-check.sh` checks that an uploaded file is fetchable with no session at all, which is a
