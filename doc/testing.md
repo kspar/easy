@@ -34,7 +34,7 @@ stale is exactly what happened to the first version of this table.
 | | Size | Tests |
 | --- | --- | --- |
 | **core** | 117 `@RestController` classes (124 endpoints) | 26 test files, **93 `@Test` methods, all running** |
-| **web** | 119 `.ts`/`.tsx` files, 29,292 LOC | 4 unit files, 28 browser scripts (27 in CI) |
+| **web** | 119 `.ts`/`.tsx` files, 29,292 LOC | 5 unit files, 28 browser specs (27 in CI) |
 | **tsl / tsl-common** | the TSL compiler | none |
 | **aae** | the executor | none |
 
@@ -42,16 +42,23 @@ stale is exactly what happened to the first version of this table.
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 117
 find core/src/test/kotlin -name '*.kt' | wc -l                   # 26
 find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 119
-ls web/dev-harness/scripts/*.mjs | wc -l                         # 28
-grep -ho 'check(' web/dev-harness/scripts/*.mjs | wc -l          # 599 call sites
+ls web/tests/browser/*.spec.mjs | wc -l                          # 28
 ```
 
 The web numbers look better than they are, because the check counts are lopsided:
 
 ```
 unit      44 examples + 11,903 property checks + 532 merge checks
-browser   ~581 checks across the 27 scripts CI runs (a 28th needs a real core)
+browser   618 checks across the 27 specs CI runs (a 28th needs a real core)
 ```
+
+The browser number is now **measured rather than estimated** — it is the sum of
+`web/tests/expected-checks.json`, which the suite writes and then enforces per spec. The earlier
+figure here was "~581", read off run output by hand; 599 was the count of `check(` call sites, which
+is a different number again because a call site inside a loop, a branch not taken, or a helper
+called twice does not map one-to-one onto a check that ran. Three numbers, none of them derived the
+same way — which is the argument for a file the runner writes rather than a number a human
+maintains.
 
 Nearly all of the property checks belong to one module — the markdown editing commands. That is
 not misplaced effort (they found real bugs, repeatedly) but it means the totals say very little
@@ -104,18 +111,18 @@ previous version were wrong and nine pages were missing.
 | `ParticipantsPage` | 1823 | **none** |
 | `LandingPage` | 1225 | 16 |
 | `CourseExercisesPage` | 1155 | 110 — the best-covered page in the app |
-| `CourseExercisePage` | 968 | 51 across four scripts — but **none of it the grading flow** |
+| `CourseExercisePage` | 968 | 51 across four specs — but **none of it the grading flow** |
 | `ExerciseLibraryPage` | 798 | 11 — listing, sort, filter, create |
 | `GradeTablePage` | 549 | 6 — deep links only |
-| `ExercisePage` (library) | 481 | 171 across five scripts |
+| `ExercisePage` (library) | 481 | 171 across five specs |
 | `EmbedExercisePage` | 395 | 34 |
-| `CoursesPage` | 366 | **none direct** — five scripts visit `/courses` but assert on global chrome |
+| `CoursesPage` | 366 | **none direct** — five specs visit `/courses` but assert on global chrome |
 | `SystemMessagesPage` | 350 | 17 |
 | `SimilarityPage` | 320 | 15 |
 | `AboutPage` | 313 | 30 |
 | `AccountSettingsPage` | 290 | 14 |
 | `ArticlePage` | 289 | ~34 |
-| `ArticlesPage` | 130 | in `articles.mjs` |
+| `ArticlesPage` | 130 | in `articles.spec.mjs` |
 | `JoinByLinkPage` | 92 | **none** |
 | `NotFoundPage` | 19 | none |
 
@@ -153,8 +160,8 @@ The lesson is about *which* logic: not everything, but anything where **being wr
 Offset arithmetic, merge resolution, permission derivation, date/deadline comparisons, grade
 thresholds. If a bug shows up as a wrong number rather than a stack trace, it wants a unit test.
 
-Cost is near zero — `npm run test:unit` needs no framework and no dependency the app lacks, because
-esbuild resolves the TypeScript and Node runs the result.
+Cost is near zero — `npm run test:unit` runs the whole set in well under a second, because vitest
+resolves the TypeScript sources directly and there is no browser and no DOM in sight.
 
 **Worth doing next:** `hasAccess` / `DirAccessLevel` derivation, deadline and visibility logic in
 `CourseExercisesPage`, and the TSL compiler in `tsl/` which has no tests at all despite being a
@@ -239,6 +246,12 @@ business standing up, and a production dump has no business reaching CI.
 router and components, backend faked by Playwright route interception. Fast enough to run on every
 push, and the screenshots have caught layout problems no assertion would.
 
+Since 2026-08-16 the runner is `@playwright/test` rather than the hand-rolled one, and the unit
+tests run under vitest. What that bought, beyond traces and a filter that cannot go stale, is three
+ratchets the old runner had nowhere to put: a per-spec **check count**, the existing contract
+budget, and an expiring **quarantine** file. All three exist because the failure this suite is most
+exposed to is not a wrong assertion but a missing one — a spec that returns early is green.
+
 The gap is breadth, not technique — see the table above.
 
 Two things it does *not* prove, worth stating so nobody assumes otherwise: the API contract is
@@ -270,7 +283,7 @@ non-nullable field a failure is the obvious rule, and it produced 19 failures in
 one of them correct behaviour**: a script stubs the fields the page reads and omits the rest, which
 is how you write a legible fixture, not drift. The line belongs at **values that are actually
 wrong** — `null` in a non-nullable field, a wrong type, an enum value core cannot produce. Absent
-and unknown keys are warnings, ratcheted per script in `dev-harness/contract-baseline.json` so the
+and unknown keys are warnings, ratcheted per spec in `web/tests/contract-baseline.json` so the
 count can fall but never rise.
 
 ### Migration tests — have none, and we now have a reason to want them
@@ -360,8 +373,13 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
    is EZ-1772.
 4. ~~**Service tests for access control**~~ — **done 2026-08-16**, with grading behaviour
    alongside it: the threshold boundary, the four counts, and per-student visibility exceptions.
-5. **Web migration to `@playwright/test` + `vitest`**, then the grading flow, `ParticipantsPage`,
-   `GradeTablePage` and route guards.
+5. ~~**Web migration to `@playwright/test` + `vitest`**~~ — **done 2026-08-16.** All 27 specs and
+   all 5 unit files moved with their labels intact; `web/dev-harness/` is gone. What it added on
+   top of the framework: a per-spec check-count ratchet, an expiring quarantine file, and a unit
+   test over the suite's own bookkeeping. It also found three specs whose helpers had been quietly
+   broken by the move — the ratchet reported 0 checks where 30 were expected, which is the exact
+   failure it exists for.
+   **Next: the grading flow, `ParticipantsPage`, `GradeTablePage` and route guards.**
 6. **tsl and aae** — two components with no tests at all. Depends on nothing; parallelisable.
 7. **Migration tests against an anonymised copy** — once dev exists.
 8. **axe in the browser harness** — cheap, and there is already evidence it would find things.

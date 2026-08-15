@@ -33,7 +33,7 @@ Below it, **only while acting as admin**, an operating panel from `GET /admin/op
 (`@Secured("ROLE_ADMIN")`): uptime, heap, database pool, the Liquibase changeset the schema is on,
 grading queue depth per executor, and free disk. Not Spring Actuator — see the reasoning in
 `core/ems/service/operating_info.kt`. The hook is disabled for non-admins, so no request is made
-that could only 403. Covered by `dev-harness/scripts/about-operating-info.mjs`, which checks both
+that could only 403. Covered by `tests/browser/about-operating-info.spec.mjs`, which checks both
 the admin view and that a teacher neither sees the panel nor calls the endpoint.
 
 ### Telling a tab it is out of date
@@ -59,8 +59,8 @@ Four decisions worth knowing, because each is the answer to a way this goes wron
   it reports "no update" forever and looks exactly like being up to date.
 
 Dismissal is stored per commit in `localStorage`, so waving away today's release says nothing about
-next week's. Covered by `dev-harness/unit/web-version.mjs` (the comparison rules) and
-`dev-harness/scripts/web-update-banner.mjs` (the wiring and the buttons).
+next week's. Covered by `tests/unit/web-version.test.mjs` (the comparison rules) and
+`tests/browser/web-update-banner.spec.mjs` (the wiring and the buttons).
 
 ## Runtime configuration
 
@@ -115,7 +115,7 @@ at 16 characters. `colour` must be a hex colour (`#abc` or `#aabbcc`) and defaul
 is not — it is interpolated into the favicon's SVG, so a value that is not plainly a colour is
 replaced rather than escaped. Anything unparseable in the whole key degrades to "production"
 rather than to an error page. `src/environment.ts` is where all of it lives;
-`dev-harness/scripts/environment-badge.mjs` covers it.
+`tests/browser/environment-badge.spec.mjs` covers it.
 
 **Deploying** means writing that environment's `config.json` next to `index.html`. Serve it with
 `Cache-Control: no-store`: the app already fetches it with `cache: 'no-store'`, but a caching proxy
@@ -125,7 +125,7 @@ deploy at the wrong backend.
 All four of `emsRoot` and the `keycloak.*` keys are required. If `config.json` is missing,
 unparseable, or incomplete, the app renders
 a plain "Configuration error" page naming the problem instead of white-screening. That path is
-covered by `dev-harness/scripts/runtime-config.mjs`.
+covered by `tests/browser/runtime-config.spec.mjs`.
 
 ### Local overrides
 

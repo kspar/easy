@@ -11,7 +11,7 @@ export default mergeConfig(base, {
   resolve: {
     alias: {
       'keycloak-js': fileURLToPath(
-        new URL('./dev-harness/keycloak-stub.js', import.meta.url),
+        new URL('./tests/support/keycloak-stub.js', import.meta.url),
       ),
     },
   },

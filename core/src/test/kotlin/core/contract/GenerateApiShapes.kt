@@ -22,7 +22,7 @@ import kotlin.reflect.jvm.kotlinFunction
  *
  * ### The problem this solves
  *
- * Every browser test in `web/dev-harness` stubs the backend from fixtures we wrote by hand, and
+ * Every browser test in `web/tests` stubs the backend from fixtures we wrote by hand, and
  * nothing checks those fixtures still resemble what core returns. The failure mode is a **green
  * suite and a broken app**, and it has already happened once: a fixture kept
  * `anonymous_autoassess_template: null` after the column became non-nullable, and neither side
@@ -263,7 +263,7 @@ class GenerateApiShapes(@Autowired private val mapping: RequestMappingHandlerMap
                     "Regenerate with:\n" +
                     "  ./gradlew :core:test --tests '*GenerateApiShapes*' -Pcontract.write=true\n\n" +
                     "then READ the diff. A changed `nullable`, a changed wire name, or a removed field " +
-                    "is a breaking change for web/src/api/types.ts and the dev-harness fixtures."
+                    "is a breaking change for web/src/api/types.ts and the browser-suite fixtures."
         }
     }
 

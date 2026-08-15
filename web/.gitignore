@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Browser-suite output. Screenshots are diagnostic artifacts of a run, not fixtures — CI uploads
+# them on failure. playwright-report/ and test-results/ are the framework's own.
+tests/screenshots/
+playwright-report/
+test-results/
+coverage/

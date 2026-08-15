@@ -1,0 +1,151 @@
+// The admin page for system messages: listing with schedule state, creating, and the validation
+// that stops a message nobody can see.
+//
+//   cd web && npx playwright test admin-system-messages
+import { test } from '../support/spec.mjs'
+import { fakeApi, BASE_URL, waitUntil } from '../support/harness.mjs'
+
+test('admin-system-messages', async ({ launch, check }) => {
+  const ADMIN_EP = '/management/notifications'
+
+  const hourFromNow = (h) => new Date(Date.now() + h * 3600_000).toISOString()
+
+  const EXISTING = [
+    {
+      id: '1',
+      message: 'Maintenance tonight',
+      severity: 'URGENT',
+      link_url: 'https://example.org/n',
+      link_label: 'Details',
+      visible_from: null,
+      visible_until: null,
+      for_students: true,
+      for_teachers: true,
+      for_admins: true,
+    },
+    {
+      id: '2',
+      message: 'Teachers only: new grade export',
+      severity: 'INFO',
+      visible_from: hourFromNow(24), // not yet started
+      visible_until: hourFromNow(48),
+      for_students: false,
+      for_teachers: true,
+      for_admins: false,
+    },
+  ]
+
+  /** Open the admin page as an admin, with the given list and a recorder for writes. */
+  async function openPage(list) {
+    const { page, shot, close } = await launch({ shotPrefix: 'admin-msg-' })
+    // launch() pins activeRole to 'teacher'; this init script is added after it, so it wins — and it
+    // re-runs on every navigation, which setting localStorage after goto does not survive.
+    await page.addInitScript(() => localStorage.setItem('activeRole', 'admin'))
+    const posted = []
+    await fakeApi(
+      page,
+      [
+        [
+          ADMIN_EP,
+          ({ method, body }) => {
+            if (method === 'POST') {
+              posted.push(body)
+              return {}
+            }
+            return { messages: list }
+          },
+        ],
+        ['/management/common/notifications', () => ({ messages: [] })],
+        ['/account/checkin', () => ({})],
+        ['/courses', () => ({ courses: [] })],
+      ],
+      { log: false },
+    )
+    await page.goto(`${BASE_URL}/admin/messages`)
+    await waitUntil(async () => (await page.locator('h5').count()) > 0)
+    // The heading is not the list. `SystemMessagesPage` renders its title unconditionally and a
+    // spinner underneath while the query is in flight, so waiting for the h5 only proves the route
+    // mounted — and reading body text at that moment reads the spinner.
+    //
+    // That is exactly how this script failed in CI on 2026-08-11 while passing on every laptop: four
+    // checks reported missing messages, which reads as a broken admin page rather than as a page
+    // inspected too early. Reproduced locally by delaying the stubbed response 1.5s, which fails the
+    // same four and no others. Waiting for the spinner to go waits for the data, and still works for
+    // the empty-list case, which has no rows to wait for.
+    await waitUntil(async () => (await page.locator('[class*=MuiCircularProgress]').count()) === 0)
+    return { close, page, shot, posted }
+  }
+
+  // --- the list tells you what is on screen right now -----------------------------------------------
+  {
+    const { close, page, shot } = await openPage(EXISTING)
+    const body = (await page.locator('body').innerText()).replace(/\s+/g, ' ')
+
+    check('both messages listed', body.includes('Maintenance tonight') && body.includes('grade export'))
+    check('the live one is marked as showing now', body.includes('Showing now'))
+    // The whole reason to open this page: a future message reads as scheduled rather than making you
+    // compare two timestamps in your head.
+    check('the future one is marked scheduled', body.includes('Scheduled'))
+    check('a targeted message shows its audience', body.includes('Teacher'))
+    check('the link is shown with its label', body.includes('Details'))
+    await shot('01-list')
+    await close()
+  }
+
+  // --- creating one sends what was typed -------------------------------------------------------------
+  {
+    const { close, page, shot, posted } = await openPage([])
+    check('empty state is stated, not blank', (await page.locator('body').innerText()).includes('No messages yet'))
+
+    await page.getByRole('button', { name: 'New message' }).click()
+    await waitUntil(async () => (await page.locator('[role=dialog]').count()) > 0)
+
+    await page.locator('[role=dialog] textarea').first().fill('Planned outage at 21:00')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await waitUntil(() => posted.length > 0)
+
+    check(`create posted once (${posted.length})`, posted.length === 1)
+    check(`message text sent (${posted[0]?.message})`, posted[0]?.message === 'Planned outage at 21:00')
+    check(`severity defaults to INFO (${posted[0]?.severity})`, posted[0]?.severity === 'INFO')
+    // Defaults matter: a new message with no audience ticked would be invisible to everyone, so the
+    // form starts with all three on rather than none.
+    check(
+      'all three audiences default on',
+      posted[0]?.for_students === true && posted[0]?.for_teachers === true && posted[0]?.for_admins === true,
+    )
+    check('no id is sent for a new message', !('id' in (posted[0] ?? {})))
+    await shot('02-created')
+    await close()
+  }
+
+  // --- the form refuses what core would refuse --------------------------------------------------------
+  {
+    const { close, page, shot } = await openPage([])
+    await page.getByRole('button', { name: 'New message' }).click()
+    await waitUntil(async () => (await page.locator('[role=dialog]').count()) > 0)
+
+    const save = page.getByRole('button', { name: 'Save' })
+    check('save is disabled with an empty message', await save.isDisabled())
+
+    await page.locator('[role=dialog] textarea').first().fill('Something')
+    check('save enables once there is text', await save.isEnabled())
+
+    // Half a link renders as a button with no text, or a promise the banner cannot keep.
+    await page.getByLabel('Link URL').fill('https://example.org')
+    check('half a link disables save', await save.isDisabled())
+    await page.getByLabel('Link text').fill('Read more')
+    check('a complete link re-enables it', await save.isEnabled())
+
+    // Nobody selected means a message that will never be shown — worth stopping before it is stored.
+    for (const role of ['Student', 'Teacher', 'Admin']) {
+      await page.getByRole('checkbox', { name: role }).uncheck()
+    }
+    check('no audience disables save', await save.isDisabled())
+    check(
+      'and says why',
+      (await page.locator('[role=dialog]').innerText()).includes('never be shown'),
+    )
+    await shot('03-validation')
+    await close()
+  }
+})

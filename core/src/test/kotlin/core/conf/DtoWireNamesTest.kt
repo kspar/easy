@@ -172,7 +172,7 @@ class DtoWireNamesTest(@Autowired private val mapping: RequestMappingHandlerMapp
                     wrong.joinToString("\n") { "  $it" } +
                     "\n\nThe whole v2 API is snake_case, and a single exception gets worked around on " +
                     "the client rather than fixed. Note that changing one is a breaking API change: " +
-                    "check web/src/api/types.ts and the dev-harness fixtures before renaming."
+                    "check web/src/api/types.ts and the browser-suite fixtures before renaming."
         }
     }
 }

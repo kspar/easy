@@ -111,9 +111,7 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: |
-            web/package-lock.json
-            web/dev-harness/package-lock.json
+          cache-dependency-path: web/package-lock.json
       - name: Install
         run: npm ci
       # Fails on errors only. There is a known backlog of react-hooks findings kept at warning
@@ -125,36 +123,39 @@ jobs:
       - name: Typecheck and build
         run: npm run build
 
-      # Pure functions, no browser, no framework — Node imports the TypeScript directly. Runs
-      # before the browser suite because it needs neither Chromium nor the stub server, so when
-      # the markdown commands break this is the job that says so in seconds.
+      # Pure functions, no browser — vitest resolves the TypeScript sources directly. Runs before
+      # the browser suite because it needs neither Chromium nor the stub server, so when the
+      # markdown commands break this is the job that says so in seconds. It also holds the suite's
+      # own bookkeeping checks (tests/unit/suite-integrity.test.mjs): an expired quarantine entry
+      # or an unratcheted spec fails here, in seconds, rather than after a five-minute browser run.
       - name: Unit tests
         run: npm run test:unit
 
       # Browser tests: real Chromium, real router and components, backend faked by Playwright
-      # route interception. See doc/web/browser-testing.md. Only the backend-free scripts run
-      # here — run-suite.mjs holds the list, and starts/stops the stub dev server itself.
-      # `cd` rather than a step-level working-directory: this job already sets
-      # defaults.run.working-directory, and stacking an override on it is a path ambiguity that
-      # would only surface as a red build.
-      - name: Install browser harness
-        run: cd dev-harness && npm ci
-      # Playwright's own chromium rather than the runner image's Chrome, so the browser version
-      # is pinned by the playwright dependency and can't drift underneath us.
+      # route interception. See doc/web/browser-testing.md. Playwright starts and stops the stub
+      # dev server itself (webServer in playwright.config.ts).
+      #
+      # Playwright's own chromium rather than the runner image's Chrome, so the browser version is
+      # pinned by the @playwright/test dependency and can't drift underneath us — which is what
+      # HARNESS_BROWSER_CHANNEL='' below selects.
       - name: Install Chromium
-        run: cd dev-harness && npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium
       - name: Browser tests
         env:
           HARNESS_BROWSER_CHANNEL: ''
         run: npm run test:browser
-      # The screenshots are the only way to tell a layout regression from a timing flake once
-      # the runner is gone.
-      - name: Publish failure screenshots
+      # On failure: the HTML report, the traces, and the screenshots each spec takes as it goes.
+      # A trace is the difference between "we know it broke" and "we know why" once the runner is
+      # gone, and PW_TRACE defaults to on under CI for exactly that reason.
+      - name: Publish browser test report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: browser-test-screenshots-${{ github.sha }}
-          path: web/dev-harness/screenshots/
+          name: browser-test-report-${{ github.sha }}
+          path: |
+            web/playwright-report/
+            web/test-results/
+            web/tests/screenshots/
           if-no-files-found: ignore
           retention-days: 7
 

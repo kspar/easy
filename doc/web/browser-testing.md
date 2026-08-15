@@ -4,9 +4,8 @@ For the backend equivalent — calling core with curl and A/B-ing two builds —
 `doc/core/api-testing.md`.
 
 This is how to exercise a page end to end — real router, real components, real MUI, real
-react-query — with Keycloak and every API response faked. Some of these scripts now run in
-CI (see "Running" below); the rest are manual tools. It has caught bugs that reading the
-code did not:
+react-query — with Keycloak and every API response faked. All of it runs in CI, on every push, as
+part of the gate a deploy is allowed to act on. It has caught bugs that reading the code did not:
 
 - an SVG that silently never rendered, because `sx={{ stroke: 'primary.main' }}` is not a
   resolvable theme token and produced no stroke at all
@@ -24,73 +23,136 @@ All three were invisible in the source and obvious in a screenshot or a timing n
 
 ## The harness is checked in — don't rebuild it
 
-Everything lives in **`web/dev-harness/`** and is committed. `node_modules` and
-`screenshots/` are gitignored; nothing needs to be created or deleted per session.
+Everything lives in **`web/tests/`** and is committed. Nothing needs to be created or deleted per
+session.
 
 ```
+web/playwright.config.ts         the browser suite: workers, timeouts, the stub dev server
+web/vitest.config.ts             the unit suite
 web/vite.stub.config.ts          dev server with keycloak-js aliased to the stub
-web/dev-harness/
-  keycloak-stub.js               fake IdP; role comes from localStorage.stubRole
-  harness.mjs                    launch() / fakeApi() / json() / checker()
-  package.json                   playwright, kept out of web/package.json
-  scripts/*.mjs                  one script per page under test, plus
-                                 runtime-config.mjs which covers boot-time
-                                 config loading and its failure screens
+web/tests/
+  browser/*.spec.mjs             one spec per page under test, plus runtime-config
+                                 which covers boot-time config loading and its
+                                 failure screens
+  unit/*.test.mjs                pure functions, no browser (see "Unit tests" below)
+  support/
+    keycloak-stub.js             fake IdP; role comes from localStorage.stubRole
+    harness.mjs                  launch() / fakeApi() / json() / waitUntil()
+    spec.mjs                     the `test` every spec imports: check(), the ratchets
+    contract.mjs                 fixtures vs doc/core/api-shapes.json
+    quarantine.mjs               the rules for muting a check, and their expiry
+  expected-checks.json           per-spec check counts — the ratchet
+  contract-baseline.json         per-spec allowed fixture drift
+  quarantine.json                temporary, expiring exemptions (normally empty)
   screenshots/                   output (gitignored)
 ```
 
-First time on a new machine:
+`web/dev-harness/` is gone: it had its own `package.json`, its own lockfile and its own dependabot
+entry, all for two dependencies. `@playwright/test` and `vitest` are devDependencies of
+`web/package.json` now, so `npm ci` in `web/` is the whole install.
 
-```sh
-cd web/dev-harness && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install
-```
-
-`chromium.launch({ channel: 'chrome' })` drives the Chrome that's already installed, so
-there's no 130MB browser download.
+Playwright drives the Chrome that's already installed, so there's no 130MB browser download on a
+laptop. CI pins the browser instead — see below.
 
 ## Running
 
-The whole backend-free suite, which starts and stops its own dev server:
-
 ```sh
-cd web/dev-harness && npm test        # -> node run-suite.mjs
+cd web
+npm run test:browser                    # everything, what CI runs
+npx playwright test grade-table         # one spec; the filter is a path substring
+npx playwright test --ui                # pick, watch, and time-travel through them
+npx playwright test --headed            # watch it happen in a real window
+npx playwright test --debug             # step through with the inspector
 ```
 
-That is what CI runs, as a step in the `web` job. `run-suite.mjs` holds the list of scripts
-that are safe without a backend — add new ones there, or they run nowhere but your laptop.
+Playwright starts and stops the stub dev server itself, so there is no second terminal any more.
+Each spec still prints a `✅`/`❌` line per check and a `📷` line per screenshot.
 
-For a single script, run the dev server in one terminal:
+**Run a filtered subset while iterating.** The full suite takes minutes and CI runs all of it on
+every push, so re-running everything locally after each edit buys very little and costs real
+waiting. Run the spec covering what you changed; let CI catch the rest.
 
-```sh
-cd web/dev-harness && npm run serve
-```
+There are no per-spec npm aliases to keep in step any more, and no list of scripts to add to.
+`npx playwright test <substring>` is the framework's own filter and cannot go stale, and every
+`*.spec.mjs` under `tests/browser/` runs by default — which is the point: the old runner named its
+27 scripts explicitly, and the 28th on disk quietly ran nowhere for months.
 
-and the script in another, by its alias in `dev-harness/package.json`:
+### Specs that need a real backend
 
-```sh
-cd web/dev-harness && npm run library-exercise-ui
-```
-
-Either way it prints a `✅`/`❌` line per check, a `📷` line per screenshot, and exits
-non-zero if anything failed.
-
-### Scripts that need a real backend
-
-`library-exercise-tsl-live.mjs` relays `/v2/tsl/compile` to a core on :8080 to prove the TSL
+`library-exercise-tsl-live.spec.mjs` relays `/v2/tsl/compile` to a core on :8080 to prove the TSL
 JSON the visual editor produces actually decodes on the Kotlin side — kotlinx.serialization
 runs with `ignoreUnknownKeys = false`, so a stub cannot answer that question. It needs
 `easy.core.auth-enabled: false` and the `tiivad:tsl-compose` container image registered and
 attached to an executor (`POST /v2/container-images`, then `PUT /v2/executors/{id}`).
-It is excluded from `run-suite.mjs` and from CI for exactly that reason.
+
+It skips itself unless asked for:
+
+```sh
+HARNESS_LIVE=1 npx playwright test tsl-live
+```
+
+Skipped rather than excluded, so every run lists it — being invisible is how the old suite lost
+track of it.
 
 ### In CI
 
 The browser is Playwright's own chromium rather than the runner's Chrome, so the version is
-pinned by the `playwright` dependency: CI sets `HARNESS_BROWSER_CHANNEL=''` and runs
-`npx playwright install --with-deps chromium`. Locally the variable is unset and the harness
-drives the Chrome you already have, so there is still no 130MB download. Screenshots are
-uploaded as an artifact when the step fails — usually the fastest way to tell a real
-regression from a slow runner.
+pinned by the `@playwright/test` dependency: CI sets `HARNESS_BROWSER_CHANNEL=''` and runs
+`npx playwright install --with-deps chromium`. Locally the variable is unset and the suite
+drives the Chrome you already have.
+
+On failure CI uploads the HTML report, the screenshots, and a **trace** per spec — the
+time-travelling recording of everything the browser did. Open one with
+`npx playwright show-trace path/to/trace.zip`. Tracing is on by default under CI and off by default
+locally (`PW_TRACE=1` / `PW_TRACE=0` to force it), because on a laptop a failure can be reproduced
+by re-running one spec and on a runner it cannot be reproduced at all.
+
+**`retries` is 0 and should stay 0.** A retry converts an intermittent failure into a green build
+plus a log line nobody reads, and the flakes this suite has are mostly *product* timing bugs — the
+90ms redirect, a poll that stops, refetch races — exactly the class a retry hides. The escape hatch
+is quarantine, below.
+
+## The three things that keep a green run meaningful
+
+A browser test that stops early looks exactly like one that passed. An early return, a swallowed
+locator error, a `waitFor` that throws past the remaining assertions — every one of those is green
+without help. So three counts are ratcheted, all enforced from `check`:
+
+- **`expected-checks.json`** — how many checks each spec must report. Fewer fails the build.
+  Regenerate on a **green** suite with `npm run test:browser:record`, and if a number goes down,
+  say why in the commit.
+- **`contract-baseline.json`** — how much each spec's fixtures may disagree with
+  `doc/core/api-shapes.json`. The number may fall, never rise.
+- **`quarantine.json`** — normally `[]`. An entry mutes one check, by exact label, and needs a
+  `spec`, `label`, `issue`, `note` and an `expires` at most 14 days out. An expired entry, a
+  missing field, or an entry whose label no longer matches anything **fails the build**. Quarantine
+  a check, never a spec — muting a whole file removes coverage nobody is counting.
+
+`tests/unit/suite-integrity.test.mjs` checks the bookkeeping itself in milliseconds: an expired
+quarantine entry or a spec nobody is counting fails there, before a browser starts.
+
+## Unit tests
+
+`tests/unit/*.test.mjs`, run by vitest:
+
+```sh
+cd web
+npm run test:unit
+npx vitest --watch          # while iterating
+npx vitest --coverage       # report-only, no threshold
+```
+
+They import the TypeScript sources directly — vitest resolves them, which is why the old runner's
+esbuild bundling step is gone.
+
+**Which logic goes where.** Anything decidable from values alone — a merge rule, a comparator, a
+formatter, a parser — belongs here, and belongs in a plain module extracted out of the component so
+it can be. Anything needing layout, the cascade, focus, or the router goes in `tests/browser/`.
+
+**There are deliberately no jsdom component tests.** The bugs this app actually ships need a real
+browser: an unresolvable `sx` token producing no stroke, `animation-fill-mode` outranking a
+transition, MUI only wiring `InputLabel`→`Select` when both carry ids, a `<button>` nested inside
+another. jsdom catches none of those while duplicating the browser suite at lower fidelity.
 
 ## Why the app can't just be pointed at a fake IdP
 
@@ -100,36 +162,48 @@ than it looks: the dev server proxies `/v2` to `localhost:8080`, so Playwright's
 interception, which happens inside the browser *before* the proxy, stands in for the whole
 backend.
 
-## Writing a new script
+## Writing a new spec
 
-`harness.mjs` carries the boilerplate. A minimal script:
+Drop a `*.spec.mjs` in `tests/browser/` and it runs. A minimal one:
 
 ```js
-import { launch, fakeApi, json, checker, BASE_URL } from '../harness.mjs'
+import { test } from '../support/spec.mjs'
+import { fakeApi, json, BASE_URL } from '../support/harness.mjs'
 
-const { browser, page, shot } = await launch({ role: 'teacher,admin', shotPrefix: 'my-page-' })
-const check = checker()
+test('my-page', async ({ launch, check }) => {
+  const { page, shot, close } = await launch({ role: 'teacher,admin', shotPrefix: 'my-page-' })
 
 // Handlers are [urlSubstringOrRegex, handler] pairs, tried in order.
 // Return a value to send it as JSON, or call route.fulfill yourself and return undefined.
 // Anything unmatched is fulfilled with {} and logged as [unstubbed].
-const calls = await fakeApi(page, [
-  ['/account/checkin', () => ({})],
-  [/\/teacher\/courses\/\d+\/exercises(\?|$)/, () => ({ exercises: EXERCISES })],
-])
+  const calls = await fakeApi(page, [
+    ['/account/checkin', () => ({})],
+    [/\/teacher\/courses\/\d+\/exercises(\?|$)/, () => ({ exercises: EXERCISES })],
+  ])
 
-await page.goto(`${BASE_URL}/courses/9006/exercises`)
-await page.waitForSelector('a[href*="/exercises/"]')
+  await page.goto(`${BASE_URL}/courses/9006/exercises`)
+  await page.waitForSelector('a[href*="/exercises/"]')
 
-check('rows render', (await page.locator('a[href*="/exercises/"]').count()) === 4)
-await shot('01-list')
+  check('rows render', (await page.locator('a[href*="/exercises/"]').count()) === 4)
+  await shot('01-list')
 
-process.exit(check.summary() ? 0 : 1)
+  await close()
+})
 ```
+
+`check()` records and keeps going, so one run reports every problem rather than the first — it is
+`expect.soft` underneath. Once the spec is green, run `npm run test:browser:record` so it is
+ratcheted like the others; until then the run prints a note saying it is not.
 
 `launch()` options: `role`, `language` (default `'en'`), `theme`, `colorScheme`, `viewport`,
 `reducedMotion`, `shotPrefix`. It also forwards browser console errors and page errors to
-stdout, which is how you notice a broken query without asserting on it.
+stdout, which is how you notice a broken query without asserting on it. Call it more than once for
+a spec that needs a second visitor or a dark-mode pass; `close()` closes that context, and anything
+you forget is closed for you.
+
+**One test per spec file** is the convention, not a rule. Splitting a spec into several `test()`
+blocks buys parallelism inside the file — but the specs share a screenshot prefix and a single
+check count, so do it deliberately rather than by habit.
 
 ## Gotchas, all of which cost me time
 

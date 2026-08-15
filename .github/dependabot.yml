@@ -40,19 +40,9 @@ updates:
     # a client-only SPA (see EZ-1720) — but that is a decision to re-make when a PR appears, not
     # one to bury here where nobody would find it.
 
-  # The Playwright browser-testing harness. Committed but not shipped, so it moves on its own
-  # schedule and never needs to be urgent.
-  - package-ecosystem: npm
-    directory: /web/dev-harness
-    schedule:
-      interval: monthly
-    open-pull-requests-limit: 2
-    groups:
-      dev-harness:
-        patterns:
-          - "*"
-    commit-message:
-      prefix: "deps(dev-harness)"
+  # The browser-testing harness used to live in web/dev-harness with its own package.json and its
+  # own dependabot entry. It is web/tests/ now, and @playwright/test and vitest are devDependencies
+  # of web/package.json — so the entry above already covers them. Nothing to add here.
 
   # --- Executor -------------------------------------------------------------------------------
   # These pins reached 2019 untouched and stopped being installable (EZ-1720). Weekly grouping is
