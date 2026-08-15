@@ -125,11 +125,24 @@ easy_core_moodle_grades_wsfunction: local_ut_custom_update_manual_grades
 easy_core_moodle_format: json
 
 # --- file storage -------------------------------------------------------------------------------------
-# `local` by default, because an S3 bucket is a real external system and this role's whole posture is
-# that a host which has not been told what to do cannot reach one. The outbound-safety catch below
-# refuses `s3` unless easy_core_allow_real_outbound says this environment may.
+# `local` by default, because a host that has not been told where to put files should put them
+# somewhere harmless rather than guess at a bucket.
 easy_core_storage_backend: local
 easy_core_storage_local_dir: /srv/easy/files
+
+# Whether this environment may use an object store at all. Its own switch, deliberately NOT
+# easy_core_allow_real_outbound.
+#
+# That flag means "may reach systems that affect real people and real data we do not control" — a
+# real Moodle gradebook, the identity provider whose accounts the deletion cron removes, mail to
+# actual students. A dedicated dev bucket is none of those: it is ours, it is disposable, and the
+# damage it can do is bounded by the bucket it is pointed at.
+#
+# The first version of this guard hung S3 off easy_core_allow_real_outbound, which would have forced
+# dev to set that true — switching off the Moodle, account-deletion and mail assertions as the price
+# of storing files. Five checks disabled to enable one feature is the wrong trade, and the kind that
+# gets made at 6pm and never revisited. The bucket still has its own guard below.
+easy_core_storage_allow_s3: false
 
 # No default for the bucket. Two reasons, and the second is the one that bites: an S3 bucket is
 # shared-nothing only if you make it so, and dev's database is an anonymised copy of production's.

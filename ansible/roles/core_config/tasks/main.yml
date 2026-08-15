@@ -100,17 +100,20 @@
     quiet: true
   when: not easy_core_allow_real_outbound | bool
 
-- name: Refuse object storage on an environment that may not reach real systems
-  # An S3 bucket is a real external system, and this one is not read-only from our side: the nightly
-  # sweep lists it and deletes objects that have no matching database row.
+- name: Refuse object storage on an environment that has not opted into it
+  # Not gated on easy_core_allow_real_outbound — see the note on easy_core_storage_allow_s3. This is
+  # its own decision because the risk is its own shape: the nightly sweep lists the bucket and
+  # deletes objects that have no matching row here, so a host pointed at a bucket it does not own
+  # destroys data rather than merely reading someone else's.
   ansible.builtin.assert:
     that: easy_core_storage_backend != 's3'
     fail_msg: >-
-      easy_core_storage_backend is 's3' while easy_core_allow_real_outbound is false. The stored-file
-      sweep lists that bucket and deletes objects with no row in this host's database, so pointing a
-      half-configured environment at a real bucket is a destructive operation, not a read.
+      easy_core_storage_backend is 's3' but easy_core_storage_allow_s3 is false. Set that in this
+      environment's group_vars once it has a bucket of its own — and note "of its own" is the load
+      bearing part, because the stored-file sweep deletes objects that have no row in THIS host's
+      database.
     quiet: true
-  when: not easy_core_allow_real_outbound | bool
+  when: not easy_core_storage_allow_s3 | bool
 
 - name: Refuse to continue without the S3 values that have no safe default
   ansible.builtin.assert:
