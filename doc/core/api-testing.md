@@ -109,8 +109,20 @@ doc/core/articles-check.sh
 doc/core/files-check.sh
 ```
 
-`files-check.sh` runs against either storage backend and says which it found; `s3-setup.md` in this
-directory covers pointing a core at a real bucket.
+`files-check.sh` runs against either storage backend and says which it found. For a **deployed**
+environment there is `s3-check.sh`, which asks a different question — not "are the endpoints
+correct" but "is this environment's bucket, credentials and proxying actually wired up", which no
+amount of local testing can answer:
+
+```sh
+AWS_PROFILE=easy-dev-test BUCKET=lahendus-dev-files \
+  doc/core/s3-check.sh https://dev.ems.lahendus.ut.ee/v2 https://dev.lahendus.ut.ee
+```
+
+Its three sections skip cleanly when their prerequisites are missing, so a partial run reports as
+partial rather than as green. The upload section needs `EASY_TOKEN`, because a deployed
+environment has real authentication and the `oidc_claim_*` trick does not work there.
+`s3-setup.md` covers building the bucket in the first place.
 
 They exist because of what they check. `articles-check.sh` checks whether an unpublished article is
 invisible to non-admins and to the internet — a rule that lives in a SQL predicate.
