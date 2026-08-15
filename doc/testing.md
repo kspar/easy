@@ -29,18 +29,18 @@ and every count in here turned out to be wrong.
 Counted, not estimated — and this time with the commands, because hand-maintained numbers going
 stale is exactly what happened to the first version of this table.
 
-**As of 2026-08-15:**
+**As of 2026-08-16:**
 
 | | Size | Tests |
 | --- | --- | --- |
-| **core** | 117 `@RestController` classes (124 endpoints) | 17 test files, **56 `@Test` methods, all running** |
+| **core** | 117 `@RestController` classes (124 endpoints) | 26 test files, **93 `@Test` methods, all running** |
 | **web** | 119 `.ts`/`.tsx` files, 29,292 LOC | 4 unit files, 28 browser scripts (27 in CI) |
 | **tsl / tsl-common** | the TSL compiler | none |
 | **aae** | the executor | none |
 
 ```sh
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 117
-find core/src/test/kotlin -name '*.kt' | wc -l                   # 12
+find core/src/test/kotlin -name '*.kt' | wc -l                   # 26
 find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 119
 ls web/dev-harness/scripts/*.mjs | wc -l                         # 28
 grep -ho 'check(' web/dev-harness/scripts/*.mjs | wc -l          # 599 call sites
@@ -69,7 +69,7 @@ page in the app.
 
 ### The backend blocker is gone
 
-**All 40 core tests now run, in CI and on a laptop, with no setup.** EZ-1715 landed on 2026-08-15,
+**All 93 core tests now run, in CI and on a laptop, with no setup** — 32 when this started, of which 25 ran. EZ-1715 landed on 2026-08-15,
 but not as written: Testcontainers rather than a postgres service container, because a service
 container fixes CI and leaves the laptop exactly as broken as it was — which is *why* the
 database-backed tests had stopped running in both places. `DEVELOPMENT.md` §5 has the mechanics.
@@ -352,13 +352,14 @@ list predates that goal. A browser test whose backend is Playwright route interc
 against *any* backend, including a broken one. It cannot gate a backend deploy, by construction.
 
 1. ~~**EZ-1715** — postgres in CI~~ — **done 2026-08-15.**
-2. **Endpoint security surface** (EZ-1769) — reflection guards **done 2026-08-15**; the
-   authorization matrix (sample registry × four callers) is what remains, and it is the item that
-   turns "we tested some endpoints" into "no endpoint is reachable by a role that should not reach
-   it".
-3. **Contract checks** (EZ-1770) — stops the browser suite drifting from reality. **Depends on
-   nothing; start it in parallel with 2.**
-4. **Service tests for access control** — internet-reachable, and wrong answers are silent.
+2. ~~**Endpoint security surface and authorization matrix** (EZ-1769)~~ — **done 2026-08-15.**
+   Anonymous gets 401 on all 124 endpoints bar the five public ones; a role outside `@Secured` gets
+   exactly 403 across ~250 combinations.
+3. ~~**Contract checks** (EZ-1770)~~ — **done 2026-08-15.** `doc/core/api-shapes.json` is
+   generated and pinned; the browser harness checks every fixture against it. The TypeScript half
+   is EZ-1772.
+4. ~~**Service tests for access control**~~ — **done 2026-08-16**, with grading behaviour
+   alongside it: the threshold boundary, the four counts, and per-student visibility exceptions.
 5. **Web migration to `@playwright/test` + `vitest`**, then the grading flow, `ParticipantsPage`,
    `GradeTablePage` and route guards.
 6. **tsl and aae** — two components with no tests at all. Depends on nothing; parallelisable.
