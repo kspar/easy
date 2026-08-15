@@ -27,11 +27,7 @@ import org.springframework.web.util.pattern.PathPatternParser
 class EndpointSecuritySurfaceTest(@Autowired private val mapping: RequestMappingHandlerMapping) {
 
     private val endpoints: List<Endpoint> by lazy { EndpointInventory.all(mapping) }
-    private val parser = PathPatternParser()
-
-    private fun isPermitAll(e: Endpoint) = PERMIT_ALL_PATTERNS.any { pattern ->
-        parser.parse(pattern).matches(PathContainer.parsePath(e.pattern))
-    }
+    private fun isPermitAll(e: Endpoint) = isPermitAllPath(e.pattern)
 
     /**
      * Endpoints that are deliberately reachable by any authenticated user, with no `@Secured`.
@@ -119,11 +115,11 @@ class EndpointSecuritySurfaceTest(@Autowired private val mapping: RequestMapping
 
     @Test
     fun `every permitAll pattern matches at least one real endpoint`() {
+        // Per-pattern, so this needs its own matcher rather than isPermitAllPath's "any of them".
+        val parser = PathPatternParser()
         val orphans = PERMIT_ALL_PATTERNS.filter { pattern ->
             val parsed = parser.parse(pattern)
-            endpoints.none {
-                parsed.matches(org.springframework.http.server.PathContainer.parsePath(it.pattern))
-            }
+            endpoints.none { parsed.matches(PathContainer.parsePath(it.pattern)) }
         }
 
         assertTrue(orphans.isEmpty()) {

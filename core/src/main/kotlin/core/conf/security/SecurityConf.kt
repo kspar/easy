@@ -20,9 +20,11 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
 import org.springframework.security.web.firewall.HttpFirewall
 import org.springframework.security.web.firewall.StrictHttpFirewall
+import org.springframework.http.server.PathContainer
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+import org.springframework.web.util.pattern.PathPatternParser
 
 
 /**
@@ -80,6 +82,18 @@ internal val PERMIT_ALL_PATTERNS = arrayOf(
     // Two segments, not `/**`, so anything deeper still fails closed.
     "/*/resource/*/*",
 )
+
+/**
+ * Whether [path] — a resolved mapping pattern such as `/v2/unauth/versions` — is reachable without
+ * authentication under [PERMIT_ALL_PATTERNS].
+ *
+ * Lives here beside the patterns rather than in a test, because two tests need the same answer and
+ * a second copy of "what counts as public" is the one duplication this area cannot afford.
+ */
+internal fun isPermitAllPath(path: String): Boolean {
+    val parser = PathPatternParser()
+    return PERMIT_ALL_PATTERNS.any { parser.parse(it).matches(PathContainer.parsePath(path)) }
+}
 
 @Configuration
 @EnableWebSecurity
