@@ -119,6 +119,15 @@ easy_core_mail_sys_to: "root@localhost"
 # No default for the URLs or the token. `moodle-sync.grades.url` is reachable from a *manual*
 # endpoint (`SyncMoodleAllGrades.kt`) as well as a cron, so pinning the cron alone does not stop a
 # tester clicking "sync grades" and writing into a real gradebook.
+# Whether this environment may point at a real Moodle. Its own switch, like storage's, so that
+# testing the integration does not cost you the mail and account-deletion assertions.
+#
+# It is NOT the same trade as S3, though, and the difference is why this one comes with a condition.
+# A dev bucket is ours and disposable; a real Moodle is a real gradebook belonging to real students.
+# So turning this on is only permitted together with a non-empty course allowlist below — the
+# combination "real Moodle, no allowlist" is the dangerous one, and the role refuses to write it.
+easy_core_moodle_allow_real: false
+
 # Moodle course shortnames this environment may contact, comma-separated. Empty is UNRESTRICTED,
 # which is right for production — it syncs whatever teachers have linked, and an allowlist there
 # would be a list nobody maintains.

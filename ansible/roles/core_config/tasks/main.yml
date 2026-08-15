@@ -87,7 +87,24 @@
   loop:
     - "{{ easy_core_moodle_users_url }}"
     - "{{ easy_core_moodle_grades_url }}"
-  when: not easy_core_allow_real_outbound | bool
+  when:
+    - not easy_core_allow_real_outbound | bool
+    - not easy_core_moodle_allow_real | bool
+
+- name: Refuse a real Moodle without an allowlist to bound it
+  # The pairing is the point. An environment that may reach a real Moodle but may reach ALL of it is
+  # the configuration this whole guard exists to prevent — and it is the one that looks fine, because
+  # nothing fails until a tester submits a solution and a real gradebook changes.
+  ansible.builtin.assert:
+    that: easy_core_moodle_course_allowlist | length > 0
+    fail_msg: >-
+      easy_core_moodle_allow_real is true but easy_core_moodle_course_allowlist is empty, which means
+      unrestricted. Name the course shortnames this environment may touch — in the environment's
+      gitignored inventory, since a real course name does not belong in a public repository.
+    quiet: true
+  when:
+    - easy_core_moodle_allow_real | bool
+    - not easy_core_allow_real_outbound | bool
 
 - name: Refuse an unpinned account-deletion cron
   ansible.builtin.assert:
