@@ -83,11 +83,11 @@
     "accountMenu": "Konto menüü"
   },
   "environment": {
-    "notProduction": "See ei ole päriskeskkond — siinseid andmeid võidakse igal ajal muuta või kustutada."
+    "notProduction": "See on arenduskeskkond — siinseid andmeid võidakse igal ajal muuta või kustutada."
   },
   "update": {
-    "available": "Lahendusest on saadaval uus versioon. Selle kasutuselevõtuks laadi leht uuesti — salvestamata töö redaktoris läheb kaotsi, nii et lõpeta enne pooleliolev tegevus.",
-    "reload": "Laadi uuesti",
+    "available": "Rakendust on uuendatud, palun salvesta muudatused ja värskenda lehte.",
+    "reload": "Värskenda",
     "dismiss": "Mitte praegu"
   },
   "courses": {

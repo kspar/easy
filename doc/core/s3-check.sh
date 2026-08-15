@@ -14,13 +14,29 @@
 #
 #   A. the bucket           needs AWS_PROFILE and BUCKET
 #   B. the serve path       needs nothing at all
-#   C. the full cycle       needs EASY_TOKEN (a bearer token for a teacher or admin)
+#   C. the full cycle       needs a teacher/admin bearer token
 #
-# Getting a token: sign in to the web app and copy it out of the network tab, or use the IdP's
-# password grant. It is short-lived by design, so this is a per-session thing.
+# The token is minted, not pasted. A dedicated Keycloak client with a service account
+# (`easy-dev-test-runner` on dev) holds the long-lived half; this script exchanges its secret for a
+# ten-minute access token on each run. That way the durable credential is a rotatable secret sitting
+# in the login keychain rather than a bearer token lying around in a shell history.
 #
-#   EASY_TOKEN=eyJ... AWS_PROFILE=easy-dev-test BUCKET=lahendus-dev-files \
+# Store the secret once, the same way ansible/run.sh stores the become password:
+#
+#   security add-generic-password -a "$USER" -s easy-dev-test-token -T /usr/bin/security -U -w
+#
+# Then just:
+#
+#   AWS_PROFILE=easy-dev-test BUCKET=lahendus-dev-files \
 #     doc/core/s3-check.sh https://dev.ems.lahendus.ut.ee/v2 https://dev.lahendus.ut.ee
+#
+# EASY_TOKEN still overrides, for a token obtained some other way. The client, keychain item and
+# token endpoint are overridable too — see the variables below — so this is not dev-only by
+# construction, though pointing section C at production would still be a bad idea.
+#
+# The service account needs three claims or core answers 401: preferred_username (free),
+# email and easy_role (a JSON array of student/teacher/admin). Hardcode the latter two as mappers on
+# the client's dedicated scope; a service account has no email of its own.
 #
 # NEVER point section C at production. It uploads a file and deletes it again; the upload is
 # harmless but it is still a write, and a deployed production is not a test fixture.
@@ -31,6 +47,35 @@ WEB="${2:-}"
 TOKEN="${EASY_TOKEN:-}"
 PROFILE="${AWS_PROFILE:-}"
 BUCKET="${BUCKET:-}"
+
+KEYCHAIN_ITEM="${EASY_TOKEN_KEYCHAIN:-easy-dev-test-token}"
+TOKEN_CLIENT="${EASY_TOKEN_CLIENT_ID:-easy-dev-test-runner}"
+TOKEN_URL="${EASY_TOKEN_URL:-https://easy-idp-dev.cloud.ut.ee/auth/realms/master/protocol/openid-connect/token}"
+
+# Mint one if we were not handed one. Deliberately quiet about everything except success or the
+# IdP's own error string: the secret must not reach a terminal, a log or a transcript, and neither
+# should the token — printing it would undo the point of it being short-lived.
+if [ -z "$TOKEN" ] && command -v security >/dev/null 2>&1; then
+  _secret=$(security find-generic-password -a "$USER" -s "$KEYCHAIN_ITEM" -w 2>/dev/null || true)
+  if [ -n "$_secret" ]; then
+    TOKEN=$(curl -s -m 30 -d grant_type=client_credentials -d "client_id=$TOKEN_CLIENT" \
+              --data-urlencode "client_secret=$_secret" "$TOKEN_URL" \
+            | python3 -c "
+import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    print('', end=''); raise SystemExit
+if 'access_token' in d:
+    print(d['access_token'], end='')
+else:
+    print('', end='')
+    sys.stderr.write('  token request refused: %s - %s\n' % (d.get('error'), d.get('error_description')))
+")
+    [ -n "$TOKEN" ] && echo "minted a token for $TOKEN_CLIENT (short-lived, never printed)"
+  fi
+  unset _secret
+fi
 
 pass=0; fail=0; skip=0
 tmpdir=$(mktemp -d)
@@ -102,10 +147,19 @@ fi
 echo
 echo "C. upload, serve, delete"
 if [ -z "$TOKEN" ]; then
-  skipped "the whole write path" "set EASY_TOKEN to a teacher or admin bearer token"
+  skipped "the whole write path" "no token — store the client secret in keychain item '$KEYCHAIN_ITEM'"
   echo "         (this is the half that exercises the environment's own S3 credentials)"
 else
   AUTH=(-H "Authorization: Bearer $TOKEN")
+
+  # An identity that has never signed in has no `account` row, and stored_file.created_by_id is a
+  # foreign key to it — so the first upload fails on fk_stored_file_owner with a 500, *after* the
+  # object has already been written to S3. The SPA calls this at login; a service account never
+  # logs in, so the script has to. Idempotent, so running it every time costs nothing.
+  CHECKIN=$(code "${AUTH[@]}" -H 'Content-Type: application/json' -X POST "$API/account/checkin" \
+              -d '{"first_name":"Storage","last_name":"Check"}')
+  check "the caller has an account row" "200" "$CHECKIN"
+
   KEY=$(curl -s -m 60 "${AUTH[@]}" -X POST "$API/files" -F "file=@$tmpdir/px.png" \
         | python3 -c "import json,sys; print(json.load(sys.stdin).get('id','-'))" 2>/dev/null)
   if [ "$KEY" = "-" ] || [ -z "$KEY" ]; then

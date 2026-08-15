@@ -46,6 +46,39 @@ Test accounts from the test data: `dev-student` (student), `dev-teacher` (teache
 > unless `server.address` is a loopback address. If you get an `IllegalStateException` on
 > startup saying so, add `server.address: 127.0.0.1` to your `application.yaml`.
 
+## Authenticating against a deployed environment
+
+The header trick above does not work anywhere real — deployed environments verify a Keycloak token
+against the realm's JWKS and ignore headers entirely. For scripted checks against dev, the answer is
+a **service-account client**: the durable credential is a rotatable client secret, and what it mints
+is a ten-minute token. A long-lived bearer token would be the wrong trade — it is the whole
+credential, it cannot be rotated, and there is nothing to revoke.
+
+Dev has `easy-dev-test-runner` (client authentication on, *Service accounts roles* on, standard flow
+off — it is not a login client). Its secret lives in the login keychain, the same convention
+`ansible/run.sh` uses for the become password:
+
+```sh
+security add-generic-password -a "$USER" -s easy-dev-test-token -T /usr/bin/security -U -w
+curl -s -d grant_type=client_credentials -d client_id=easy-dev-test-runner \
+  --data-urlencode "client_secret=$(security find-generic-password -a "$USER" -s easy-dev-test-token -w)" \
+  https://easy-idp-dev.cloud.ut.ee/auth/realms/master/protocol/openid-connect/token
+```
+
+`s3-check.sh` does this itself, so normally you never touch it.
+
+**Three claims or nothing.** `EasyUserJwtConverter` requires `preferred_username`, `email` and
+`easy_role`, and treats a verified token missing any of them as an *invalid* token — a 401 that
+reads like a bad secret rather than a misconfigured mapper. A service account has no email, so both
+`email` and `easy_role` want **hardcoded-claim mappers** on the client's dedicated scope;
+`easy_role` must be JSON type with an array value, drawn from exactly `student`, `teacher`, `admin`.
+
+**And it has to check in before it can own anything.** A brand-new identity has no `account` row.
+`stored_file.created_by_id` is a foreign key to it, so the first upload fails on
+`fk_stored_file_owner` — with a 500, and *after* the object has already been written to S3, leaving
+an orphan for the sweep. The SPA calls `POST /v2/account/checkin` at login; a service account never
+logs in, so a script has to. It needs `{"first_name": …, "last_name": …}` and is idempotent.
+
 ## A/B-ing old code against new
 
 The most convincing check for a behavioural change is running both versions against the same
