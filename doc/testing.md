@@ -33,7 +33,7 @@ stale is exactly what happened to the first version of this table.
 
 | | Size | Tests |
 | --- | --- | --- |
-| **core** | 117 `@RestController` classes | 12 test files, **40 `@Test` methods, all running** |
+| **core** | 117 `@RestController` classes (124 endpoints) | 17 test files, **56 `@Test` methods, all running** |
 | **web** | 119 `.ts`/`.tsx` files, 29,292 LOC | 4 unit files, 28 browser scripts (27 in CI) |
 | **tsl / tsl-common** | the TSL compiler | none |
 | **aae** | the executor | none |
@@ -179,17 +179,38 @@ EZ-1763 paragraph above is a symptom of the fourth. The shape to copy now is `@I
 ### Coverage by construction — the technique this document was missing
 
 Every item here is phrased as "write tests for X", which means a controller added next month is
-untested by default. With 117 controllers that does not converge, and it is why the backend has
-stayed at 40 tests.
+untested by default. With 117 controllers that does not converge, and it is why the backend sat at
+32 tests for years before EZ-1715.
 
-`RichTextColumnsTest` already demonstrates the alternative in this repo: a reflection guard that
-**fails the build until someone decides** which category the new thing belongs to. Applied to
-endpoints (EZ-1769) it gives two things nothing else does — every handler must be `@Secured` or
-explicitly on the `permitAll` allowlist, and every handler must have a sample request in a registry.
-One parameterised test over sample × {anonymous, student, teacher, admin} then turns "we tested some
-endpoints" into "no endpoint is reachable by a role that should not reach it".
+`RichTextColumnsTest` already demonstrated the alternative in this repo: a reflection guard that
+**fails the build until someone decides** which category the new thing belongs to. This should be
+the default reach for anything with more than a dozen instances.
 
-This should be the default reach for anything with more than a dozen instances.
+**Landed 2026-08-15** (EZ-1769). Four guards, all maintenance-free:
+
+| Guard | What it makes impossible |
+| --- | --- |
+| `EndpointSecuritySurfaceTest` | An endpoint with no `@Secured` — which does not make it unreachable, it makes it reachable by *any* logged-in user, students included. Also asserts the `permitAll` list in **both directions**, because the failure that opens something to the internet is a pattern *broader* than its endpoints |
+| `DtoWireNamesTest` | A Kotlin rename silently changing a public API field name, and any wire name that is not `snake_case` |
+| `SchemaMatchesTablesTest` | A column in `Tables.kt` with no changeset, a changeset with no `Tables.kt` update, and nullability disagreeing between the two |
+| `ChangelogIntegrityTest` | Editing an already-applied changeset — which stops core starting on every environment that already ran it — plus a non-idempotent migration, and `testdata.xml` escaping into the production context |
+
+What they found on their first runs, none of which any existing test would have noticed:
+
+- **Two endpoints with no `@Secured`.** `POST /v2/management/log` — reachable by any authenticated
+  user, and it can send the admin an email, so any student could drive unbounded mail. And
+  `GET /student/…/submissions/all`, the only one of the ten endpoints under `/student/courses/…`
+  without the annotation. Neither was exploitable on its own, because both check access another
+  way; both had the role check in one place instead of two.
+- **Four nullability drifts.** `exercise.dir_id` had kept `.nullable()` in Kotlin for four years
+  after a v2 changeset made it `NOT NULL` — so every read handed out a `Long?` that could never be
+  null. The other three are the dangerous direction and are EZ-1771.
+
+The lesson for whoever writes the next guard: the first version of `DtoWireNamesTest` collected
+every data class *declared* in a controller and reported 40 findings that were nothing of the sort —
+zip entries and intermediates Jackson never sees. Reachability from a handler's return type is the
+correct filter. **"It found a lot" is not the same as "it found problems"**, and a guard that cries
+wolf on its first run is one people learn to satisfy without reading.
 
 ### Integration tests (several components together) — have none
 
@@ -322,8 +343,10 @@ list predates that goal. A browser test whose backend is Playwright route interc
 against *any* backend, including a broken one. It cannot gate a backend deploy, by construction.
 
 1. ~~**EZ-1715** — postgres in CI~~ — **done 2026-08-15.**
-2. **Endpoint security surface and authorization matrix** (EZ-1769) — the highest value per hour in
-   the programme, and the only item that keeps 117 controllers covered without 117 decisions.
+2. **Endpoint security surface** (EZ-1769) — reflection guards **done 2026-08-15**; the
+   authorization matrix (sample registry × four callers) is what remains, and it is the item that
+   turns "we tested some endpoints" into "no endpoint is reachable by a role that should not reach
+   it".
 3. **Contract checks** (EZ-1770) — stops the browser suite drifting from reality. **Depends on
    nothing; start it in parallel with 2.**
 4. **Service tests for access control** — internet-reachable, and wrong answers are silent.

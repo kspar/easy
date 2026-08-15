@@ -20,6 +20,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.*
 
 
@@ -42,6 +43,12 @@ class StudentReadSubmissionsController {
 
     data class Resp(@get:JsonProperty("submissions") val submissions: List<SubmissionResp>)
 
+    // Was missing, and this endpoint was the only one of the ten under /student/courses/… without
+    // it — an omission rather than a decision. Not exploitable on its own, because
+    // `studentOnCourse` below requires a StudentCourseAccess row regardless, but without the
+    // annotation the role check existed in exactly one place instead of two. Found by
+    // EndpointSecuritySurfaceTest.
+    @Secured("ROLE_STUDENT")
     @GetMapping("/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/all")
     fun controller(
         @PathVariable("courseId") courseIdStr: String,

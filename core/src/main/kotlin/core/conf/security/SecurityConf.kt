@@ -41,6 +41,46 @@ internal fun isLoopbackAddress(address: String): Boolean {
     }
 }
 
+/**
+ * Every path reachable without authentication.
+ *
+ * A named constant rather than an argument list inline in [SecurityConf.securityFilterChain], so
+ * that `EndpointSecuritySurfaceTest` can assert against the real list instead of a copy of it. A
+ * copy is precisely the wrong shape here: the test exists to catch this list disagreeing with the
+ * endpoints, and a second copy could only ever add a third thing to disagree.
+ *
+ * Read the test before adding a line. It asserts in both directions — every pattern must match a
+ * real endpoint, and no pattern may match an endpoint outside its own allowlist — because the
+ * failure that matters is a pattern *broader* than the endpoints it was written for.
+ */
+internal val PERMIT_ALL_PATTERNS = arrayOf(
+    // Allow unauthenticated access to anonymous auto-assess services
+    "/*/unauth/exercises/*/anonymous/autoassess",
+    "/*/unauth/exercises/*/anonymous/details",
+    // What is deployed (EZ-1709). Unauthenticated so that whoever is reporting a bug can read it
+    // off the About page — including someone who cannot log in, which is the report that needs a
+    // version most.
+    "/*/unauth/versions",
+    // Published articles are public content: the FAQ and the guides, one of which is about logging
+    // in and is therefore needed by someone who cannot. Drafts are unreachable through it — the
+    // handler holds no caller, passes isAdmin = false, and the query filters on published.
+    //
+    // One trailing segment, not `/**`: if anyone later adds /unauth/articles/{id}/something, it
+    // should fall through to anyRequest().authenticated() and fail closed rather than be public
+    // because this line was broader than it needed to be.
+    "/*/unauth/articles/*",
+    // Uploaded files — the images inside all of the above. An anonymously readable article whose
+    // screenshot 401s is not anonymously readable, and the same goes for anonymous exercise embeds.
+    // Reads carry no permission check by decision (EZ-1571): objects are public and the key is the
+    // only secret.
+    //
+    // Not under /unauth/, which is the one place this codebase breaks that convention. This URL is
+    // written into stored HTML permanently and the whole point of serving it from our own domain
+    // was never having to rewrite content later, so it is kept as short as it will ever need to be.
+    // Two segments, not `/**`, so anything deeper still fails closed.
+    "/*/resource/*/*",
+)
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true)
@@ -98,36 +138,7 @@ class SecurityConf {
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain =
         http
             .authorizeHttpRequests {
-                it.requestMatchers(
-                    // Allow unauthenticated access to anonymous auto-assess services
-                    "/*/unauth/exercises/*/anonymous/autoassess",
-                    "/*/unauth/exercises/*/anonymous/details",
-                    // What is deployed (EZ-1709). Unauthenticated so that whoever is reporting a
-                    // bug can read it off the About page — including someone who cannot log in,
-                    // which is the report that needs a version most.
-                    "/*/unauth/versions",
-                    // Published articles are public content: the FAQ and the guides, one of which
-                    // is about logging in and is therefore needed by someone who cannot. Drafts
-                    // are unreachable through it — the handler holds no caller, passes
-                    // isAdmin = false, and the query filters on published.
-                    //
-                    // One trailing segment, not `/**`: if anyone later adds
-                    // /unauth/articles/{id}/something, it should fall through to
-                    // anyRequest().authenticated() and fail closed rather than be public because
-                    // this line was broader than it needed to be.
-                    "/*/unauth/articles/*",
-                    // Uploaded files — the images inside all of the above. An anonymously readable
-                    // article whose screenshot 401s is not anonymously readable, and the same goes
-                    // for anonymous exercise embeds. Reads carry no permission check by decision
-                    // (EZ-1571): objects are public and the key is the only secret.
-                    //
-                    // Not under /unauth/, which is the one place this codebase breaks that
-                    // convention. This URL is written into stored HTML permanently and the whole
-                    // point of serving it from our own domain was never having to rewrite content
-                    // later, so it is kept as short as it will ever need to be. Two segments, not
-                    // `/**`, so anything deeper still fails closed.
-                    "/*/resource/*/*"
-                ).permitAll()
+                it.requestMatchers(*PERMIT_ALL_PATTERNS).permitAll()
                     // All other services require auth == any role by default
                     .anyRequest().authenticated()
             }.let {

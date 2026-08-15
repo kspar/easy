@@ -21,6 +21,7 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.scheduling.annotation.Async
+import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -56,6 +57,15 @@ class ReportLogController(private val mailService: SendMailService) {
         NO_MAIL_CLIENT_REGEX("rcl_no_mail_client_regex")
     }
 
+    // All three roles, which is every authenticated user — so this changes no behaviour. It is
+    // here to make that *a decision* rather than the default: without it the endpoint fell through
+    // to `anyRequest().authenticated()`, which reads identically whether or not anyone meant it.
+    //
+    // Worth knowing what is behind it, because it is more than a log line: every call inserts a
+    // row and can send the admin an email (notifyAdmin below), so any signed-in student can drive
+    // unbounded mail. That is deliberate for client error reporting, and the only controls on it
+    // are the `rcl_email_log_level` and `rcl_no_mail_client_regex` system properties.
+    @Secured("ROLE_STUDENT", "ROLE_TEACHER", "ROLE_ADMIN")
     @Async
     @PostMapping("/management/log")
     fun controller(@Valid @RequestBody dto: Req, caller: EasyUser) {

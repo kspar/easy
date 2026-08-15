@@ -29,7 +29,12 @@ object Account : IdTable<String>("account") {
 
 
 object Exercise : LongIdTable("exercise") {
-    val dir = reference("dir_id", Dir).nullable()
+    // NOT NULL in the schema since changeset 100821-1 in v2.xml, which backfilled every exercise's
+    // implicit dir and then added the constraint — its comment says "it cannot be null". This
+    // declaration kept `.nullable()` for four years anyway, so every read handed out a `Long?` that
+    // could never be null and every write could type-check a null the database would reject.
+    // Found by SchemaMatchesTablesTest.
+    val dir = reference("dir_id", Dir)
     val owner = reference("owned_by_id", Account)
     val createdAt = datetime("created_at")
     val public = bool("public")
