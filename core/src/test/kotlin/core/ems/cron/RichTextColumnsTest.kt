@@ -29,14 +29,13 @@ import core.db.TeacherInlineComment
 import core.db.TeacherSubmission
 import core.db.ArticleAlias
 import core.db.ArticleVersion
+import core.testing.ExposedTables
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.TextColumnType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider
-import org.springframework.core.type.filter.AssignableTypeFilter
 
 /**
  * Guards the one thing [StoredFileSweep] cannot survive being wrong about: the list of columns a
@@ -138,22 +137,13 @@ class RichTextColumnsTest {
         StoredFile.filename to "plain filename",
     )
 
-    private fun allTextColumns(): List<Pair<Table, Column<*>>> {
-        val scanner = object : ClassPathScanningCandidateComponentProvider(false) {
-            // The default asks for a concrete, independent, @Component-annotated candidate. These
-            // are plain Kotlin objects, so without this every table is filtered out and the test
-            // passes by finding nothing — the worst possible failure for a guard.
-            override fun isCandidateComponent(
-                beanDefinition: org.springframework.beans.factory.annotation.AnnotatedBeanDefinition
-            ) = true
-        }
-        scanner.addIncludeFilter(AssignableTypeFilter(Table::class.java))
-
-        return scanner.findCandidateComponents("core.db")
-            .mapNotNull { Class.forName(it.beanClassName).kotlin.objectInstance as? Table }
+    // The scan itself moved to core.testing.ExposedTables — the between-test TRUNCATE and the
+    // schema-drift test want the same list, and it should have exactly one definition. The
+    // "a scan finding nothing looks like a clean run" assertion moved with it.
+    private fun allTextColumns(): List<Pair<Table, Column<*>>> =
+        ExposedTables.all()
             .flatMap { table -> table.columns.map { table to it } }
             .filter { (_, column) -> column.columnType is TextColumnType }
-    }
 
     @Test
     fun `every text column is either scanned by the sweep or explicitly excluded`() {

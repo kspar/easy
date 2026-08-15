@@ -457,8 +457,9 @@ This list is the actual "non-destructive" work — a separate database is the ea
 | **Wrong IDP** | `easy.core.keycloak.base-url` | Must be the dev IDP. Combined with the delete cron above, a copy-paste of prod's value here is the worst single mistake available on this host |
 | **Student code sent to production's graders** | the `executor` table, restored from the production dump. `syncExecutorsFromDB` picks the rows up on a timer; `callExecutor` sends no credentials | Not a config key — this one arrives *in the data*, which is why it was missed when this table was first written. Delete production's executor rows before core starts and register dev's own. `import-prod-dump.yml` does both (§3.6) |
 
-The never-date trick for crons is already used in `core/src/test/resources/application.yaml.sample`:
-`"0 0 5 31 2 ?"` — February 31st, which never occurs.
+The never-date trick for crons is already used in `core/src/test/resources/application.yaml`:
+`"0 0 5 31 2 ?"` — February 31st, which never occurs. (That file used to be a gitignored
+`.sample`; it is committed as of EZ-1715, so it can be read straight from the repo.)
 
 Leave the *internal* crons on (`pending-access.clean`, `exercise-index-normalisation`,
 `anonymous-submissions-to-keep`, statistics) — dev is the right place to find out they misbehave.

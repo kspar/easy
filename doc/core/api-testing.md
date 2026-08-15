@@ -160,10 +160,32 @@ environment has real authentication and the `oidc_claim_*` trick does not work t
 They exist because of what they check. `articles-check.sh` checks whether an unpublished article is
 invisible to non-admins and to the internet — a rule that lives in a SQL predicate.
 `files-check.sh` checks that an uploaded file is fetchable with no session at all, which is a
-filesystem, a database and a security filter chain agreeing. Both need a running application, and CI
-runs `./gradlew :core:test -PexcludeTags=db`, so the JUnit version of either would be written,
-tagged, and then never run. A script that is honestly manual beats a test that looks like coverage
-and is skipped.
+filesystem, a database and a security filter chain agreeing.
+
+> **The argument for keeping them as scripts expired on 2026-08-15.**
+>
+> It used to run: both need a running application, CI runs `-PexcludeTags=db`, so the JUnit version
+> would be written, tagged, and then never run — and a script that is honestly manual beats a test
+> that looks like coverage and is skipped. That was correct, and it was correct *because of*
+> EZ-1715, which is now done. CI has a database, `./gradlew build` runs everything, and nothing is
+> tagged out.
+>
+> So these two files are now **the specification to port, not work to redo** — EZ-1766 phase 7. Port
+> them to `@IntegrationTest` + MockMvc and **delete the scripts in the same commit**: two
+> specifications of the same rules drift, and the manual one drifts silently because nobody runs it
+> on a schedule.
+>
+> What the port must not lose: `files-check.sh` runs against *either* storage backend and says which
+> it found. Parameterise over `LocalFsStorageService` and `S3StorageService`, because a test that
+> only ever exercises local while production runs S3 is coverage of the wrong thing.
+>
+> Do **not** run the scripts themselves in CI. That would need a core started with
+> `auth-enabled: false`, making the one code path that must never run anywhere real load-bearing for
+> the release gate.
+
+**`s3-check.sh` is a different kind of artefact and stays a script permanently.** It asks whether
+*this environment's* bucket, credentials and proxying are wired up, which is unanswerable from CI by
+construction. It belongs to EZ-1710's post-deploy story.
 
 **What a script cannot replace.** `RichTextColumnsTest` is deliberately *not* one of these: it
 guards the list of columns the stored-file sweep scans, and getting that wrong deletes files that are
@@ -171,8 +193,7 @@ in use. So it is written to need no database — reflection over the Exposed tab
 a query against `information_schema` — precisely so that it runs on every push. When a check has to
 run, that is the shape to reach for; a script is for what genuinely cannot.
 
-**EZ-1715 is the issue that gives the suite a database.** When it lands, these scripts are the
-specification to port, not work to redo.
+**EZ-1715 landed on 2026-08-15**, which is what makes the note above apply.
 
 Worth copying if you write another: assert the *absence* of things as well as their presence (that
 the public payload has no `text_md` and no username is half of what makes it correct), and assert

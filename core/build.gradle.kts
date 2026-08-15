@@ -76,13 +76,14 @@ repositories {
 
 tasks.test {
     useJUnitPlatform {
-        // CI runs `-PexcludeTags=db`, which skips the tests needing a PostgreSQL instance and the
-        // gitignored core/src/test/resources/application.yaml, and runs everything else. With no
-        // property set — i.e. locally — the whole suite runs exactly as before.
+        // Nothing passes -PexcludeTags any more: CI runs a plain `./gradlew build` and every test
+        // executes, since EZ-1715 gave the suite its own PostgreSQL (Testcontainers) and the test
+        // config is committed. No test in the tree is tagged today.
         //
-        // This replaced a hardcoded `--tests` package filter in CI, which silently skipped any
-        // context-free test written outside that one package. Fold it away once EZ-1715 gives the
-        // suite a database.
+        // Kept because it costs nothing and is the right tool for the next thing that needs it —
+        // "run everything except the slow integration set" — and because a filter mechanism is
+        // easier to keep than to reintroduce. If you do tag something, note the guard below: a
+        // typo'd tag name that matches nothing would otherwise run zero tests and go green.
         (project.findProperty("excludeTags") as String?)
             ?.split(",")
             ?.map(String::trim)
@@ -147,6 +148,13 @@ dependencies {
 
     // Testing
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.boot.webmvc.test)
+    testImplementation(libs.spring.security.test)
+    // The suite starts its own PostgreSQL. Needs a Docker daemon — the same one `docker compose up
+    // db` already requires — or EASY_TEST_JDBC_URL pointing at a local throwaway database.
+    // See core/src/test/kotlin/core/testing/TestDatabase.kt.
+    testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.testcontainers.junit.jupiter)
 
     // Markdown (CommonMark with GFM extensions)
     implementation(libs.bundles.commonmark)

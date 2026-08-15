@@ -35,19 +35,31 @@ jobs:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v6
-      # Tests are excluded: they need a PostgreSQL instance plus core/src/test/resources/
-      # application.yaml, which is gitignored (see DEVELOPMENT.md). Wiring a postgres
-      # service container and generating that config would let this become a plain
-      # `./gradlew build` — worth doing, but it is its own change. See EZ-1715.
-      - name: Build
-        run: ./gradlew build -x test --no-daemon
-      # Everything except the tests tagged `db`, which are the ones needing a PostgreSQL instance
-      # and the gitignored core/src/test/resources/application.yaml. Verified by running with that
-      # file moved aside. This replaced a hardcoded `core.conf.security.*` package filter, which
-      # silently skipped any context-free test written anywhere else — as the first one to be
-      # added promptly was. Folds into `./gradlew build` once EZ-1715 gives the suite a database.
-      - name: Unit tests
-        run: ./gradlew :core:test -PexcludeTags=db --no-daemon
+      # One command, and every test runs — which is new. This used to be `build -x test` followed
+      # by `:core:test -PexcludeTags=db`, because the database-backed tests needed a PostgreSQL
+      # instance and a gitignored config file that CI had neither of (EZ-1715). Both are gone: the
+      # suite starts its own postgres via Testcontainers, and the test config is committed.
+      #
+      # It needs a Docker daemon. ubuntu-latest has one.
+      #
+      # DO NOT add `container:` to this job. The database would then be reachable as a service
+      # alias rather than on localhost, and assertDisposableDatabase in
+      # core/src/test/kotlin/core/testing/DatabaseReset.kt refuses non-localhost hosts on purpose —
+      # it is what stops a misconfigured run emptying something real. Widen LOCAL_HOSTS there
+      # deliberately if that day comes, rather than routing around it here.
+      - name: Build and test
+        run: ./gradlew build --no-daemon
+
+      # Uploaded on success too: when a deploy is blocked at 2am, "which assertion" has to be
+      # answerable without re-running the build.
+      - name: Publish test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-report-${{ github.sha }}
+          path: core/build/reports/tests/test/
+          if-no-files-found: ignore
+          retention-days: 14
 
       # Dev fetches this instead of building on the host — deploy/deploy-dev.sh,
       # doc/dev-environment.md §8. The jar is environment-agnostic: every setting lives in the

@@ -90,7 +90,16 @@ class StudentReadSubmissionsController {
                         (CourseExercise.id eq courseExId) and
                         (Submission.student eq studentId)
             }
-            .orderBy(Submission.createdAt to SortOrder.DESC)
+            // Tiebreakers make the order total, which matters more here than anywhere else this
+            // pattern appears: this query is paged, and LIMIT/OFFSET over a non-total order lets
+            // rows be skipped or repeated *between pages* rather than merely appearing in a
+            // surprising order. created_at is millisecond-resolution and ties do happen — see the
+            // note on the DISTINCT ON in courses.kt (EZ-1763).
+            .orderBy(
+                Submission.createdAt to SortOrder.DESC,
+                Submission.number to SortOrder.DESC,
+                Submission.id to SortOrder.DESC
+            )
             .limit(limit ?: Int.MAX_VALUE)
             .offset(offset ?: 0)
             .mapIndexed { _, it ->

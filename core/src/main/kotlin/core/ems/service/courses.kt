@@ -271,7 +271,23 @@ fun selectAllCourseExercisesLatestSubmissions(
             }.orderBy(
                 CourseExercise.id to SortOrder.DESC,
                 Submission.student to SortOrder.DESC,
-                Submission.createdAt to SortOrder.DESC
+                Submission.createdAt to SortOrder.DESC,
+                // Tiebreakers, and they are not cosmetic. DISTINCT ON keeps the first row of each
+                // group under this ordering, so the ordering has to be *total* or which row
+                // survives is whatever the query plan happens to produce — and Postgres is free to
+                // change that between versions, statistics or a parallel plan.
+                //
+                // created_at is millisecond-resolution, and two submissions can share one: a
+                // double-click, a retry, an autograde write landing next to a manual grade. The
+                // student then sees a grade that changes on refresh. It was found as a flaky test
+                // (EZ-1763, grade 71 vs 81, 4 failures in 5 runs) but the test was right and the
+                // query was wrong.
+                //
+                // `number` is the per-student submission sequence and is the intended meaning of
+                // "latest"; `id` is a final backstop so the order is total even if `number` is
+                // ever wrong.
+                Submission.number to SortOrder.DESC,
+                Submission.id to SortOrder.DESC
             ).mapNotNull {
                 val submissionId = it[Submission.id]?.value
 

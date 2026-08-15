@@ -15,7 +15,9 @@ build/
 core/db/database.properties
 core/src/main/resources/db/database.properties
 core/src/main/resources/application.yaml
-core/src/test/resources/application.yaml
+# The *test* config is committed on purpose — it holds no secrets, and CI starting the context is
+# what keeps it in step with the ${easy.*} placeholders in main. Only a local override is ignored.
+core/src/test/resources/application-local.yaml
 
 web/.env.local
 

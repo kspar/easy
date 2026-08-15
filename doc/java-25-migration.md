@@ -44,6 +44,21 @@ recently-touched service rather than working from memory.
   `@Bean SecurityFilterChain`. `antMatchers()` → `requestMatchers()`,
   `authorizeRequests()` → `authorizeHttpRequests()`, `@EnableGlobalMethodSecurity` →
   `@EnableMethodSecurity`.
+- **Test slices moved out of `spring-boot-test-autoconfigure`.** Boot 4 split it into
+  per-technology modules, and the leftover jar is 37 classes — so the old package simply is not
+  there, and the error is `Unresolved reference 'servlet'` rather than anything naming a module.
+  `@AutoConfigureMockMvc` is the one this repo needs:
+  - artifact: `org.springframework.boot:spring-boot-webmvc-test` (**not** pulled in by
+    `spring-boot-starter-test`, so it needs its own `testImplementation` line)
+  - import: `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc`
+    (was `org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc`)
+
+  Expect the same shape for other slices. Searching the jars beats searching the web here:
+  `unzip -l <jar> | grep AutoConfigureFoo`.
+- **Testcontainers is not BOM-managed.** This project applies the Boot plugin's dependency
+  management, which does not import `testcontainers-bom`, so a versionless coordinate fails to
+  resolve with `Could not find org.testcontainers:postgresql:`. It is pinned in
+  `libs.versions.toml` instead.
 
 ## Liquibase
 

@@ -1,24 +1,40 @@
-# Template for core/src/test/resources/application.yaml, which is gitignored and required —
-# `./gradlew test` cannot start its Spring context without it. Copy this file, then fill in
-# the placeholders. See DEVELOPMENT.md.
+# Configuration for `./gradlew :core:test`. Committed on purpose, and that is a change from how
+# this used to work — it was gitignored and hand-written per machine, which is why the tests that
+# need a database had never run in CI and barely ran on a laptop either (EZ-1715).
 #
-# DANGER: InitTestDatabase (core/src/test/kotlin/core/conf/TestDatabaseConf.kt) runs Liquibase
-# dropAll() against this datasource on startup. The database configured below is WIPED on
-# every test run — point it at a throwaway database, never at your dev DB (easyems).
+# Nothing here is a secret. Every value is either a fake, a loopback address that is never
+# contacted, or a cron pinned to February 31st — a date that never occurs — so no scheduled job
+# fires mid-test. The main config's own destructive crons use the same trick.
 #
-# Every ${easy.*} placeholder used in core/src/main/kotlin must appear here or the context
-# fails with "Could not resolve placeholder ...". Keep this file in sync when adding new ones.
+# The datasource below is a fallback that should never be used: DatabaseTestConf overrides all
+# three properties at runtime from Testcontainers (or from EASY_TEST_JDBC_URL). It is present so
+# the context is well-formed if that ever stops firing, and it names a database
+# assertDisposableDatabase accepts, so the failure is loud rather than lossy.
+#
+# This file is also the authoritative list of required keys: every ${easy.*} placeholder in
+# core/src/main/kotlin must appear here or the context fails to start with "Could not resolve
+# placeholder ...". That assertion now runs on every push, which is the point of committing it —
+# the old sample file was documentation that nothing verified.
+#
+# For a local override, add core/src/test/resources/application-local.yaml and run with
+# `-Dspring.profiles.active=local`; that file stays gitignored.
 
 server:
   # Tests use @SpringBootTest's default MOCK web environment, so this port is never bound.
   # Avoid 8080 anyway — a dev core usually holds it.
   port: 8098
 
+logging:
+  # Kept here rather than in a @TestPropertySource on a test class: any test-local property source
+  # forks the Spring context, and each fork costs ten seconds. See core/testing/IntegrationTest.kt.
+  level:
+    root: WARN
+
 spring:
   datasource:
     jdbc-url: "jdbc:postgresql://localhost:5432/easyems_test"
-    username: "<username>"
-    password: "<password>"
+    username: "easyems"
+    password: ""
   mail:
     # Mail is disabled below; this only needs to satisfy the JavaMailSender bean.
     host: "localhost"
@@ -32,8 +48,8 @@ spring:
           starttls:
             enable: false
             required: false
-    username: "<username>"
-    password: "<password>"
+    username: "test"
+    password: ""
   jackson:
     deserialization:
       FAIL_ON_NULL_FOR_PRIMITIVES: true
@@ -43,8 +59,14 @@ spring:
         jwt:
           # easy.core.auth-enabled is true below, so SecurityConf builds a resource server and
           # Boot needs these to create a JwtDecoder. The URL is never contacted: jwk-set-uri
-          # fetches lazily on the first token, and no test presents one. Keeping auth enabled
-          # here means the test context is wired the way production is.
+          # fetches lazily on the first token, and tests supply an EasyUser directly rather than
+          # a bearer token (core/testing/Auth.kt). JwtResourceServerTest is the exception and
+          # overrides these against a JWKS server it starts itself.
+          #
+          # Keeping auth *enabled* here is deliberate: it wires the test context the way a
+          # deployed environment is wired. The alternative — auth-enabled: false plus the
+          # oidc_claim_* headers — would make the release gate the biggest consumer of the one
+          # code path that must never run anywhere real.
           jwk-set-uri: "http://localhost:1/realms/test/protocol/openid-connect/certs"
           issuer-uri: "http://localhost:1/realms/test"
 
@@ -60,10 +82,10 @@ easy:
       # Empty is fine for tests: nothing here makes cross-origin requests.
       allowed-origins: ""
     mail:
-      from: "<from-address>"
+      from: "test@easy.example"
       sys:
         enabled: false
-        to: "<to-address>"
+        to: "test@easy.example"
       user:
         enabled: false
 
@@ -77,17 +99,17 @@ easy:
       fixed-delay:
         ms: "1000"
 
-    # Crons are pinned to February 31st — a date that never occurs — so no scheduled job
-    # fires mid-test. The main config uses the same trick for the destructive ones.
+    # Loopback port 1, so a job that somehow does fire fails to connect rather than reaching
+    # anything. The crons are pinned to the never-date as well.
     moodle-sync:
-      wstoken: "<token>"
+      wstoken: "test-token"
       moodlewsrestformat: "json"
       users:
-        url: "<url>"
+        url: "http://localhost:1/moodle-users"
         cron: "0 0 5 31 2 ?"
         wsfunction: "local_ut_custom_get_course_groups_users"
       grades:
-        url: "<url>"
+        url: "http://localhost:1/moodle-grades"
         wsfunction: "local_ut_custom_update_manual_grades"
       # Moodle course shortnames this environment may contact, comma-separated. EMPTY MEANS
       # UNRESTRICTED, which is what production wants — it syncs whatever teachers have linked.
@@ -134,10 +156,10 @@ easy:
 
     keycloak:
       cron: "0 0 5 31 2 ?"
-      base-url: "<base-url>"
-      realm: "<realm>"
-      client-id: "<client-id>"
-      client-secret: "<client-secret>"
+      base-url: "http://localhost:1/idp"
+      realm: "master"
+      client-id: "test-client"
+      client-secret: "test-secret"
       ignore-missing-keycloak-users: true
 
   web:

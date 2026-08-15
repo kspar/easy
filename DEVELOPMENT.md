@@ -101,53 +101,75 @@ in `core/dev-idp/`, which mints deliberately broken tokens on demand.
 
 ## 5. Tests
 
-`./gradlew test` needs a config file that is **not** in the repo — copy the sample and fill it in:
-
 ```sh
-cp core/src/test/resources/application.yaml.sample core/src/test/resources/application.yaml
+./gradlew test
 ```
 
-Without it the Spring test context fails to start with
-`Could not resolve placeholder 'easy.core.liquibase.changelog'`. It's gitignored on purpose,
-same as the main `application.yaml`.
+That's it — no setup. The suite starts its own PostgreSQL through Testcontainers, so it needs a
+Docker daemon (the same one `docker compose up db` already wants) and nothing else. The config it
+uses, `core/src/test/resources/application.yaml`, is committed.
 
-Two things to get right in that file:
+Both of those are recent. Until 2026-08 the config was gitignored and hand-written per machine and
+there was no database in CI, so the database-backed tests ran in neither place — which is how two
+of them came to fail four runs in five without anyone noticing (EZ-1763).
 
-- **Point it at a throwaway database, never `easyems`.** `InitTestDatabase` runs Liquibase
-  `dropAll()` on the configured datasource at context startup, so the whole schema is wiped
-  on every test run. Create a separate one:
-  ```sh
-  docker exec easy-db-1 psql -U easyems -d postgres -c "create database easyems_test;"
-  ```
-  then set `jdbc-url: "jdbc:postgresql://localhost:5432/easyems_test"`.
-- **`easy.core.liquibase.changelog` is classpath-relative** (`db/changelog.xml`), not a
-  filesystem path — it's read through `ClassLoaderResourceAccessor`.
+Useful variations:
 
-The sample is the authoritative list of required keys; every `${easy.*}` placeholder in
-`core/src/main/kotlin` must be present or the context won't start.
+```sh
+./gradlew :core:test --tests '*LatestSubmissions*'    # one class
+EASY_TEST_JDBC_URL=jdbc:postgresql://localhost:5432/easyems_test ./gradlew :core:test
+```
 
-### Why tests can't drop a real database
+`EASY_TEST_JDBC_URL` skips Docker and uses a database you made yourself — handy when you want to
+`psql` into it afterwards and look. Create it with:
 
-Three independent layers, in order of how much they'd have to fail:
+```sh
+docker exec easy-db-1 psql -U easyems -d postgres -c "create database easyems_test;"
+```
 
-1. **`dropAll()` is in the test source set only.** It is not packaged into the bootJar
-   (verifiable: `unzip -l core/build/libs/core-1.jar | grep TestDatabaseConf` finds nothing),
-   so no deploy, `bootRun`, or production start can reach it. Deploys migrate through the
-   `SpringLiquibase` bean in `core/conf/DatabaseConf.kt`, which only applies pending
-   changesets — it never drops.
-2. **`assertDisposableDatabase()` fails closed.** Every destructive helper in
-   `TestDatabaseConf.kt` refuses to run unless the JDBC URL points at a **local host** and a
-   database whose name **ends in `_test`**. A misconfigured `application.yaml` gets a loud
-   error instead of a dropped schema. Widen `LOCAL_HOSTS` or `DISPOSABLE_DB_SUFFIX` there only
-   deliberately.
-3. **The test config is separate from the dev config**, and gitignored, so the dev datasource
-   isn't inherited by accident.
+The name has to end in `_test`; see below.
 
-Layer 2 exists because layer 3 used to be the only thing protecting the dev database: with no
-`core/src/test/resources/application.yaml`, Spring falls back to the **main** `application.yaml`
-— which points at `easyems`. Tests failed only because that file happens to lack
-`easy.core.liquibase.changelog`. Adding that one key would have been enough to make
-`./gradlew test` wipe the dev database.
+### Writing a database-backed test
+
+Annotate the class `@IntegrationTest` (`core/testing/IntegrationTest.kt`) and build rows with
+`Fixtures` (`core/testing/Fixtures.kt`). Every table is emptied before each test, so tests are
+independent and order-free.
+
+Two rules that are enforced rather than advisory:
+
+- **Do not add `@TestPropertySource`, `@MockitoBean` or `@ActiveProfiles` to a test class.** Spring
+  caches one context per distinct configuration, so each of those forks another one at ~10s. One
+  context for the whole suite is what keeps this fast enough to gate a deploy.
+- **Do not call `DateTime.now()` in a test.** Use `TestClock`. `NoWallClockInFixturesTest` fails the
+  build otherwise. Two rows written from the wall clock can share a millisecond, and a test that
+  depends on which one won is a test that fails a few runs in five — which is exactly what EZ-1763
+  was.
+
+`core/src/test/resources/application.yaml` is the authoritative list of required keys: every
+`${easy.*}` placeholder in `core/src/main/kotlin` must be present or the context won't start. That
+assertion now runs on every push, which is the reason to commit the file rather than sample it.
+
+### Why tests can't wipe a real database
+
+Emptying every table between tests is as destructive as the `dropAll()` it replaced, so the guard
+from EZ-1717 is still there. Three independent layers, in order of how much would have to fail:
+
+1. **It's in the test source set only.** Not packaged into the bootJar — verifiable with
+   `unzip -l core/build/libs/core-*.jar | grep -i truncate` finding nothing — so no deploy,
+   `bootRun` or production start can reach it. Deploys migrate through the `SpringLiquibase` bean in
+   `core/conf/DatabaseConf.kt`, which only applies pending changesets and never drops.
+2. **`assertDisposableDatabase()` fails closed.** `truncateAll()` in
+   `core/testing/DatabaseReset.kt` refuses to run unless the JDBC URL names a **local host** and a
+   database whose name **ends in `_test`**. Pinned by `DisposableDatabaseGuardTest`. Widen
+   `LOCAL_HOSTS` or `DISPOSABLE_DB_SUFFIX` only deliberately.
+3. **The default target is a throwaway container**, not any database on your machine. Reaching a
+   database you care about takes an explicit `EASY_TEST_JDBC_URL`, and then layer 2 still has to
+   agree.
+
+Layer 2 exists because the arrangement it replaced was thinner than it looked: with no test
+`application.yaml`, Spring fell back to the **main** one, which points at `easyems`. Tests failed
+only because that file happens to lack `easy.core.liquibase.changelog` — adding that one key would
+have been enough to make `./gradlew test` wipe the dev database.
 
 ## 6. Mock Executor
 

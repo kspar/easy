@@ -1,406 +1,193 @@
 package core.ems.service
 
-import core.EasyCoreApp
-import core.conf.DatabaseInit
-import core.conf.dropAll
-import core.conf.dropAndUpdateSchema
-import core.db.*
-import liquibase.database.jvm.JdbcConnection
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import org.jetbrains.exposed.v1.jdbc.insert
+import core.testing.Fixtures
+import core.testing.IntegrationTest
+import core.testing.TestClock
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.joda.time.DateTime
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.TestPropertySource
-import org.springframework.test.context.bean.override.mockito.MockitoBean
-import java.util.*
-import javax.sql.DataSource
-import kotlin.random.Random
 
-
-// Needs a PostgreSQL instance and the gitignored core/src/test/resources/application.yaml,
-// so CI excludes it with -PexcludeTags=db until EZ-1715 gives the suite a database.
-@Tag("db")
-@SpringBootTest(classes = [EasyCoreApp::class]) // Load all classes
-@TestPropertySource(properties = ["logging.level.root=WARN"])
-@TestInstance(TestInstance.Lifecycle.PER_CLASS) // Use PER_CLASS as all tests are read-only, setup and tear-down db once.
-class ValidateSelectAllCourseExercisesLatestSubmissions(@Autowired private val dataSource: DataSource) {
-    @Value("\${easy.core.liquibase.changelog}")
-    private lateinit var changelogFile: String
-
-    // Disable DatabaseInit and use DatabaseInitTest
-    @MockitoBean
-    private val databaseInit: DatabaseInit? = null
-
-    private val random = Random(0)
+/**
+ * [selectAllCourseExercisesLatestSubmissions] and [selectStudentsOnCourse], against a real
+ * PostgreSQL.
+ *
+ * The scenario, built fresh for each test:
+ *
+ * | | EX1 (threshold 90) | EX2 (threshold 80) |
+ * | --- | --- | --- |
+ * | student1 | 71, then **81** | 91, then **99** |
+ * | student2 | *(no submission)* | **51** |
+ *
+ * Bold is what "latest" should select.
+ *
+ * This class used to be `@Tag("db")`-excluded, `PER_CLASS`, and set up by dropping and recreating
+ * the whole schema in `@BeforeAll` — with a comment noting that another class sharing the context
+ * might have dropped it first, which is the pattern noticing it does not survive a second test
+ * class. It now uses the shared `@IntegrationTest` context and a TRUNCATE between tests, so the
+ * tests are independent and it runs on every push.
+ */
+@IntegrationTest
+class ValidateSelectAllCourseExercisesLatestSubmissions {
 
     private val student1Id = "student1"
     private val student2Id = "student2"
-    private val studentIds = listOf(student1Id, student2Id)
+    private val teacherId = "teacher1"
 
-    private val course1Id = random.nextLongId()
+    private var courseId = 0L
+    private var ce1Id = 0L
+    private var ce2Id = 0L
 
-    private val ce1Id = random.nextLongId()
-    private val ce2Id = ce1Id + 1
-
-
-    @Test
-    fun `selectAllCourseExercisesLatestSubmissions should return 4 submissions from 2 students (1 null, 3 graded)`() {
-        val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
-        val submissions = latestSubmissions.flatMap { it.latestSubmissions }.map { it.latestSubmission }
-        assertEquals(4, submissions.size)
-    }
-
-    /**
-     * Student 1 has two EX1 submissions:
-     * 1. grade: 71 - expect not see it
-     * 2. grade: 81 - expect to see only this
-     *
-     * Student 1 has two EX2 submissions:
-     * 1. grade: 91 - expect not see
-     * 2. grade: 99 - expect to see only this
-     */
-    @Test
-    fun `selectAllCourseExercises student 1 should return 2 submissions with grades 81 and 99`() {
-        val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
-        println(latestSubmissions)
-
-        val ex1Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce1Id }
-        val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce2Id }
-
-        val stud1Ex1Sub = ex1Submissions.latestSubmissions.single { it.accountId == student1Id }
-        assertEquals(81, stud1Ex1Sub.latestSubmission!!.grade!!.grade)
-        assertEquals(false, stud1Ex1Sub.latestSubmission.grade.isAutograde)
-
-        val stud1Ex2Sub = ex2Submissions.latestSubmissions.single { it.accountId == student1Id }
-        assertEquals(99, stud1Ex2Sub.latestSubmission!!.grade!!.grade)
-        assertEquals(false, stud1Ex2Sub.latestSubmission.grade.isAutograde)
-    }
-
-
-    /**
-     * Student 2 has 0 EX1 submissions.
-     * 1. expect to see null.
-     *
-     * Student 2 has 1 EX2 submissions:
-     * 1. grade: 51 - expect to see
-     */
-    @Test
-    fun `selectAllCourseExercises student 2 should return 1 submission with grade 51 and 1 null submission`() {
-        val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
-
-        val ex1Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce1Id }
-        val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce2Id }
-
-        val stud1Ex1Sub = ex1Submissions.latestSubmissions.single { it.accountId == student2Id }
-        assertNull(stud1Ex1Sub.latestSubmission)
-
-        val stud1Ex2Sub = ex2Submissions.latestSubmissions.single { it.accountId == student2Id }
-        assertEquals(51, stud1Ex2Sub.latestSubmission!!.grade!!.grade)
-        assertEquals(false, stud1Ex2Sub.latestSubmission.grade.isAutograde)
-    }
-
-    /**
-     * Student 2 has 1 EX2 submissions:
-     * 1. grade: 51 - expect to see
-     */
-    @Test
-    fun `selectCourseExercise2 student 2 should return 1 submission with grade 51`() {
-        val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id, ce2Id)
-
-        assertEquals(1, latestSubmissions.size)
-        val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce2Id }
-
-        val stud1Ex2Sub = ex2Submissions.latestSubmissions.single { it.accountId == student2Id }
-        assertEquals(51, stud1Ex2Sub.latestSubmission!!.grade!!.grade)
-        assertEquals(false, stud1Ex2Sub.latestSubmission.grade.isAutograde)
-    }
-
-    @Test
-    fun `selectCourseExercise1 student 1 should return 1 submission with grade 81`() {
-        val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id, ce1Id)
-
-        assertEquals(1, latestSubmissions.size)
-        val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce1Id }
-
-        val stud1Ex1Sub = ex2Submissions.latestSubmissions.single { it.accountId == student1Id }
-        assertEquals(81, stud1Ex1Sub.latestSubmission!!.grade!!.grade)
-    }
-
-
-    /**
-     * EX threshold: 90
-     * EX1 submissions:
-     * 1. grade 81 (started)
-     * 2. no submission (unstarted)
-     *
-     * Threshold: 80
-     * EX2 submissions:
-     * 1. grade: 99 (completed)
-     * 2. grade: 51 (started)
-     */
-    @Test
-    fun `selectAllCourseExercises check completedCount, startedCount, unstartedCount, ungradedCount`() {
-        val latestSubmissions: List<ExercisesResp> = selectAllCourseExercisesLatestSubmissions(course1Id)
-
-        // Expect 2 exercises
-        assertEquals(setOf(ce1Id, ce2Id), latestSubmissions.map { it.courseExerciseId.toLong() }.toSet())
-
-        val ex1Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce1Id }
-        val ex2Submissions = latestSubmissions.single { it.courseExerciseId.toLong() == ce2Id }
-
-        assertEquals(0, ex1Submissions.completedCount)
-        assertEquals(1, ex1Submissions.startedCount)
-        assertEquals(1, ex1Submissions.unstartedCount)
-        assertEquals(0, ex1Submissions.ungradedCount)
-
-        assertEquals(1, ex2Submissions.completedCount)
-        assertEquals(1, ex2Submissions.startedCount)
-        assertEquals(0, ex2Submissions.unstartedCount)
-        assertEquals(0, ex2Submissions.ungradedCount)
-    }
-
-
-    @Test
-    fun `selectStudentsOnCourse should return two students`() {
-        val students = selectStudentsOnCourse(course1Id).map { it.id }
-        assertEquals(students.toSet(), studentIds.toSet())
-    }
-
-    @AfterAll
-    fun teardown() = dropAll(changelogFile, JdbcConnection(dataSource.connection))
-
-    @BeforeAll
+    @BeforeEach
     fun populate() {
-        // Recreate schema as another test class sharing the same Spring context may have dropped it in its teardown
-        dropAndUpdateSchema(changelogFile, JdbcConnection(dataSource.connection))
-
+        TestClock.reset()
         transaction {
+            Fixtures.teacher(teacherId, "Bob", "Smith")
+            Fixtures.student(student1Id, "John", "Doe")
+            Fixtures.student(student2Id, "Jane", "Doe")
 
-            val teacher1Id = "teacher1"
-            val exercise1Id = random.nextLongId()
-            val exercise2Id = exercise1Id + 1
+            courseId = Fixtures.course("Test Course", alias = "TC")
+            Fixtures.enrolTeacher(courseId, teacherId)
+            Fixtures.enrolStudent(courseId, student1Id)
+            Fixtures.enrolStudent(courseId, student2Id)
 
-            Account.insert {
-                it[id] = EntityID(student1Id, Account)
-                it[email] = "user1@example.com"
-                it[givenName] = "John"
-                it[familyName] = "Doe"
-                it[createdAt] = DateTime.parse("2023-04-28T12:00:00Z")
-                it[lastSeen] = DateTime.parse("2023-04-28T12:00:00Z")
-                it[idMigrationDone] = true
-                it[isStudent] = true
-                it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
+            // Ids are returned rather than derived. The version of this test that computed
+            // `ce2Id = ce1Id + 1` was relying on insertion order to hold that arithmetic up.
+            ce1Id = Fixtures.courseExercise(
+                courseId, Fixtures.exercise("Exercise 1", teacherId), threshold = 90, orderIdx = 1
+            )
+            ce2Id = Fixtures.courseExercise(
+                courseId, Fixtures.exercise("Exercise 2", teacherId), threshold = 80, orderIdx = 2
+            )
 
-            }
-
-            Account.insert {
-                it[id] = EntityID(student2Id, Account)
-                it[email] = "user2@example.com"
-                it[givenName] = "Jane"
-                it[familyName] = "Doe"
-                it[createdAt] = DateTime.parse("2023-04-27T12:00:00Z")
-                it[lastSeen] = DateTime.parse("2023-04-27T12:00:00Z")
-                it[idMigrationDone] = true
-                it[isStudent] = true
-                it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
-            }
-
-            Account.insert {
-                it[id] = EntityID(teacher1Id, Account)
-                it[email] = "user3@example.com"
-                it[givenName] = "Bob"
-                it[familyName] = "Smith"
-                it[createdAt] = DateTime.parse("2023-04-26T12:00:00Z")
-                it[lastSeen] = DateTime.parse("2023-04-26T12:00:00Z")
-                it[idMigrationDone] = true
-                it[isTeacher] = true
-                it[pseudonym] = UUID.randomUUID().toString().replace("-", "")
-            }
-
-
-            Dir.insert {
-                it[id] = 1L
-                it[name] = "1"
-                it[isImplicit] = true
-                it[createdAt] = DateTime.now()
-                it[modifiedAt] = DateTime.now()
-            }
-
-            Exercise.insert {
-                it[id] = exercise1Id
-                it[owner] = EntityID(teacher1Id, Account)
-                it[createdAt] = DateTime.now()
-                it[public] = true
-                it[anonymousAutoassessEnabled] = false
-                it[dir] = EntityID(1L, Dir)
-            }
-
-            Exercise.insert {
-                it[id] = exercise2Id
-                it[owner] = EntityID(teacher1Id, Account)
-                it[createdAt] = DateTime.now()
-                it[public] = true
-                it[anonymousAutoassessEnabled] = false
-                it[dir] = EntityID(1L, Dir)
-            }
-
-
-            ExerciseVer.insert {
-                it[exercise] = EntityID(exercise1Id, Exercise)
-                it[author] = EntityID(teacher1Id, Account)
-                it[validFrom] = DateTime.now().minusDays(1)
-                it[graderType] = GraderType.TEACHER
-                it[title] = "Exercise 1"
-                it[textHtml] = "<p>Exercise 1 description</p>"
-                it[textAdoc] = "Exercise 1 description"
-                it[solutionFileName] = "solution_file_name 2"
-                it[solutionFileType] = SolutionFileType.TEXT_EDITOR
-            }
-
-            ExerciseVer.insert {
-                it[exercise] = EntityID(exercise2Id, Exercise)
-                it[author] = EntityID(teacher1Id, Account)
-                it[validFrom] = DateTime.now().minusDays(1)
-                it[graderType] = GraderType.TEACHER
-                it[title] = "Exercise 2"
-                it[textHtml] = "<p>Exercise 2 description</p>"
-                it[textAdoc] = "Exercise 2 description"
-                it[solutionFileName] = "solution_file_name 2"
-                it[solutionFileType] = SolutionFileType.TEXT_EDITOR
-            }
-
-            Course.insert {
-                it[id] = course1Id
-                it[title] = "Test Course"
-                it[alias] = "TC"
-                it[createdAt] = DateTime.now()
-                it[moodleShortName] = "TCSN"
-                it[moodleSyncStudents] = false
-                it[moodleSyncGrades] = false
-                it[moodleSyncStudentsInProgress] = false
-                it[moodleSyncGradesInProgress] = false
-                it[color] = "#137EF9"
-            }
-
-            CourseExercise.insert {
-                it[id] = ce1Id
-                it[course] = course1Id
-                it[exercise] = exercise1Id
-                it[createdAt] = DateTime.now()
-                it[modifiedAt] = DateTime.now()
-                it[gradeThreshold] = 90
-                it[studentVisibleFrom] = DateTime.now()
-                it[softDeadline] = DateTime.now().plusDays(7)
-                it[hardDeadline] = DateTime.now().plusDays(14)
-                it[orderIdx] = 1
-                it[assessmentsStudentVisible] = true
-                it[instructionsHtml] = "<p>Course exercise 1 instructions</p>"
-                it[instructionsAdoc] = "Course exercise 1 instructions"
-                it[titleAlias] = "Course exercise 1"
-            }
-
-            CourseExercise.insert {
-                it[id] = ce2Id
-                it[course] = course1Id
-                it[exercise] = exercise2Id
-                it[createdAt] = DateTime.now()
-                it[modifiedAt] = DateTime.now()
-                it[gradeThreshold] = 80
-                it[studentVisibleFrom] = DateTime.now()
-                it[softDeadline] = DateTime.now().plusDays(7)
-                it[hardDeadline] = DateTime.now().plusDays(14)
-                it[orderIdx] = 1
-                it[assessmentsStudentVisible] = true
-                it[instructionsHtml] = "<p>Course exercise 2 instructions</p>"
-                it[instructionsAdoc] = "Course exercise 2 instructions"
-                it[titleAlias] = "Course exercise 2"
-            }
-
-            TeacherCourseAccess.insert {
-                it[teacher] = teacher1Id
-                it[course] = course1Id
-                it[createdAt] = DateTime.now()
-            }
-
-            studentIds.forEach { id ->
-                StudentCourseAccess.insert {
-                    it[student] = id
-                    it[course] = course1Id
-                    it[createdAt] = DateTime.now()
-                }
-            }
-
-
-            // Stud 1: EX1 2 x submissions + grade, EX2: 2 x submission + grade
-            Submission.insert {
-                it[courseExercise] = ce1Id
-                it[student] = student1Id
-                it[createdAt] = DateTime.now()
-                it[solution] = "submission"
-                it[autoGradeStatus] = AutoGradeStatus.NONE
-                it[grade] = 71
-                it[isAutoGrade] = false
-                it[isGradedDirectly] = true
-            }
-
-            Submission.insert {
-                it[courseExercise] = ce1Id
-                it[student] = student1Id
-                it[createdAt] = DateTime.now()
-                it[solution] = "submission"
-                it[autoGradeStatus] = AutoGradeStatus.NONE
-                it[grade] = 81
-                it[isAutoGrade] = false
-                it[isGradedDirectly] = true
-            }
-
-            Submission.insert {
-                it[courseExercise] = ce2Id
-                it[student] = student1Id
-                it[createdAt] = DateTime.now()
-                it[solution] = "submission"
-                it[autoGradeStatus] = AutoGradeStatus.NONE
-                it[grade] = 91
-                it[isAutoGrade] = false
-                it[isGradedDirectly] = true
-            }
-
-            Submission.insert {
-                it[courseExercise] = ce2Id
-                it[student] = student1Id
-                it[createdAt] = DateTime.now()
-                it[solution] = "submission"
-                it[autoGradeStatus] = AutoGradeStatus.NONE
-                it[grade] = 99
-                it[isAutoGrade] = false
-                it[isGradedDirectly] = true
-            }
-
-            // Stud 2: EX1: no submission, no grade, EX2: submission, grade
-            Submission.insert {
-                it[courseExercise] = ce2Id
-                it[student] = student2Id
-                it[createdAt] = DateTime.now()
-                it[solution] = "submission"
-                it[autoGradeStatus] = AutoGradeStatus.NONE
-                it[grade] = 51
-                it[isAutoGrade] = false
-                it[isGradedDirectly] = true
-            }
+            Fixtures.submission(ce1Id, student1Id, number = 1, grade = 71)
+            Fixtures.submission(ce1Id, student1Id, number = 2, grade = 81)
+            Fixtures.submission(ce2Id, student1Id, number = 1, grade = 91)
+            Fixtures.submission(ce2Id, student1Id, number = 2, grade = 99)
+            Fixtures.submission(ce2Id, student2Id, number = 1, grade = 51)
         }
     }
 
+    @Test
+    fun `returns one latest submission per student per exercise`() {
+        val submissions = selectAllCourseExercisesLatestSubmissions(courseId)
+            .flatMap { it.latestSubmissions }
+            .map { it.latestSubmission }
 
-    private fun Random.nextLongId() = this.nextLong(1000)
+        assertEquals(4, submissions.size)
+    }
+
+    @Test
+    fun `student 1 gets the later of each pair, 81 and 99`() {
+        val byExercise = selectAllCourseExercisesLatestSubmissions(courseId)
+
+        val ex1 = byExercise.single { it.courseExerciseId.toLong() == ce1Id }
+        val ex2 = byExercise.single { it.courseExerciseId.toLong() == ce2Id }
+
+        val ex1Sub = ex1.latestSubmissions.single { it.accountId == student1Id }
+        assertEquals(81, ex1Sub.latestSubmission!!.grade!!.grade)
+        assertEquals(false, ex1Sub.latestSubmission.grade.isAutograde)
+
+        val ex2Sub = ex2.latestSubmissions.single { it.accountId == student1Id }
+        assertEquals(99, ex2Sub.latestSubmission!!.grade!!.grade)
+        assertEquals(false, ex2Sub.latestSubmission.grade.isAutograde)
+    }
+
+    @Test
+    fun `student 2 gets a null for the exercise never attempted and 51 for the other`() {
+        val byExercise = selectAllCourseExercisesLatestSubmissions(courseId)
+
+        val ex1 = byExercise.single { it.courseExerciseId.toLong() == ce1Id }
+        val ex2 = byExercise.single { it.courseExerciseId.toLong() == ce2Id }
+
+        assertNull(ex1.latestSubmissions.single { it.accountId == student2Id }.latestSubmission)
+
+        val ex2Sub = ex2.latestSubmissions.single { it.accountId == student2Id }
+        assertEquals(51, ex2Sub.latestSubmission!!.grade!!.grade)
+        assertEquals(false, ex2Sub.latestSubmission.grade.isAutograde)
+    }
+
+    @Test
+    fun `narrowing to one course exercise returns only that one`() {
+        val only = selectAllCourseExercisesLatestSubmissions(courseId, ce2Id)
+
+        assertEquals(1, only.size)
+        val ex2Sub = only.single().latestSubmissions.single { it.accountId == student2Id }
+        assertEquals(51, ex2Sub.latestSubmission!!.grade!!.grade)
+    }
+
+    @Test
+    fun `narrowing to the other course exercise still picks the later submission`() {
+        val only = selectAllCourseExercisesLatestSubmissions(courseId, ce1Id)
+
+        assertEquals(1, only.size)
+        val ex1Sub = only.single().latestSubmissions.single { it.accountId == student1Id }
+        assertEquals(81, ex1Sub.latestSubmission!!.grade!!.grade)
+    }
+
+    /**
+     * EX1 threshold 90: student1 scored 81 (started), student2 never submitted (unstarted).
+     * EX2 threshold 80: student1 scored 99 (completed), student2 scored 51 (started).
+     */
+    @Test
+    fun `counts completed, started, unstarted and ungraded against each threshold`() {
+        val byExercise = selectAllCourseExercisesLatestSubmissions(courseId)
+
+        assertEquals(setOf(ce1Id, ce2Id), byExercise.map { it.courseExerciseId.toLong() }.toSet())
+
+        val ex1 = byExercise.single { it.courseExerciseId.toLong() == ce1Id }
+        val ex2 = byExercise.single { it.courseExerciseId.toLong() == ce2Id }
+
+        assertEquals(0, ex1.completedCount)
+        assertEquals(1, ex1.startedCount)
+        assertEquals(1, ex1.unstartedCount)
+        assertEquals(0, ex1.ungradedCount)
+
+        assertEquals(1, ex2.completedCount)
+        assertEquals(1, ex2.startedCount)
+        assertEquals(0, ex2.unstartedCount)
+        assertEquals(0, ex2.ungradedCount)
+    }
+
+    @Test
+    fun `selectStudentsOnCourse returns both enrolled students`() {
+        assertEquals(
+            setOf(student1Id, student2Id),
+            selectStudentsOnCourse(courseId).map { it.id }.toSet()
+        )
+    }
+
+    /**
+     * The regression test for EZ-1763, and the reason that issue was a production bug rather than a
+     * flaky fixture.
+     *
+     * `created_at` is millisecond-resolution, so two submissions can genuinely share one — a
+     * double-click, a retry, an autograde write landing beside a manual grade. When they do, an
+     * ordering on `created_at` alone is not total, and `DISTINCT ON` keeps whichever row the plan
+     * happened to emit first. The student sees a grade that changes on refresh.
+     *
+     * So this builds the tie on purpose, with `TestClock.fixed`, and asserts that the higher
+     * `number` — the per-student submission sequence, which is what "latest" is supposed to mean —
+     * wins. Before the tiebreakers were added to the query in courses.kt, this failed most runs.
+     */
+    @Test
+    fun `submissions sharing a created_at are broken by submission number, not by luck`() {
+        val tie = TestClock.fixed(500)
+        transaction {
+            Fixtures.submission(ce1Id, student2Id, number = 1, grade = 10, createdAt = tie)
+            Fixtures.submission(ce1Id, student2Id, number = 2, grade = 20, createdAt = tie)
+        }
+
+        val latest = selectAllCourseExercisesLatestSubmissions(courseId, ce1Id)
+            .single()
+            .latestSubmissions
+            .single { it.accountId == student2Id }
+            .latestSubmission
+
+        assertEquals(20, latest!!.grade!!.grade) {
+            "Expected the submission with the higher `number` to win a created_at tie. Getting 10 " +
+                    "means the ordering in selectAllCourseExercisesLatestSubmissions is no longer total."
+        }
+    }
 }
-

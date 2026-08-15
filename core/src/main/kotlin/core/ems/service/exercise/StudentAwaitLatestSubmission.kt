@@ -67,7 +67,15 @@ class StudentAwaitLatestSubmissionController(private val autoAssessStatusObserve
                         (CourseExercise.id eq courseExId) and
                         (Submission.student eq studentId)
             }
-            .orderBy(Submission.createdAt to SortOrder.DESC)
+            // Tiebreakers make the order total. created_at is millisecond-resolution, so two
+            // submissions can share one and `LIMIT 1` then returns an arbitrary one of them —
+            // here that means awaiting the wrong submission's grade. Same defect as the
+            // DISTINCT ON in courses.kt; see the longer note there (EZ-1763).
+            .orderBy(
+                Submission.createdAt to SortOrder.DESC,
+                Submission.number to SortOrder.DESC,
+                Submission.id to SortOrder.DESC
+            )
             .limit(1)
             .map { it[Submission.id].value }
             .firstOrNull()

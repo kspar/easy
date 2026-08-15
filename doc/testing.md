@@ -5,84 +5,138 @@ This document is the other question: what is actually covered, what is not, and 
 tests we do not have at all.
 
 Written 2026-08-03, after a stretch of work on the exercise editor and embedding that added a lot
-of tests and, more usefully, showed which ones were worth having.
+of tests and, more usefully, showed which ones were worth having. **Substantially revised
+2026-08-15**, when the goal changed from "more coverage" to "a green build is a deploy decision"
+and every count in here turned out to be wrong.
 
-**Where this is tracked.** Two long-lived issues own the work; this document is the survey behind
-them rather than a replacement for them.
+**Where this is tracked.** **EZ-1766** is the programme; this document is the survey behind it.
 
+- **EZ-1766 (A test suite good enough that a green build is a deploy decision)** — the umbrella,
+  with the phase ordering and the decisions taken.
 - **EZ-1705 (Set up automated tests for React web)** — the web side. Its comment history is the
   best record of how the harness got here and what each round of it caught.
-- **EZ-1366 (R&D unit tests)** — the core side, open since 2021 and one line long.
-- **EZ-1715 (Run core tests in CI with a postgres service container)** — the prerequisite for
-  almost everything backend below.
-- **EZ-1723 (Set up a dev environment at dev.lahendus.ut.ee)** — the prerequisite for the
-  integration and migration testing that needs real infrastructure.
+- **EZ-1366 (R&D unit tests)** — the core side, open since 2021.
+- **EZ-1715 (postgres in CI)** — **done**, 2026-08-15, though not the way it was written.
+- **EZ-1723 (dev environment)** — the prerequisite for testing that needs real infrastructure.
+- **EZ-1710 (Automate releases)** — owns everything *downstream* of a green build. Finishing
+  EZ-1766 does not by itself enable automatic production deploys; it removes the coverage reason
+  not to.
 
 ---
 
 ## Where we stand
 
-Counted, not estimated:
+Counted, not estimated — and this time with the commands, because hand-maintained numbers going
+stale is exactly what happened to the first version of this table.
+
+**As of 2026-08-15:**
 
 | | Size | Tests |
 | --- | --- | --- |
-| **core** | 111 `@RestController` classes | 6 test files, 34 `@Test` methods |
-| **web** | 96 `.ts`/`.tsx` files | 3 unit files, 9 browser scripts |
+| **core** | 117 `@RestController` classes | 12 test files, **40 `@Test` methods, all running** |
+| **web** | 119 `.ts`/`.tsx` files, 29,292 LOC | 4 unit files, 28 browser scripts (27 in CI) |
 | **tsl / tsl-common** | the TSL compiler | none |
 | **aae** | the executor | none |
+
+```sh
+grep -rl '@RestController' core/src/main/kotlin | wc -l          # 117
+find core/src/test/kotlin -name '*.kt' | wc -l                   # 12
+find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 119
+ls web/dev-harness/scripts/*.mjs | wc -l                         # 28
+grep -ho 'check(' web/dev-harness/scripts/*.mjs | wc -l          # 599 call sites
+```
 
 The web numbers look better than they are, because the check counts are lopsided:
 
 ```
 unit      44 examples + 11,903 property checks + 532 merge checks
-browser   291 checks across 8 scripts (a 9th needs a real core)
+browser   ~581 checks across the 27 scripts CI runs (a 28th needs a real core)
 ```
 
 Nearly all of the property checks belong to one module — the markdown editing commands. That is
 not misplaced effort (they found real bugs, repeatedly) but it means the totals say very little
 about breadth.
 
-On the core side, **25 of the 34 tests run in CI**. The other 9 are tagged `db` and skipped,
-because they need a PostgreSQL instance and the gitignored `core/src/test/resources/application.yaml`
-— EZ-1715 (Run core tests in CI with a postgres service container). That issue is the single
-biggest unlock in this document: almost every kind of backend test below is blocked behind it.
+### What the first version of this table got wrong
 
-**And skipped is not the same as passing.** Those 9 are the whole of
-`ValidateSelectAllCourseExercisesLatestSubmissions`, and two of them fail most of the time — the
-fixture gives two submissions `DateTime.now()` back to back, so they can share a millisecond and
-"the latest submission" is then a coin toss between grade 71 and grade 81. Measured at 4 failures
-in 5 consecutive runs on 2026-08-14, on code that had nothing to do with them — EZ-1763. Nobody
-noticed because CI has never run them, which is the argument for EZ-1715 in one sentence.
+Worth recording, because it is the argument for the shell commands above. It claimed **111**
+controllers (117), **96** web files (119), **9** browser scripts (28), **291** checks (581) — and
+on the core side, **34 tests of which 9 were tagged `db`**. The real numbers were 32 and 7. Every
+one of those was written by hand and none was ever re-derived.
+
+It also omitted `LandingPage` from the coverage table entirely — 1225 lines, the second-largest
+page in the app.
+
+### The backend blocker is gone
+
+**All 40 core tests now run, in CI and on a laptop, with no setup.** EZ-1715 landed on 2026-08-15,
+but not as written: Testcontainers rather than a postgres service container, because a service
+container fixes CI and leaves the laptop exactly as broken as it was — which is *why* the
+database-backed tests had stopped running in both places. `DEVELOPMENT.md` §5 has the mechanics.
+
+Two things that issue turned out to be scoped at about a third of: the test config
+(`core/src/test/resources/application.yaml` is now **committed**, so CI starting the context is
+what keeps the `${easy.*}` placeholder list honest), and test isolation — `PER_CLASS` plus
+`dropAll` in `@AfterAll` does not scale to a second test class, it *breaks* on one.
+
+**And the flaky test was right.** EZ-1763 was filed as a fixture problem: two submissions given
+`DateTime.now()` back to back share a millisecond, so "the latest submission" was a coin toss
+between grade 71 and 81, at 4 failures in 5 runs. The fixture was only what made a **production**
+bug reproducible — `selectAllCourseExercisesLatestSubmissions` used `DISTINCT ON` with an ordering
+that was not total, so which submission survived was whatever the query plan produced. A student
+could see a grade that changed on refresh. Two sibling queries had the same defect, and in
+`StudentReadSubmissions` it is worse: a non-total order under `LIMIT`/`OFFSET` lets rows be skipped
+or repeated *between pages*.
+
+The lesson is the one worth carrying: **when a test flakes on a tie, suspect the query before the
+fixture.** Spacing the fixture rows out would have made it green and hidden the bug. `TestClock`
+plus a banned `DateTime.now()` is the fixture half; the tiebreakers are the real fix.
 
 ---
 
 ## What is not covered
 
-Web pages, by size, with what exists today:
+Web pages, by size, with what exists today. Corrected 2026-08-15 — six of the eight rows in the
+previous version were wrong and nine pages were missing.
 
 | Page | Lines | Coverage |
 | --- | --- | --- |
 | `ParticipantsPage` | 1823 | **none** |
-| `CourseExercisesPage` | 1155 | 110 checks — the best-covered page in the app |
-| `CourseExercisePage` | 948 | **only the embed action** (12 checks) |
-| `ExerciseLibraryPage` | 798 | 11 checks — listing, sort, filter, create |
-| `GradeTablePage` | 514 | **none** |
-| `ExercisePage` (library) | 496 | 112 checks across three scripts |
-| `SimilarityPage` | — | **none** |
-| `EmbedExercisePage` | — | 37 checks |
+| `LandingPage` | 1225 | 16 |
+| `CourseExercisesPage` | 1155 | 110 — the best-covered page in the app |
+| `CourseExercisePage` | 968 | 51 across four scripts — but **none of it the grading flow** |
+| `ExerciseLibraryPage` | 798 | 11 — listing, sort, filter, create |
+| `GradeTablePage` | 549 | 6 — deep links only |
+| `ExercisePage` (library) | 481 | 171 across five scripts |
+| `EmbedExercisePage` | 395 | 34 |
+| `CoursesPage` | 366 | **none direct** — five scripts visit `/courses` but assert on global chrome |
+| `SystemMessagesPage` | 350 | 17 |
+| `SimilarityPage` | 320 | 15 |
+| `AboutPage` | 313 | 30 |
+| `AccountSettingsPage` | 290 | 14 |
+| `ArticlePage` | 289 | ~34 |
+| `ArticlesPage` | 130 | in `articles.mjs` |
+| `JoinByLinkPage` | 92 | **none** |
+| `NotFoundPage` | 19 | none |
+
+**Zero-coverage routes** — stated as routes rather than files, because that is what a reader can
+check against `routes/routes.tsx`: `courses/:courseId/participants`, `link/:inviteId`,
+`moodle/link/:inviteId`, `courses`, `*`.
 
 Priority, by consequence rather than by size:
 
-1. **`CourseExercisePage`.** The teacher grading flow — submissions, feedback, the testing tab,
-   the settings dialog. A bug here costs a student a grade, which is the most expensive kind of
-   bug this application can have. `course-exercise-embed.mjs` already stubs enough of its
-   endpoints to build on.
+1. **The grading flow on `CourseExercisePage`.** Restating the previous version accurately: it now
+   has 51 checks, but they are the embed action, teacher testing, the assessment tab and retry —
+   *not* selecting a student, loading their solution, and saving a grade. That is still the most
+   expensive kind of bug this application can have.
 2. **`ParticipantsPage`.** Biggest file in the repo, no coverage. Group management, invites and
-   Moodle sync, the last of which reaches a real external system.
-3. **`GradeTablePage`.** Grades are the output of the whole application and nothing checks the
-   table that shows them.
-4. **`SimilarityPage`.** Plagiarism results shown to teachers about named students. Low volume,
-   high sensitivity.
+   Moodle sync, the last of which reaches a real external system — and already has a bug in it
+   (EZ-1768: the sync poll stops after the first flag change and never restarts).
+3. **`GradeTablePage`.** Grades are the output of the whole application, and the 6 checks it has
+   are all about deep links. Also already has a bug (EZ-1767).
+4. **`JoinByLinkPage`.** 92 lines, and nearly every one is an invisible-if-wrong branch — the
+   invite id is upper-cased before lookup, the Moodle prefix appears in two places, and there is a
+   guard whose comment describes a fixed bug that nothing pins.
 
 ---
 
@@ -108,15 +162,34 @@ compiler — the one category of program where property tests are most obviously
 
 ### Service tests (backend, one controller, real database) — have almost none, want them most
 
-29 tests against 111 controllers. The 9 that exist and need a database are the shape to copy:
-call the service layer against a real PostgreSQL, assert on rows.
+40 tests against 117 controllers. **No longer blocked** — EZ-1715 is done.
 
 This is where the highest-value untested logic lives — access control (`assertAccess`, the
 `DirAccessLevel` hierarchy, group visibility), grade aggregation, the Moodle sync, and every
 `permitAll` endpoint, which are reachable by anyone on the internet.
 
-**Blocked on EZ-1715.** Until CI has a postgres service container, anything written here only runs
-on someone's laptop, which in practice means it stops running.
+One correction to the previous version, which said the database-backed tests were "the shape to
+copy". They were the shape to **replace**: `@TestInstance(PER_CLASS)` plus `dropAndUpdateSchema` in
+`@BeforeAll` plus `dropAll` in `@AfterAll` plus 200 lines of inlined `insert {}` plus a
+`@MockitoBean` and a `@TestPropertySource` is four separate things that do not scale — context
+forking, cross-class schema destruction, fixture duplication, and `DateTime.now()` collisions. The
+EZ-1763 paragraph above is a symptom of the fourth. The shape to copy now is `@IntegrationTest` plus
+`Fixtures`; see `DEVELOPMENT.md` §5.
+
+### Coverage by construction — the technique this document was missing
+
+Every item here is phrased as "write tests for X", which means a controller added next month is
+untested by default. With 117 controllers that does not converge, and it is why the backend has
+stayed at 40 tests.
+
+`RichTextColumnsTest` already demonstrates the alternative in this repo: a reflection guard that
+**fails the build until someone decides** which category the new thing belongs to. Applied to
+endpoints (EZ-1769) it gives two things nothing else does — every handler must be `@Secured` or
+explicitly on the `permitAll` allowlist, and every handler must have a sample request in a registry.
+One parameterised test over sample × {anonymous, student, teacher, admin} then turns "we tested some
+endpoints" into "no endpoint is reachable by a role that should not reach it".
+
+This should be the default reach for anything with more than a dozen instances.
 
 ### Integration tests (several components together) — have none
 
@@ -128,8 +201,16 @@ Nothing exercises core + database + executor together, or core + IdP. The realis
   tokens, so the hard part exists; nothing automated consumes it.
 - **Liquibase migrations against a realistic database.** See below — this deserves its own line.
 
-Best done on dev (EZ-1723) rather than in CI: they need infrastructure CI has no business
-standing up, and dev exists precisely to be a place where real things can be run.
+The "best done on dev rather than in CI" conclusion was **half right**, and the half it got wrong is
+the expensive one. It holds for real Keycloak and for migrations against real data. It does not hold
+for submission → grading → feedback, which this same paragraph calls the application's central
+promise: a fake executor is a `com.sun.net.httpserver` handler with no new dependency, and
+`testdata.xml` already registers an executor at `http://localhost:5111` for `mock-executor/server.mjs`
+to answer. That is an afternoon in CI, including the failure legs — executor 500, timeout,
+`statusInProgressToFailed` on restart — which are the parts nobody exercises by hand.
+
+Migrations and real-Keycloak testing stay on dev (EZ-1723): they need infrastructure CI has no
+business standing up, and a production dump has no business reaching CI.
 
 ### UI tests — have a good harness, uneven coverage
 
@@ -145,13 +226,22 @@ real (every response is a fixture we wrote), and the app works in any browser bu
 ### Contract tests — have none, and the gap is real
 
 Every browser test stubs the backend from hand-written fixtures. Nothing checks those fixtures
-still match what core returns. The failure mode is a green suite and a broken app, and this
-session produced a live example: a fixture kept `anonymous_autoassess_template: null` after the
-column became non-nullable, and nothing noticed because both sides were mocked.
+still match what core returns. The failure mode is a green suite and a broken app, and there is a
+live example on record: a fixture kept `anonymous_autoassess_template: null` after the column became
+non-nullable, and nothing noticed because both sides were mocked.
 
-Cheapest useful version: generate or validate fixtures against the real response shapes — an
-OpenAPI document core already nearly has (`doc/core/api.yaml.outdated`, which the name admits is
-stale), or a small set of "shape" tests that hit a local core and assert on keys and types.
+**Decided (EZ-1770), and the important correction: this depends on nothing.** The previous version
+of this document implied everything backend-adjacent was blocked behind EZ-1715. It is not — core's
+DTOs carry `@get:JsonProperty` wire names explicitly and Kotlin nullability is visible to
+`kotlin-reflect`, so a shape descriptor is recoverable by **reflection with no database and no
+Spring context**. That was this document's single most consequential inaccuracy.
+
+The design: a plain `@Test` emits `doc/core/api-shapes.json` and fails if the committed file differs.
+The reason that beats generating OpenAPI is not size — it is that **the artefact is a file in git, so
+the diff is the review**. When a column becomes non-nullable, the PR shows `"nullable": true → false`
+on one line, and a human catches it before any fixture is touched. Web-side validation hooks into
+`fakeApi` and derives endpoint identity from the request URL, so every existing script is retrofitted
+with no edits.
 
 ### Migration tests — have none, and we now have a reason to want them
 
@@ -215,13 +305,31 @@ one, it is worth making it fail on purpose once.
 
 ---
 
+## What "green" will mean
+
+The condition EZ-1710 can read to decide whether to ship: run conclusion is success **and** the
+JUnit report has zero failures **and** no quarantine entry has expired **and** contract-warning
+counts are at or below baseline **and** the a11y baseline produced no new fingerprints.
+
+All five are artefacts the suite produces anyway. The point of naming them is that "the build is
+green" and "this is safe to deploy" should be the same sentence, checkable by a script.
+
 ## Suggested order
 
-1. **EZ-1715** — postgres in CI. Unblocks everything backend.
-2. **`CourseExercisePage` browser coverage** — highest consequence untested surface.
-3. **Service tests for access control** — internet-reachable, and wrong answers are silent.
-4. **Contract or fixture-shape checks** — stops the whole browser suite drifting from reality.
-5. **`ParticipantsPage` and `GradeTablePage`** — largest remaining untested surfaces.
-6. **Migration tests against an anonymised copy** — once dev exists.
-7. **axe in the browser harness** — cheap, and there is already evidence it would find things.
-8. **Performance measurement of the two known suspects** — a fixture, not a framework.
+Revised 2026-08-15. **The previous ordering put browser coverage second, above backend access
+control — that was wrong once auto-deploy became the goal**, and it is drift rather than error: the
+list predates that goal. A browser test whose backend is Playwright route interception passes
+against *any* backend, including a broken one. It cannot gate a backend deploy, by construction.
+
+1. ~~**EZ-1715** — postgres in CI~~ — **done 2026-08-15.**
+2. **Endpoint security surface and authorization matrix** (EZ-1769) — the highest value per hour in
+   the programme, and the only item that keeps 117 controllers covered without 117 decisions.
+3. **Contract checks** (EZ-1770) — stops the browser suite drifting from reality. **Depends on
+   nothing; start it in parallel with 2.**
+4. **Service tests for access control** — internet-reachable, and wrong answers are silent.
+5. **Web migration to `@playwright/test` + `vitest`**, then the grading flow, `ParticipantsPage`,
+   `GradeTablePage` and route guards.
+6. **tsl and aae** — two components with no tests at all. Depends on nothing; parallelisable.
+7. **Migration tests against an anonymised copy** — once dev exists.
+8. **axe in the browser harness** — cheap, and there is already evidence it would find things.
+9. **Performance measurement of the two known suspects** — a fixture, not a framework.

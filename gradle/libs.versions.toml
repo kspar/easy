@@ -25,6 +25,10 @@ kotlinLogging = "8.0.01"
 kotlinxSerializationJson = "1.5.0"
 liquibase = "4.31.1"
 picocli = "4.7.6"
+# Pinned rather than versionless: this project applies the Spring Boot plugin's dependency
+# management, which does not import testcontainers-bom, so an unversioned coordinate fails to
+# resolve. Bump alongside the postgres:16 tag in TestDatabase.kt and docker-compose.yml.
+testcontainers = "1.21.4"
 tika = "3.2.3"
 
 [plugins]
@@ -46,6 +50,13 @@ spring-boot-starter-restclient = { module = "org.springframework.boot:spring-boo
 spring-boot-starter-mail = { module = "org.springframework.boot:spring-boot-starter-mail" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+# @AutoConfigureMockMvc. Its own module in Boot 4 — spring-boot-test-autoconfigure was split up, so
+# the old org.springframework.boot.test.autoconfigure.web.servlet package no longer exists and the
+# annotation now lives in org.springframework.boot.webmvc.test.autoconfigure.
+spring-boot-webmvc-test = { module = "org.springframework.boot:spring-boot-webmvc-test" }
+# Request post-processors that put an EasyUser straight into the SecurityContext, so MockMvc tests
+# exercise the same object both production auth paths produce. See core/testing/Auth.kt.
+spring-security-test = { module = "org.springframework.security:spring-security-test" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
 postgresql = { module = "org.postgresql:postgresql" }
 jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
@@ -72,6 +83,9 @@ kotlin-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "kot
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 liquibase-core = { module = "org.liquibase:liquibase-core", version.ref = "liquibase" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+# Tests start their own PostgreSQL rather than expecting a hand-made one — see TestDatabase.kt.
+testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 tika-core = { module = "org.apache.tika:tika-core", version.ref = "tika" }
 
 [bundles]
