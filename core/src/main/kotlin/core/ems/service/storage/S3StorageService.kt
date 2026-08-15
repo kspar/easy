@@ -105,17 +105,17 @@ class S3StorageService : StorageService {
         }
     }
 
-    override fun put(key: String, bytes: InputStream, sizeBytes: Long, mimeType: String, filename: String) {
+    override fun put(key: String, bytes: InputStream, sizeBytes: Long, mimeType: String, contentDisposition: String) {
         assertValidStorageKey(key)
         client.putObject(
             PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
                 .contentType(mimeType)
-                // The browser reaches the object directly after the redirect, so this is the only
-                // place the human filename can come from. Quotes and control characters are already
-                // out — see sanitiseFilename at the upload site.
-                .contentDisposition("""inline; filename="$filename"""")
+                // The browser reaches the object directly after the redirect, so these headers are
+                // fixed at upload time and cannot be reconsidered later without rewriting the object.
+                // Quotes and control characters are already out — see sanitiseFilename.
+                .contentDisposition(contentDisposition)
                 .build(),
             // fromInputStream with a known length streams the request body. Handing it a byte array
             // instead would put the whole file in heap, which is exactly what the move away from

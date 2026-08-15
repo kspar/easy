@@ -449,7 +449,14 @@
     "table": "Tabel",
     "tableHeader": "Pealkiri",
     "tableCell": "Lahter",
-    "rule": "Eraldusjoon"
+    "rule": "Eraldusjoon",
+    "uploadFile": "Laadi fail üles…",
+    "imageByUrl": "URL-i järgi…",
+    "uploadError": {
+      "tooLarge": "Fail on liiga suur. Õpetajad saavad üles laadida kuni 20 MB.",
+      "rejected": "Faili ei aktsepteeritud — see võib olla tühi või liiga suur.",
+      "unknown": "Üleslaadimine ebaõnnestus. Palun proovi uuesti."
+    }
   },
   "participants": {
     "title": "Osalejad",

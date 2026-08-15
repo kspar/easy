@@ -24,10 +24,13 @@ interface StorageService {
      * content length up front to stream a request body instead of buffering it, which is the only
      * reason a large upload is possible at all.
      *
-     * [mimeType] and [filename] become response headers on the stored object, so a browser that
-     * follows the redirect sees a real content type and a human filename rather than the key.
+     * [mimeType] and [contentDisposition] become response headers on the stored object, so a browser
+     * that follows the redirect sees a real content type and a human filename rather than the key.
+     * The disposition arrives already formatted — see [contentDispositionFor] — because whether a
+     * file may render in the browser is a policy decision, and a storage backend is the wrong place
+     * for one.
      */
-    fun put(key: String, bytes: InputStream, sizeBytes: Long, mimeType: String, filename: String)
+    fun put(key: String, bytes: InputStream, sizeBytes: Long, mimeType: String, contentDisposition: String)
 
     /** Read an object back. Null when it is not there. The caller closes the stream. */
     fun get(key: String): InputStream?
@@ -90,3 +93,31 @@ fun isValidStorageKey(key: String) = STORAGE_KEY_PATTERN.matches(key)
  */
 fun assertValidStorageKey(key: String) =
     require(isValidStorageKey(key)) { "Not a storage key: '$key'" }
+
+
+/**
+ * Types that must never render in a browser, only download.
+ *
+ * Objects are public and served from the object store's own origin, so an uploaded HTML file is a
+ * working page on a domain that is not ours to vouch for. It cannot touch the application — different
+ * origin, no cookies, no session — but it is a hosted page reachable by anyone with the URL, which is
+ * a phishing primitive we gain nothing from offering.
+ *
+ * SVG is the same class for a less obvious reason: perfectly safe inside `<img>`, which is the way
+ * anyone actually uses it, and scriptable when navigated to directly. `attachment` keeps the first
+ * working while making the second a download, so SVG diagrams stay usable.
+ *
+ * Sniffed by Tika from the content, so renaming a file does not get around this.
+ */
+private val MUST_DOWNLOAD = setOf("text/html", "image/svg+xml")
+
+/**
+ * The `Content-Disposition` a stored file is served with. One function because it is applied in two
+ * unrelated places — attached to the object at upload time for the S3 backend, and set on the
+ * response at read time for the local one — and a policy that lives in two places is a policy that
+ * will eventually disagree with itself.
+ */
+fun contentDispositionFor(mimeType: String, filename: String): String {
+    val kind = if (mimeType.substringBefore(';').trim().lowercase() in MUST_DOWNLOAD) "attachment" else "inline"
+    return """$kind; filename="$filename""""
+}

@@ -83,8 +83,16 @@ fi
 # A real 1x1 PNG, so Tika sniffs image/png rather than falling back to octet-stream.
 printf '\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0aIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\x0d\x0a-\xb4\x00\x00\x00\x00IEND\xaeB\x60\x82' > "$tmpdir/pixel.png"
 
-KEY=$(upload "$tmpdir/pixel.png" "${TEACHER[@]}"); created+=("$KEY")
+UPLOAD_RESP=$(body "${TEACHER[@]}" -X POST "$BASE/files" -F "file=@$tmpdir/pixel.png")
+KEY=$(printf '%s' "$UPLOAD_RESP" | field id); created+=("$KEY")
 echo "uploaded as key $KEY"
+
+echo
+echo "0. what the upload tells the caller"
+# The id alone cannot build a URL: the filename is sanitised server-side and the type is sniffed, so
+# a caller that guessed either would be wrong exactly when it matters.
+check "the sanitised filename comes back" "pixel.png" "$(printf '%s' "$UPLOAD_RESP" | field filename)"
+check "and the sniffed type"              "image/png" "$(printf '%s' "$UPLOAD_RESP" | field mime_type)"
 
 echo
 echo "1. reading it, with no account at all"
@@ -111,6 +119,21 @@ else
   echo "   (local backend: core streams the bytes itself)"
   check "served directly, not redirected" "200" "$FIRST_HOP"
 fi
+
+echo
+echo "1b. what may render in a browser, and what may only download"
+# Objects are public and served from the store's own origin, so an uploaded page is a page on a
+# domain we do not vouch for. SVG is the same class: safe in <img>, scriptable when navigated to.
+disposition() { curl -sL -o /dev/null -m 60 -D - "$@" 2>/dev/null | grep -io 'content-disposition:[^;]*' | tail -1 | tr -d '\r' | awk '{print tolower($2)}'; }
+check "a png renders inline" "inline" "$(disposition "$BASE/resource/$KEY/pixel.png")"
+
+printf '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>' > "$tmpdir/x.svg"
+SVG=$(upload "$tmpdir/x.svg" "${TEACHER[@]}"); created+=("$SVG")
+check "an svg is forced to download" "attachment" "$(disposition "$BASE/resource/$SVG/x.svg")"
+
+printf '<html><body><h1>not ours</h1></body></html>' > "$tmpdir/x.html"
+HTML=$(upload "$tmpdir/x.html" "${TEACHER[@]}"); created+=("$HTML")
+check "and so is html"               "attachment" "$(disposition "$BASE/resource/$HTML/x.html")"
 
 echo
 echo "2. the filename is decoration"

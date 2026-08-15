@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Alert,
   Box,
   Button,
   Checkbox,
@@ -46,6 +47,8 @@ import { RobotIcon, TeacherFaceIcon } from '../../components/icons.tsx'
 import type { InlineCommentResp, TeacherActivityResp } from '../../api/types.ts'
 import ConfirmDialog from '../participants/ConfirmDialog.tsx'
 import ReadOnlyCodeSnippet from './ReadOnlyCodeSnippet.tsx'
+import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.ts'
+import { useFileDropExtension } from '../../components/markdown/useFileDropExtension.ts'
 
 const NOTIFY_KEY = 'teacherNotifyStudent'
 const MERGE_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
@@ -635,6 +638,13 @@ function EditCommentEditor({
     try { localStorage.setItem(EDIT_NOTIFY_KEY, String(notify)) } catch { /* ignore */ }
   }, [notify])
 
+  const { uploadFiles, uploading, error: uploadError, clearError } = useMarkdownUpload()
+  const dropExtension = useFileDropExtension(
+    useCallback((files: File[]) => {
+      if (viewRef.current) void uploadFiles(viewRef.current, files)
+    }, [uploadFiles]),
+  )
+
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -657,6 +667,10 @@ function EditCommentEditor({
         '.cm-content': { padding: '8px 12px', fontSize: '0.875rem' },
         '&.cm-focused': { outline: 'none' },
       }),
+      // No toolbar button here — this box has room for five controls and already uses them — but
+      // pasting a screenshot into feedback is the one gesture that needs no room at all, and it is
+      // the most likely thing a teacher wants to attach to a comment about someone's code.
+      ...(dropExtension ?? []),
     ]
     if (theme.palette.mode === 'dark') extensions.push(oneDark)
 
@@ -675,7 +689,7 @@ function EditCommentEditor({
       viewRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme.palette.mode])
+  }, [theme.palette.mode, dropExtension])
 
   const tbSx = {
     p: '5px',
@@ -686,8 +700,14 @@ function EditCommentEditor({
 
   return (
     <Box sx={{ mt: 1, mx: -1.5, mb: -1.5, borderTop: 1, borderColor: 'divider' }}>
+      {/* An upload can only be started by pasting or dropping here, but it can still fail, and a
+          screenshot that silently does not appear is worse than one that says why. */}
+      {uploadError && (
+        <Alert severity="error" onClose={clearError} sx={{ borderRadius: 0 }}>{uploadError}</Alert>
+      )}
       {/* Toolbar */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '2px', px: 0.75, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
+        {uploading && <CircularProgress size={14} sx={{ mr: 0.5 }} />}
         <Tooltip title="Bold">
           <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyFormat(viewRef.current, '**', '**', 'bold')}>
             <FormatBoldOutlined sx={{ fontSize: 17 }} />

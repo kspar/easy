@@ -40,10 +40,10 @@ class LocalFsStorageService : StorageService {
         log.info { "Storing uploaded files on the local filesystem, in $dir" }
     }
 
-    override fun put(key: String, bytes: InputStream, sizeBytes: Long, mimeType: String, filename: String) {
-        // mimeType and filename are not stored: on this backend the read endpoint streams the bytes
-        // itself and takes both from the database row, so there is nowhere for them to be needed.
-        // The S3 backend has to attach them to the object because the browser talks to S3 directly.
+    override fun put(key: String, bytes: InputStream, sizeBytes: Long, mimeType: String, contentDisposition: String) {
+        // Neither header is stored: on this backend the read endpoint streams the bytes itself and
+        // derives both from the database row, so there is nowhere for them to be kept. The S3
+        // backend has to attach them to the object because the browser talks to S3 directly.
         val target = resolve(key)
         val tmp = Files.createTempFile(dir, "upload-", ".part")
         try {

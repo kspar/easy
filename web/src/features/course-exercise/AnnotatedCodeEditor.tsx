@@ -45,6 +45,8 @@ import ConfirmDialog from '../participants/ConfirmDialog.tsx'
 // Shared with the exercise text editor, which shows a superset of these buttons. Keeping one
 // implementation is what stops the two editors formatting the same document differently.
 import MarkdownToolbar from '../../components/markdown/MarkdownToolbar.tsx'
+import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.ts'
+import { useFileDropExtension } from '../../components/markdown/useFileDropExtension.ts'
 import { COMPACT_TOOLS } from '../../components/markdown/markdownTools.ts'
 import { applyFormat } from '../../components/markdown/markdownActions.ts'
 
@@ -703,6 +705,13 @@ function CommentEditor({
   // The toolbar is a child component, so it needs the view as a prop — and a ref assignment does
   // not re-render, which would leave every button permanently disabled.
   const [toolbarView, setToolbarView] = useState<EditorView | null>(null)
+
+  const { uploadFiles, uploading, error: uploadError, clearError } = useMarkdownUpload()
+  const dropExtension = useFileDropExtension(
+    useCallback((files: File[]) => {
+      if (innerViewRef.current) void uploadFiles(innerViewRef.current, files)
+    }, [uploadFiles]),
+  )
   const [text, setText] = useState(draft.textMd)
   const textRef = useRef(draft.textMd)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -752,6 +761,10 @@ function CommentEditor({
         '.cm-content': { padding: '8px 12px', fontSize: '0.875rem' },
         '&.cm-focused': { outline: 'none' },
       }),
+      // Paste and drop only. COMPACT_TOOLS has no image button on purpose — this editor is wedged
+      // between two lines of someone's code and every button costs width there — but an annotated
+      // screenshot is a natural thing to attach to a review comment, and a paste costs nothing.
+      ...(dropExtension ?? []),
     ]
     if (theme.palette.mode === 'dark') extensions.push(oneDark)
 
@@ -771,7 +784,7 @@ function CommentEditor({
       setToolbarView(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme.palette.mode])
+  }, [theme.palette.mode, dropExtension])
 
   return (
     <Box
@@ -787,6 +800,12 @@ function CommentEditor({
     >
       <Box sx={{ px: 0.75, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
         <MarkdownToolbar view={toolbarView} tools={COMPACT_TOOLS} />
+        {uploading && <CircularProgress size={14} sx={{ ml: 0.5 }} />}
+        {uploadError && (
+          <Typography variant="caption" color="error" sx={{ ml: 1 }} onClick={clearError}>
+            {uploadError}
+          </Typography>
+        )}
       </Box>
 
       {/* CodeMirror editor */}

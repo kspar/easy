@@ -138,8 +138,10 @@ check('Mod-b bolds without the toolbar', (await docText()).includes('**shortcut*
 const activeIsEditor = () =>
   page.evaluate(() => document.activeElement?.classList?.contains('cm-content') === true)
 
+// Image is not in this list: it opens a menu now that uploading is offered alongside by-URL, so it
+// belongs with Heading below rather than with the buttons that act immediately.
 for (const name of ['Bold', 'Italic', 'Strikethrough', 'Inline code', 'Bullet list',
-  'Numbered list', 'Quote', 'Link', 'Image', 'Code block', 'Table', 'Divider']) {
+  'Numbered list', 'Quote', 'Link', 'Code block', 'Table', 'Divider']) {
   await selectAll()
   await page.keyboard.press('Backspace')
   await page.keyboard.type('caret test')
@@ -154,6 +156,14 @@ await toolbar.getByRole('button', { name: 'Heading', exact: true }).click()
 await page.getByRole('menuitem', { name: 'Heading 2' }).click()
 // The menu re-focuses on its exit transition, so poll rather than assert on the next tick.
 check('Heading menu keeps the caret in the editor', await waitUntil(activeIsEditor))
+
+await selectAll()
+await page.keyboard.press('Backspace')
+await page.keyboard.type('caret test')
+await toolbar.getByRole('button', { name: 'Image', exact: true }).click()
+await page.getByRole('menuitem', { name: /URL/ }).click()
+check('Image menu keeps the caret in the editor', await waitUntil(activeIsEditor))
+check('and by-URL still inserts the old markup', (await docText()).includes('!['))
 
 // --- the exercise with no markdown source -----------------------------------------------------
 // text_html but no text_md is the shape ~1000 production exercises are still in. Saving derives

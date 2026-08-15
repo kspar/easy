@@ -449,7 +449,14 @@
     "table": "Table",
     "tableHeader": "Heading",
     "tableCell": "Cell",
-    "rule": "Divider"
+    "rule": "Divider",
+    "uploadFile": "Upload a file…",
+    "imageByUrl": "By URL…",
+    "uploadError": {
+      "tooLarge": "That file is too large. Teachers can upload up to 20 MB.",
+      "rejected": "That file was refused — it may be empty or too large.",
+      "unknown": "The upload failed. Please try again."
+    }
   },
   "participants": {
     "title": "Participants",

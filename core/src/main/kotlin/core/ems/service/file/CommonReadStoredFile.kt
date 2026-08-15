@@ -2,6 +2,7 @@ package core.ems.service.file
 
 import core.db.StoredFile
 import core.ems.service.storage.StorageService
+import core.ems.service.storage.contentDispositionFor
 import core.ems.service.storage.isValidStorageKey
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletResponse
@@ -92,7 +93,9 @@ class ReadStoredFileController(private val storageService: StorageService) {
         }
         response.contentType = file.mimeType
         response.setHeader("Content-Length", file.sizeBytes.toString())
-        response.setHeader("Content-Disposition", """inline; filename="${file.filename}"""")
+        // Same policy the S3 backend bakes into the object at upload time, applied here at read time
+        // because this backend has no object metadata to bake it into.
+        response.setHeader("Content-Disposition", contentDispositionFor(file.mimeType, file.filename))
         stream.use { it.copyTo(response.outputStream) }
     }
 

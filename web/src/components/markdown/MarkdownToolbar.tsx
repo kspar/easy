@@ -42,14 +42,21 @@ export default function MarkdownToolbar({
   view,
   tools,
   disabled = false,
+  onPickFile,
 }: {
   /** Null until CodeMirror has mounted; every button no-ops until then. */
   view: EditorView | null
   tools: MarkdownTool[]
   disabled?: boolean
+  /**
+   * Opens a file picker. Omitted where uploading is not offered, and the image button then goes
+   * straight to its by-URL behaviour rather than opening a menu with one item in it.
+   */
+  onPickFile?: () => void
 }) {
   const { t } = useTranslation()
   const [headingAnchor, setHeadingAnchor] = useState<HTMLElement | null>(null)
+  const [imageAnchor, setImageAnchor] = useState<HTMLElement | null>(null)
 
   const btnSx = {
     p: '5px',
@@ -151,8 +158,45 @@ export default function MarkdownToolbar({
             return button('link', t('markdown.link'), <LinkOutlined sx={iconSx} />,
               run((v) => insertLink(v, t('markdown.linkUrl'), t('markdown.linkText'))))
           case 'image':
-            return button('image', t('markdown.image'), <ImageOutlined sx={iconSx} />,
-              run((v) => insertImage(v, t('markdown.linkUrl'), t('markdown.imageAlt'))))
+            // Two ways to get an image in, and the older one is not obsolete: an image already
+            // hosted somewhere else is ordinary Markdown and stays valid, so uploading is offered
+            // *alongside* by-URL rather than instead of it. One button with a menu, because both
+            // are "insert an image" and two buttons would compete for the same icon.
+            return (
+              <span key="image">
+                {button('image', t('markdown.image'), <ImageOutlined sx={iconSx} />, (e) =>
+                  onPickFile ? setImageAnchor(e.currentTarget) : run((v) =>
+                    insertImage(v, t('markdown.linkUrl'), t('markdown.imageAlt')))(),
+                )}
+                <Menu
+                  anchorEl={imageAnchor}
+                  open={Boolean(imageAnchor)}
+                  onClose={() => setImageAnchor(null)}
+                  // Same focus dance as the heading menu above, for the same reason: closing a Menu
+                  // restores focus to whatever opened it, which lands after our own focus() call and
+                  // leaves the caret on the toolbar button looking like it vanished.
+                  disableRestoreFocus
+                  TransitionProps={{ onExited: () => view?.focus() }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      setImageAnchor(null)
+                      onPickFile?.()
+                    }}
+                  >
+                    {t('markdown.uploadFile')}
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setImageAnchor(null)
+                      if (view) insertImage(view, t('markdown.linkUrl'), t('markdown.imageAlt'))
+                    }}
+                  >
+                    {t('markdown.imageByUrl')}
+                  </MenuItem>
+                </Menu>
+              </span>
+            )
           case 'codeBlock':
             return button('codeBlock', t('markdown.codeBlock'), <DataObjectOutlined sx={iconSx} />,
               run((v) => insertCodeBlock(v)))

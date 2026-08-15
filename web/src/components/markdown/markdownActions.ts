@@ -292,6 +292,47 @@ export function insertImage(view: EditorView, urlPlaceholder: string, altPlaceho
 }
 
 /**
+ * The text that stands in for a file while it uploads.
+ *
+ * Carries a nonce because the only reliable way to find it again is to search for it. A 20 MB file
+ * takes long enough that the author keeps typing, and every offset recorded at insert time is stale
+ * the moment they do — including offsets *before* the placeholder, since they may edit above it.
+ *
+ * Deliberately not valid Markdown for a real image: if an upload is somehow abandoned and the text
+ * saved anyway, this should look obviously unfinished rather than render as a broken image.
+ */
+export function uploadPlaceholder(filename: string, nonce: string) {
+  return `[⏳ ${escapeMarkdownText(filename)} …](uploading-${nonce})`
+}
+
+/** Where [uploadPlaceholder]'s text sits in `doc`, or null if it is gone — the author may delete it. */
+export function findPlaceholder(doc: string, filename: string, nonce: string) {
+  const text = uploadPlaceholder(filename, nonce)
+  const from = doc.indexOf(text)
+  return from < 0 ? null : { from, to: from + text.length }
+}
+
+/**
+ * The Markdown for a finished upload: an image if it is one, otherwise a link.
+ *
+ * Decided by the **sniffed** type from the server, not by the extension, because the extension is
+ * whatever the author's filesystem happened to say.
+ */
+export function markdownForUpload(url: string, filename: string, mimeType: string) {
+  const text = escapeMarkdownText(filename)
+  return mimeType.startsWith('image/') ? `![${text}](${url})` : `[${text}](${url})`
+}
+
+/**
+ * Brackets and parentheses in a filename would otherwise end the link early and leave the rest as
+ * literal text. The server strips path separators, quotes and control characters; these it has no
+ * reason to care about, since they are only special in Markdown.
+ */
+function escapeMarkdownText(s: string) {
+  return s.replace(/[[\]()\\]/g, (c) => `\\${c}`)
+}
+
+/**
  * A thematic break.
  *
  * An action rather than an inline dispatch in the toolbar, which is what it used to be — that

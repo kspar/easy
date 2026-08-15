@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.StoredFile
 import core.ems.service.storage.StorageService
+import core.ems.service.storage.contentDispositionFor
 import core.ems.service.storage.newStorageKey
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -48,7 +49,20 @@ class UploadStoredFileController(private val storageService: StorageService) {
 
     private val tika = Tika()
 
-    data class Resp(@get:JsonProperty("id") val id: String)
+    /**
+     * The id alone is not enough for a caller to build the URL it just created.
+     *
+     * [filename] is the *sanitised* one, which may differ from what was sent — path separators,
+     * quotes and control characters are stripped — and it is the last segment of
+     * `/v2/resource/<id>/<filename>`. [mimeType] is what Tika sniffed from the content, which is
+     * how an editor decides between `![alt](url)` and `[name](url)` without trusting the extension.
+     * A client guessing either would be wrong in exactly the cases that matter.
+     */
+    data class Resp(
+        @get:JsonProperty("id") val id: String,
+        @get:JsonProperty("filename") val filename: String,
+        @get:JsonProperty("mime_type") val mimeType: String,
+    )
 
     @Secured("ROLE_ADMIN", "ROLE_TEACHER")
     @PostMapping("/files")
@@ -80,7 +94,7 @@ class UploadStoredFileController(private val storageService: StorageService) {
         val mimeType = file.inputStream.use { tika.detect(it, filename) }
 
         val key = newStorageKey()
-        storageService.put(key, file.inputStream, file.size, mimeType, filename)
+        storageService.put(key, file.inputStream, file.size, mimeType, contentDispositionFor(mimeType, filename))
 
         // After the object, deliberately. A row with no object is a broken image; an object with no
         // row is invisible junk that the sweep collects on its next run. The second is the better
@@ -97,7 +111,7 @@ class UploadStoredFileController(private val storageService: StorageService) {
             }
         }
 
-        return Resp(key)
+        return Resp(key, filename, mimeType)
     }
 }
 

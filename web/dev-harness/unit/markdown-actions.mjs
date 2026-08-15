@@ -14,6 +14,7 @@ import { EditorState } from '@codemirror/state'
 import {
   applyFormat, toggleLinePrefix, toggleOrderedList, setHeading,
   insertBlock, insertCodeBlock, insertLink, insertImage, insertTable,
+  uploadPlaceholder, findPlaceholder, markdownForUpload,
 } from '../../src/components/markdown/markdownActions.ts'
 
 function view(doc, anchor = 0, head = anchor) {
@@ -183,6 +184,47 @@ insertTable(v, 'Heading', 'Cell')
 check('table is a full GFM block', v.state.doc.toString(),
   'para\n\n| Heading 1 | Heading 2 |\n| --- | --- |\n| Cell | Cell |\n| Cell | Cell |')
 check('first header cell selected', sel(v), 'Heading 1')
+
+// --- upload placeholders ---------------------------------------------------------------------
+// The placeholder is found by SEARCHING for it, not by remembering an offset, because a 20 MB
+// upload takes long enough that the author keeps typing — including above the insertion point,
+// which invalidates every offset recorded at insert time. These check that the search survives
+// exactly that.
+
+const ph = uploadPlaceholder('shot.png', 'abc12345')
+check('placeholder is not a valid image', ph.startsWith('!'), false)
+check('placeholder carries the nonce', ph.includes('abc12345'), true)
+
+let doc = `before\n${ph}\nafter`
+let found = findPlaceholder(doc, 'shot.png', 'abc12345')
+check('found at the right offset', doc.slice(found.from, found.to), ph)
+
+// The author types above it while the upload runs.
+doc = `a much longer first line now\n${ph}\nafter`
+found = findPlaceholder(doc, 'shot.png', 'abc12345')
+check('still found after edits above it', doc.slice(found.from, found.to), ph)
+
+// And deletes it, which is allowed and must not throw.
+check('gone is null, not an error', findPlaceholder('nothing here', 'shot.png', 'abc12345'), null)
+
+// Two uploads in flight must not find each other's placeholder.
+const ph2 = uploadPlaceholder('shot.png', 'def67890')
+doc = `${ph}\n${ph2}`
+check('nonces keep concurrent uploads apart',
+  doc.slice(findPlaceholder(doc, 'shot.png', 'def67890').from), ph2)
+
+// --- markdownForUpload -------------------------------------------------------------------------
+check('an image is an image', markdownForUpload('/v2/resource/k/a.png', 'a.png', 'image/png'),
+  '![a.png](/v2/resource/k/a.png)')
+// Decided by the sniffed type, not the extension — the extension is whatever the filesystem said.
+check('anything else is a link', markdownForUpload('/v2/resource/k/h.pdf', 'h.pdf', 'application/pdf'),
+  '[h.pdf](/v2/resource/k/h.pdf)')
+check('a png named .txt is still an image',
+  markdownForUpload('/v2/resource/k/x.txt', 'x.txt', 'image/png'), '![x.txt](/v2/resource/k/x.txt)')
+// Brackets would otherwise close the link early and leave the rest as literal text.
+check('brackets in the name are escaped',
+  markdownForUpload('/v2/resource/k/a.png', 'a[1](2).png', 'image/png'),
+  '![a\\[1\\]\\(2\\).png](/v2/resource/k/a.png)')
 
 console.log(`\n  ${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Box } from '@mui/material'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Alert, Box, CircularProgress } from '@mui/material'
 import { keymap, type EditorView } from '@codemirror/view'
 import type { Extension } from '@codemirror/state'
 import CodeEditor from '../CodeEditor.tsx'
 import MarkdownToolbar from './MarkdownToolbar.tsx'
 import { FULL_TOOLS, type MarkdownTool } from './markdownTools.ts'
 import { applyFormat, insertCodeBlock, insertLink } from './markdownActions.ts'
+import { useMarkdownUpload } from './useMarkdownUpload.ts'
+import { useFileDropExtension } from './useFileDropExtension.ts'
 
 /**
  * A Markdown source editor with a formatting toolbar and the usual keyboard shortcuts.
@@ -43,6 +45,7 @@ export default function MarkdownEditor({
   placeholder,
   minHeight = '30rem',
   tools = FULL_TOOLS,
+  allowUpload = true,
 }: {
   value: string
   onChange: (value: string) => void
@@ -50,9 +53,23 @@ export default function MarkdownEditor({
   placeholder?: string
   minHeight?: string
   tools?: MarkdownTool[]
+  /** Set false where the caller does not want files accepted at all. */
+  allowUpload?: boolean
 }) {
   const [lang, setLang] = useState<Extension | undefined>(markdownExtension)
   const [view, setView] = useState<EditorView | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const { uploadFiles, uploading, error, clearError } = useMarkdownUpload()
+
+  const uploadEnabled = allowUpload && !readOnly
+
+  const onFiles = useCallback(
+    (files: File[]) => {
+      if (view) void uploadFiles(view, files)
+    },
+    [view, uploadFiles],
+  )
+  const dropExtension = useFileDropExtension(uploadEnabled ? onFiles : null)
 
   useEffect(() => {
     if (markdownExtension) return
@@ -67,8 +84,12 @@ export default function MarkdownEditor({
   }, [])
 
   // Stable across renders, and dropped entirely when read-only so the shortcuts cannot type into
-  // a box that is not supposed to accept typing.
-  const extensions = useMemo(() => (readOnly ? undefined : SHORTCUTS), [readOnly])
+  // a box that is not supposed to accept typing. The drop handler is memoised by its own hook and
+  // is stable for the same reason — a new array here rebuilds CodeMirror on every render.
+  const extensions = useMemo(
+    () => (readOnly ? undefined : [...SHORTCUTS, ...(dropExtension ?? [])]),
+    [readOnly, dropExtension],
+  )
 
   return (
     <Box>
@@ -85,8 +106,36 @@ export default function MarkdownEditor({
             borderRadius: '4px 4px 0 0',
           }}
         >
-          <MarkdownToolbar view={view} tools={tools} />
+          <MarkdownToolbar
+            view={view}
+            tools={tools}
+            onPickFile={uploadEnabled ? () => fileInput.current?.click() : undefined}
+          />
+          {uploading && <CircularProgress size={14} sx={{ ml: 1 }} />}
         </Box>
+      )}
+
+      {uploadEnabled && (
+        // No `accept`: the backend takes any type and sniffes it itself, and a filter here would
+        // only stop someone attaching the PDF handout they meant to attach.
+        <input
+          ref={fileInput}
+          type="file"
+          multiple
+          hidden
+          onChange={(e) => {
+            const files = Array.from(e.target.files ?? [])
+            // Reset first, so picking the same file twice in a row still fires a change event.
+            e.target.value = ''
+            if (view && files.length) void uploadFiles(view, files)
+          }}
+        />
+      )}
+
+      {error && (
+        <Alert severity="error" onClose={clearError} sx={{ mb: 1 }}>
+          {error}
+        </Alert>
       )}
       <Box
         sx={{
