@@ -212,19 +212,37 @@ Production sets `easy_core_allow_real_outbound: true`, which skips that guard fo
 Correct — production is allowed its own bucket — but it means the guard only ever protects the other
 environments, so it has to be set *there*.
 
+## The proxy is the same as dev's, and it is not optional
+
+Production gets the same `roles/nginx`, with web and API on separate hostnames exactly as dev has
+them. So it needs the **same two pieces**, and the first is easy to think of as dev-specific when it
+is not:
+
+- **`location /v2/resource/` on the web vhost**, proxying to core. Stored content holds *relative*
+  URLs — that is what keeps an article renderable in any environment — so an `<img>` resolves
+  against the web origin, not the API one. Without the proxy it gets whatever the web server says
+  for an unknown path. On production today that is a 404 page; the nastier variant is the SPA
+  fallback answering `index.html` with a **200**, which renders as a broken image and looks nothing
+  like a proxy problem.
+- **`client_max_body_size` on `= /v2/files` only**, left low everywhere else.
+
+Both come from the role, so the work is setting `easy_nginx_upload_max_body_size` and nothing else.
+
+**Until that role reaches production, production is Apache with `mod_auth_openidc` in front.** That
+matters more than the file-size setting: an authenticating proxy 401s a request before core sees it,
+so `SecurityConf`'s permitAll list decides nothing. Every unauthenticated path — `/v2/resource/*/*`
+and the `/v2/unauth/*` family — would need its own `<Location>` with `Require all granted`, or
+images break for exactly the anonymous audience they exist for. Measured on 2026-08-15:
+`/v2/unauth/versions` answers **200 on dev and 401 on production**, which is that difference showing.
+Moving production to the nginx role removes the whole class of problem rather than adding another
+`<Location>` to it.
+
 ## What production does not need
 
-- **No web-vhost proxy for `/v2/resource/`.** Production serves web and API from one origin
-  (`emsRoot` is `/v2`), so the relative URLs in stored content resolve without help. That location
-  block exists in `roles/nginx` only because dev splits the two.
 - **No bucket in a second region, no CDN.** One redirect to a public object, cached for a year.
 
 ## What production does need that dev did not
 
-- **A body-size limit in Apache, not nginx.** Production still runs Apache/2.4.52 while dev has moved
-  to nginx, so the equivalent of `client_max_body_size` on `/v2/files` is `LimitRequestBody` in the
-  matching `<Location>`. Without it the admin upload ceiling is whatever Apache defaults to, and the
-  error a teacher sees comes from the proxy rather than from core's role-aware message.
 - **Its own IAM user**, on the same narrow policy, separate from every other environment's — so a
   leaked dev key cannot touch production's objects.
 - **A billing alarm.** Egress from a public bucket is the one line item that can surprise you, and

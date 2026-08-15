@@ -71,10 +71,9 @@ server {
     # environment; that is the whole reason core serves the file from its own domain rather than
     # writing a bucket URL into the HTML.
     #
-    # Production serves web and API from one origin, so it needs nothing. Here they are two, and
-    # without this an <img> would fall through to the SPA location below and be answered with
-    # index.html — a broken image whose response is a 200 full of HTML, which is a confusing thing
-    # to debug.
+    # Every environment needs this, not just dev: web and API are separate hostnames everywhere.
+    # Without it an <img> falls through to the SPA location below and is answered with index.html —
+    # a broken image whose response is a 200 full of HTML, which is a confusing thing to debug.
     #
     # Only /v2/resource/, not /v2/. The API belongs on its own origin, where CORS is configured;
     # proxying all of it here would quietly give the app a second, unconfigured way to reach core.

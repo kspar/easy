@@ -32,9 +32,14 @@ import org.springframework.web.bind.annotation.RestController
  * a human reading the URL — and is never looked up. A mismatch is not an error: rejecting one would
  * mean renaming a file breaks every article that links to it.
  *
- * The URL is **relative**, so the same stored content works in every environment. Production serves
- * web and API from one origin; on dev they are separate, so dev's web vhost proxies `/v2/resource/`
- * to core (`ansible/roles/nginx`).
+ * The URL is **relative**, so the same stored content works in every environment — which is the
+ * point, since content is rendered to HTML once and cached, and an absolute URL would bake one
+ * environment's hostname into every article we ever write.
+ *
+ * That relies on the web origin proxying `/v2/resource/` to core, because web and API are separate
+ * hostnames. `ansible/roles/nginx` does it. Without it an `<img>` gets whatever the web server
+ * serves for an unknown path — a 404 page, or worse the SPA's `index.html` with a 200 on it, which
+ * renders as a broken image and looks nothing like a proxy problem.
  */
 @RestController
 @RequestMapping("/v2")
