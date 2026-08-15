@@ -10,9 +10,9 @@
 # `oidc_claim_*` headers — see api-testing.md. Never point it at a deployed environment: it uploads
 # and deletes files.
 #
-# Assumes `easy.core.storage.backend: local`, which is the default and what a laptop and CI run.
-# Against an `s3` backend the read assertions expect 302 rather than 200; the script says which it
-# got, so the difference is visible rather than a mysterious failure.
+# Works against either storage backend. The file-serving assertions follow redirects, so they assert
+# that the bytes arrive rather than how — `local` streams a 200 from core, `s3` answers 302 to a
+# public object. Section 1 additionally checks whichever shape this backend produced.
 #
 # **Why a shell script and not a test.** Same reason as articles-check.sh: what it checks needs a
 # database, a filesystem and a running application, so a JUnit version would be tagged `db` and
@@ -49,6 +49,13 @@ check() {
 }
 code() { curl -s -o /dev/null -m 60 -w '%{http_code}' "$@"; }
 body() { curl -s -m 60 "$@"; }
+# Redirect-following variants, for the file-serving assertions. What matters there is that the
+# bytes arrive, and the two storage backends get you to them differently: `local` streams a 200
+# straight from core, `s3` answers 302 to a public object. Asserting the *outcome* keeps one set of
+# expectations for both; the hop itself is checked separately in section 1.
+codeL() { curl -sL -o /dev/null -m 60 -w '%{http_code}' "$@"; }
+bodyL() { curl -sL -m 60 "$@"; }
+ctypeL() { curl -sL -o /dev/null -m 60 -w '%{content_type}' "$@"; }
 field() { python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('$1','-'))"; }
 errcode() { body "$@" | field code; }
 
@@ -81,17 +88,33 @@ echo "uploaded as key $KEY"
 
 echo
 echo "1. reading it, with no account at all"
-RESOURCE_CODE=$(code "$BASE/resource/$KEY/pixel.png")
-check "an anonymous request is served"      "200" "$RESOURCE_CODE"
+check "an anonymous request is served"      "200" "$(codeL "$BASE/resource/$KEY/pixel.png")"
 check "and the bytes come back"             "PNG" \
-  "$(body "$BASE/resource/$KEY/pixel.png" | head -c4 | tail -c3)"
-check "a signed-in one works too"           "200" "$(code "${STUDENT[@]}" "$BASE/resource/$KEY/pixel.png")"
-check "the content type is sniffed, not claimed" "image/png" \
-  "$(curl -s -o /dev/null -m 60 -w '%{content_type}' "$BASE/resource/$KEY/pixel.png")"
+  "$(bodyL "$BASE/resource/$KEY/pixel.png" | head -c4 | tail -c3)"
+check "a signed-in one works too"           "200" "$(codeL "${STUDENT[@]}" "$BASE/resource/$KEY/pixel.png")"
+check "the content type is sniffed, not claimed" "image/png" "$(ctypeL "$BASE/resource/$KEY/pixel.png")"
+
+# How it is served differs by backend, and both shapes are correct — so assert the shape that this
+# backend actually produced rather than picking one. A 302 to somewhere else is the s3 backend; a
+# direct 200 is local.
+FIRST_HOP=$(code "$BASE/resource/$KEY/pixel.png")
+if [ "$FIRST_HOP" = "302" ]; then
+  echo "   (s3 backend: core redirects to the object store)"
+  HDRS=$(curl -s -i -m 60 "$BASE/resource/$KEY/pixel.png")
+  check "the redirect is cached hard" "yes" \
+    "$(echo "$HDRS" | grep -qi 'Cache-Control: public, max-age=31536000, immutable' && echo yes || echo no)"
+  # If this ever becomes a redirect to a SIGNED url, that cache header has to go with it: a
+  # year-long cache of a ten-minute URL is a broken image for the rest of the year.
+  check "it points off this host"     "yes" \
+    "$(echo "$HDRS" | grep -qiE '^Location: https?://' && echo yes || echo no)"
+else
+  echo "   (local backend: core streams the bytes itself)"
+  check "served directly, not redirected" "200" "$FIRST_HOP"
+fi
 
 echo
 echo "2. the filename is decoration"
-check "a different filename still resolves" "200" "$(code "$BASE/resource/$KEY/something-else.png")"
+check "a different filename still resolves" "200" "$(codeL "$BASE/resource/$KEY/something-else.png")"
 # Renaming a file must not break a URL already embedded in a stored article — which is why the
 # filename is never looked up.
 
