@@ -1,0 +1,3 @@
+from tiivad import *
+execute_test(file_name='''lahendus.py''', function_name='''faktoriaal''', function_property='''RECURSIVE''', generic_checks=[{'expected_value':True, 'before_message':'''Kontrollin rekursiivsust''', 'passed_message':'''Funktsioon on rekursiivne''', 'failed_message':'''Funktsioon ei ole rekursiivne'''}], type='''function_is_test''', points_weight=1.0, id=1, name='''Funktsioon on rekursiivne''', inputs=None, passed_next=None, failed_next=None, visible_to_user=True)
+print(Results(None))

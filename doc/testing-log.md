@@ -29,6 +29,10 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 15 | Course cards navigated with a bare `onClick`, so **ctrl/cmd+click could not open a course in a new tab** — on the first screen of every session, and against this repo's own written UI convention. The sanctioned helper already existed, stranded in another file | `CoursesPage.tsx` | writing a locator for it | fixed, `spaLink.ts` |
 | 16 | Two hooks wrote to `localStorage` **unguarded, from click handlers**. `setItem` throws in Safari private browsing, on a full quota, and on access inside an iframe with third-party cookies blocked — the last of which `useEmbedTheme` documents *because the embed hit it*. The failure is not a lost preference; it is an exception escaping a click handler | `useSavedGroup.ts`, `useRecentExercises.ts` | deduplicating four copies | fixed, `api/localStorage.ts` |
 | 17 | `ParticipantsPage` has no `<main>` landmark, so there is nothing to skip to | layout | a locator that threw | phase 9 |
+| 18 | **Every check dictionary emitted with keys like `'\'check_type\''` since 2026-08-07** — `PyDict` learned to quote its own keys and three callers were already quoting theirs. 635 of 720 corpus exercises. On master and dev; never reached production | `python_classes.kt` | reading the emitter, then measuring against the corpus | EZ-1774 |
+| 19 | A value ending in a quote produced four consecutive quotes; Python closed the literal at the third and read the rest as an adjacent string, so a spec saying `1 4 7 ''` graded against `1 4 7 `. Two corpus exercises silently losing characters | `python_ast.kt` | asking CPython to parse the output | EZ-1774 |
+| 20 | A value ending in an odd number of backslashes escaped the closing quote and ran the literal to the end of the file | `python_ast.kt` | asking CPython to parse the output | EZ-1774 |
+| 21 | One spec in the migration corpus compiles to a script with an unbalanced bracket — it would fail on the first submission. The tool that signed off the migration reported it as one of 721 successes | a live spec | `compileSpecTree` learning to parse its own output | EZ-1774 |
 
 Nothing new in production code came out of phase 7, which is itself worth recording: porting two
 scripts that had been run by hand for weeks found nothing the scripts had not, and the executor path
@@ -71,6 +75,13 @@ Worth as much as the list above: these are the failure modes of the safety net i
 | `assertEquals(0, elements("files").size)` was satisfied by a 403 or a 500 as readily as by an empty listing, because `elements` returns empty for any unparseable body | `/code-review` |
 | `uploadedKey()` read `id` without checking the status — walking into the trap `HttpApi.field`'s own KDoc documents, four days after writing it | `/code-review` |
 | `Result.deleted` was never asserted in the one test whose name is about it | `/code-review` |
+| A recompile could write to a superseded `automatic_exercise` if a teacher saved during the run — the exact history rewrite the endpoint promises never to do, silently, while the report said CHANGED | `/code-review` |
+| Only `Exception` was caught, and only around the compile: a `StackOverflowError` or an FK violation mid-run would have escaped as a 500, leaving no record of the hundreds already rewritten | `/code-review` |
+| A duplicate asset whose surviving copy happened to match was reported UNCHANGED and left in place — a coin flip, since the query had no `ORDER BY` | `/code-review` |
+| An empty script list would have deleted every generated asset and inserted nothing, leaving exercises unable to grade at all | `/code-review` |
+| `copyTest changes the id and nothing else` compared two objects that had **both** been through `copyTest`, so a `copyTest` that cleared a field cleared it on both sides and the assertion could not fail | breaking `copyTest` on purpose |
+| A test named for the mid-run guard re-pointed the version *before* the scan, so the guard's branch never executed | breaking the guard on purpose |
+| A duplicate-asset test constructed the arrangement any implementation repairs, so it passed against the unfixed code | breaking the fix on purpose |
 
 ---
 
@@ -165,6 +176,41 @@ about the code. Check the load before believing a broad failure.
 second attaches to the first's dev server and dies when the first tears it down. Three separate
 confusing failures in one day, in three disguises. It is off now, so the second run says "Port 5199
 is already in use" instead.
+
+### About checking the output of a thing that generates code
+
+**A migration verified its own transformation and never the artefact it exists to produce.** Every
+step of the TSL migration checked specs: no exercise missing, no non-spec file edited, no retired
+types left, and `compileTSL` returned without throwing. Not one looked at the generated Python. It
+ran on 2026-08-12, five days *after* the compiler broke, recompiled all 721 exercises with unusable
+keys, and reported success.
+
+**"Returned without throwing" is not "produced a correct artefact",** and the gap is invisible while
+nothing downstream parses the result. `compileSpecTree` computed 721 scripts and kept only a count.
+
+**You cannot review what is never written down.** That is the same argument `doc/core/api-shapes.json`
+already makes one directory over — *the diff is the review artefact* — and it had not been applied to
+the compiler's output. `-PspecDump` and the golden files are both that lesson.
+
+**The test that finds one class of defect can be structurally blind to a worse one.** Asking CPython
+to parse every generated script found two real bugs. It cannot find EZ-1774, because
+`{'\'check_type\'': …}` is *valid Python*. That one was found by reading the emitter and predicting
+it. Recorded because the parse test looks like it covers this ground and does not:
+
+```
+ast.parse("execute_test(contains_checks=[{'\'check_type\'':'X'}])")  ->  OK
+```
+
+**Measure a change to a code generator before believing it.** The obvious fix to `PyStr` — escape
+everything properly — measured as changing the meaning of **18 of 720** live exercises, because
+specs store `\n` and rely on the literal turning it into a newline. The fix that shipped changes 2,
+and both restore characters that were being dropped. `semdiff.py` is that measurement, promoted from
+a scratch file to a committed tool.
+
+**A golden file blessed without reading it is worse than no golden file.** It records the defect as
+the expectation and makes every later diff clean, while looking like coverage. This happened *during*
+the demonstration that golden files catch EZ-1774: regenerating with the broken compiler wrote nine
+broken expectations, and `git checkout` did not restore them because they were untracked.
 
 ### About replacing a script with a test
 

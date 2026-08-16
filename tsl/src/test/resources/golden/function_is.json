@@ -1,0 +1,19 @@
+{
+  "language": "python3",
+  "validateFiles": false,
+  "requiredFiles": ["lahendus.py"],
+  "tslVersion": "1.0.0",
+  "tests": [
+    {
+      "type": "function_is_test",
+      "id": 1,
+      "functionName": "faktoriaal",
+      "functionProperty": "RECURSIVE",
+      "propertyCheck": {
+        "beforeMessage": "Kontrollin rekursiivsust",
+        "passedMessage": "Funktsioon on rekursiivne",
+        "failedMessage": "Funktsioon ei ole rekursiivne"
+      }
+    }
+  ]
+}

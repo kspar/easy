@@ -1,0 +1,36 @@
+{
+  "language": "python3",
+  "validateFiles": false,
+  "requiredFiles": ["lahendus.py"],
+  "tslVersion": "1.0.0",
+  "tests": [
+    {
+      "type": "contains_test",
+      "id": 1,
+      "name": "Kontrollib, kas õpilase programm töötab — ÕÄÖÜ šž ✓ 🎉",
+      "scope": "PROGRAM",
+      "containsWhat": "PHRASE",
+      "containsWhatArg": "the student's answer",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": [
+          "ends with a quote'",
+          "1 4 7 ''",
+          "''",
+          "ends with a backslash\\",
+          "ends with two\\\\",
+          "say \"hello\" politely",
+          "', __import__('os').system('id'), '",
+          "100% of {tests} passed",
+          "# not a comment",
+          "ends a literal: ''' and continues",
+          "   ",
+          ""
+        ],
+        "beforeMessage": "Ootan, et leiaks fraasi 'töötab'",
+        "passedMessage": "Leidsin fraasi \"töötab\"",
+        "failedMessage": "Ei leidnud — kontrolli, kas kirjutasid\nmitmele reale"
+      }
+    }
+  ]
+}

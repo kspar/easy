@@ -1,0 +1,3 @@
+from tiivad import *
+execute_test(file_name='''lahendus.py''', contains_checks=[{'check_type':'''NONE_OF_THESE''', 'nothing_else':True, 'expected_value':['''math''', '''random'''], 'before_message':'''Kontrollin importe''', 'passed_message':'''Keelatud importe ei ole''', 'failed_message':'''Leidsin keelatud impordi''', 'data_category':'''EQUALS''', 'ignore_case':False}], contains_what='''KEYWORD_WITH_PRECEDING_ARG''', contains_what_arg='''import''', scope='''main_program''', scope_class_name=None, scope_function_name=None, type='''contains_test''', points_weight=1.0, id=1, name='''Põhiprogramm otsib reserveeritud võtmesõna koos argumendiga import''', inputs=None, passed_next=None, failed_next=None, visible_to_user=True)
+print(Results(None))

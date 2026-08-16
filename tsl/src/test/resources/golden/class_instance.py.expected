@@ -1,0 +1,3 @@
+from tiivad import *
+execute_test(file_name='''lahendus.py''', class_name='''KosmoseLaev''', create_object='''k = KosmoseLaev('Apollo 18', 'Kuu uurimine')\nreturn k''', class_instance_checks=[{'fields_final':[('''nimi''', 'Apollo 18'), ('''kytus''', 100)], 'check_name':True, 'check_value':True, 'nothing_else':False, 'before_message':'''Kontrollin isendi välju''', 'passed_message':'''Väljad on õiged''', 'failed_message':'''Väljad ei ole õiged'''}], standard_output_checks=[], output_file_checks=[], type='''class_instance_test''', points_weight=1.0, id=1, name='''Klassi isendi loomise test''', inputs=None, passed_next=None, failed_next=None, visible_to_user=True)
+print(Results(None))

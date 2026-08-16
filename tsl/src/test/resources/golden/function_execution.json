@@ -1,0 +1,34 @@
+{
+  "language": "python3",
+  "validateFiles": false,
+  "requiredFiles": ["lahendus.py"],
+  "tslVersion": "1.0.0",
+  "tests": [
+    {
+      "type": "function_execution_test",
+      "id": 1,
+      "name": "liida(2, 3) tagastab 5",
+      "functionName": "liida",
+      "functionType": "FUNCTION",
+      "arguments": ["2", "3"],
+      "standardInputData": [],
+      "returnValueCheck": {
+        "returnValue": "5",
+        "beforeMessage": "Kontrollin tagastusväärtust",
+        "passedMessage": "Tagastas 5",
+        "failedMessage": "Ei tagastanud 5"
+      },
+      "paramValueChecks": [
+        {
+          "paramNumber": 0,
+          "expectedValue": "2",
+          "beforeMessage": "Kontrollin esimest argumenti",
+          "passedMessage": "Argument on muutmata",
+          "failedMessage": "Funktsioon muutis argumenti"
+        }
+      ],
+      "pointsWeight": 2.5,
+      "visibleToUser": false
+    }
+  ]
+}

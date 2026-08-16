@@ -1,0 +1,24 @@
+{
+  "language": "python3",
+  "validateFiles": false,
+  "requiredFiles": ["lahendus.py"],
+  "tslVersion": "1.0.0",
+  "tests": [
+    {
+      "type": "calls_test",
+      "id": 1,
+      "scope": "FUNCTION",
+      "targetType": "CLASS_FUNCTION",
+      "functionName": "peaosa",
+      "className": "Koer",
+      "targetClassName": "Loom",
+      "genericCheck": {
+        "checkType": "ANY",
+        "expectedValue": [],
+        "beforeMessage": "Kontrollin väljakutset",
+        "passedMessage": "Kutsus välja",
+        "failedMessage": "Ei kutsunud välja"
+      }
+    }
+  ]
+}

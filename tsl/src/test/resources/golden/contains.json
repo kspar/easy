@@ -1,0 +1,25 @@
+{
+  "language": "python3",
+  "validateFiles": false,
+  "requiredFiles": ["lahendus.py"],
+  "tslVersion": "1.0.0",
+  "tests": [
+    {
+      "type": "contains_test",
+      "id": 1,
+      "scope": "MAIN_PROGRAM",
+      "containsWhat": "KEYWORD_WITH_PRECEDING_ARG",
+      "containsWhatArg": "import",
+      "genericCheck": {
+        "checkType": "NONE_OF_THESE",
+        "nothingElse": true,
+        "expectedValue": ["math", "random"],
+        "dataCategory": "EQUALS",
+        "ignoreCase": false,
+        "beforeMessage": "Kontrollin importe",
+        "passedMessage": "Keelatud importe ei ole",
+        "failedMessage": "Leidsin keelatud impordi"
+      }
+    }
+  ]
+}

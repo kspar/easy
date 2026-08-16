@@ -50,6 +50,25 @@ import java.util.concurrent.TimeUnit
  */
 class PythonSyntaxTest {
 
+    /**
+     * Every golden spec, parsed by CPython.
+     *
+     * The two guards are complementary and neither subsumes the other: `GoldenOutputTest` notices
+     * when the output *changes*, this notices when it stops being Python. A golden file regenerated
+     * from a broken emitter is stable and wrong, and only this would catch it.
+     *
+     * It also covers the ground the migration corpus used to. That corpus is gitignored — it is
+     * pulled from dev — so a test over it found nothing in CI, which is the vacuous pass this
+     * programme keeps running into. The golden files are in the repo, so this runs everywhere.
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("goldenSpecs")
+    @DisplayName("every golden spec compiles to parseable Python")
+    fun goldenSpecsAreValidPython(name: String, spec: java.io.File) {
+        assumePython()
+        assertParses(compile(spec.readText()), "golden spec $name")
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("hostileStrings")
     @DisplayName("a teacher's punctuation survives being put in a test name")
@@ -194,6 +213,10 @@ class PythonSyntaxTest {
             val p = ProcessBuilder(pythonBin, "-c", "import ast").redirectErrorStream(true).start()
             p.waitFor(30, TimeUnit.SECONDS) && p.exitValue() == 0
         }.getOrDefault(false)
+
+        /** Shared with [GoldenOutputTest], which owns the files and the reasoning behind them. */
+        @JvmStatic
+        fun goldenSpecs(): List<Array<Any>> = GoldenOutputTest.goldenSpecs()
 
         /**
          * Strings a teacher types, and a few an attacker would.

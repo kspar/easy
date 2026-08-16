@@ -1,0 +1,47 @@
+{
+  "language": "python3",
+  "validateFiles": true,
+  "requiredFiles": ["lahendus.py"],
+  "tslVersion": "1.0.0",
+  "tests": [
+    {
+      "type": "program_execution_test",
+      "id": 1,
+      "name": "Programm tervitab kasutajat",
+      "standardInputData": ["Mari", "18"],
+      "inputFiles": [{"fileName": "andmed.txt", "fileContent": "rida 1\nrida 2\n"}],
+      "genericChecks": [
+        {
+          "id": 10,
+          "checkType": "ALL_OF_THESE",
+          "nothingElse": false,
+          "expectedValue": ["Tere, Mari!"],
+          "elementsOrdered": true,
+          "dataCategory": "CONTAINS_STRINGS",
+          "outputCategory": "ALL_OUTPUT",
+          "ignoreCase": true,
+          "beforeMessage": "Kontrollin väljundit",
+          "passedMessage": "Väljund on õige",
+          "failedMessage": "Ootasin väljundit 'Tere, Mari!'"
+        }
+      ],
+      "outputFileChecks": [
+        {
+          "fileName": "valjund.txt",
+          "checkType": "ANY_OF_THESE",
+          "expectedValue": ["18"],
+          "dataCategory": "CONTAINS_NUMBERS",
+          "beforeMessage": "Kontrollin faili",
+          "passedMessage": "Fail on õige",
+          "failedMessage": "Failis ei olnud oodatud arvu"
+        }
+      ],
+      "exceptionCheck": {
+        "mustNotThrowException": true,
+        "beforeMessage": "Kontrollin, et viga ei tekiks",
+        "passedMessage": "Viga ei tekkinud",
+        "failedMessage": "Programm viskas vea"
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "language": "python3",
+  "validateFiles": false,
+  "requiredFiles": ["lahendus.py"],
+  "tslVersion": "1.0.0",
+  "tests": [
+    {
+      "type": "class_instance_test",
+      "id": 1,
+      "className": "KosmoseLaev",
+      "createObject": "k = KosmoseLaev('Apollo 18', 'Kuu uurimine')\nreturn k",
+      "classInstanceChecks": [
+        {
+          "fieldsFinal": [
+            {"fieldName": "nimi", "fieldContent": "'Apollo 18'"},
+            {"fieldName": "kytus", "fieldContent": "100"}
+          ],
+          "checkName": true,
+          "checkValue": true,
+          "nothingElse": false,
+          "beforeMessage": "Kontrollin isendi välju",
+          "passedMessage": "Väljad on õiged",
+          "failedMessage": "Väljad ei ole õiged"
+        }
+      ]
+    }
+  ]
+}

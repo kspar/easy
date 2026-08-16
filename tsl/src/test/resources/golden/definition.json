@@ -1,0 +1,23 @@
+{
+  "language": "python3",
+  "validateFiles": false,
+  "requiredFiles": ["lahendus.py"],
+  "tslVersion": "1.0.0",
+  "tests": [
+    {
+      "type": "definition_test",
+      "id": 1,
+      "scopeType": "PROGRAM",
+      "definitionCheckValue": "Koer",
+      "superClassName": "Loom",
+      "definitionCheckType": "CLASS",
+      "genericCheck": {
+        "checkType": "ALL_OF_THESE",
+        "expectedValue": ["Koer"],
+        "beforeMessage": "Kontrollin klassi",
+        "passedMessage": "Klass on defineeritud",
+        "failedMessage": "Klassi ei leidnud"
+      }
+    }
+  ]
+}

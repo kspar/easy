@@ -222,6 +222,26 @@ touches no `tsl.json`. See `doc/core/api-testing.md`.
 Reach for this runbook when the **specs** change — a retired test type, a model migration — and for
 the recompile endpoint when only the **compiler** has.
 
+## Measuring what an emitter change does
+
+`compileSpecTree` now takes `-PspecDump=<dir>` and writes every generated script out, and
+`semdiff.py` compares two such directories **by AST rather than by text** — so a change of quote
+style, which rewrites all 720 files, reports as zero.
+
+```sh
+./gradlew -q :tsl:compileSpecTree -PspecTree=<corpus> -PspecDump=/tmp/before
+# change the emitter
+./gradlew -q :tsl:compileSpecTree -PspecTree=<corpus> -PspecDump=/tmp/after
+python3 doc/core/tsl-migration/semdiff.py /tmp/before /tmp/after
+```
+
+**Run this for any change to `python_ast.kt` or `python_classes.kt`.** On 2026-08-16 the obvious fix
+to `PyStr` — escape everything properly — measured as changing the meaning of **18 of 720** live
+exercises: specs store `\n` and rely on the generated literal turning it into a newline, so "proper"
+escaping would have put a literal backslash-n into the middle of students' feedback. The fix that
+shipped changes 2, and both restore characters that were being silently dropped. That number is not
+obtainable by reading the emitter.
+
 ## Afterwards
 
 - **Exercise 741 is still on the old model** wherever this has been run, so it is the one exercise
