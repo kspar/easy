@@ -1,15 +1,10 @@
 import { useCallback, useState } from 'react'
+import { isPlainObject, readJsonIf, writeJson } from '../api/localStorage.ts'
 
 type Primitive = string | number | boolean
 
-function readMap(storageKey: string): Record<string, unknown> {
-  try {
-    const raw = JSON.parse(localStorage.getItem(storageKey) ?? '{}')
-    return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
-  } catch {
-    return {}
-  }
-}
+const readMap = (storageKey: string): Record<string, unknown> =>
+  readJsonIf<Record<string, unknown>>(storageKey, isPlainObject, {})
 
 /**
  * A blob of filter settings persisted per course, like the WUI's per-collection
@@ -45,11 +40,9 @@ export default function useSavedFilters<T extends Record<string, Primitive>>(
         const next = { ...prev, ...patch }
         const map = readMap(storageKey)
         map[courseId] = next
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(map))
-        } catch {
-          // Private-mode / quota — persistence is a convenience, not a feature
-        }
+        // Private-mode / quota — persistence is a convenience, not a feature. The guard lives in
+        // writeJson now, so every write in the app fails the same way.
+        writeJson(storageKey, map)
         return next
       })
     },

@@ -1,4 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react'
+import { readJsonIf, writeJson } from '../api/localStorage.ts'
 
 const STORAGE_KEY = 'recentExercises'
 const MAX_ITEMS = 10
@@ -11,12 +12,7 @@ export interface RecentExercise {
 }
 
 function readRecent(): RecentExercise[] {
-  try {
-    const items = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
-    return Array.isArray(items) ? items : []
-  } catch {
-    return []
-  }
+  return readJsonIf<RecentExercise[]>(STORAGE_KEY, Array.isArray, [])
 }
 
 // Shared snapshot — all hook instances in the same tab see the same reference
@@ -44,7 +40,8 @@ export default function useRecentExercises() {
       { id, title, viewedAt: Date.now() },
       ...readRecent().filter((item) => item.id !== id),
     ].slice(0, MAX_ITEMS)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    // Guarded, like every other write in the app now. See api/localStorage.ts.
+    writeJson(STORAGE_KEY, next)
     snapshot = next
     window.dispatchEvent(new Event(SYNC_EVENT))
   }, [])
