@@ -22,7 +22,187 @@ plugins {
     // Versioned here rather than in the root, so the plugin lands in the same classloader as
     // the liquibase-core on this project's buildscript classpath. See the note in the root build.
     alias(libs.plugins.liquibase)
+    alias(libs.plugins.kover)
 }
+
+/**
+ * Coverage: **report everywhere, gate in four places.**
+ *
+ * A global threshold is a trap in this codebase and would be worse than none. A large fraction of
+ * these 17,000 lines is DTO declaration, so a global percentage measures the ratio of boilerplate to
+ * logic rather than how well anything is tested — and the number moves for reasons nobody chose.
+ * Worse, `EndpointAuthorizationMatrixTest` executes nearly every controller line as a side effect of
+ * checking who may call them, so global coverage looks impressive while whatever actually needs
+ * testing sits untouched. A number that rises when the thing you care about has not changed will be
+ * trusted at exactly the wrong moment.
+ *
+ * So the gate names the packages where being untested is a specific, nameable harm, and everything
+ * else is reported for a human to read:
+ *
+ * - **access_control** — the 306 lines deciding who may see whose work. Being wrong here returns
+ *   somebody else's data and throws nothing.
+ * - **conf.security** — the filter chain, the JWT converter, the permitAll list.
+ * - **ems.service.storage** and **ems.cron** — the only code that deletes a teacher's file.
+ *
+ * Run `./gradlew :core:koverHtmlReport` and open the result; `koverVerify` is what fails the build.
+ */
+kover {
+    reports {
+        total {
+            filters {
+                excludes {
+                    // Data carriers and the Spring entry point. Counting them measures how much
+                    // boilerplate exists, which is not a question any of the targets below asks.
+                    classes("core.EasyCoreApp*", "core.db.Tables*")
+                }
+            }
+            xml { onCheck = false }
+            html { onCheck = false }
+        }
+    }
+}
+
+/**
+ * The packages where being untested is a specific, nameable harm — and the only ones with a number.
+ *
+ * Kover 0.9's own `verify` cannot express this: `KoverVerifyRule` lost per-rule filters, so a rule
+ * applies to the whole report. Grouping by package instead applies the same bound to *every*
+ * package, which fails on `core.db` for having DTOs in it. So the report is Kover's and the
+ * threshold is ours — which also buys a failure message that names the package and the number.
+ */
+data class CoverageTarget(
+    val classPrefix: String,
+    val minimum: Int,
+    val why: String,
+    /** Classes deliberately not exercised, with the reason. Excluded from the denominator. */
+    val except: List<String> = emptyList(),
+)
+
+/**
+ * Targets name **classes**, not packages, because the first version of this named packages and
+ * measured the wrong thing three times out of four.
+ *
+ * `core/ems/cron` scored 30% — not because the sweep is untested (it is at 93%) but because
+ * `DeleteInactiveUsers`, 134 lines of Keycloak plumbing, shares the package. `core/conf/security`
+ * scored 80% largely on `DummyZeroAuthFilter`, which is the auth-disabled path that must never run
+ * on a deployed environment and which we therefore **want** uncovered.
+ *
+ * A threshold that moves when an unrelated neighbour is added is a threshold people learn to ignore.
+ * These are ratchets set at or just under today's measurement: they exist to stop coverage falling,
+ * not to claim a number was chosen from first principles.
+ *
+ * ### What this catches, measured
+ *
+ * Disabling the whole of `StoredFileSweepTest` takes the sweep from 94% to **7%** and fails the
+ * build. Disabling *two* of its tests takes it to 92% and does not.
+ *
+ * That is the honest scope: a coverage gate catches an area falling out of the suite — a deleted
+ * file, a class nobody exercises any more — and is blind to losing a test or two. Tightening the
+ * numbers to close that gap would make them fail on refactors that add a line, which is how a gate
+ * gets switched off. **The fine-grained question is mutation testing's** (`bin/mutate.sh`), which
+ * asks whether a test can fail rather than whether a line was executed. The two are complementary
+ * and neither substitutes for the other.
+ */
+val coverageTargets = listOf(
+    // The 306 lines deciding who may see whose work. Being wrong here returns somebody else's data
+    // and throws nothing. 85% today; the missing lines are error branches in courses.kt.
+    CoverageTarget("core.ems.service.access_control.", 85, "who may see whose work"),
+
+    CoverageTarget(
+        "core.conf.security.", 85, "the security configuration",
+        except = listOf(
+            // Trusts oidc_claim_* headers verbatim and is installed only when auth is disabled.
+            // Core refuses to start with that flag off a loopback address, so this is code whose
+            // correctness we assert by it never running. Testing it would make the release gate the
+            // biggest consumer of the one path that must never run anywhere real.
+            "core.conf.security.DummyZeroAuthFilter",
+        ),
+    ),
+
+    // The only code in this application that removes an object from storage.
+    CoverageTarget("core.ems.service.storage.", 90, "object storage"),
+    CoverageTarget("core.ems.cron.StoredFileSweep", 90, "the stored-file sweep"),
+    CoverageTarget("core.ems.cron.Stored_file_sweepKt", 90, "the sweep's scanned-column list"),
+)
+
+tasks.register("koverVerifyTargets") {
+    group = "verification"
+    description = "Line coverage thresholds for the packages where being untested is a real harm"
+    dependsOn(tasks.named("koverXmlReport"))
+
+    val reportFile = layout.buildDirectory.file("reports/kover/report.xml")
+    val targets = coverageTargets
+    inputs.file(reportFile)
+
+    doLast {
+        val xml = groovy.xml.XmlParser().apply {
+            // The report has no DTD to fetch, and fetching one from a build is a needless network
+            // call that fails closed on an offline machine.
+            setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+            setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
+        }.parse(reportFile.get().asFile)
+
+        // Class-level counts, keyed by fully-qualified name. Kover writes paths with slashes.
+        @Suppress("UNCHECKED_CAST")
+        val classes = (xml.get("package") as List<groovy.util.Node>)
+            .flatMap { it.get("class") as List<groovy.util.Node> }
+            .mapNotNull { cls ->
+                val line = (cls.get("counter") as List<groovy.util.Node>)
+                    .firstOrNull { it.attribute("type") == "LINE" } ?: return@mapNotNull null
+                val covered = (line.attribute("covered") as String).toInt()
+                val missed = (line.attribute("missed") as String).toInt()
+                (cls.attribute("name") as String).replace('/', '.') to (covered to missed)
+            }
+
+        val failures = mutableListOf<String>()
+        val report = StringBuilder("Coverage of the code that carries a threshold:\n")
+
+        targets.forEach { target ->
+            val matched = classes.filter { (name, _) ->
+                name.startsWith(target.classPrefix) && target.except.none { name.startsWith(it) }
+            }
+
+            if (matched.isEmpty()) {
+                // A target matching nothing scores 0 of 0 and would otherwise read as a pass. A
+                // renamed class must fail the build rather than silently stop being checked — the
+                // same reasoning as the fail-on-zero-tests guard in the root build.
+                failures += "  ${target.classPrefix}* matched no class in the report — renamed, or no longer compiled?"
+                return@forEach
+            }
+
+            val covered = matched.sumOf { it.second.first }
+            val total = covered + matched.sumOf { it.second.second }
+            val percent = if (total == 0) 0 else covered * 100 / total
+            val verdict = if (percent >= target.minimum) "ok" else "BELOW ${target.minimum}%"
+            report.append(
+                "  %-42s %3d%% of %4d lines  %-12s (%s)%n"
+                    .format(target.classPrefix + "*", percent, total, verdict, target.why)
+            )
+            if (percent < target.minimum) {
+                val worst = matched.filter { it.second.second > 0 }
+                    .sortedByDescending { it.second.second }
+                    .take(3)
+                    .joinToString(", ") { "${it.first.substringAfterLast('.')} (${it.second.second} missed)" }
+                failures += "  ${target.classPrefix}* is at $percent%, below ${target.minimum}% for ${target.why}. Worst: $worst"
+            }
+        }
+
+        logger.lifecycle(report.toString().trimEnd())
+
+        if (failures.isNotEmpty()) throw GradleException(
+            "Coverage below target:\n" + failures.joinToString("\n") +
+                    "\n\nThese four packages carry a number because being untested in them is a " +
+                    "specific harm — somebody else's data, or a teacher's file. Everything else is " +
+                    "reported, not gated: see the note above coverageTargets in core/build.gradle.kts." +
+                    "\n\nRead the detail with: ./gradlew :core:koverHtmlReport"
+        )
+    }
+}
+
+// Part of `check`, so `./gradlew build` enforces it. Reports stay opt-in (`onCheck = false`) —
+// generating HTML on every build costs time nobody asked for; the XML the task above needs is
+// produced by its own dependsOn.
+tasks.named("check") { dependsOn("koverVerifyTargets") }
 
 group = "ee.urgas"
 

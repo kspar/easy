@@ -36,7 +36,7 @@ stale is exactly what happened to the first version of this table.
 
 | | Size | Tests |
 | --- | --- | --- |
-| **core** | 117 `@RestController` classes (124 endpoints) | 34 test files, **175 tests, all running** |
+| **core** | 117 `@RestController` classes (124 endpoints) | 35 test files, **190 tests, all running** |
 | **web** | 122 `.ts`/`.tsx` files | 11 unit files, 35 browser specs (34 in CI) |
 | **tsl** | the TSL compiler | 3 test files, **81 tests** |
 | **tsl-common** | the shared TSL model | 1 test file, **30 tests** |
@@ -44,13 +44,13 @@ stale is exactly what happened to the first version of this table.
 
 ```sh
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 117
-find core/src/test/kotlin -name '*.kt' | wc -l                   # 34
+find core/src/test/kotlin -name '*.kt' | wc -l                   # 35
 find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 122
 ls web/tests/browser/*.spec.mjs | wc -l                          # 35
 ls web/tests/unit/*.test.mjs | wc -l                             # 11
 ```
 
-175 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
+190 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
 parameterised — `StorageServiceContractTest` is 9 annotations and 15 runs, over two backends — and
 counting annotations would have understated the suite while *looking* like a measurement. Read it
 off the last line of `./gradlew :core:test` instead. It takes about 28 seconds, measured over three
@@ -95,7 +95,7 @@ page in the app.
 
 ### The backend blocker is gone
 
-**All 175 core tests now run, in CI and on a laptop, with no setup** — 32 when this started, of which 25 ran. EZ-1715 landed on 2026-08-15,
+**All 190 core tests now run, in CI and on a laptop, with no setup** — 32 when this started, of which 25 ran. EZ-1715 landed on 2026-08-15,
 but not as written: Testcontainers rather than a postgres service container, because a service
 container fixes CI and leaves the laptop exactly as broken as it was — which is *why* the
 database-backed tests had stopped running in both places. `DEVELOPMENT.md` §5 has the mechanics.
@@ -428,6 +428,11 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
    gets a new CI job and needs no Docker — the suite fakes it, because what is worth testing is the
    directory `aae` lays out and the answers it gives. What is still missing is running a generated
    script against a real tiivad: **EZ-1775**.
-9. **Migration tests against an anonymised copy** — once dev exists.
-10. **axe in the browser harness** — cheap, and there is already evidence it would find things.
+9. **Measurement, a11y, flake, docs** — *in progress.* Kover with four class-level targets and
+   `bin/mutate.sh` are done; axe and the nightly flake hunt are not. What the two measurement tools
+   are for, and how they differ, is worth stating once: **coverage catches an area falling out of the
+   suite, mutation catches a test that cannot fail.** Measured, on the same code: disabling all of
+   `StoredFileSweepTest` takes the sweep from 94% to 7% and fails the coverage gate; disabling two of
+   its tests leaves it at 92% and passes. Neither substitutes for the other.
+10. **Migration tests against an anonymised copy** — once dev exists.
 11. **Performance measurement of the two known suspects** — a fixture, not a framework.

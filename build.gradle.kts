@@ -13,6 +13,7 @@ plugins {
     // :core adds to its own buildscript classpath — the Liquibase tasks then die with
     // NoClassDefFoundError: liquibase/Scope. :core applies it via the catalog alias instead,
     // so the version still lives in gradle/libs.versions.toml.
+    alias(libs.plugins.kover) apply false
 }
 
 /**

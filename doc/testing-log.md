@@ -212,6 +212,27 @@ the expectation and makes every later diff clean, while looking like coverage. T
 the demonstration that golden files catch EZ-1774: regenerating with the broken compiler wrote nine
 broken expectations, and `git checkout` did not restore them because they were untracked.
 
+### About what coverage measures, and what it does not
+
+**A coverage threshold catches an area falling out of the suite; it is blind to losing a test or
+two.** Measured on the same code: disabling all of `StoredFileSweepTest` takes the sweep from 94% to
+**7%** and fails the gate; disabling *two* of its tests leaves it at **92%** and passes. Tightening
+the number to close that gap would make it fail on refactors that add a line, which is how a gate
+gets switched off. `bin/mutate.sh` is the tool for the fine-grained question.
+
+**Name the code, not the package it lives in.** The first version of the Kover targets used packages
+and measured the wrong thing in three of four cases. `core/ems/cron` scored 30% — not because the
+sweep is untested (93%) but because `DeleteInactiveUsers`, 134 lines of Keycloak plumbing, shares the
+package. `core/conf/security` scored 80% largely on `DummyZeroAuthFilter`, which is the auth-disabled
+path that must never run on a deployed environment and which we therefore *want* uncovered. A
+threshold that moves when an unrelated neighbour is added is one people learn to ignore.
+
+**A global coverage number would be actively misleading here.** A large fraction of the codebase is
+DTO declaration, so it measures the ratio of boilerplate to logic — and
+`EndpointAuthorizationMatrixTest` executes nearly every controller line as a side effect of checking
+who may call them. Global coverage would have jumped impressively the week that landed, while
+whatever actually needed testing sat untouched.
+
 ### About breaking things on purpose, and the harness that does it
 
 Mutation testing has found more vacuous assertions in this programme than any other technique. It

@@ -10,6 +10,10 @@
 
 [versions]
 kotlin = "2.3.10"
+# Kover, not JaCoCo. JaCoCo lags new class-file versions and this build is on JDK 25 — a coverage
+# tool that can block the build on a JDK upgrade is a liability in something meant to gate a deploy.
+# Kover is Kotlin-native and reads the same bytecode the compiler just produced.
+kover = "0.9.2"
 springBoot = "4.1.0"
 springDependencyManagement = "1.1.7"
 liquibaseGradle = "3.1.0"
@@ -42,6 +46,7 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 springBoot = { id = "org.springframework.boot", version.ref = "springBoot" }
 springDependencyManagement = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
 liquibase = { id = "org.liquibase.gradle", version.ref = "liquibaseGradle" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 
 [libraries]
 # --- Versionless: resolved by the Spring Boot BOM (io.spring.dependency-management) ---
