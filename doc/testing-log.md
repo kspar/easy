@@ -26,6 +26,9 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 12 | Three columns whose Kotlin nullability disagrees with the schema | `Tables.kt` | schema-vs-Tables drift test | EZ-1771 |
 | 13 | `moodle_username` is sent by core and **not declared** in `web/src/api/types.ts`, so the app cannot read it | `types.ts` | contract check, incidentally | EZ-1772 |
 | 14 | The grade input has no `label` and no `aria-label`: a screen reader announces the control that sets a student's grade as "edit text, blank" | `ActivityFeed.tsx` | writing a locator for it | phase 9 |
+| 15 | Course cards navigated with a bare `onClick`, so **ctrl/cmd+click could not open a course in a new tab** — on the first screen of every session, and against this repo's own written UI convention. The sanctioned helper already existed, stranded in another file | `CoursesPage.tsx` | writing a locator for it | fixed, `spaLink.ts` |
+| 16 | Two hooks wrote to `localStorage` **unguarded, from click handlers**. `setItem` throws in Safari private browsing, on a full quota, and on access inside an iframe with third-party cookies blocked — the last of which `useEmbedTheme` documents *because the embed hit it*. The failure is not a lost preference; it is an exception escaping a click handler | `useSavedGroup.ts`, `useRecentExercises.ts` | deduplicating four copies | fixed, `api/localStorage.ts` |
+| 17 | `ParticipantsPage` has no `<main>` landmark, so there is nothing to skip to | layout | a locator that threw | phase 9 |
 
 Two fixtures also described responses core cannot produce (`anonymous_autoassess_template: null`
 after the column became non-nullable; a `grade` sent as a bare number). Those are test defects, but
@@ -93,6 +96,20 @@ same defect as a test that cannot fail, and it was committed here *while fixing 
 spec as reproducibly broken; it passed here. Both observations were honest — the reviewer's runs
 were competing with mine for port 5199. Three of my own "failures" while investigating turned out
 to be the same contention, not the assertion.
+
+### About extracting code in order to test it
+
+**Three of the defects above were found by the extraction, not by a test.** Moving the grade
+table's arithmetic into a module surfaced a non-total comparator and a stale-sort-key branch;
+deduplicating four `localStorage` copies surfaced that only two guarded their writes. Nothing
+failed — the code simply could not be read side by side until it was in one place.
+
+**Deduplicating asymmetric copies is a defect detector.** Four hooks did the same thing four ways.
+The differences between them *were* the bugs, and they were invisible while each lived in its own
+file.
+
+**`tsc` and a green suite are happy with dead code.** A patch of mine left an `if (false) { }`
+block in `useSavedFilters`; typecheck, lint and 34 specs all passed. Read the diff.
 
 ### About writing fixtures
 

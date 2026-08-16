@@ -37,24 +37,25 @@ stale is exactly what happened to the first version of this table.
 | | Size | Tests |
 | --- | --- | --- |
 | **core** | 117 `@RestController` classes (124 endpoints) | 26 test files, **93 `@Test` methods, all running** |
-| **web** | 120 `.ts`/`.tsx` files | 9 unit files, 33 browser specs (32 in CI) |
+| **web** | 122 `.ts`/`.tsx` files | 11 unit files, 35 browser specs (34 in CI) |
 | **tsl / tsl-common** | the TSL compiler | none |
 | **aae** | the executor | none |
 
 ```sh
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 117
 find core/src/test/kotlin -name '*.kt' | wc -l                   # 26
-find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 120
-ls web/tests/browser/*.spec.mjs | wc -l                          # 33
-ls web/tests/unit/*.test.mjs | wc -l                             # 9
+find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 122
+ls web/tests/browser/*.spec.mjs | wc -l                          # 35
+ls web/tests/unit/*.test.mjs | wc -l                             # 11
 ```
 
 The web numbers look better than they are, because the check counts are lopsided:
 
 ```
-unit      44 examples + 11,903 property checks + 532 merge checks, plus the grade table,
-          the api client, i18n parity and the suite's own bookkeeping
-browser   722 checks across the 32 specs CI runs (a 33rd needs a real core)
+unit      126 tests across 11 files — the markdown commands (11,903 property checks), merge
+          resolution, the grade table, api/client, i18n parity, localStorage, tslModel and the
+          suite's own bookkeeping
+browser   748 checks across the 34 specs CI runs (a 35th needs a real core)
 ```
 
 The browser number is now **measured rather than estimated** — it is the sum of
@@ -390,8 +391,13 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
    test over the suite's own bookkeeping. It also found three specs whose helpers had been quietly
    broken by the move — the ratchet reported 0 checks where 30 were expected, which is the exact
    failure it exists for.
-   **Next: the grading flow, `ParticipantsPage`, `GradeTablePage` and route guards.**
-6. **tsl and aae** — two components with no tests at all. Depends on nothing; parallelisable.
+6. ~~**Web coverage breadth**~~ — **done 2026-08-16.** Eight browser slices and six unit modules:
+   the grading flow, route guards, both halves of `ParticipantsPage`, the grade table, the courses
+   page and join-by-link; plus grade-table logic, `api/client`, i18n parity, `localStorage` and
+   `tslModel`. Every page that had no coverage now has some, and five production defects were
+   fixed on the way — three of them found by *extracting* logic in order to test it rather than by
+   a test failing. See `doc/testing-log.md`.
+7. **tsl and aae** — two components with no tests at all. Depends on nothing; parallelisable.
 7. **Migration tests against an anonymised copy** — once dev exists.
 8. **axe in the browser harness** — cheap, and there is already evidence it would find things.
 9. **Performance measurement of the two known suspects** — a fixture, not a framework.
