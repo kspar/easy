@@ -4,10 +4,11 @@
 #
 #   doc/core/s3-check.sh https://dev.ems.lahendus.ut.ee/v2 https://dev.lahendus.ut.ee
 #
-# Companion to files-check.sh, not a replacement. That one runs against a local core with
-# `auth-enabled: false` and proves the endpoints are correct. This one runs against a real
+# Companion to the suite, not a replacement. `FileApiTest` and `StorageServiceContractTest` prove
+# the endpoints and both storage backends are correct, on every push. This one runs against a real
 # environment, where authentication is real, and proves that *this* environment's bucket, credentials
-# and proxying are wired up — which is the part no amount of local testing can tell you.
+# and proxying are wired up — which is the part no amount of CI can tell you, and the reason this
+# stays a script permanently. See doc/core/api-testing.md.
 #
 # Three sections, each skipped cleanly when its prerequisite is missing, so a partial run is honest
 # rather than falsely green:

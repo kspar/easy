@@ -2,11 +2,16 @@ package core.testing
 
 import core.db.Account
 import core.db.AccountGroup
+import core.db.Asset
+import core.db.AutoExercise
 import core.db.AutoGradeStatus
+import core.db.ContainerImage
 import core.db.Course
 import core.db.CourseExercise
 import core.db.Dir
 import core.db.DirAccessLevel
+import core.db.Executor
+import core.db.ExecutorContainerImage
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.GraderType
@@ -17,8 +22,10 @@ import core.db.StudentCourseAccess
 import core.db.Submission
 import core.db.TeacherCourseAccess
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.insertIgnore
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
 import org.jetbrains.exposed.v1.core.and
@@ -180,6 +187,94 @@ object Fixtures {
         // which held because nobody had access rather than because ownership was being checked.
         grantDirAccess(implicitGroupOf(ownerId), dirId, DirAccessLevel.PRAWM)
         return exerciseId
+    }
+
+    /**
+     * An auto-graded exercise, its `automatic_exercise` row and the container image it names.
+     * Returns the exercise id.
+     *
+     * Four rows and a join table, because "which executor can grade this?" is answered by
+     * `AutoExercise ⋈ ContainerImage ⋈ ExecutorContainerImage ⋈ Executor` — an exercise names an
+     * image, an executor declares the images it can run, and an executor with no matching image is
+     * invisible to the scheduler. That indirection is easy to half-build: leave out the join row and
+     * `chooseOptimalExecutor` throws `NoExecutorsException`, which the submit path swallows into a
+     * FAILED status, so the test sees the same symptom as a genuinely broken executor.
+     */
+    fun autoExercise(
+        title: String,
+        ownerId: String,
+        gradingScript: String = "print('grading')",
+        containerImageId: String = "test-image",
+        anonymousAutoassessEnabled: Boolean = false,
+        anonymousAutoassessTemplate: String = "",
+    ): Long {
+        ContainerImage.insertIgnore { it[id] = EntityID(containerImageId, ContainerImage) }
+
+        val autoExerciseId = AutoExercise.insertAndGetId {
+            it[AutoExercise.gradingScript] = gradingScript
+            it[containerImage] = EntityID(containerImageId, ContainerImage)
+            it[maxTime] = 6
+            it[maxMem] = 300
+        }.value
+
+        val exerciseId = exercise(
+            title, ownerId,
+            anonymousAutoassessEnabled = anonymousAutoassessEnabled,
+        )
+
+        Exercise.update({ Exercise.id eq exerciseId }) {
+            it[Exercise.anonymousAutoassessTemplate] = anonymousAutoassessTemplate
+        }
+        ExerciseVer.update({ ExerciseVer.exercise eq exerciseId and ExerciseVer.validTo.isNull() }) {
+            it[graderType] = GraderType.AUTO
+            it[ExerciseVer.autoExerciseId] = EntityID(autoExerciseId, AutoExercise)
+        }
+        return exerciseId
+    }
+
+    /** A file the grading script is handed alongside the submission. */
+    fun asset(exerciseId: Long, fileName: String, fileContent: String) {
+        val autoExerciseId = (Exercise innerJoin ExerciseVer)
+            .select(ExerciseVer.autoExerciseId)
+            .where { Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() }
+            .map { it[ExerciseVer.autoExerciseId]!!.value }
+            .single()
+
+        Asset.insert {
+            it[autoExercise] = EntityID(autoExerciseId, AutoExercise)
+            it[Asset.fileName] = fileName
+            it[Asset.fileContent] = fileContent
+        }
+    }
+
+    /**
+     * An executor able to run [containerImageId], pointed at [baseUrl].
+     *
+     * Note what registering one does *not* do: `AutoGradeScheduler` keeps its queues in memory and
+     * learns about rows on a 60-second timer, so a test that inserts this must call
+     * `syncExecutorsFromDB()` before submitting or the scheduler will not know it exists.
+     */
+    fun executor(
+        name: String,
+        baseUrl: String,
+        maxLoad: Int = 4,
+        drain: Boolean = false,
+        containerImageId: String = "test-image",
+    ): Long {
+        ContainerImage.insertIgnore { it[id] = EntityID(containerImageId, ContainerImage) }
+
+        val executorId = Executor.insertAndGetId {
+            it[Executor.name] = name
+            it[Executor.baseUrl] = baseUrl
+            it[Executor.maxLoad] = maxLoad
+            it[Executor.drain] = drain
+        }.value
+
+        ExecutorContainerImage.insert {
+            it[executor] = EntityID(executorId, Executor)
+            it[containerImage] = EntityID(containerImageId, ContainerImage)
+        }
+        return executorId
     }
 
     fun course(title: String, alias: String? = null): Long = Course.insertAndGetId {

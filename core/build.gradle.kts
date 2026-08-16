@@ -161,6 +161,9 @@ dependencies {
     // See core/src/test/kotlin/core/testing/TestDatabase.kt.
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.junit.jupiter)
+    // And a MinIO, for the S3 half of StorageServiceContractTest. Skipped with a reason when there
+    // is no Docker, rather than silently reducing the suite to the local backend.
+    testImplementation(libs.testcontainers.minio)
 
     // Markdown (CommonMark with GFM extensions)
     implementation(libs.bundles.commonmark)

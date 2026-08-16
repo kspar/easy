@@ -36,18 +36,23 @@ stale is exactly what happened to the first version of this table.
 
 | | Size | Tests |
 | --- | --- | --- |
-| **core** | 117 `@RestController` classes (124 endpoints) | 26 test files, **93 `@Test` methods, all running** |
+| **core** | 117 `@RestController` classes (124 endpoints) | 34 test files, **175 tests, all running** |
 | **web** | 122 `.ts`/`.tsx` files | 11 unit files, 35 browser specs (34 in CI) |
 | **tsl / tsl-common** | the TSL compiler | none |
 | **aae** | the executor | none |
 
 ```sh
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 117
-find core/src/test/kotlin -name '*.kt' | wc -l                   # 26
+find core/src/test/kotlin -name '*.kt' | wc -l                   # 34
 find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 122
 ls web/tests/browser/*.spec.mjs | wc -l                          # 35
 ls web/tests/unit/*.test.mjs | wc -l                             # 11
 ```
+
+174 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
+parameterised — `StorageServiceContractTest` is 6 annotations and 12 runs, one per backend — and
+counting annotations would have understated the suite while *looking* like a measurement. Read it
+off the last line of `./gradlew :core:test` instead. It takes about 55 seconds.
 
 The web numbers look better than they are, because the check counts are lopsided:
 
@@ -82,7 +87,7 @@ page in the app.
 
 ### The backend blocker is gone
 
-**All 93 core tests now run, in CI and on a laptop, with no setup** — 32 when this started, of which 25 ran. EZ-1715 landed on 2026-08-15,
+**All 175 core tests now run, in CI and on a laptop, with no setup** — 32 when this started, of which 25 ran. EZ-1715 landed on 2026-08-15,
 but not as written: Testcontainers rather than a postgres service container, because a service
 container fixes CI and leaves the laptop exactly as broken as it was — which is *why* the
 database-backed tests had stopped running in both places. `DEVELOPMENT.md` §5 has the mechanics.
@@ -397,7 +402,16 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
    `tslModel`. Every page that had no coverage now has some, and five production defects were
    fixed on the way — three of them found by *extracting* logic in order to test it rather than by
    a test failing. See `doc/testing-log.md`.
-7. **tsl and aae** — two components with no tests at all. Depends on nothing; parallelisable.
-7. **Migration tests against an anonymised copy** — once dev exists.
-8. **axe in the browser harness** — cheap, and there is already evidence it would find things.
-9. **Performance measurement of the two known suspects** — a fixture, not a framework.
+7. ~~**Port the bash checks, the public surface, executor integration**~~ — **done 2026-08-16.**
+   `articles-check.sh` and `files-check.sh` are gone, replaced by `ArticleApiTest`, `FileApiTest`
+   and a `StorageServiceContractTest` that runs the same assertions against both storage backends
+   (MinIO for the S3 half). The five-pattern `permitAll` surface is exercised behaviourally rather
+   than only structurally. **Submission → grading → feedback now runs in CI** against a
+   `com.sun.net.httpserver` executor — including the legs that were never tested anywhere: the
+   retry, the timeout, an unparseable response, a drained executor, and the
+   stranded-IN_PROGRESS recovery at startup. And `StoredFileSweep`, whose inputs were guarded and
+   whose behaviour was not.
+8. **tsl and aae** — two components with no tests at all. Depends on nothing; parallelisable.
+9. **Migration tests against an anonymised copy** — once dev exists.
+10. **axe in the browser harness** — cheap, and there is already evidence it would find things.
+11. **Performance measurement of the two known suspects** — a fixture, not a framework.

@@ -30,6 +30,11 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 16 | Two hooks wrote to `localStorage` **unguarded, from click handlers**. `setItem` throws in Safari private browsing, on a full quota, and on access inside an iframe with third-party cookies blocked — the last of which `useEmbedTheme` documents *because the embed hit it*. The failure is not a lost preference; it is an exception escaping a click handler | `useSavedGroup.ts`, `useRecentExercises.ts` | deduplicating four copies | fixed, `api/localStorage.ts` |
 | 17 | `ParticipantsPage` has no `<main>` landmark, so there is nothing to skip to | layout | a locator that threw | phase 9 |
 
+Nothing new in production code came out of phase 7, which is itself worth recording: porting two
+scripts that had been run by hand for weeks found nothing the scripts had not, and the executor path
+— the largest thing here with no coverage at all — was **correct**. Phase 7's yield is the four
+things below, which are about the tests and the harness rather than the application.
+
 Two fixtures also described responses core cannot produce (`anonymous_autoassess_template: null`
 after the column became non-nullable; a `grade` sent as a bare number). Those are test defects, but
 they are the ones the contract check was built for.
@@ -54,6 +59,18 @@ Worth as much as the list above: these are the failure modes of the safety net i
 | `count()` used as a click guard, where it does not auto-wait — a missed click would have been reported as the app not sending a request | `/code-review` |
 | **A genuine flake in the gate**: `library-exercise-tsl` waited for `compiled.length > 0`, which a compile already in flight *before* the edit satisfies, then asserted on the latest payload. Failed ~1 run in 3 on an idle machine, and could also pass without testing anything | a reviewer noticing, then measuring it |
 | A stray `web/web/.pre-migration-check/` directory, **staged for commit** | `/code-review` |
+| `HttpApi.field("id")` read an id off an *error* body — `RequestErrorResponse` carries a correlation id — so "a 403 meant nothing was created" passed on a request that had failed for an entirely different reason | the assertion failing, on the first run |
+| `JsonNode` carries its own `map`, which Kotlin resolves in preference to the `Iterable` extension and which maps the node rather than its elements. Every element came back as the array itself | a null field, three lines later |
+| The local storage directory was **not** reset between tests while the database was, so "a refused upload left nothing behind" failed on the *previous* test's uploads | the assertion failing |
+| A grace-window boundary asserted against the wall clock: a row written "exactly 24 hours ago" is already older than that by the time the sweep computes its cutoff, so the one question worth asking about a grace window could not be put | the test failing, correctly, for the wrong reason |
+| **Two tests reading `/unauth/versions` shared one cached snapshot** — `VersionsService` caches for five minutes in a plain field that neither the truncation nor the Spring cache invalidation reaches. Whichever ran first decided what the other saw, and with a shared fixture that reads as a pass | reasoning about the cache, then making both tests assert a per-test version so the hazard could express itself |
+| An anonymous submission's DB write is launched on a detached coroutine and never awaited, so an undrained one committed **after the next test's truncation** — satisfying that test's count (vacuous pass) or overshooting it (a failure whose message said the opposite of what happened) | `/code-review` |
+| `FakeExecutor.close()` stopped the listener but not the thread pool — `HttpServer.stop` deliberately does not shut down a caller-supplied executor. One live pool of non-daemon threads per test method, which is the classic cause of a test worker that finishes and then hangs | `/code-review` |
+| A test named "including a teacher's feedback" wrote into course exercise instructions. Dropping `TeacherActivity.feedbackHtml` from the sweep's scan list — the exact case it named — passed | `/code-review` |
+| `assertFalse(url.contains("//$key"))` could not fail: the fixture's `public-base-url` had no trailing slash, so deleting the `trimEnd('/')` it guards left the test green | `/code-review` |
+| `assertEquals(0, elements("files").size)` was satisfied by a 403 or a 500 as readily as by an empty listing, because `elements` returns empty for any unparseable body | `/code-review` |
+| `uploadedKey()` read `id` without checking the status — walking into the trap `HttpApi.field`'s own KDoc documents, four days after writing it | `/code-review` |
+| `Result.deleted` was never asserted in the one test whose name is about it | `/code-review` |
 
 ---
 
@@ -148,6 +165,67 @@ about the code. Check the load before believing a broad failure.
 second attaches to the first's dev server and dies when the first tears it down. Three separate
 confusing failures in one day, in three disguises. It is off now, so the second run says "Port 5199
 is already in use" instead.
+
+### About replacing a script with a test
+
+**When you delete the script, delete the argument for it too.** Both scripts carried a persuasive
+"why this is a script and not a test" section, and both sections had outlived their premise by the
+time they were read again — CI had a database. A rationale in prose survives the condition that made
+it true, and the more persuasive it is the longer it survives. `api-testing.md` now records what
+happened rather than what to do.
+
+**A port is a chance to test what the script structurally could not.** Every genuinely new assertion
+in `ArticleApiTest` is about the *cache*: that anonymous and signed-in non-admin readers get
+byte-identical payloads, that an admin reading first does not leave the Markdown source in the entry
+the next anonymous caller reads. A script running against a long-lived core cannot ask those — a warm
+entry and a correct answer look the same from outside. Dropping `isAdmin` from that cache key is a
+plausible tidy-up, it leaks the source and the owner's username to the internet, and exactly one test
+in the file notices.
+
+**Structural guards and behavioural ones catch different things, and it is worth measuring which.**
+Widening the file-serving permitAll pattern from `/*/resource/*/*` to `/*/resource/**` was applied on
+purpose: `EndpointSecuritySurfaceTest`, which exists to police that list, **passes**. Only
+`FileApiTest`'s "a deeper path is not public" fails. Neither test is redundant, and neither one
+covers the other.
+
+**The review of phase 7 found seven problems and not one was in the code under test.** Every one was
+in the tests: three assertions that could not fail for the case they named, two order dependencies,
+a thread leak, and a test whose name described something it did not do. That is the consistent
+result across this programme — the safety net is where the bugs are, and it is the thing nothing
+else checks.
+
+**Writing down a trap does not stop you falling into it.** `HttpApi.field` carries a KDoc warning
+that an error body has an `id` too, added after that exact mistake cost a run. Four days later
+`FileApiTest.uploadedKey()` read `id` without checking the status. A guard in prose protects the
+next reader, not the author.
+
+**A shared Spring context has more state than the reset extension knows about.** Truncating the
+database and invalidating the Spring caches covers most of it. It does not cover a hand-rolled cache
+in a bean field (`VersionsService`, five-minute TTL — `ConcurrentMapCacheManager` has no TTL, which
+is why it is hand-rolled), or `AutoGradeScheduler`'s in-memory queue map, which learns about executor
+rows on a 60-second timer and therefore has to be told. Both bit within an hour of each other.
+
+**A near-identical fixture hides an order dependency.** The two version tests built the same
+executor, so the second reading the first's cached snapshot produced exactly the expected values.
+Removing the fix and re-running proved nothing — it still passed. Only once each test asserted
+against *its own* executor could the hazard express itself. A fixture that varies per test is not
+noise; it is what makes contamination visible.
+
+### About what to inject for a test, and what not to
+
+Three seams were opened in production code for phase 7, and the honest test is whether each one
+makes the production code better read on its own terms:
+
+- `StoredFileSweep.sweep(graceHours, deleteEnabled, now)` — **yes**. `cron()` reads configuration and
+  `sweep()` does the work, which is a division worth having anyway, and it returns a `Result` instead
+  of only logging, so the nightly report is a value.
+- `now` specifically — **yes, and it was load-bearing.** Without it the grace boundary is unobservable,
+  and that is not a testing inconvenience: it means nobody can answer whether a file uploaded exactly
+  one grace period ago is safe.
+- Setting `@Value` fields by reflection in `StorageServiceContractTest` — **no, and it is fine.** It
+  buys the S3 backend under test without a second Spring context at ten seconds a fork. Both ways of
+  getting it wrong are loud: `getDeclaredField` throws on a rename, `lateinit` throws on an omission.
+  Reflection into production internals is acceptable exactly when failure is impossible to miss.
 
 ### About the gate
 

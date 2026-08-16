@@ -59,8 +59,45 @@ class StoredFileSweep(private val storageService: StorageService) {
     @Value("\${easy.core.stored-file-sweep.delete}")
     private var deleteEnabled: Boolean = false
 
+    /**
+     * What one run decided, so that a caller can assert on it rather than on a log line.
+     *
+     * [deleted] is false on a report-only run, which is the state this job ships in and the state
+     * every environment starts in — so it is the difference between "these would have gone" and
+     * "these are gone", and the two must never be confused by whoever reads the output.
+     */
+    data class Result(
+        val unreferenced: List<String>,
+        val orphanedObjects: List<String>,
+        val bytes: Long,
+        val deleted: Boolean,
+    )
+
+    /**
+     * The nightly entry point: reads configuration, and discards the result because nobody is
+     * listening. Void deliberately — a `@Scheduled` method's return value goes nowhere, so returning
+     * one would invite a caller to believe otherwise.
+     */
     @Scheduled(cron = "\${easy.core.stored-file-sweep.cron}")
     fun cron() {
+        sweep(graceHours, deleteEnabled)
+    }
+
+    /**
+     * One sweep, with its inputs passed in rather than read from configuration and the clock.
+     *
+     * Extracted from [cron] so that all three are reachable from a test without a second Spring
+     * context: the grace window and the delete flag are the two things `@Value` makes fixed for the
+     * life of the process, and [now] is the third. `cron` is the part that reads configuration; this
+     * is the part that does the work.
+     *
+     * [now] exists because the boundary is otherwise unobservable. The cutoff is *relative to the
+     * moment of the run*, so against the wall clock a fixture written "exactly 24 hours ago" is
+     * already fractionally older than that by the time the sweep computes its cutoff — and the one
+     * question worth asking about a grace window, whether a file *at* the boundary is safe, cannot
+     * be put. Defaulted, so no caller outside a test knows this parameter exists.
+     */
+    fun sweep(graceHours: Int, deleteEnabled: Boolean, now: DateTime = DateTime.now()): Result {
         val unreferenced = transaction {
             // Every key mentioned anywhere in content. Built by scanning the corpus once and pulling
             // keys out with a regex — NOT by asking, per file, whether any row contains it. The
@@ -70,7 +107,7 @@ class StoredFileSweep(private val storageService: StorageService) {
             // The grace window covers a file uploaded into an editor whose content has not been
             // saved yet: it is referenced by nothing anywhere, and without this it would be deleted
             // out from under whoever is still typing.
-            val cutoff = DateTime.now().minusHours(graceHours)
+            val cutoff = now.minusHours(graceHours)
 
             StoredFile
                 .select(StoredFile.id, StoredFile.filename, StoredFile.sizeBytes)
@@ -81,12 +118,14 @@ class StoredFileSweep(private val storageService: StorageService) {
 
         val orphanedObjects = findOrphanedObjects()
 
+        val bytes = unreferenced.sumOf { it.third }
+        val keys = unreferenced.map { it.first }
+
         if (unreferenced.isEmpty() && orphanedObjects.isEmpty()) {
             log.info { "Stored file sweep: nothing to collect" }
-            return
+            return Result(keys, orphanedObjects, bytes, deleted = false)
         }
 
-        val bytes = unreferenced.sumOf { it.third }
         if (!deleteEnabled) {
             log.info {
                 "Stored file sweep (REPORT ONLY, easy.core.stored-file-sweep.delete is false): " +
@@ -94,13 +133,12 @@ class StoredFileSweep(private val storageService: StorageService) {
                         "${unreferenced.map { "${it.first} (${it.second})" }}, and " +
                         "${orphanedObjects.size} object(s) with no row $orphanedObjects"
             }
-            return
+            return Result(keys, orphanedObjects, bytes, deleted = false)
         }
 
         // Rows first. A row with no object is a broken image someone notices; an object with no row
         // is invisible — but it is also exactly what the orphan pass above collects, so this
         // ordering makes a half-finished run self-repairing on the next one.
-        val keys = unreferenced.map { it.first }
         transaction { StoredFile.deleteWhere { StoredFile.id inList keys } }
 
         // Never let a storage failure escape. The rows are already gone at this point, so throwing
@@ -117,6 +155,7 @@ class StoredFileSweep(private val storageService: StorageService) {
             "Stored file sweep: deleted ${keys.size} unreferenced file(s) totalling $bytes bytes " +
                     "$keys, and ${orphanedObjects.size} object(s) with no row $orphanedObjects"
         }
+        return Result(keys, orphanedObjects, bytes, deleted = true)
     }
 
     /**

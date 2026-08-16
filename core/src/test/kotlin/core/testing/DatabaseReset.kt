@@ -3,7 +3,11 @@ package core.testing
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.cache.CacheManager
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.net.URI
+import java.nio.file.Files
+import java.nio.file.Path
 
 private const val DISPOSABLE_DB_SUFFIX = "_test"
 private val LOCAL_HOSTS = setOf("localhost", "127.0.0.1", "::1")
@@ -85,16 +89,56 @@ fun truncateAll(jdbcUrl: String) {
 }
 
 /**
- * Empties the database *before* each test.
+ * Empty the local storage directory.
+ *
+ * Paired with [truncateAll] so that "no rows" and "no objects" are the same state. Without it the
+ * two drift within a single class — the database restarts empty for every test while the directory
+ * accumulates — and the tests that care are exactly the ones about the sweep, whose whole subject is
+ * *disagreement* between rows and objects. An assertion like "a refused upload left nothing behind"
+ * then fails on the previous test's uploads, which is how this was found.
+ *
+ * Only files directly in the directory, and only if it exists: the local backend is flat by design,
+ * and a recursive delete of a configured path is a worse thing to have in a test harness than a
+ * leftover subdirectory would be.
+ */
+private fun emptyStorageDir() {
+    val dir = Path.of(TestStorageDir.path)
+    if (!Files.isDirectory(dir)) return
+    Files.list(dir).use { paths -> paths.filter { Files.isRegularFile(it) }.forEach { Files.deleteIfExists(it) } }
+}
+
+/**
+ * Empties the database *before* each test, and the caches and the file storage with it.
  *
  * Before rather than after, for two reasons: a failing test leaves its rows behind for whoever
  * wants to `psql` into the container and look, and no test can come to depend on its predecessor
  * having cleaned up.
+ *
+ * ### Why the caches go too
+ *
+ * `RESTART IDENTITY` is what makes this necessary rather than merely tidy. Ids are handed out from 1
+ * again for every test, so the article one test creates and the article the next test creates are
+ * *both* article 1 — and `CachingService.selectLatestArticleVersion` is `@Cacheable` on that id. One
+ * Spring context serves the whole suite, so the entry outlives the row it was built from. Account
+ * ids are worse, because they are not even sequential: every class using `Auth.ADMIN_ID` inserts a
+ * row called `test-admin`, and `selectAccount` is cached on exactly that string.
+ *
+ * **This is a guard, not a fix for an observed failure**, and the distinction is worth recording.
+ * Nothing in the suite fails without it today — every article test writes through the API, and each
+ * write path calls `invalidate(articleCache)` itself, so the fixtures happen to clean up after
+ * themselves. A test that builds its rows with [Fixtures] instead would not, and the failure it
+ * would produce is the worst-shaped kind: order-dependent, so it appears when someone adds an
+ * unrelated test above; and a stale *pass* at least as often as a failure, because a cached payload
+ * looks entirely plausible.
  *
  * Registered once by the `@IntegrationTest` meta-annotation so that no test class can forget it.
  */
 class DatabaseResetExtension : BeforeEachCallback {
     override fun beforeEach(context: ExtensionContext) {
         truncateAll(TestDatabase.jdbcUrl)
+        emptyStorageDir()
+
+        val caches = SpringExtension.getApplicationContext(context).getBean(CacheManager::class.java)
+        caches.cacheNames.forEach { caches.getCache(it)?.invalidate() }
     }
 }

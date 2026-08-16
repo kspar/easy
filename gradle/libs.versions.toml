@@ -86,6 +86,10 @@ picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
 # Tests start their own PostgreSQL rather than expecting a hand-made one — see TestDatabase.kt.
 testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+# MinIO, so StorageServiceContractTest can run the same assertions against S3StorageService that it
+# runs against the local one. Production stores files in S3; a suite that only ever exercised the
+# local backend would be coverage of the wrong thing.
+testcontainers-minio = { module = "org.testcontainers:minio", version.ref = "testcontainers" }
 tika-core = { module = "org.apache.tika:tika-core", version.ref = "tika" }
 
 [bundles]

@@ -113,8 +113,8 @@ easy:
       course-allowlist: ""
 
     # Where the bytes of uploaded files live. `local` writes them to a directory and needs no AWS
-    # account, no credentials and no network — it is what a laptop and CI run on, and what
-    # doc/core/files-check.sh exercises. `s3` is for anything deployed.
+    # account, no credentials and no network — it is what a laptop and CI run on. `s3` is for
+    # anything deployed. StorageServiceContractTest exercises both on every push.
     storage:
       backend: "local"    # local | s3
       local:

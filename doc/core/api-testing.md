@@ -130,22 +130,45 @@ Pick a fixture that makes the side effects no-ops where you can. Joining as a st
 already has access to the course means the `insertIgnore` does nothing, so the only mutation
 left is the one under test.
 
-## Checks kept as scripts
+## The checks that used to be scripts
 
-`articles-check.sh` and `files-check.sh` in this directory are the pattern written down: a run of
-curl calls against a local core, asserting one endpoint family end to end, cleaning up after itself
-so it can be run repeatedly.
+`articles-check.sh` and `files-check.sh` lived in this directory until 2026-08-16. They are now
+`ArticleApiTest`, `FileApiTest` and `StorageServiceContractTest`, and the scripts were deleted in the
+same commit.
 
-```sh
-JAVA_HOME=$(/usr/libexec/java_home -v 25) ./gradlew :core:bootRun --args='--server.port=8099'
-doc/core/articles-check.sh
-doc/core/files-check.sh
-```
+That was always the plan and the scripts said so in their own headers. The argument for keeping them
+was that both need a running application, that CI ran `-PexcludeTags=db`, and that a JUnit version
+would therefore be written, tagged, and never run — a script that is honestly manual beats a test
+that looks like coverage and is skipped. **EZ-1715 removed the premise.** CI has a database,
+`./gradlew build` runs everything, and nothing is tagged out.
 
-`files-check.sh` runs against either storage backend and says which it found. For a **deployed**
-environment there is `s3-check.sh`, which asks a different question — not "are the endpoints
-correct" but "is this environment's bucket, credentials and proxying actually wired up", which no
-amount of local testing can answer:
+Keeping both would have been the worst of the three options: two specifications of the same rules,
+one of which drifts silently because nobody runs it on a schedule.
+
+| was | is | runs |
+| --- | --- | --- |
+| `articles-check.sh`, 26 curl assertions | `core/ems/service/article/ArticleApiTest.kt`, 18 tests | every push |
+| `files-check.sh`, 34 curl assertions | `core/ems/service/file/FileApiTest.kt`, 19 tests | every push |
+| `files-check.sh` against whichever backend | `StorageServiceContractTest`, 15 runs over both | every push, MinIO for the S3 half |
+
+Those counts come from `core/build/test-results/test/*.xml`, not from counting `@Test` — the storage
+one is 9 annotations and 15 runs, and an annotation count would understate it while looking like a
+measurement. The `curl` figures are `grep -c '^\s*check '` against the scripts at their last commit.
+
+Three things the port gained, all of them cache or ordering behaviour a script running against a
+long-lived core could not see: that an anonymous reader and a signed-in non-admin get **byte-identical**
+article payloads (they share one cache entry, so if they ever differ, request order becomes the
+access control); that an admin reading first does not leave the Markdown source in the entry the next
+anonymous caller reads; and that publishing takes effect immediately.
+
+One thing it deliberately did not gain: **whether a stored object is actually readable by an
+anonymous caller.** That is a bucket policy, set out of band per environment, and asserting it
+against MinIO would answer a question about MinIO.
+
+### `s3-check.sh` stays a script permanently
+
+It asks whether *this environment's* bucket, credentials and proxying are wired up, which is
+unanswerable from CI by construction. It belongs to EZ-1710's post-deploy story.
 
 ```sh
 AWS_PROFILE=easy-dev-test BUCKET=lahendus-dev-files \
@@ -153,53 +176,35 @@ AWS_PROFILE=easy-dev-test BUCKET=lahendus-dev-files \
 ```
 
 Its three sections skip cleanly when their prerequisites are missing, so a partial run reports as
-partial rather than as green. The upload section needs `EASY_TOKEN`, because a deployed
-environment has real authentication and the `oidc_claim_*` trick does not work there.
-`s3-setup.md` covers building the bucket in the first place.
+partial rather than as green. The upload section needs `EASY_TOKEN`, because a deployed environment
+has real authentication and the `oidc_claim_*` trick does not work there. `s3-setup.md` covers
+building the bucket in the first place.
 
-They exist because of what they check. `articles-check.sh` checks whether an unpublished article is
-invisible to non-admins and to the internet — a rule that lives in a SQL predicate.
-`files-check.sh` checks that an uploaded file is fetchable with no session at all, which is a
-filesystem, a database and a security filter chain agreeing.
+**Do not run it, or anything like it, in CI.** It would need a core started with
+`auth-enabled: false`, which would make the one code path that must never run anywhere real
+load-bearing for the release gate. That is also why the tests above authenticate with
+`core/testing/Auth.kt` — a real `EasyUser` in the security context — rather than with `oidc_claim_*`
+headers.
 
-> **The argument for keeping them as scripts expired on 2026-08-15.**
->
-> It used to run: both need a running application, CI runs `-PexcludeTags=db`, so the JUnit version
-> would be written, tagged, and then never run — and a script that is honestly manual beats a test
-> that looks like coverage and is skipped. That was correct, and it was correct *because of*
-> EZ-1715, which is now done. CI has a database, `./gradlew build` runs everything, and nothing is
-> tagged out.
->
-> So these two files are now **the specification to port, not work to redo** — EZ-1766 phase 7. Port
-> them to `@IntegrationTest` + MockMvc and **delete the scripts in the same commit**: two
-> specifications of the same rules drift, and the manual one drifts silently because nobody runs it
-> on a schedule.
->
-> What the port must not lose: `files-check.sh` runs against *either* storage backend and says which
-> it found. Parameterise over `LocalFsStorageService` and `S3StorageService`, because a test that
-> only ever exercises local while production runs S3 is coverage of the wrong thing.
->
-> Do **not** run the scripts themselves in CI. That would need a core started with
-> `auth-enabled: false`, making the one code path that must never run anywhere real load-bearing for
-> the release gate.
+### Worth copying if you write another
 
-**`s3-check.sh` is a different kind of artefact and stays a script permanently.** It asks whether
-*this environment's* bucket, credentials and proxying are wired up, which is unanswerable from CI by
-construction. It belongs to EZ-1710's post-deploy story.
+- **Assert the absence of things as well as their presence.** That the public article payload has no
+  `text_md` and no username is half of what makes it correct.
+- **Assert that two different failures answer identically where that is the design.** A draft and a
+  nonexistent id return the same error on purpose; a test that only checks "not 200" would not
+  notice them drifting apart.
+- **Assert the request, not only the result.** `AutoGradeIntegrationTest` checks what core sends the
+  executor, because a grading request carrying the wrong solution still produces a perfectly good
+  grade — it would be the student's result that was wrong.
+- **A structural guard and a behavioural one catch different things.** Widening the file-serving
+  permitAll pattern from `/*/resource/*/*` to `/*/resource/**` was measured: `EndpointSecuritySurfaceTest`
+  passes, and only `FileApiTest`'s "a deeper path is not public" notices.
 
-**What a script cannot replace.** `RichTextColumnsTest` is deliberately *not* one of these: it
-guards the list of columns the stored-file sweep scans, and getting that wrong deletes files that are
-in use. So it is written to need no database — reflection over the Exposed table objects rather than
-a query against `information_schema` — precisely so that it runs on every push. When a check has to
-run, that is the shape to reach for; a script is for what genuinely cannot.
-
-**EZ-1715 landed on 2026-08-15**, which is what makes the note above apply.
-
-Worth copying if you write another: assert the *absence* of things as well as their presence (that
-the public payload has no `text_md` and no username is half of what makes it correct), and assert
-that two different failures answer identically where that is the design — a draft and a nonexistent
-id return the same error on purpose, and a test that only checks "not 200" would not notice them
-drifting apart.
+**What a script cannot replace.** `RichTextColumnsTest` is deliberately not one of these: it guards
+the list of columns the stored-file sweep scans, and getting that wrong deletes files that are in
+use. So it is written to need no database — reflection over the Exposed table objects rather than a
+query against `information_schema` — precisely so that it runs on every push. `StoredFileSweepTest`
+is the other half, guarding what the sweep then *does*.
 
 ## What this doesn't cover
 

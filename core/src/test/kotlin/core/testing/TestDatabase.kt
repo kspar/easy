@@ -4,6 +4,8 @@ import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.test.context.support.TestPropertySourceUtils
 import org.testcontainers.containers.PostgreSQLContainer
+import java.nio.file.Files
+import java.nio.file.Path
 
 /**
  * The PostgreSQL the test suite runs against.
@@ -86,6 +88,30 @@ class TestDatabaseInitializer : ApplicationContextInitializer<ConfigurableApplic
             "spring.datasource.jdbc-url=${TestDatabase.jdbcUrl}",
             "spring.datasource.username=${TestDatabase.username}",
             "spring.datasource.password=${TestDatabase.password}",
+            "easy.core.storage.local.dir=${TestStorageDir.path}",
         )
+    }
+}
+
+/**
+ * A storage directory that belongs to this JVM alone.
+ *
+ * The committed config names a fixed `/tmp/easy-files-test`, which is fine for starting a context
+ * and wrong for anything that asserts on what is *in* storage. `StorageService.listKeys` is how the
+ * sweep finds objects with no row, so a directory shared with yesterday's run means yesterday's
+ * leftovers are today's orphans — the sweep tests would pass or fail on the machine's history, which
+ * is the definition of a flake. A fresh directory per JVM makes an empty store genuinely empty.
+ *
+ * Deleted on exit, deepest-first. Best effort: a JVM killed outright leaves it behind, and one
+ * abandoned directory under the system temp root is a better failure than a test suite that cleans
+ * up a path a human might have typed.
+ */
+object TestStorageDir {
+    val path: String = Files.createTempDirectory("easy-files-test-").toAbsolutePath().toString().also { dir ->
+        Runtime.getRuntime().addShutdownHook(Thread {
+            runCatching {
+                Files.walk(Path.of(dir)).sorted(Comparator.reverseOrder()).forEach { Files.deleteIfExists(it) }
+            }
+        })
     }
 }

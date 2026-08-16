@@ -126,6 +126,10 @@ easy:
     storage:
       backend: "local"
       local:
+        # Overridden per JVM by TestStorageDir, for the same reason the datasource is: a directory
+        # shared with the last run makes yesterday's leftovers today's orphaned objects, and the
+        # sweep tests would then pass or fail on the machine's history. This value is the fallback
+        # that keeps the context well-formed if that ever stops firing.
         dir: "/tmp/easy-files-test"
       s3:
         bucket: ""

@@ -19,7 +19,9 @@ reference columns, one nightly sweep). This file is the operating manual.
 the bytes, `s3` answers `302` to the object. That indirection is the whole reason a storage change
 never has to rewrite a stored article, so **do not** put a bucket URL into content.
 
-`doc/core/files-check.sh` works against both and says which one it found.
+`StorageServiceContractTest` runs the same assertions against both backends on every push — the S3
+half against a MinIO container — so a change that works locally and not in a bucket fails the build
+rather than the deploy.
 
 ## Creating a bucket
 
@@ -138,12 +140,14 @@ curl -s   "https://$B.s3.eu-north-1.amazonaws.com/"                             
 curl -sI -X PUT "https://$B.s3.eu-north-1.amazonaws.com/anon.png"                 # anonymous PUT  -> 403
 ```
 
-Then end to end, against a core pointed at the bucket:
+Then end to end, against a core pointed at the bucket. The endpoint behaviour is covered by
+`FileApiTest` on every push, so what is left to check here is the part only this bucket can answer —
+that the credentials work and the objects are publicly readable:
 
 ```sh
 AWS_PROFILE=<profile> ./gradlew :core:bootRun --args='--server.port=8099 \
   --easy.core.storage.backend=s3 --easy.core.storage.s3.bucket=... --easy.core.storage.s3.public-base-url=...'
-doc/core/files-check.sh
+# upload something, follow the redirect, and confirm the bytes arrive from the bucket origin
 ```
 
 On a deployed host, without credentials to upload with, two requests still prove most of it:

@@ -100,6 +100,23 @@ class VersionsService(buildPropertiesProvider: ObjectProvider<BuildProperties>) 
 
     private var cache: Pair<Instant, List<VersionsController.ExecutorResp>>? = null
 
+    /**
+     * Forget the cached snapshot.
+     *
+     * This cache is hand-rolled rather than `@Cacheable` because it needs a TTL and the
+     * `ConcurrentMapCacheManager` this application uses has none — which also means
+     * `CachingService.invalidateAll` does not reach it, and neither does anything else. Nothing in
+     * production wants that: a five-minute stale executor version is the point.
+     *
+     * A test does. One Spring context serves the whole suite, so without this the first test to ask
+     * for versions decides what every later one sees, for five minutes — and since test fixtures
+     * tend to be near-identical, the later assertions pass while examining the earlier test's data.
+     */
+    @Synchronized
+    fun clearCache() {
+        cache = null
+    }
+
     private fun queryExecutors(): List<VersionsController.ExecutorResp> {
         val executors = transaction {
             Executor.selectAll().sortedBy { it[Executor.name] }
