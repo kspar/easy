@@ -140,6 +140,31 @@
     - "--follow"
   when: easy_core_deploy_users | length > 0
 
+- name: Check the journal reader honours its arguments as an unprivileged caller
+  # The other half, and the half that was missing. Refusing bad input proves nothing about whether
+  # good input survives — and the interesting path is the one this play does not otherwise take:
+  # everything here runs as root, so the script's sudo re-exec never executes during a deploy.
+  #
+  # It shipped broken exactly once for that reason. The re-exec passed `"$@"`, which the argument
+  # loop had already consumed with `shift`, so `--since ... -n 1000` became a bare invocation: the
+  # last 200 lines of the whole journal, exit status 0, no sign anything was dropped. A wrapper
+  # written to stop a command answering the wrong question was answering the wrong question.
+  #
+  # `-n 1` is the assertion: the default is 200, so anything that ignores arguments floods this.
+  # A margin of 20 covers journalctl's own boot/preamble lines without being loose enough to pass
+  # a run that silently fell back to the default.
+  ansible.builtin.command:
+    cmd: "{{ easy_core_log_helper_path }} -n 1"
+  become: true
+  become_user: "{{ item }}"
+  register: easy_core_log_positive
+  changed_when: false
+  failed_when: >-
+    easy_core_log_positive.rc != 0
+    or (easy_core_log_positive.stdout_lines | length) > 20
+  loop: "{{ easy_core_deploy_users }}"
+  when: easy_core_deploy_users | length > 0
+
 - name: Let the deploy account restart core without a password
   # The single grant deploy/deploy-dev.sh needs. Scoped to one exact command: a deploy should be
   # able to restart core and do nothing else with root.

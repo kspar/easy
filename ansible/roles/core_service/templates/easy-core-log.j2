@@ -18,11 +18,25 @@
 #   easy-core-log --since "2026-08-16 04:00"
 #   easy-core-log --since -2h -n 1000
 #
+# **It elevates itself, and that is a correctness fix rather than a convenience.** Run unprivileged,
+# `journalctl -u {{ easy_core_service_name }}` does not fail: an account outside `adm` and
+# `systemd-journal` gets exit status **0**, "-- No entries --" on stdout, and the explanation on
+# *stderr*. Anyone piping this into grep therefore sees an empty, successful result — which reads as
+# "that never happened" and is indistinguishable from a genuinely quiet window. On 2026-08-16 that
+# cost an hour and produced a wrong conclusion about a storage sweep that had in fact run on time.
+#
+# The sudoers grant already covers this path with and without arguments, so re-execing under sudo
+# needs no new privilege. If the caller has no grant, `sudo -n` fails loudly, which is the whole
+# point: no path through this script can now answer "nothing" when it means "not allowed to look".
 set -euo pipefail
 
 UNIT={{ easy_core_service_name }}
 lines=200
 since=""
+
+# Kept because the parse loop below consumes "$@" with `shift`, and the sudo re-exec at the end
+# needs the caller's arguments — not the empty list that is left by then.
+original_args=("$@")
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -58,6 +72,25 @@ done
 args=(-u "$UNIT" --no-pager -n "$lines")
 if [ -n "$since" ]; then
   args+=(--since "$since")
+fi
+
+# Elevate here rather than at the top, and the order is load-bearing: arguments are validated
+# first, in-process, so a refused argument is still refused when the caller has no sudo grant. Put
+# this before the parsing and the role's "refuses what it is supposed to refuse" probe would pass
+# on `sudo -n` failing, which tests nothing.
+if [ "$(id -u)" -ne 0 ]; then
+  # `original_args`, NOT "$@": the loop above consumed every positional with `shift`, so by here
+  # "$@" is empty and re-execing with it would silently discard --since and -n. That prints the
+  # last 200 lines of the whole journal with exit status 0 — a plausible answer to a question
+  # nobody asked, which is the exact failure this script exists to prevent. Caught in review, and
+  # the "Journal reader honours its arguments" probe in tasks/main.yml is there so it cannot come
+  # back.
+  #
+  # The `+"${...[@]}"` form is the portable way to expand a possibly-empty array under `set -u`.
+  #
+  # The literal path matches the sudoers rule rather than relying on $0 and secure_path. An
+  # already-root caller skips this branch, so there is no recursion.
+  exec sudo -n {{ easy_core_log_helper_path }} ${original_args[@]+"${original_args[@]}"}
 fi
 
 exec /usr/bin/journalctl "${args[@]}"
