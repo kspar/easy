@@ -101,7 +101,23 @@ export default defineConfig({
     // app with no IdP, and it is why this is a separate vite config rather than a flag.
     command: `npx vite --config vite.stub.config.ts --port ${PORT} --strictPort`,
     url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
+
+    /**
+     * Never reuse, not even locally — and this is a departure from the framework's usual advice.
+     *
+     * With reuse on, a second `playwright test` started while a first is running silently attaches
+     * to the first one's dev server. It looks like it works, right up to the moment the first run
+     * finishes and tears that server down underneath the second, which then fails with
+     * ERR_CONNECTION_REFUSED partway through. Three separate confusing failures on 2026-08-16 were
+     * this, wearing three different disguises.
+     *
+     * With reuse off the second run stops immediately with "Port 5199 is already in use", which is
+     * the truth and takes ten seconds to understand instead of an hour.
+     *
+     * If you genuinely want to drive an already-running server, point the suite at it:
+     * `HARNESS_PORT=5299 npx playwright test` starts its own on a free port.
+     */
+    reuseExistingServer: false,
     timeout: 120_000,
     stdout: 'ignore',
     stderr: 'pipe',
