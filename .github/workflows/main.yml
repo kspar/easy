@@ -208,10 +208,20 @@ jobs:
           cache-dependency-path: aae/requirements-dev.txt
       - name: Install
         run: pip install -r requirements-dev.txt
+      # tiivad is the grader that consumes the TSL compiler's output, and
+      # doc/aae/dockerfiles/tiivad is the source of truth for which version an executor runs — so
+      # the version is read from there rather than pinned a second time here. A test asserts the
+      # installed version matches it, which is what makes bumping the Dockerfile enough: get this
+      # wrong and the suite fails rather than silently testing a version nobody grades with.
+      #
+      # tiivad has no dependencies of its own. The numpy in that Dockerfile is for student code.
+      - name: Install tiivad, at the version the executor uses
+        run: pip install "tiivad==$(grep -oE 'tiivad==[0-9.]+' ../doc/aae/dockerfiles/tiivad | head -1 | cut -d= -f3)"
       # Nothing imported server.py in CI before this job existed, so a syntax error or a bad import
-      # in the executor reached a deploy. The suite fakes Docker throughout — it tests the directory
-      # aae lays out and the answers it gives, not Docker — so this job needs no daemon and takes
-      # seconds. Running a generated script against a real tiivad is EZ-1775.
+      # in the executor reached a deploy. Docker is faked throughout — what is tested is the
+      # directory aae lays out and the answers it gives — so this job needs no daemon and takes
+      # seconds, tiivad included. Running a submission inside a real container is the remaining
+      # half of EZ-1775.
       - name: Test
         run: python -m pytest tests -q
 

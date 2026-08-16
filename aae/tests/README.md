@@ -28,6 +28,40 @@ this suite deliberately leaves.
 | `test_grade_submission.py` | the directory handed to Docker, and that the temp dir is removed on the failure path too |
 | `test_grade_endpoint.py` | `POST /v1/grade` validation, and the run-status → student-message mapping |
 | `test_version_and_status.py` | version reporting fallbacks, and the OOM heuristic |
+| `test_tiivad_contract.py` | **the TSL compiler's output, run by the grader that consumes it** |
+
+## The tiivad contract test
+
+The odd one out: it reaches across to `tsl/src/test/resources/golden/*.py.expected` — the compiler's
+real output, regenerated and reviewed as a diff whenever the emitter changes — feeds each script a
+submission, and asks tiivad what it made of it.
+
+That is the only check in the repo that closes the compiler-to-grader seam. Everything else is green
+while the generated script is unusable, which is exactly what EZ-1774 was. Reintroducing that defect
+makes **14 of these 32 fail**; `PythonSyntaxTest` stays green throughout, because the defect is valid
+Python.
+
+**The tiivad version comes from `doc/aae/dockerfiles/tiivad`**, which is what a real executor
+installs. CI parses it and installs that version; `test_the_installed_tiivad_is_the_one_the_executor_uses`
+asserts the two agree, so bumping the Dockerfile is enough and a wrong install fails loudly instead
+of testing a version nobody grades with. Locally:
+
+```sh
+.venv/bin/pip install "tiivad==$(grep -oE 'tiivad==[0-9.]+' ../doc/aae/dockerfiles/tiivad | cut -d= -f3)"
+```
+
+Without tiivad installed those tests **skip with the install command in the reason**, so a partial
+run says so rather than looking clean.
+
+Three submission suffixes, per golden spec: `<name>.pass.py` must score 100, `<name>.fail.py` must
+score below 100, and `<name>.any.py` is contract-only — tiivad must run the script without raising
+and the grade is nobody's business. `escaping.json` is the third case: its expected values are the
+hostile strings themselves, so whether a submission satisfies it is a question about tiivad's
+phrase-extraction regex rather than about this compiler.
+
+What it still does not cover is the **container** — the image's Python 3.10, its numpy pin, its
+filesystem. tiivad is imported into the test process, so a submission that fails only under 3.10
+passes here. That is the remaining half of EZ-1775.
 
 `conftest.py` puts `aae/` on `sys.path`, because `server.py` does `from containers import ...` — an
 implicit-relative import that only resolves when `aae/` is the working directory, which is how
