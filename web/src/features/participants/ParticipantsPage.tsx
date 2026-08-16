@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Typography,
   CircularProgress,
@@ -146,20 +146,25 @@ export default function ParticipantsPage() {
   const [editingMoodleShortName, setEditingMoodleShortName] = useState(false)
   const [moodleShortNameDraft, setMoodleShortNameDraft] = useState('')
 
-  // Poll moodle sync status while in progress
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  /**
+   * Poll the Moodle sync status while either sync is running (EZ-1768).
+   *
+   * This used to keep the interval id in a `useRef` and guard on it, and the cleanup cleared the
+   * interval **without nulling the ref**. So the first time the two flags changed while
+   * `inProgress` stayed true — students finishing while grades was still running, or grades
+   * starting while students ran — the cleanup killed the timer, the guard `!pollRef.current` then
+   * read false, and no replacement was ever started. The page went quiet mid-sync and only a
+   * reload brought it back.
+   *
+   * The ref was the bug. An interval owned by the effect run that created it cannot get out of
+   * step with it, because React tears down and re-runs them together.
+   */
   useEffect(() => {
     const inProgress = moodleProps?.sync_students_in_progress || moodleProps?.sync_grades_in_progress
-    if (inProgress && !pollRef.current) {
-      pollRef.current = setInterval(() => refetchMoodle(), 3000)
-    } else if (!inProgress && pollRef.current) {
-      clearInterval(pollRef.current)
-      pollRef.current = null
-    }
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current)
-    }
-  }, [moodleProps?.sync_students_in_progress, moodleProps?.sync_grades_in_progress])
+    if (!inProgress) return
+    const id = setInterval(() => refetchMoodle(), 3000)
+    return () => clearInterval(id)
+  }, [moodleProps?.sync_students_in_progress, moodleProps?.sync_grades_in_progress, refetchMoodle])
 
   // Snackbar
   const [snackMsg, setSnackMsg] = useState('')

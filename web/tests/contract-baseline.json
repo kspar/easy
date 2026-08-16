@@ -1,7 +1,7 @@
 {
-  "_": "Contract warnings each browser spec is currently allowed. Generated 2026-08-15; see tests/support/contract.mjs.",
-  "_rule": "The number may FALL, never rise. If a run reports fewer, lower the entry in the same commit — that is how ground gained is kept. If it reports more, a fixture has drifted from doc/core/api-shapes.json: fix the fixture rather than raising the number, unless the change is deliberate and the commit says why.",
   "_note": "A warning is an absent field (normal — a script stubs what its page reads) or a field core does not send (usually drift). Values that are actually wrong — null in a non-nullable field, a wrong type, an impossible enum value — fail outright and are never counted here.",
+  "_rule": "The number may FALL, never rise. If a run reports fewer, lower the entry in the same commit — that is how ground gained is kept. If it reports more, a fixture has drifted from doc/core/api-shapes.json: fix the fixture rather than raising the number, unless the change is deliberate and the commit says why.",
+  "_": "Contract warnings each browser spec is currently allowed. Generated 2026-08-15; see tests/support/contract.mjs.",
   "about-operating-info.spec.mjs": 0,
   "about-versions.spec.mjs": 0,
   "account-settings.spec.mjs": 0,
@@ -24,6 +24,7 @@
   "library-share-recent.spec.mjs": 10,
   "markdown-upload.spec.mjs": 0,
   "nav-idp-admin.spec.mjs": 0,
+  "participants-moodle.spec.mjs": 0,
   "runtime-config.spec.mjs": 0,
   "similarity-page.spec.mjs": 17,
   "system-messages.spec.mjs": 2,

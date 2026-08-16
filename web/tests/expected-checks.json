@@ -1,6 +1,6 @@
 {
-  "_": "How many checks each browser spec must report. See tests/support/expected-checks.mjs.",
   "_rule": "The number may RISE, never fall. A spec reporting fewer checks than this fails — that is the guard against an early return, a swallowed locator error, or a deleted assertion, all of which are green without it. Regenerate on a green suite with `npm run test:browser:record`, and say in the commit why a number went down.",
+  "_": "How many checks each browser spec must report. See tests/support/expected-checks.mjs.",
   "about-operating-info.spec.mjs": 15,
   "about-versions.spec.mjs": 15,
   "account-settings.spec.mjs": 14,
@@ -23,6 +23,7 @@
   "library-share-recent.spec.mjs": 12,
   "markdown-upload.spec.mjs": 15,
   "nav-idp-admin.spec.mjs": 8,
+  "participants-moodle.spec.mjs": 14,
   "runtime-config.spec.mjs": 9,
   "similarity-page.spec.mjs": 15,
   "system-messages.spec.mjs": 15,
