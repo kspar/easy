@@ -6,8 +6,8 @@
 // spec.mjs as Playwright fixtures, because they need the test's identity and its outcome.
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { mkdirSync } from 'node:fs'
 import { checkResponse } from './contract.mjs'
+import { neverIndex } from './never-index.mjs'
 
 /**
  * Where the specs navigate. Derived the same way playwright.config.ts derives the stub server's
@@ -49,7 +49,9 @@ export function makeLaunch(browser, testInfo, register) {
     reducedMotion,
     shotPrefix = '',
   } = {}) {
-    mkdirSync(SHOTS_DIR, { recursive: true })
+    // Creates the directory, and keeps Spotlight out of it — see never-index.mjs for the
+    // measurement that made that worth doing.
+    neverIndex(SHOTS_DIR)
 
     const ctx = await browser.newContext({
       viewport,

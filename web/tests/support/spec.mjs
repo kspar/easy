@@ -28,12 +28,13 @@
  * assertion in teardown is easy to lose and these are the ones that must not be losable.
  */
 import { test as base, expect } from '@playwright/test'
-import { appendFileSync, mkdirSync, rmSync } from 'node:fs'
+import { appendFileSync, rmSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { makeLaunch, takeContractIssues } from './harness.mjs'
 import { loadQuarantine } from './quarantine.mjs'
 import { expectedChecks } from './expected-checks.mjs'
+import { neverIndex } from './never-index.mjs'
 import { contractBudget } from './contract-budget.mjs'
 
 export { expect }
@@ -234,4 +235,6 @@ function skipped(testInfo) {
   return testInfo.status === 'skipped' || testInfo.expectedStatus === 'skipped'
 }
 
-mkdirSync(dirname(COUNTS_PATH), { recursive: true })
+// Per worker, and after Playwright has cleaned the output directory — which is why this is here
+// rather than in globalSetup, where the marker would be deleted again before the first spec ran.
+neverIndex(dirname(COUNTS_PATH))
