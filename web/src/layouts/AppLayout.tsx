@@ -859,7 +859,14 @@ export default function AppLayout() {
             minHeight: 0,
           }}
         >
-          <Container maxWidth="lg" sx={{ py: 3 }}>
+          {/*
+          `component="main"` — the landmark every page needs and none had.
+
+          Without it there is nothing for a screen reader to skip to, so reaching the content means
+          tabbing past the whole sidebar on every single navigation. One here covers every route,
+          because every route renders through this Outlet.
+          */}
+          <Container component="main" maxWidth="lg" sx={{ py: 3 }}>
             <Outlet />
           </Container>
         </Box>

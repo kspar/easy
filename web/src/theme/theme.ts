@@ -106,6 +106,34 @@ export function createAppTheme(mode: PaletteMode) {
             scrollbarWidth: 'thin',
             scrollbarColor: 'rgba(128, 128, 128, 0.25) transparent',
           },
+
+          /**
+           * A focus ring on everything reached by keyboard.
+           *
+           * MUI's defaults leave several components with **no visual change at all** when tabbed
+           * to — measured on `IconButton`, `TableSortLabel` and outlined `Chip`, whose computed
+           * background, outline and box-shadow are byte-identical focused and unfocused. Their
+           * feedback is the ripple, which is a click effect: it plays once and fades, so a keyboard
+           * user who tabs and then pauses has nothing on screen telling them where they are.
+           *
+           * `:focus-visible` rather than `:focus`, so a mouse click does not leave a ring behind —
+           * that is the reason the browser distinguishes them, and why this is not the eyesore the
+           * old `outline: none` habit was reacting to.
+           *
+           * `currentColor` so it works on both palettes without a second rule, and an offset so it
+           * sits outside the control rather than on its edge.
+           *
+           * **The selector is doubled on purpose.** `:focus-visible` alone is specificity (0,1,0),
+           * exactly the same as MUI's own `.MuiButtonBase-root { outline: 0 }` — and CssBaseline is
+           * injected before component styles, so on a tie MUI wins and this rule computes to
+           * `outline: none`. Measured: the element matched `:focus-visible`, the rule was in the
+           * stylesheet, and the computed outline was still `none`. Repeating the pseudo-class takes
+           * it to (0,2,0), which beats a single class without reaching for `!important`.
+           */
+          ':focus-visible:focus-visible': {
+            outline: '2px solid currentColor',
+            outlineOffset: 2,
+          },
         },
       },
       MuiButton: {

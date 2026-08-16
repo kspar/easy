@@ -123,10 +123,199 @@ export async function scan(page, { include } = {}) {
     })),
   )
 
+  // Our own rules, folded in as findings so they flow through the same fingerprints, the same
+  // baseline and the same gate. axe has nothing to say about any of the three.
+  flat.push(...(await checkMainLandmark(page)))
+  flat.push(...(await checkDuplicateLinkNames(page)))
+  flat.push(...(await checkFocusVisible(page)))
+
   return {
     gate: flat.filter((f) => !(f.rule in NOT_IN_GATE)),
     contrast: flat.filter((f) => f.rule in NOT_IN_GATE),
   }
+}
+
+/**
+ * Every page needs one `<main>`.
+ *
+ * Without it there is nothing to skip to — a screen-reader user tabs through the whole sidebar on
+ * every navigation — and the two checks below have no region to scope themselves to, which is why
+ * this one runs first. axe's own `region` rule is about content *outside* landmarks and does not
+ * ask whether `main` exists at all.
+ *
+ * Recorded as a defect in `doc/testing-log.md` (#17) before there was anything to catch it.
+ */
+export async function checkMainLandmark(page) {
+  const count = await page.locator('main, [role=main]').count()
+  if (count === 1) return []
+
+  return [{
+    rule: count === 0 ? 'main-landmark-missing' : 'main-landmark-duplicated',
+    impact: 'serious',
+    help: count === 0
+      ? 'The page has no <main> landmark, so there is nothing to skip to'
+      : `The page has ${count} <main> landmarks; exactly one is meaningful`,
+    selector: 'body',
+    summary: `found ${count}`,
+  }]
+}
+
+/**
+ * Two links inside `<main>` with the same words and different destinations.
+ *
+ * WCAG 2.4.4: a link's purpose has to be clear from its text. A screen-reader user listing the
+ * links on a page hears the names without the surrounding table row or card, so two "Open"s going
+ * to different places are indistinguishable — and the fix is usually a `aria-label` naming the
+ * thing, not a redesign.
+ *
+ * Deliberately narrow, because the obvious version of this rule is unusable. "No duplicate
+ * accessible names" fires on every table where each row has an Edit button, which is a legitimate
+ * pattern that context resolves; requiring *different destinations* is what makes a finding
+ * actionable rather than noise. The converse — different words, same href — is fine and not
+ * reported.
+ */
+export async function checkDuplicateLinkNames(page) {
+  const dupes = await page.evaluate(() => {
+    const main = document.querySelector('main, [role=main]')
+    if (!main) return []
+
+    const name = (el) =>
+      (el.getAttribute('aria-label') || el.textContent || '').replace(/\s+/g, ' ').trim()
+
+    const byName = new Map()
+    for (const a of main.querySelectorAll('a[href]')) {
+      const n = name(a)
+      if (!n) continue
+      const href = a.getAttribute('href')
+      const seen = byName.get(n) ?? new Set()
+      seen.add(href)
+      byName.set(n, seen)
+    }
+    return [...byName]
+      .filter(([, hrefs]) => hrefs.size > 1)
+      .map(([n, hrefs]) => ({ name: n, hrefs: [...hrefs].slice(0, 3) }))
+  })
+
+  return dupes.map((d) => ({
+    rule: 'duplicate-link-name',
+    impact: 'moderate',
+    help: `${d.hrefs.length} links inside <main> are called "${d.name}" but go to different places`,
+    // The name, not a selector: it is what identifies the finding and what a fix changes.
+    selector: `a[name="${d.name}"]`,
+    summary: d.hrefs.join(' , '),
+  }))
+}
+
+/**
+ * Everything reachable by Tab has to be **visibly** focused when it gets there.
+ *
+ * A focus ring removed for looks is the single change that makes an application unusable by keyboard
+ * while looking perfect to everyone else, and no automated rule catches it: axe checks that things
+ * *can* be focused, never that you can see where you are.
+ *
+ * Driven with real `Tab` presses rather than `element.focus()`, and that is not a detail. MUI styles
+ * its rings with `:focus-visible`, which the browser only applies to focus it considers
+ * keyboard-driven — a programmatic `.focus()` leaves the pseudo-class off and every element would
+ * report as unstyled. The first version of this did exactly that and produced 40 false findings.
+ */
+export async function checkFocusVisible(page, { maxStops = 40 } = {}) {
+  const seen = new Set()
+
+  // Pass 1: tab through, tagging each stop and recording how it looks *while focused*.
+  //
+  // Comparing focused against unfocused, rather than looking for an outline, is the correction that
+  // makes this usable. The first version required `outline` or `box-shadow` and reported seven
+  // violations — every one a false positive, all of them carrying `Mui-focusVisible`, because MUI
+  // indicates focus on these components with a background change. A rule that prescribes *how*
+  // focus is shown fails on any design that shows it differently, which is most of them. What
+  // matters is that something changes, so that is what is measured.
+  // Freeze transitions for the duration of the check.
+  //
+  // MUI animates `background-color` on focus, so `getComputedStyle` immediately after a Tab — or
+  // immediately after a blur — returns a value part-way through the transition. Both readings are
+  // then arbitrary points on a curve rather than the styles a user ends up looking at, and they can
+  // compare equal by coincidence. Removing the transition changes only how fast the element gets to
+  // its final appearance, which is not what this measures.
+  const FREEZE_ID = 'a11y-freeze-transitions'
+  await page.evaluate((id) => {
+    const style = document.createElement('style')
+    style.id = id
+    style.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; }'
+    document.head.appendChild(style)
+    if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur()
+  }, FREEZE_ID)
+
+  const stops = []
+  for (let i = 0; i < maxStops; i++) {
+    await page.keyboard.press('Tab')
+
+    const stop = await page.evaluate((index) => {
+      const el = document.activeElement
+      if (!el || el === document.body || el === document.documentElement) return null
+
+      const key = `${el.tagName}#${el.id}#${el.className}#${(el.textContent || '').slice(0, 30)}`
+      const s = getComputedStyle(el)
+      el.setAttribute('data-a11y-stop', String(index))
+
+      return {
+        key,
+        focused: [s.outlineStyle, s.outlineWidth, s.outlineColor, s.boxShadow,
+                  s.backgroundColor, s.borderColor, s.color, s.textDecorationLine].join('|'),
+        name: (el.getAttribute('aria-label') || el.textContent || '')
+          .replace(/\s+/g, ' ').trim().slice(0, 40),
+        path: `${el.tagName.toLowerCase()}${
+          typeof el.className === 'string' && el.className.trim()
+            ? '.' + el.className.trim().split(/\s+/).join('.')
+            : ''
+        }`,
+      }
+    }, i)
+
+    // Focus left the document — the browser chrome has it, so the tab order is exhausted.
+    if (!stop) break
+    if (seen.has(stop.key)) break // wrapped round to something already visited
+    seen.add(stop.key)
+    stops.push({ index: i, ...stop })
+  }
+
+  // Pass 2: take focus away and read the same elements again. Anything whose appearance is
+  // byte-identical focused and unfocused is invisible to a keyboard user.
+  const unstyled = await page.evaluate((indices) => {
+    // `document.activeElement.blur()`, not `document.body.focus()`. Measured: focusing the body
+    // leaves `activeElement` on the button and its background still the focused colour, so pass 2
+    // re-reads the *focused* styles, every element compares equal, and the check reports the entire
+    // tab order as unstyled. It did — fourteen findings, all false, until this was probed.
+    if (document.activeElement && document.activeElement !== document.body) {
+      document.activeElement.blur()
+    }
+    const out = []
+    for (const i of indices) {
+      const el = document.querySelector(`[data-a11y-stop="${i}"]`)
+      if (!el) continue
+      const s = getComputedStyle(el)
+      out.push({
+        index: i,
+        unfocused: [s.outlineStyle, s.outlineWidth, s.outlineColor, s.boxShadow,
+                    s.backgroundColor, s.borderColor, s.color, s.textDecorationLine].join('|'),
+      })
+    }
+    document.querySelectorAll('[data-a11y-stop]').forEach((el) => el.removeAttribute('data-a11y-stop'))
+    return out
+  }, stops.map((s) => s.index))
+
+  await page.evaluate((id) => document.getElementById(id)?.remove(), FREEZE_ID)
+
+  const unfocusedByIndex = new Map(unstyled.map((u) => [u.index, u.unfocused]))
+
+  return stops
+    .filter((s) => unfocusedByIndex.get(s.index) === s.focused)
+    .map((s) => ({
+      rule: 'focus-not-visible',
+      impact: 'serious',
+      help: `Nothing changes visually when this is tabbed to: "${s.name || '(no name)'}"`,
+      selector: s.path,
+      summary: 'identical computed appearance focused and unfocused',
+    }))
 }
 
 /**
