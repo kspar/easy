@@ -13,7 +13,7 @@
   "course-exercises.spec.mjs": 110,
   "embed-exercise.spec.mjs": 38,
   "environment-badge.spec.mjs": 24,
-  "grade-table.spec.mjs": 6,
+  "grade-table.spec.mjs": 29,
   "landing-page.spec.mjs": 16,
   "library-exercise-markdown.spec.mjs": 39,
   "library-exercise-tsl-static.spec.mjs": 57,

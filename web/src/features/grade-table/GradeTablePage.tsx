@@ -31,29 +31,14 @@ import { useTranslation } from 'react-i18next'
 import { useTeacherCourseExercises, useCourseGroups } from '../../api/exercises.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import useSavedGroup from '../../hooks/useSavedGroup.ts'
-import type {
-  TeacherCourseExercise,
-  SubmissionRow,
-  StudentExerciseStatus,
-} from '../../api/types.ts'
-
-type SortDir = 'asc' | 'desc'
-
-interface GradeCell {
-  grade: number | null
-  submissionNumber: number | null
-  status: StudentExerciseStatus
-  isAutograde: boolean | null
-  courseExerciseId: string
-}
-
-interface StudentRow {
-  id: string
-  givenName: string
-  familyName: string
-  finishedCount: number
-  grades: GradeCell[]
-}
+import type { StudentExerciseStatus, TeacherCourseExercise } from '../../api/types.ts'
+import {
+  buildRows,
+  compareStudents,
+  csvFilename,
+  toCsv,
+  type SortDir,
+} from './gradeTable.ts'
 
 function statusColor(status: StudentExerciseStatus): string | undefined {
   switch (status) {
@@ -144,84 +129,12 @@ export default function GradeTablePage() {
   } = useTeacherCourseExercises(courseId!, filterGroup || undefined)
 
   const { students, sortedExercises, exerciseFinishedCounts } = useMemo(() => {
-    if (!exercises) return { students: [], sortedExercises: [], exerciseFinishedCounts: [] }
-
-    const sorted = [...exercises].sort(
-      (a, b) => a.ordering_idx - b.ordering_idx,
-    )
-
-    const firstEx = sorted[0]
-    if (!firstEx) return { students: [], sortedExercises: sorted, exerciseFinishedCounts: [] }
-
-    const studentRows: StudentRow[] = firstEx.latest_submissions.map(
-      (sub: SubmissionRow) => {
-        const grades: GradeCell[] = sorted.map((ex) => {
-          const row = ex.latest_submissions.find(
-            (s) => s.student_id === sub.student_id,
-          )!
-          return {
-            grade: row.submission?.grade?.grade ?? null,
-            submissionNumber: row.submission?.submission_number ?? null,
-            status: row.status,
-            isAutograde: row.submission?.grade?.is_autograde ?? null,
-            courseExerciseId: ex.course_exercise_id,
-          }
-        })
-        return {
-          id: sub.student_id,
-          givenName: sub.given_name,
-          familyName: sub.family_name,
-          finishedCount: grades.filter((g) => g.status === 'COMPLETED').length,
-          grades,
-        }
-      },
-    )
-
-    // Sort students
-    const dir = sortDir === 'asc' ? 1 : -1
-    const nameFallback = (a: StudentRow, b: StudentRow): number => {
-      const lastCmp = a.familyName.localeCompare(b.familyName)
-      if (lastCmp !== 0) return lastCmp
-      return a.givenName.localeCompare(b.givenName)
-    }
-
-    const compare = (a: StudentRow, b: StudentRow): number => {
-      if (sortKey === 'name') {
-        return nameFallback(a, b) * dir
-      }
-
-      if (sortKey === 'completion') {
-        const diff = a.finishedCount - b.finishedCount
-        if (diff !== 0) return diff * dir
-        return nameFallback(a, b)
-      }
-
-      // Sort by specific exercise grade
-      const exIdx = sorted.findIndex((ex) => ex.course_exercise_id === sortKey)
-      if (exIdx >= 0) {
-        const gradeA = a.grades[exIdx]?.grade
-        const gradeB = b.grades[exIdx]?.grade
-        if (gradeA === null && gradeB === null) return nameFallback(a, b)
-        // nulls first when asc, nulls last (below 0) when desc
-        if (gradeA === null) return -1 * dir
-        if (gradeB === null) return 1 * dir
-        const diff = gradeA - gradeB
-        if (diff !== 0) return diff * dir
-        return nameFallback(a, b)
-      }
-
-      return 0
-    }
-    studentRows.sort(compare)
-
-    const finishedCounts = sorted.map((ex) =>
-      ex.latest_submissions.filter((s) => s.status === 'COMPLETED').length,
-    )
-
+    const model = buildRows(exercises)
     return {
-      students: studentRows,
-      sortedExercises: sorted,
-      exerciseFinishedCounts: finishedCounts,
+      ...model,
+      students: [...model.students].sort(
+        compareStudents(sortKey, sortDir, model.sortedExercises),
+      ),
     }
   }, [exercises, sortKey, sortDir])
 
@@ -229,35 +142,16 @@ export default function GradeTablePage() {
   const handleExport = useCallback(() => {
     if (!sortedExercises.length || !students.length) return
 
-    const sep = ';'
-    const headers = [
-      t('general.name'),
-      ...sortedExercises.flatMap((ex) => {
-        const cols = [ex.effective_title]
-        if (showSubCount) cols.push(`${t('grades.showSubmissionCount')} - ${ex.effective_title}`)
-        return cols
-      }),
-    ]
-
-    const rows = students.map((student) => {
-      const cells = [
-        `${student.givenName} ${student.familyName}`,
-        ...student.grades.flatMap((g) => {
-          const cols = [g.grade !== null ? String(g.grade) : '']
-          if (showSubCount) cols.push(g.submissionNumber !== null ? String(g.submissionNumber) : '')
-          return cols
-        }),
-      ]
-      return cells.map((c) => `"${c.replace(/"/g, '""')}"`).join(sep)
+    const csv = toCsv(students, sortedExercises, showSubCount, {
+      name: t('general.name'),
+      submissionCount: t('grades.showSubmissionCount'),
     })
-
-    const csv = headers.map((h) => `"${h.replace(/"/g, '""')}"`).join(sep) + '\n' + rows.join('\n')
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `grades-${courseId}-${Date.now()}.csv`
+    a.download = csvFilename(courseId, Date.now())
     a.click()
     URL.revokeObjectURL(url)
   }, [sortedExercises, students, showSubCount, courseId, t])

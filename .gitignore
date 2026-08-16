@@ -56,3 +56,9 @@ doc/dev-hardening.md
 # group_vars stay in the repo — they are the reusable half, and the reason prod's eventual rebuild is
 # a known quantity.
 ansible/inventories/*/hosts.yml
+
+# Playwright output, if a run is ever started from the repo root rather than web/. web/.gitignore
+# covers the normal case; this catches the stray one, which is otherwise a committed artifact
+# nobody notices.
+test-results/
+playwright-report/
