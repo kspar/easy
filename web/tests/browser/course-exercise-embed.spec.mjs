@@ -68,7 +68,9 @@ test('course-exercise-embed', async ({ launch, check }) => {
 
   await fakeApi(page, [
     ['/account/checkin', () => ({})],
-    [`/teacher/courses/${COURSE}/exercises/${CE}`, () => courseExercise],
+    // Anchored: unanchored it also answers `.../submissions/latest/students` with a single
+    // exercise, which core never does. Flagged by fakeApi's [broad stub] warning.
+    [new RegExp(`/teacher/courses/${COURSE}/exercises/${CE}(\\?|$)`), () => courseExercise],
     // Before the plain `/exercises/${EX}` handler below, which would otherwise match this URL as a
     // substring and hand the embed page a library exercise. It has a title and text, so the preview
     // still looked plausible — it just quietly lost `submit_allowed` and never showed the editor.
@@ -82,7 +84,15 @@ test('course-exercise-embed', async ({ launch, check }) => {
     [`/lib/dirs/${libraryExercise.dir_id}/parents`, () => ({ parents: [] })],
     ['/participants', () => ({ students: [], teachers: [], students_pending: [], students_moodle_pending: [] })],
     ['/groups', () => ({ groups: [] })],
-    ['/submissions', () => ({ submissions: [], count: 0 })],
+    // `/submissions/latest/students` first, because it is the one endpoint under `/submissions/`
+    // that answers with something else entirely: core sends the whole ExercisesResp, and the hook
+    // reads `.latest_submissions` off it. Falling through to the family stub below yields
+    // `undefined` and react-query logs "Query data cannot be undefined" on every run.
+    //
+    // Anchoring the course-exercise handler silenced fakeApi's [broad stub] warning without fixing
+    // what the warning pointed at — the request simply moved one handler down. Caught in review.
+    [/\/submissions\/latest\/students(\?|$)/, () => ({ latest_submissions: [] })],
+    ['/submissions/', () => ({ submissions: [], count: 0 })],
     // These two map a field off the response, so the catch-all's `{}` yields undefined and
     // react-query complains. Not what this script tests, but an unexplained console error is a
     // place real ones go to hide.

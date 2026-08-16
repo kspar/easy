@@ -100,7 +100,15 @@ test('course-exercise-assessment', async ({ launch, check }) => {
     // `latest_submissions`, because the hook maps that field off the response — returning the wrong
     // shape here yields undefined and a react-query console error, which is where a real one hides.
     [`/teacher/courses/${COURSE}/exercises/${CE}/submissions/latest/students`, () => ({ latest_submissions: [] })],
-    ['/submissions', () => ({ submissions: [], count: 0 })],
+    // `/submissions/latest/students` first, because it is the one endpoint under `/submissions/`
+    // that answers with something else entirely: core sends the whole ExercisesResp, and the hook
+    // reads `.latest_submissions` off it. Falling through to the family stub below yields
+    // `undefined` and react-query logs "Query data cannot be undefined" on every run.
+    //
+    // Anchoring the course-exercise handler silenced fakeApi's [broad stub] warning without fixing
+    // what the warning pointed at — the request simply moved one handler down. Caught in review.
+    [/\/submissions\/latest\/students(\?|$)/, () => ({ latest_submissions: [] })],
+    ['/submissions/', () => ({ submissions: [], count: 0 })],
     ['/latest', () => ({ submissions: [], count: 0 })],
     [`/student/courses/${COURSE}/exercises`, () => ({ exercises: [] })],
     // Must precede the bare `/teacher/courses`, which matches this URL as a substring.

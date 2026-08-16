@@ -13,6 +13,9 @@ and every count in here turned out to be wrong.
 
 - **EZ-1766 (A test suite good enough that a green build is a deploy decision)** — the umbrella,
   with the phase ordering and the decisions taken.
+- **`doc/testing-log.md`** — the running record of what the programme has *found*: every defect,
+  including the ones it introduced itself, and the lessons that cost time to learn. This document
+  says what is covered; that one says what was wrong.
 - **EZ-1705 (Set up automated tests for React web)** — the web side. Its comment history is the
   best record of how the harness got here and what each round of it caught.
 - **EZ-1366 (R&D unit tests)** — the core side, open since 2021.
@@ -34,22 +37,24 @@ stale is exactly what happened to the first version of this table.
 | | Size | Tests |
 | --- | --- | --- |
 | **core** | 117 `@RestController` classes (124 endpoints) | 26 test files, **93 `@Test` methods, all running** |
-| **web** | 119 `.ts`/`.tsx` files, 29,292 LOC | 5 unit files, 28 browser specs (27 in CI) |
+| **web** | 120 `.ts`/`.tsx` files | 9 unit files, 33 browser specs (32 in CI) |
 | **tsl / tsl-common** | the TSL compiler | none |
 | **aae** | the executor | none |
 
 ```sh
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 117
 find core/src/test/kotlin -name '*.kt' | wc -l                   # 26
-find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 119
-ls web/tests/browser/*.spec.mjs | wc -l                          # 28
+find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 120
+ls web/tests/browser/*.spec.mjs | wc -l                          # 33
+ls web/tests/unit/*.test.mjs | wc -l                             # 9
 ```
 
 The web numbers look better than they are, because the check counts are lopsided:
 
 ```
-unit      44 examples + 11,903 property checks + 532 merge checks
-browser   618 checks across the 27 specs CI runs (a 28th needs a real core)
+unit      44 examples + 11,903 property checks + 532 merge checks, plus the grade table,
+          the api client, i18n parity and the suite's own bookkeeping
+browser   722 checks across the 32 specs CI runs (a 33rd needs a real core)
 ```
 
 The browser number is now **measured rather than estimated** — it is the sum of
@@ -108,27 +113,33 @@ previous version were wrong and nine pages were missing.
 
 | Page | Lines | Coverage |
 | --- | --- | --- |
-| `ParticipantsPage` | 1823 | **none** |
+| `ParticipantsPage` | 1823 | 25 — Moodle sync and the roster. **Groups still uncovered** |
 | `LandingPage` | 1225 | 16 |
 | `CourseExercisesPage` | 1155 | 110 — the best-covered page in the app |
-| `CourseExercisePage` | 968 | 51 across four specs — but **none of it the grading flow** |
+| `CourseExercisePage` | 968 | 70 across five specs, now **including the grading flow** |
 | `ExerciseLibraryPage` | 798 | 11 — listing, sort, filter, create |
-| `GradeTablePage` | 549 | 6 — deep links only |
+| `GradeTablePage` | 549 | 29 — links, three sort orders, both filters, the CSV |
 | `ExercisePage` (library) | 481 | 171 across five specs |
-| `EmbedExercisePage` | 395 | 34 |
-| `CoursesPage` | 366 | **none direct** — five specs visit `/courses` but assert on global chrome |
-| `SystemMessagesPage` | 350 | 17 |
+| `EmbedExercisePage` | 395 | 38 |
+| `CoursesPage` | 366 | **none direct** — six specs visit `/courses` but assert on global chrome |
+| `SystemMessagesPage` | 350 | 32 across the user and admin views |
 | `SimilarityPage` | 320 | 15 |
 | `AboutPage` | 313 | 30 |
 | `AccountSettingsPage` | 290 | 14 |
-| `ArticlePage` | 289 | ~34 |
+| `ArticlePage` | 289 | ~19 |
 | `ArticlesPage` | 130 | in `articles.spec.mjs` |
-| `JoinByLinkPage` | 92 | **none** |
+| `JoinByLinkPage` | 92 | 16 — both routes, the upper-casing, the join guard |
 | `NotFoundPage` | 19 | none |
+| `RequireAuth` (not a page) | 58 | 21 — every restricted route × role, and what leaks |
 
-**Zero-coverage routes** — stated as routes rather than files, because that is what a reader can
-check against `routes/routes.tsx`: `courses/:courseId/participants`, `link/:inviteId`,
-`moodle/link/:inviteId`, `courses`, `*`.
+**Counts come from `web/tests/expected-checks.json`**, which the runner writes, rather than from
+reading specs. `node -e "const j=require('./web/tests/expected-checks.json'); …"` sums it. A page
+covered by several specs is the sum of those specs, so the rows do not partition the total —
+`course-exercises` and the four `course-exercise-*` specs cover different pages despite the names.
+
+**Zero-coverage routes**, stated as routes rather than files because that is what a reader can
+check against `routes/routes.tsx`: `courses` and `*`. Down from five — `participants`,
+`link/:inviteId` and `moodle/link/:inviteId` were covered in phase 6.
 
 Priority, by consequence rather than by size:
 

@@ -125,9 +125,31 @@ test('library-exercise-tsl', async ({ launch, check }) => {
 
   // Asserted on the compiler payload rather than the editor's text: CodeMirror only renders the
   // lines in view, so innerText silently omits the tail of a long spec.
-  await waitUntil(() => compiled.length > 0)
-  const lastCompiled = compiled[compiled.length - 1]
-  check('compiler was sent the edited spec', JSON.stringify(lastCompiled).includes('"5"'))
+  /**
+   * Wait for a compile that **contains the edit**, not merely for a compile to exist.
+   *
+   * `compiled.length > 0` is satisfied instantly by a compile that was already in flight when the
+   * edit was made — the model→text→compile hop is debounced — and the assertion then reads the
+   * spec from *before* the edit and fails. Measured at roughly 1 run in 3 on an idle machine, and
+   * `retries: 0` means each of those is a red gate.
+   *
+   * `library-exercise-tsl-static.spec.mjs` hit exactly this and documented it in its `afterEdit`
+   * helper: "a compile already in flight when the action starts will satisfy a count check and
+   * hand back the state from before the edit". The lesson was written down next door and this
+   * spec still had the bug.
+   */
+  const sawCompiledEdit = await waitUntil(
+    () => compiled.length > 0 && JSON.stringify(compiled.at(-1)).includes('"5"'),
+    { timeout: 15_000 },
+  )
+  check(
+    'compiler was sent the edited spec',
+    sawCompiledEdit,
+    `${compiled.length} compile(s), last: ${JSON.stringify(compiled.at(-1) ?? null).slice(0, 120)}`,
+  )
+  // The payload the rest of this spec reasons about. Read after the wait above, so it is the
+  // compile that contains the edit rather than whatever happened to be latest a moment earlier.
+  const lastCompiled = compiled.at(-1)
   const roundTripped = lastCompiled.tests[0]
   check(
     'fields the UI never shows survive the round trip',

@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth.ts'
 import { useStudentCourses, useTeacherCourses, useCreateCourse } from '../../api/courses.ts'
+import { spaLinkProps } from '../../components/spaLink.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import { COLOR_PALETTE, randomColor } from './course-colors.ts'
 
@@ -156,7 +157,8 @@ function StudentCourses() {
           return (
             <Card
               key={course.id}
-              onClick={() => navigate(`/courses/${course.id}/exercises`)}
+              component="a"
+              {...spaLinkProps(`/courses/${course.id}/exercises`, navigate)}
               sx={{
                 ...cardSx,
                 ...(color && { boxShadow: `inset 4px 0 0 0 ${color}` }),
@@ -313,7 +315,8 @@ function TeacherCourses() {
           return (
             <Card
               key={course.id}
-              onClick={() => navigate(`/courses/${course.id}/exercises`)}
+              component="a"
+              {...spaLinkProps(`/courses/${course.id}/exercises`, navigate)}
               sx={{
                 ...cardSx,
                 ...(color && { boxShadow: `inset 4px 0 0 0 ${color}` }),

@@ -11,7 +11,9 @@ test('landing-page', async ({ launch, check }) => {
   await fakeApi(
     page,
     [
-      ['/statistics', () => ({ total_submissions: 123456, total_users: 7890, in_auto_assessing: 3 })],
+      // The endpoint is `/statistics/common`; naming it `/statistics` answered a URL one segment
+      // deeper than the needle described.
+      ['/statistics/common', () => ({ total_submissions: 123456, total_users: 7890, in_auto_assessing: 3 })],
       ['/account/checkin', () => ({})],
       ['/courses', () => ({ courses: [] })],
     ],

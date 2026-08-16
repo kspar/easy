@@ -96,7 +96,9 @@ export default defineConfig({
     // equivalent lives in tests/support/spec.mjs, keyed off PW_TRACE.
   },
 
-  webServer: {
+  // Skipped entirely when HARNESS_URL names an external server: starting our own and then talking
+  // to somebody else's is the confusion this whole section exists to remove.
+  webServer: process.env.HARNESS_URL ? undefined : {
     // The keycloak-js alias in vite.stub.config.ts is the only genuinely hard part of driving this
     // app with no IdP, and it is why this is a separate vite config rather than a flag.
     command: `npx vite --config vite.stub.config.ts --port ${PORT} --strictPort`,
@@ -114,8 +116,13 @@ export default defineConfig({
      * With reuse off the second run stops immediately with "Port 5199 is already in use", which is
      * the truth and takes ten seconds to understand instead of an hour.
      *
-     * If you genuinely want to drive an already-running server, point the suite at it:
-     * `HARNESS_PORT=5299 npx playwright test` starts its own on a free port.
+     * Two escape hatches, and they do different things — the first version of this comment
+     * conflated them and promised something that did not work:
+     *
+     *   HARNESS_PORT=5299 npx playwright test   starts its *own* server on a free port, which is
+     *                                           what you want to run two suites at once
+     *   HARNESS_URL=http://… npx playwright test  drives a server you started yourself; the
+     *                                           webServer block is skipped entirely (below)
      */
     reuseExistingServer: false,
     timeout: 120_000,

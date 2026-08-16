@@ -111,7 +111,8 @@ test('course-exercise-retry-autoassess', async ({ launch, check }) => {
     [`/submissions/${SUB}`, () => submissionDetail()],
 
     // After everything under it, before the bare `/teacher/courses` at the bottom.
-    [`/teacher/courses/${COURSE}/exercises/${CE}`, () => exercise(graderType)],
+    // Anchored for the same reason as its sibling specs — see fakeApi's [broad stub] warning.
+    [new RegExp(`/teacher/courses/${COURSE}/exercises/${CE}(\\?|$)`), () => exercise(graderType)],
     [`/student/courses/${COURSE}/exercises`, () => ({ exercises: [] })],
     ['/groups', () => ({ groups: [] })],
     ['/participants', () => ({ students: [], teachers: [], students_pending: [], students_moodle_pending: [] })],

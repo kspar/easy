@@ -29,6 +29,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useTeacherCourseExercises, useCourseGroups } from '../../api/exercises.ts'
+import { spaLinkProps } from '../../components/spaLink.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import useSavedGroup from '../../hooks/useSavedGroup.ts'
 import type { StudentExerciseStatus, TeacherCourseExercise } from '../../api/types.ts'
@@ -51,18 +52,6 @@ function statusColor(status: StudentExerciseStatus): string | undefined {
     default:
       return undefined
   }
-}
-
-/** Navigate via react-router on normal click, but allow ctrl/cmd+click to open in new tab */
-function spaLinkProps(href: string, navigate: (to: string) => void) {
-  return {
-    href,
-    onClick: (e: MouseEvent) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
-      e.preventDefault()
-      navigate(href)
-    },
-  } as const
 }
 
 function defaultSortDir(key: string): SortDir {

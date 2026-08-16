@@ -101,9 +101,68 @@ export const json = (route, body, status = 200) =>
   })
 
 /**
+ * String needles that have already been reported as over-broad, so one mis-stubbed handler does not
+ * print once per request for the rest of the run.
+ */
+const reportedBroadStubs = new Set()
+
+/**
+ * Warn when a string needle matched a URL with *more path after it*.
+ *
+ * This is the single most repeated fixture mistake in this suite. `'/teacher/courses'` looks like
+ * an endpoint and is also a prefix of every teacher URL on a course, so it quietly answers the
+ * single-exercise request with a course list. The page usually does not care — it reads one field,
+ * which happens to be absent — so nothing fails, and the only trace is a contract warning naming
+ * an endpoint you were not thinking about. It cost about fifteen minutes each of the three times
+ * it happened on 2026-08-16.
+ *
+ * **A trailing slash means you meant it.** `'/submissions/all/students/'` is a deliberate
+ * family-of-URLs stub and is silent; `'/submissions/all/students'` is probably a mistake and says
+ * so. That gives the two intentions different spellings rather than making the useful one
+ * impossible.
+ *
+ * Printed even when `log: false`, unlike `[unstubbed]`. That flag exists to silence routine
+ * chatter about endpoints a spec deliberately does not stub; this is not routine, and suppressing
+ * it would leave the one line worth reading invisible in the specs most likely to need it.
+ */
+export function isOverbroad(needle, path) {
+  // A trailing slash is the caller saying "yes, the whole family".
+  if (needle.endsWith('/')) return false
+  const at = path.indexOf(needle)
+  // Not in the path at all — it matched the query string, which is the caller's business.
+  if (at < 0) return false
+  const rest = path.slice(at + needle.length)
+  // Ends here, or mid-segment: either way nothing was swallowed.
+  return rest.startsWith('/')
+}
+
+function warnIfOverbroad(needle, url) {
+  let path
+  try {
+    path = new URL(url).pathname
+  } catch {
+    return
+  }
+  if (!isOverbroad(needle, path)) return
+
+  const key = `${needle}::${path}`
+  if (reportedBroadStubs.has(key)) return
+  reportedBroadStubs.add(key)
+  console.log(
+    `  [broad stub] '${needle}' also matched ${path} — it is answering a deeper endpoint than it ` +
+      `names. Anchor it (a regex ending in \`(\\?|$)\`), or end the needle with '/' if matching the ` +
+      `whole family is deliberate.`,
+  )
+}
+
+/**
  * Install a fake backend. `handlers` is an array of [urlSubstring, handler]
  * pairs; handler receives ({ route, url, method, body }) and returns the body to
  * send, or calls route.fulfill itself and returns undefined.
+ *
+ * Handlers are tried in order, so put the most specific first — and prefer an anchored regex over
+ * a bare substring for anything that is a prefix of another endpoint. [warnIfOverbroad] prints a
+ * line when a needle turns out to be one.
  *
  * Everything unmatched is fulfilled with {} — an unstubbed request otherwise
  * leaves the page loading forever with no error.
@@ -127,6 +186,7 @@ export async function fakeApi(page, handlers, { log = true, contract = true } = 
       const matches =
         typeof needle === 'string' ? url.includes(needle) : needle.test(url)
       if (!matches) continue
+      if (typeof needle === 'string') warnIfOverbroad(needle, url)
       const result = await handler({ route, url, method, body })
       if (result === undefined) return // handler fulfilled it
       if (contract) recordContractIssues(method, url, result, body)
@@ -156,6 +216,11 @@ let contractIssues = []
 export function takeContractIssues() {
   const taken = contractIssues
   contractIssues = []
+  // Reset alongside them, and for the same reason. A Playwright worker runs many specs in one
+  // process, so without this the *first* spec to trip a given needle silences that warning for
+  // every spec after it — and four specs share COURSE=119/CE=4147, so the overlap is real. CI runs
+  // `workers: 1`, which makes one process the whole suite.
+  reportedBroadStubs.clear()
   return taken
 }
 
