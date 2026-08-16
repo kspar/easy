@@ -212,6 +212,32 @@ the expectation and makes every later diff clean, while looking like coverage. T
 the demonstration that golden files catch EZ-1774: regenerating with the broken compiler wrote nine
 broken expectations, and `git checkout` did not restore them because they were untracked.
 
+### About tools that watch for a thing they cannot see
+
+Three times in one day, a tool built to detect something was structurally incapable of detecting it.
+The pattern is the same each time and it is worth naming: **the tool was never tested against a
+positive case**, only against a codebase that happened to be clean, where "reports nothing" and
+"cannot report anything" are the same output.
+
+- A verification `grep` that could not see a crash, so six failing runs read as passes.
+- A mutation harness whose regex silently matched nothing, so an unmutated run read as a suite
+  catching nothing — twice, in two separate sessions.
+- **A flake hunter that could not see a flake.** `--repeat-each=N` emits N separate spec entries
+  with the same title, not N results under one; keying a Map by title with `.set()` kept only the
+  last repeat, so every spec reported 1/1 and a genuinely intermittent spec was classified as
+  "failed every time". Found by feeding it a real report with one repeat forced to fail — which took
+  a minute and should have been the first thing done.
+
+**Feed every detector a positive case before believing a negative one.** For the a11y baseline that
+means deleting an entry and checking the run goes red; for the coverage gate, disabling a test class;
+for the flake hunter, editing a report. Each of those took under two minutes and each found or
+confirmed something.
+
+The corollary: **a detector belongs in a file, not in a YAML `run:` block.** The flake reporter was
+four lines of inline `node -e` and could not be unit-tested; moved to
+`web/tests/support/flake-report.mjs` it has nine tests, one of which is precisely the case it used to
+get wrong.
+
 ### About what coverage measures, and what it does not
 
 **A coverage threshold catches an area falling out of the suite; it is blind to losing a test or

@@ -37,7 +37,7 @@ stale is exactly what happened to the first version of this table.
 | | Size | Tests |
 | --- | --- | --- |
 | **core** | 117 `@RestController` classes (124 endpoints) | 35 test files, **190 tests, all running** |
-| **web** | 122 `.ts`/`.tsx` files | 12 unit files, 35 browser specs (34 in CI) |
+| **web** | 122 `.ts`/`.tsx` files | 13 unit files, 35 browser specs (34 in CI) |
 | **tsl** | the TSL compiler | 3 test files, **81 tests** |
 | **tsl-common** | the shared TSL model | 1 test file, **30 tests** |
 | **aae** | the executor | 4 test files, **59 tests** |
@@ -428,10 +428,17 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
    gets a new CI job and needs no Docker — the suite fakes it, because what is worth testing is the
    directory `aae` lays out and the answers it gives. What is still missing is running a generated
    script against a real tiivad: **EZ-1775**.
-9. **Measurement, a11y, flake, docs** — *in progress.* Kover with class-level targets,
-   `bin/mutate.sh` (19 mutations, 19 caught) and axe are done; the nightly flake hunt is not.
-   axe found five real violations on its first run — one critical — now in
-   `web/tests/a11y-baseline.json` under EZ-1776, a file that can only shrink. What the two measurement tools
+9. ~~**Measurement, a11y, flake**~~ — **done 2026-08-16.** Kover with class-level targets;
+   `bin/mutate.sh`, 19 deliberate defects and 19 caught; axe inside the browser specs, which found
+   five real violations on its first run — one critical — now in `web/tests/a11y-baseline.json`
+   under EZ-1776, a file that can only shrink; and a nightly workflow running each spec five times
+   to find intermittence the `retries: 0` gate refuses to paper over, plus the mutation suite.
+
+   Two things worth carrying out of it. **Coverage and mutation answer different questions**, and
+   the difference is measured: disabling all of `StoredFileSweepTest` takes the sweep from 94% to 7%
+   and fails the coverage gate, while disabling two of its tests leaves it at 92% and passes.
+   And **name the code, not the package it lives in** — the first Kover targets used packages and
+   measured the wrong thing in three cases of four. What the two measurement tools
    are for, and how they differ, is worth stating once: **coverage catches an area falling out of the
    suite, mutation catches a test that cannot fail.** Measured, on the same code: disabling all of
    `StoredFileSweepTest` takes the sweep from 94% to 7% and fails the coverage gate; disabling two of

@@ -1,0 +1,101 @@
+name: Nightly
+
+# Off the critical path, deliberately. Everything here answers a question that would be too slow to
+# ask on every push, and nothing here gates a deploy — a red nightly is a bug report, not a blocked
+# release.
+on:
+  schedule:
+    # 02:30 UTC. After the storage sweep on dev (04:00 local) would be tidier, but this needs no
+    # environment — it runs entirely on the runner.
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+    inputs:
+      repeats:
+        description: 'How many times to run each browser spec'
+        required: false
+        default: '5'
+
+jobs:
+  # The suite runs with retries: 0, on the argument that a retry converts an intermittent failure
+  # into a green build plus a log line nobody reads. That argument only holds if something *else*
+  # looks for intermittence — otherwise a spec that fails one run in twenty is simply a spec that
+  # fails, occasionally, for whoever happens to push.
+  #
+  # So: run every spec five times and treat anything that is neither 5/5 nor 0/5 as flaky. A spec
+  # that fails every time is a real failure and belongs in CI, not here; a spec that fails
+  # *sometimes* is what this is for, and it is exactly the class the main gate cannot see.
+  flake-hunt:
+    name: Browser flake hunt
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # --repeat-each rather than --retries: retries stop at the first success and report a pass,
+      # which is the behaviour being investigated. This runs every spec the full N times whatever
+      # happens, so the count of failures out of N is the measurement.
+      #
+      # continue-on-error, because the *result* is the report below rather than the exit code: a
+      # flaky spec should produce a readable summary, not a red X and a five-minute log to scroll.
+      - name: Run each spec ${{ github.event.inputs.repeats || 5 }} times
+        id: repeat
+        continue-on-error: true
+        env:
+          HARNESS_BROWSER_CHANNEL: ''
+          PW_TRACE: '1'
+        run: npx playwright test --repeat-each=${{ github.event.inputs.repeats || 5 }} --reporter=json --output=test-results > repeat-report.json
+
+      # A file rather than inline JS, because the inline version was wrong and untestable:
+      # --repeat-each emits N separate spec entries with the same title, and keying a Map by title
+      # with .set() kept only the last one — so every spec read as 1/1 and a genuinely intermittent
+      # spec was reported as "failed every time". A flake hunter that cannot see a flake.
+      # tests/unit/flake-report.test.mjs pins the arithmetic.
+      - name: Report which specs were intermittent
+        run: node tests/support/flake-report.mjs repeat-report.json
+
+      - name: Publish traces
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: flake-hunt-${{ github.sha }}
+          path: |
+            web/repeat-report.json
+            web/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # The mutation suite: nineteen deliberate defects, each paired with the test that must notice.
+  # Nightly rather than per-push because it rebuilds and re-runs the whole JVM suite once per
+  # mutation — minutes, not seconds — and because what it guards changes slowly. A survivor means a
+  # guard is missing or cannot fail, which is a bug in the tests and rarely urgent by the hour.
+  mutation:
+    name: Mutation testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install aae test deps
+        run: |
+          python -m venv aae/.venv
+          aae/.venv/bin/pip install -r aae/requirements-dev.txt
+          aae/.venv/bin/pip install "tiivad==$(grep -oE 'tiivad==[0-9.]+' doc/aae/dockerfiles/tiivad | head -1 | cut -d= -f3)"
+      - name: Break things on purpose
+        run: bin/mutate.sh
