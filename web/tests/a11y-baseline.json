@@ -1,0 +1,44 @@
+{
+  "_readme": [
+    "Accessibility findings that are known and not yet fixed. Keyed by rule@normalised-selector;",
+    "see tests/support/a11y.mjs for why the selector is normalised and why this file can only shrink.",
+    "",
+    "Every entry needs a note saying what it costs a user, and an issue tracking the fix. An entry",
+    "without both is rejected when the file loads \u2014 a finding silenced for no recorded reason is the",
+    "same as one nobody looked at.",
+    "",
+    "Regenerate with: npm run test:a11y:record   (then write the notes; the placeholders fail)"
+  ],
+  "known": {
+    "button-name@.MuiButtonBase-root-MuiIconButton-root": {
+      "note": "An icon button with no discernible text: a screen reader announces it as \"button\" and nothing else. Same class as log entry #14 \u2014 an unlabelled control on the page teachers use to enter grades.",
+      "issue": "EZ-1776",
+      "impact": "critical",
+      "firstSeenAt": "grade table, loaded"
+    },
+    "list@.MuiList-padding": {
+      "note": "MUI List renders a <ul> containing something other than <li>, so assistive technology either loses the item count or does not announce it as a list. May be MUI default markup rather than ours \u2014 check before changing our tree.",
+      "issue": "EZ-1776",
+      "impact": "serious",
+      "firstSeenAt": "grade table, loaded"
+    },
+    "list@.MuiList-root": {
+      "note": "MUI List renders a <ul> containing something other than <li>, so assistive technology either loses the item count or does not announce it as a list. May be MUI default markup rather than ours \u2014 check before changing our tree.",
+      "issue": "EZ-1776",
+      "impact": "serious",
+      "firstSeenAt": "grade table, loaded"
+    },
+    "nested-interactive@.MuiTableCell-root:nth-child(n) > .MuiTableSortLabel-directionDesc.MuiButtonBase-root-MuiTableSortLabel-root.MuiTableSortLabel-root": {
+      "note": "Sortable column headers nest interactive controls. Focus order, what is announced, and what activation does are all browser-dependent \u2014 and it is directly in the way of sorting a grade table by keyboard.",
+      "issue": "EZ-1776",
+      "impact": "serious",
+      "firstSeenAt": "grade table, loaded"
+    },
+    "list@ul": {
+      "note": "MUI List renders a <ul> containing something other than <li>, so assistive technology either loses the item count or does not announce it as a list. May be MUI default markup rather than ours \u2014 check before changing our tree.",
+      "issue": "EZ-1776",
+      "impact": "serious",
+      "firstSeenAt": "courses, as an admin"
+    }
+  }
+}

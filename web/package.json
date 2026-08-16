@@ -12,8 +12,10 @@
     "lint": "eslint .",
     "test:unit": "vitest run",
     "test:browser": "playwright test",
-    "test:browser:record": "playwright test && node tests/support/record-checks.mjs",
-    "preview": "vite preview"
+    "test:browser:record": "playwright test && node tests/support/record-checks.mjs && node tests/support/record-a11y.mjs --check",
+    "preview": "vite preview",
+    "test:a11y:record": "playwright test && node tests/support/record-a11y.mjs",
+    "test:a11y:check": "node tests/support/record-a11y.mjs --check"
   },
   "dependencies": {
     "@codemirror/lang-cpp": "^6.0.3",
@@ -45,6 +47,7 @@
     "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^9.39.1",
     "@fontsource/roboto": "^5.2.9",
     "@playwright/test": "^1.62.1",

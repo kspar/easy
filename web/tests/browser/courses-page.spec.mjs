@@ -45,7 +45,7 @@ const teacherCourse = (id, title, over = {}) => ({
   ...over,
 })
 
-test('courses-page', async ({ launch, check }) => {
+test('courses-page', async ({ launch, check, a11y }) => {
   // --- a student ------------------------------------------------------------------------------------
   const student = await launch({ role: 'student', shotPrefix: 'courses-student-' })
   const studentAsked = []
@@ -118,6 +118,8 @@ test('courses-page', async ({ launch, check }) => {
     (await student.page.getByRole('button', { name: /new course|create/i }).count()) === 0,
   )
   await student.shot('01-student')
+  // The first screen of every session.
+  await a11y(student.page, 'courses, as a student')
   await student.close()
 
   // --- a teacher ------------------------------------------------------------------------------------
@@ -198,6 +200,7 @@ test('courses-page', async ({ launch, check }) => {
     (await admin.page.getByRole('button', { name: /new course|create/i }).count()) > 0,
   )
   await admin.shot('03-admin')
+  await a11y(admin.page, 'courses, as an admin')
   await admin.close()
 
   // --- nothing to show ------------------------------------------------------------------------------

@@ -99,7 +99,7 @@ const withLateJoiner = [
   },
 ]
 
-test('grade-table', async ({ launch, check }) => {
+test('grade-table', async ({ launch, check, a11y }) => {
   const { page, shot, close } = await launch({ role: 'teacher,admin', shotPrefix: 'grades-' })
 
   // Mutable so the group filter can be observed changing what the server is asked for, the way it
@@ -162,6 +162,8 @@ test('grade-table', async ({ launch, check }) => {
   // Cell contents, unchanged from what the page rendered before the links went in.
   check('a teacher-graded cell is marked as such', (await page.locator('svg[data-testid="FaceOutlinedIcon"]').count()) === 1)
   await shot('01-table')
+  // A data table with links and sortable headers — the shape axe has most to say about.
+  await a11y(page, 'grade table, loaded')
 
   // --- sorting ------------------------------------------------------------------------------------------
   // Read the name column top to bottom. The rendered order is the only thing that matters here; the

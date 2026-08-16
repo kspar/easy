@@ -149,6 +149,12 @@ jobs:
         env:
           HARNESS_BROWSER_CHANNEL: ''
         run: npm run test:browser
+      # The half of the accessibility gate a spec cannot check for itself. A spec only visits its
+      # own states, so "this baseline entry no longer fires anywhere" is a question only a whole run
+      # can answer — and an entry for something already fixed makes the baseline a worse list of
+      # what is still wrong. Runs after the suite, over what it recorded.
+      - name: Accessibility baseline is in step
+        run: npm run test:a11y:check
       # On failure: the HTML report, the traces, and the screenshots each spec takes as it goes.
       # A trace is the difference between "we know it broke" and "we know why" once the runner is
       # gone, and PW_TRACE defaults to on under CI for exactly that reason.

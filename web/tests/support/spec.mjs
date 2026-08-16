@@ -36,6 +36,7 @@ import { loadQuarantine } from './quarantine.mjs'
 import { expectedChecks } from './expected-checks.mjs'
 import { neverIndex } from './never-index.mjs'
 import { contractBudget } from './contract-budget.mjs'
+import { fingerprint, loadBaseline, reconcile, scan } from './a11y.mjs'
 
 export { expect }
 
@@ -49,6 +50,9 @@ const HERE = dirname(fileURLToPath(import.meta.url))
  * spec, is more moving parts for the same result.
  */
 const COUNTS_PATH = join(HERE, '../../test-results/check-counts.jsonl')
+
+/** Accessibility findings from this run, for `record-a11y.mjs`. Same mechanism, same reasons. */
+const A11Y_PATH = join(HERE, '../../test-results/a11y-found.jsonl')
 
 /**
  * Traces are written per context and kept only for specs that failed.
@@ -113,6 +117,52 @@ export const test = base.extend({
     for (const path of traces) {
       if (failed) await testInfo.attach(basename(path), { path, contentType: 'application/zip' })
       else rmSync(path, { force: true })
+    }
+  },
+
+  /**
+   * `await a11y(page, 'the state this is')` — scan wherever the spec has got to.
+   *
+   * A fixture rather than an import so that findings are collected per spec and reconciled once, in
+   * teardown, against `tests/a11y-baseline.json`. Calls belong at states a spec already reaches: an
+   * open dialog, an expanded row, a table after sorting. Those are where the interesting violations
+   * live, and a separate a11y suite would only ever reach the states that are easy to reach.
+   *
+   * Never throws at the call site. One spec should report every state it visited rather than dying
+   * at the first, for the same reason `check` is `expect.soft`.
+   */
+  a11y: async ({}, use, testInfo) => {
+    const found = []
+
+    const a11y = async (page, state) => {
+      const { gate, contrast } = await scan(page)
+      for (const f of gate) found.push({ ...f, state, fingerprint: fingerprint(f.rule, f.selector) })
+      if (contrast.length) {
+        console.log(`  ℹ️  ${contrast.length} colour-contrast finding(s) at "${state}" — reported, not gated`)
+      }
+      return gate
+    }
+
+    await use(a11y)
+
+    if (!found.length) return
+
+    // Deduplicated by fingerprint: the same violation at three states is one thing to fix, and
+    // three copies of it is a wall people learn to scroll past.
+    const unique = [...new Map(found.map((f) => [f.fingerprint, f])).values()]
+
+    // Recorded for the whole-run reconciliation, the same way check counts are. A spec cannot know
+    // whether a baseline entry is stale — it only visits its own states — so "this entry no longer
+    // fires anywhere" is a question only the full run can answer. `record-a11y.mjs` answers it.
+    appendFileSync(
+      A11Y_PATH,
+      unique.map((f) => JSON.stringify({ spec: basename(testInfo.file), ...f })).join('\n') + '\n',
+    )
+
+    const problems = reconcile(unique, loadBaseline(), { seenStates: 1 })
+
+    if (problems.length) {
+      throw new Error(`${basename(testInfo.file)}: accessibility\n\n${problems.join('\n\n')}`)
     }
   },
 
