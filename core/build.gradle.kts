@@ -97,24 +97,9 @@ tasks.test {
     // which is a confusing way to be told the command was right.
     (project.findProperty("contract.write") as String?)?.let { systemProperty("contract.write", it) }
 
-    // Gradle prints nothing when tests pass, so "3 passed" and "0 matched the filter" look
-    // identical in CI. With the exclusion above driven by a property, a typo would silently run
-    // nothing and still go green, so report the count and fail on zero.
-    var executed = 0L
-    afterSuite(KotlinClosure2({ desc: TestDescriptor, result: TestResult ->
-        if (desc.parent == null) {
-            executed = result.testCount
-            logger.lifecycle(
-                "Tests: ${result.testCount} completed, ${result.failedTestCount} failed, " +
-                        "${result.skippedTestCount} skipped"
-            )
-        }
-    }))
-    doLast {
-        if (executed == 0L) throw GradleException(
-            "No tests were executed. Check the -PexcludeTags value and the @Tag annotations."
-        )
-    }
+    // The "how many ran, and fail on zero" reporting lives in the root build.gradle.kts now, so
+    // that :tsl and :tsl-common get it too. It matters most here, where `excludeTags` above is
+    // driven by a property and a typo'd tag would otherwise run nothing and go green.
 }
 
 dependencies {

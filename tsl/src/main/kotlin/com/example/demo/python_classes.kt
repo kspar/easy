@@ -34,16 +34,16 @@ class PyGenericChecks(val genericChecks: List<GenericCheck>?) : PyASTPrimitive()
                 val forceString = it.expectedValue.toString() != DataCategory.CONTAINS_NUMBERS.toString()
                 PyDict(
                     mapOf(
-                        "'check_type'" to PyStr(it.checkType.toString()),
-                        "'output_category'" to PyStr(it.outputCategory.toString()),
-                        "'nothing_else'" to PyBool(it.nothingElse),
-                        "'expected_value'" to PyList(it.expectedValue.map { PyStr(it, forceString) }),
-                        "'elements_ordered'" to PyBool(it.elementsOrdered),
-                        "'before_message'" to PyStr(it.beforeMessage),
-                        "'passed_message'" to PyStr(it.passedMessage),
-                        "'failed_message'" to PyStr(it.failedMessage),
-                        "'data_category'" to PyStr(it.dataCategory.toString()),
-                        "'ignore_case'" to PyBool(it.ignoreCase)
+                        "check_type" to PyStr(it.checkType.toString()),
+                        "output_category" to PyStr(it.outputCategory.toString()),
+                        "nothing_else" to PyBool(it.nothingElse),
+                        "expected_value" to PyList(it.expectedValue.map { PyStr(it, forceString) }),
+                        "elements_ordered" to PyBool(it.elementsOrdered),
+                        "before_message" to PyStr(it.beforeMessage),
+                        "passed_message" to PyStr(it.passedMessage),
+                        "failed_message" to PyStr(it.failedMessage),
+                        "data_category" to PyStr(it.dataCategory.toString()),
+                        "ignore_case" to PyBool(it.ignoreCase)
                     )
                 )
             }).generatePyString()
@@ -64,14 +64,14 @@ class PyGenericChecksLong(val genericChecksLong: List<GenericCheckLong>?) : PyAS
                 val forceString = it.expectedValue.toString() != DataCategory.CONTAINS_NUMBERS.toString()
                 PyDict(
                     mapOf(
-                        "'check_type'" to PyStr(it.checkType.toString()),
-                        "'nothing_else'" to PyBool(it.nothingElse),
-                        "'expected_value'" to PyList(it.expectedValue.map { PyStr(it, forceString) }),
-                        "'before_message'" to PyStr(it.beforeMessage),
-                        "'passed_message'" to PyStr(it.passedMessage),
-                        "'failed_message'" to PyStr(it.failedMessage),
-                        "'data_category'" to PyStr(it.dataCategory.toString()),
-                        "'ignore_case'" to PyBool(it.ignoreCase)
+                        "check_type" to PyStr(it.checkType.toString()),
+                        "nothing_else" to PyBool(it.nothingElse),
+                        "expected_value" to PyList(it.expectedValue.map { PyStr(it, forceString) }),
+                        "before_message" to PyStr(it.beforeMessage),
+                        "passed_message" to PyStr(it.passedMessage),
+                        "failed_message" to PyStr(it.failedMessage),
+                        "data_category" to PyStr(it.dataCategory.toString()),
+                        "ignore_case" to PyBool(it.ignoreCase)
                     )
                 )
             }).generatePyString()
@@ -87,16 +87,16 @@ class PyOutputTests(val outputFileChecks: List<OutputFileCheck>?) : PyASTPrimiti
             outputFileChecks.map {
                 PyDict(
                     mapOf(
-                        "'file_name'" to PyStr(it.fileName),
-                        "'check_type'" to PyStr(it.checkType.toString()),
-                        "'nothing_else'" to PyBool(it.nothingElse),
-                        "'expected_value'" to PyList(it.expectedValue.map { PyStr(it) }),
-                        "'elements_ordered'" to PyBool(it.elementsOrdered),
-                        "'before_message'" to PyStr(it.beforeMessage),
-                        "'passed_message'" to PyStr(it.passedMessage),
-                        "'failed_message'" to PyStr(it.failedMessage),
-                        "'data_category'" to PyStr(it.dataCategory.toString()),
-                        "'ignore_case'" to PyBool(it.ignoreCase)
+                        "file_name" to PyStr(it.fileName),
+                        "check_type" to PyStr(it.checkType.toString()),
+                        "nothing_else" to PyBool(it.nothingElse),
+                        "expected_value" to PyList(it.expectedValue.map { PyStr(it) }),
+                        "elements_ordered" to PyBool(it.elementsOrdered),
+                        "before_message" to PyStr(it.beforeMessage),
+                        "passed_message" to PyStr(it.passedMessage),
+                        "failed_message" to PyStr(it.failedMessage),
+                        "data_category" to PyStr(it.dataCategory.toString()),
+                        "ignore_case" to PyBool(it.ignoreCase)
                     )
                 )
             }).generatePyString()

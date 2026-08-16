@@ -21,6 +21,20 @@ dependencies {
 	implementation(libs.kotlin.stdlib.jdk8)
 	implementation(libs.kotlinx.serialization.json)
 	implementation(libs.kaml)
+
+	testImplementation(libs.junit.jupiter)
+	testRuntimeOnly(libs.junit.platform.launcher)
+}
+
+tasks.test {
+	useJUnitPlatform()
+	// PythonSyntaxTest shells out to python3 and skips itself with a reason when there is none.
+	// Forwarded because the test JVM does not inherit Gradle's environment view of PATH edits.
+	systemProperty("tsl.python", providers.gradleProperty("tsl.python").getOrElse("python3"))
+	// Golden files are regenerated rather than asserted with -Ptsl.golden.update=true. Without the
+	// forwarding the flag is silently ignored and the test simply fails, which is a confusing way
+	// to be told the command was right.
+	systemProperty("tsl.golden.update", providers.gradleProperty("tsl.golden.update").getOrElse("false"))
 }
 
 // Compiles a whole tree of TSL specs with the real compiler and counts the failures — the check
@@ -36,5 +50,10 @@ tasks.register<JavaExec>("compileSpecTree") {
 	// Relative to the repo root rather than this module, so -PspecTree can be pasted from a doc
 	// or a shell that is sitting where everything else in the migration runs.
 	workingDir = rootDir
-	args = listOfNotNull(project.findProperty("specTree")?.toString())
+	// Second arg is the optional -PspecDump=<dir>. Empty rather than absent when unset, so the
+	// positional pair stays a pair.
+	args = listOfNotNull(
+		project.findProperty("specTree")?.toString(),
+		project.findProperty("specDump")?.toString() ?: "",
+	)
 }
