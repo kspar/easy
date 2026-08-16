@@ -212,6 +212,28 @@ the expectation and makes every later diff clean, while looking like coverage. T
 the demonstration that golden files catch EZ-1774: regenerating with the broken compiler wrote nine
 broken expectations, and `git checkout` did not restore them because they were untracked.
 
+### About breaking things on purpose, and the harness that does it
+
+Mutation testing has found more vacuous assertions in this programme than any other technique. It
+also has failure modes of its own, and both of them make it *lie in the reassuring direction*:
+
+**A mutation that silently does not apply reads as "the test caught nothing to catch."** A `perl -0pi`
+pattern with one backslash too few left `aae`'s parser untouched, and the resulting "59 passed" was
+read as a result twice. **Always assert the mutation landed** — `grep -q` for the mutated text, and
+say so — before believing the run.
+
+**Python's bytecode cache can keep a mutation alive after the restore, or hide it during the run.**
+`0o500` → `0o400` is the same byte size, and if the mutate-and-restore happen inside one second the
+mtime matches too, so `__pycache__` serves the stale module. The symptom is a test failing against
+source that reads correctly, which costs a confusing ten minutes; the *dangerous* symptom is the
+reverse — the original still cached while the mutant is on disk, so the mutation appears not to
+matter and a vacuous test is pronounced sound. Export `PYTHONDONTWRITEBYTECODE=1` and remove
+`__pycache__` between runs.
+
+**Restore by `cp` from a backup, never `git checkout`.** It discards uncommitted work in tracked
+files, and does nothing at all for untracked ones — which is how nine golden files stayed blessed
+against a broken compiler.
+
 ### About replacing a script with a test
 
 **When you delete the script, delete the argument for it too.** Both scripts carried a persuasive

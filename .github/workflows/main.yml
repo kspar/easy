@@ -191,6 +191,30 @@ jobs:
           # Already gzipped.
           compression-level: 0
 
+  executor:
+    name: Executor (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aae
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          # aae's flask 3.1 needs >= 3.9 and the deploy hosts are on 3.12. Pinned rather than
+          # floating so a new Python release does not first appear here on an unrelated push.
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: aae/requirements-dev.txt
+      - name: Install
+        run: pip install -r requirements-dev.txt
+      # Nothing imported server.py in CI before this job existed, so a syntax error or a bad import
+      # in the executor reached a deploy. The suite fakes Docker throughout — it tests the directory
+      # aae lays out and the answers it gives, not Docker — so this job needs no daemon and takes
+      # seconds. Running a generated script against a real tiivad is EZ-1775.
+      - name: Test
+        run: python -m pytest tests -q
+
   # Without this, GitHub knows nothing about the JVM dependencies: the dependency graph held
   # only npm packages, so no Dependabot alert could ever fire for core, tsl or their transitive
   # dependencies. `.github/dependabot.yml` gets us version-update PRs for Gradle, but security

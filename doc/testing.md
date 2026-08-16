@@ -40,7 +40,7 @@ stale is exactly what happened to the first version of this table.
 | **web** | 122 `.ts`/`.tsx` files | 11 unit files, 35 browser specs (34 in CI) |
 | **tsl** | the TSL compiler | 3 test files, **81 tests** |
 | **tsl-common** | the shared TSL model | 1 test file, **30 tests** |
-| **aae** | the executor | none |
+| **aae** | the executor | 4 test files, **59 tests** |
 
 ```sh
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 117
@@ -419,13 +419,15 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
    retry, the timeout, an unparseable response, a drained executor, and the
    stranded-IN_PROGRESS recovery at startup. And `StoredFileSweep`, whose inputs were guarded and
    whose behaviour was not.
-8. **tsl and aae** — **tsl done 2026-08-16**, aae outstanding. 81 tests in `:tsl` and 30 in
-   `:tsl-common`, both of which had none. Found EZ-1774 — every check dictionary emitted with
-   unusable keys since 2026-08-07, on master and dev — plus two ways `PyStr` produced a literal
-   Python cannot close, one of which was silently truncating teachers' expected values. Golden files
-   under `tsl/src/test/resources/golden/` are the load-bearing part: they would have caught EZ-1774
-   in the authoring diff, and the syntax test would **not** have, because the defect is valid Python.
-   What is still missing is running a generated script against tiivad — EZ-1775.
+8. ~~**tsl and aae**~~ — **done 2026-08-16.** 81 tests in `:tsl`, 30 in `:tsl-common` and 59 in
+   `aae`, all three of which had none. Found EZ-1774 — every check dictionary emitted with unusable
+   keys since 2026-08-07, on master and dev — plus two ways `PyStr` produced a literal Python cannot
+   close, one of which was silently truncating teachers' expected values. Golden files under
+   `tsl/src/test/resources/golden/` are the load-bearing part: they would have caught EZ-1774 in the
+   authoring diff, and the syntax test would **not** have, because the defect is valid Python. `aae`
+   gets a new CI job and needs no Docker — the suite fakes it, because what is worth testing is the
+   directory `aae` lays out and the answers it gives. What is still missing is running a generated
+   script against a real tiivad: **EZ-1775**.
 9. **Migration tests against an anonymised copy** — once dev exists.
 10. **axe in the browser harness** — cheap, and there is already evidence it would find things.
 11. **Performance measurement of the two known suspects** — a fixture, not a framework.
