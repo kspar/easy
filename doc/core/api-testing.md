@@ -206,6 +206,48 @@ use. So it is written to need no database — reflection over the Exposed table 
 query against `information_schema` — precisely so that it runs on every push. `StoredFileSweepTest`
 is the other half, guarding what the sweep then *does*.
 
+## Recompiling TSL exercises after a compiler change
+
+A TSL exercise is compiled **once, at save time**, and the result is stored as a `generated_0.py`
+asset. So a fix to the compiler reaches nothing that already exists — every exercise keeps grading
+with the output of whichever compiler was running the day a teacher last pressed save. EZ-1774 is
+the demonstration: a defect that made every check dictionary unusable sat in the compiler for nine
+days, and fixing it did nothing for the exercises already compiled by it.
+
+```sh
+# What would change. Writes nothing.
+curl -s -X POST "$BASE/admin/exercises/tsl/recompile" \
+  -H 'Content-Type: application/json' -H "Authorization: Bearer $EASY_TOKEN" -d '{}' | jq
+
+# Do it.
+curl -s -X POST "$BASE/admin/exercises/tsl/recompile" \
+  -H 'Content-Type: application/json' -H "Authorization: Bearer $EASY_TOKEN" \
+  -d '{"apply": true}' | jq '{scanned, changed, unchanged, failed}'
+
+# One exercise, or a few.
+  -d '{"apply": true, "exercise_ids": [1001, 1002]}'
+```
+
+Admin only. `apply` defaults to false and the response is the same shape either way, so the dry run
+is a rehearsal of the write rather than a different code path describing it.
+
+**What it deliberately does not do is create a version.** Re-saving through `PUT /v2/exercises/{id}`
+or the admin `rewrite` variant both add an `exercise_version` row, and a compiler fix is not an edit
+by the teacher — a version chain full of entries nobody authored is a worse record of what teachers
+did than one with gaps. This replaces the generated assets on the existing `automatic_exercise` row
+and leaves `tsl.json`, the version chain and every asset the teacher wrote alone.
+
+Three other properties worth knowing, each pinned by a test that was made to fail on purpose:
+
+- **Current versions only** (`valid_to IS NULL`). A superseded version's stored script is the record
+  of what that version generated; rewriting it would be editing history to say something that was
+  never true, and it can never run again anyway.
+- **A spec that no longer compiles keeps the script it has.** Reported as `FAILED` with the reason.
+  Grading with a stale script is bad; grading with none is worse, and a bulk run could otherwise
+  reach that state for hundreds of exercises at once.
+- **Identical output writes nothing**, including the `meta.txt` timestamp — otherwise every run
+  would report every exercise as changed and the dry run would stop being worth reading.
+
 ## What this doesn't cover
 
 Nothing here exercises real Keycloak or token verification (`EasyUserJwtConverter`) — the

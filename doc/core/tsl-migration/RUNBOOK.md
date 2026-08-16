@@ -211,6 +211,17 @@ handler. A half-migrated corpus is not a broken one.
 
 ---
 
+## Recompiling is no longer a migration
+
+`writeback.py` exists because re-saving every exercise was the only way to get a fresh compile, and
+re-saving means a version per exercise — which is why so much of this runbook is about attribution
+surviving. **A pure recompile no longer needs any of it.**
+`POST /v2/admin/exercises/tsl/recompile` regenerates the scripts in place, creates no version, and
+touches no `tsl.json`. See `doc/core/api-testing.md`.
+
+Reach for this runbook when the **specs** change — a retired test type, a model migration — and for
+the recompile endpoint when only the **compiler** has.
+
 ## Afterwards
 
 - **Exercise 741 is still on the old model** wherever this has been run, so it is the one exercise

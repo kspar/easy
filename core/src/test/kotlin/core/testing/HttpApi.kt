@@ -11,6 +11,17 @@ import tools.jackson.databind.JsonNode
 import tools.jackson.module.kotlin.jacksonObjectMapper
 
 /**
+ * The elements of a nested JSON array, e.g. `node.list("scripts")`.
+ *
+ * Use this, never `node.get("scripts").map { … }`. `JsonNode` carries its **own** `map`, which
+ * Kotlin resolves in preference to the `Iterable` extension and which maps the node rather than its
+ * elements — so every element comes back as the array itself, and the failure surfaces several lines
+ * later as a coercion error or a null field. It has cost three separate debugging detours in this
+ * suite; `HttpApi.Response.elements` is the same guard one level up.
+ */
+fun JsonNode.list(name: String): List<JsonNode> = get(name)?.toList().orEmpty()
+
+/**
  * Calling the API the way a client does, for tests that are about an endpoint's *behaviour* rather
  * than about who may reach it.
  *
@@ -136,6 +147,9 @@ class HttpApi(private val mockMvc: MockMvc) {
 
     /** Convenience for building request bodies without escaping quotes by hand. */
     fun body(vararg pairs: Pair<String, Any?>): String = MAPPER.writeValueAsString(pairs.toMap())
+
+    /** Convenience for building nested request bodies. */
+    fun body(map: Map<String, Any?>): String = MAPPER.writeValueAsString(map)
 
     private companion object {
         val MAPPER = jacksonObjectMapper()
