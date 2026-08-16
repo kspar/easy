@@ -90,10 +90,17 @@ easy:
         enabled: false
 
     auto-assess:
+      # 100ms, not the 3000 a deployed environment uses. This is how often AutoGradeScheduler.grade()
+      # starts queued jobs, so it is the floor on how long every autograde test waits — at 3000 the
+      # eight in AutoGradeIntegrationTest were most of the suite's wall clock.
+      #
+      # Not a behaviour change in disguise: the scheduler does the same work either way, and the
+      # tests poll the database for an outcome rather than sleeping for a fixed period, so a slower
+      # tick would make them slow rather than make them pass. Nothing here depends on the interval.
       fixed-delay:
-        ms: "3000"
+        ms: "100"
       fixed-delay-observer-clear:
-        ms: "3000"
+        ms: "100"
       anonymous-submissions-to-keep: "50"
     statistics:
       fixed-delay:

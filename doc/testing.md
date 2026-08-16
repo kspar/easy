@@ -49,10 +49,17 @@ ls web/tests/browser/*.spec.mjs | wc -l                          # 35
 ls web/tests/unit/*.test.mjs | wc -l                             # 11
 ```
 
-174 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
-parameterised — `StorageServiceContractTest` is 6 annotations and 12 runs, one per backend — and
+175 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
+parameterised — `StorageServiceContractTest` is 9 annotations and 15 runs, over two backends — and
 counting annotations would have understated the suite while *looking* like a measurement. Read it
-off the last line of `./gradlew :core:test` instead. It takes about 55 seconds.
+off the last line of `./gradlew :core:test` instead. It takes about 28 seconds, measured over three
+consecutive runs.
+
+Most of that was once the autograde tests. `AutoGradeScheduler.grade()` runs on a fixed delay, so
+that interval is the floor on how long each of them waits; the test config sets it to 100ms against
+a deployed environment's 3000, which took the suite from 55 seconds to 28. Not a behaviour change in
+disguise — the tests poll the database for an outcome rather than sleeping for a fixed period, so a
+slower tick would make them slow rather than make them pass.
 
 The web numbers look better than they are, because the check counts are lopsided:
 
