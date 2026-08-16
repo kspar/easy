@@ -23,6 +23,7 @@ import {
   MenuItem,
   Drawer,
   List,
+  ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
@@ -315,36 +316,46 @@ export default function AppLayout() {
 
       <Divider />
 
-      {/* Navigation */}
-      <List sx={{ py: 1.5, flexGrow: 1 }}>
-        <ListItemButton
-          selected={location.pathname === '/courses'}
-          onClick={() => navTo('/courses')}
-        >
-          <ListItemIcon>
-            <SchoolOutlined color={location.pathname === '/courses' ? 'primary' : 'action'} />
-          </ListItemIcon>
-          <ListItemText
-            primary={t('nav.myCourses')}
-            primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
-          />
-        </ListItemButton>
-
-        {isTeacherOrAdmin && (
+      {/*
+      Navigation. A <Box component="nav">, not a <List>, because this holds both individual
+      items and whole sub-lists — and a <ul> may contain neither a role=button nor another <ul>
+      as a direct child. Each group below is its own <List>, which is also what gives a screen
+      reader a sensible item count per section instead of one long undifferentiated list.
+      */}
+      <Box component="nav" sx={{ py: 1.5, flexGrow: 1 }}>
+      <List disablePadding>
+        <ListItem disablePadding>
           <ListItemButton
-            selected={isActive('/library')}
-            onClick={() => navTo('/library/dir/root')}
+            selected={location.pathname === '/courses'}
+            onClick={() => navTo('/courses')}
           >
             <ListItemIcon>
-              <LibraryBooksOutlined
-                color={isActive('/library') ? 'primary' : 'action'}
-              />
+              <SchoolOutlined color={location.pathname === '/courses' ? 'primary' : 'action'} />
             </ListItemIcon>
             <ListItemText
-              primary={t('nav.exerciseLibrary')}
+              primary={t('nav.myCourses')}
               primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
             />
           </ListItemButton>
+        </ListItem>
+
+        {isTeacherOrAdmin && (
+          <ListItem disablePadding>
+            <ListItemButton
+              selected={isActive('/library')}
+              onClick={() => navTo('/library/dir/root')}
+            >
+              <ListItemIcon>
+                <LibraryBooksOutlined
+                  color={isActive('/library') ? 'primary' : 'action'}
+                />
+              </ListItemIcon>
+              <ListItemText
+                primary={t('nav.exerciseLibrary')}
+                primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+              />
+            </ListItemButton>
+          </ListItem>
         )}
 
         {/*
@@ -353,20 +364,24 @@ export default function AppLayout() {
         use, so ctrl-click opens a tab — see the links rule in CLAUDE.md.
         */}
         {activeRole === 'admin' && (
-          <ListItemButton
-            component={RouterLink}
-            to="/articles"
-            selected={isActive('/articles')}
-          >
-            <ListItemIcon>
-              <ArticleOutlined color={isActive('/articles') ? 'primary' : 'action'} />
-            </ListItemIcon>
-            <ListItemText
-              primary={t('nav.articles')}
-              primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
-            />
-          </ListItemButton>
+          <ListItem disablePadding>
+            <ListItemButton
+              component={RouterLink}
+              to="/articles"
+              selected={isActive('/articles')}
+            >
+              <ListItemIcon>
+                <ArticleOutlined color={isActive('/articles') ? 'primary' : 'action'} />
+              </ListItemIcon>
+              <ListItemText
+                primary={t('nav.articles')}
+                primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+              />
+            </ListItemButton>
+          </ListItem>
         )}
+
+      </List>
 
         {/* Recently viewed exercises on library pages */}
         {isTeacherOrAdmin && onLibrary && recentExercises.length > 0 && (
@@ -390,27 +405,29 @@ export default function AppLayout() {
             {recentExercises.map((ex) => {
               const href = exerciseLink(ex.id, ex.title)
               return (
-                <ListItemButton
-                  key={ex.id}
-                  component="a"
-                  href={href}
-                  selected={location.pathname.startsWith(`/library/exercise/${ex.id}`)}
-                  onClick={(e: React.MouseEvent) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
-                    e.preventDefault()
-                    navTo(href)
-                  }}
-                  sx={{ py: 0.5, minHeight: 36, pl: 3 }}
-                >
-                  <ListItemText
-                    primary={ex.title}
-                    primaryTypographyProps={{
-                      variant: 'body2',
-                      noWrap: true,
-                      fontSize: '0.82rem',
+                <ListItem disablePadding>
+                  <ListItemButton
+                    key={ex.id}
+                    component="a"
+                    href={href}
+                    selected={location.pathname.startsWith(`/library/exercise/${ex.id}`)}
+                    onClick={(e: React.MouseEvent) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+                      e.preventDefault()
+                      navTo(href)
                     }}
-                  />
-                </ListItemButton>
+                    sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+                  >
+                    <ListItemText
+                      primary={ex.title}
+                      primaryTypographyProps={{
+                        variant: 'body2',
+                        noWrap: true,
+                        fontSize: '0.82rem',
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
               )
             })}
           </List>
@@ -442,24 +459,26 @@ export default function AppLayout() {
               {courseTitle ?? t('exercises.title')}
             </ListSubheader>
             {exercises.map((ex) => (
-              <ListItemButton
-                key={ex.id}
-                selected={activeExerciseId === ex.id}
-                onClick={() => navTo(`/courses/${studentCourseId}/exercises/${ex.id}`)}
-                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
-              >
-                <ListItemIcon sx={{ minWidth: 28 }}>
-                  {statusIcon(ex.status)}
-                </ListItemIcon>
-                <ListItemText
-                  primary={ex.effective_title}
-                  primaryTypographyProps={{
-                    variant: 'body2',
-                    noWrap: true,
-                    fontSize: '0.82rem',
-                  }}
-                />
-              </ListItemButton>
+              <ListItem disablePadding>
+                <ListItemButton
+                  key={ex.id}
+                  selected={activeExerciseId === ex.id}
+                  onClick={() => navTo(`/courses/${studentCourseId}/exercises/${ex.id}`)}
+                  sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 28 }}>
+                    {statusIcon(ex.status)}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={ex.effective_title}
+                    primaryTypographyProps={{
+                      variant: 'body2',
+                      noWrap: true,
+                      fontSize: '0.82rem',
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
             ))}
           </List>
         )}
@@ -489,59 +508,69 @@ export default function AppLayout() {
             >
               {courseTitle ?? t('exercises.title')}
             </ListSubheader>
-            <ListItemButton
-              selected={isActive(`/courses/${courseId}/exercises`)}
-              onClick={() => navTo(`/courses/${courseId}/exercises`)}
-              sx={{ py: 0.5, minHeight: 36, pl: 3 }}
-            >
-              <ListItemIcon sx={{ minWidth: 28 }}>
-                <AssignmentOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/exercises`) ? 'primary' : 'action'} />
-              </ListItemIcon>
-              <ListItemText primary={t('exercises.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
-            </ListItemButton>
-            <ListItemButton
-              selected={isActive(`/courses/${courseId}/grades`)}
-              onClick={() => navTo(`/courses/${courseId}/grades`)}
-              sx={{ py: 0.5, minHeight: 36, pl: 3 }}
-            >
-              <ListItemIcon sx={{ minWidth: 28 }}>
-                <GradingOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/grades`) ? 'primary' : 'action'} />
-              </ListItemIcon>
-              <ListItemText primary={t('grades.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
-            </ListItemButton>
-            <ListItemButton
-              selected={isActive(`/courses/${courseId}/participants`)}
-              onClick={() => navTo(`/courses/${courseId}/participants`)}
-              sx={{ py: 0.5, minHeight: 36, pl: 3 }}
-            >
-              <ListItemIcon sx={{ minWidth: 28 }}>
-                <PeopleOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/participants`) ? 'primary' : 'action'} />
-              </ListItemIcon>
-              <ListItemText primary={t('participants.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
-            </ListItemButton>
-            <ListItemButton
-              selected={isActive(`/courses/${courseId}/similarity`)}
-              onClick={() => navTo(`/courses/${courseId}/similarity`)}
-              sx={{ py: 0.5, minHeight: 36, pl: 3 }}
-            >
-              <ListItemIcon sx={{ minWidth: 28 }}>
-                <CompareArrowsOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/similarity`) ? 'primary' : 'action'} />
-              </ListItemIcon>
-              <ListItemText primary={t('similarity.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
-            </ListItemButton>
-            <ListItemButton
-              onClick={() => { setSettingsOpen(true); if (isMobile) setDrawerOpen(false) }}
-              sx={{ py: 0.5, minHeight: 36, pl: 3 }}
-            >
-              <ListItemIcon sx={{ minWidth: 28 }}>
-                <SettingsOutlined sx={{ fontSize: 18 }} color="action" />
-              </ListItemIcon>
-              <ListItemText primary={t('courses.courseSettings')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
-            </ListItemButton>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={isActive(`/courses/${courseId}/exercises`)}
+                onClick={() => navTo(`/courses/${courseId}/exercises`)}
+                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  <AssignmentOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/exercises`) ? 'primary' : 'action'} />
+                </ListItemIcon>
+                <ListItemText primary={t('exercises.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={isActive(`/courses/${courseId}/grades`)}
+                onClick={() => navTo(`/courses/${courseId}/grades`)}
+                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  <GradingOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/grades`) ? 'primary' : 'action'} />
+                </ListItemIcon>
+                <ListItemText primary={t('grades.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={isActive(`/courses/${courseId}/participants`)}
+                onClick={() => navTo(`/courses/${courseId}/participants`)}
+                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  <PeopleOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/participants`) ? 'primary' : 'action'} />
+                </ListItemIcon>
+                <ListItemText primary={t('participants.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={isActive(`/courses/${courseId}/similarity`)}
+                onClick={() => navTo(`/courses/${courseId}/similarity`)}
+                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  <CompareArrowsOutlined sx={{ fontSize: 18 }} color={isActive(`/courses/${courseId}/similarity`) ? 'primary' : 'action'} />
+                </ListItemIcon>
+                <ListItemText primary={t('similarity.title')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => { setSettingsOpen(true); if (isMobile) setDrawerOpen(false) }}
+                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  <SettingsOutlined sx={{ fontSize: 18 }} color="action" />
+                </ListItemIcon>
+                <ListItemText primary={t('courses.courseSettings')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+              </ListItemButton>
+            </ListItem>
           </List>
         )}
 
-      </List>
+      </Box>
 
       {/* Footer */}
       <Divider />

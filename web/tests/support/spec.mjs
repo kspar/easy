@@ -133,8 +133,10 @@ export const test = base.extend({
    */
   a11y: async ({}, use, testInfo) => {
     const found = []
+    let states = 0
 
     const a11y = async (page, state) => {
+      states++
       const { gate, contrast } = await scan(page)
       for (const f of gate) found.push({ ...f, state, fingerprint: fingerprint(f.rule, f.selector) })
       if (contrast.length) {
@@ -145,7 +147,7 @@ export const test = base.extend({
 
     await use(a11y)
 
-    if (!found.length) return
+    if (!states) return
 
     // Deduplicated by fingerprint: the same violation at three states is one thing to fix, and
     // three copies of it is a wall people learn to scroll past.
@@ -154,10 +156,17 @@ export const test = base.extend({
     // Recorded for the whole-run reconciliation, the same way check counts are. A spec cannot know
     // whether a baseline entry is stale — it only visits its own states — so "this entry no longer
     // fires anywhere" is a question only the full run can answer. `record-a11y.mjs` answers it.
-    appendFileSync(
-      A11Y_PATH,
-      unique.map((f) => JSON.stringify({ spec: basename(testInfo.file), ...f })).join('\n') + '\n',
-    )
+    //
+    // **Written even when nothing was found**, as a bare `{spec, states}` line. Otherwise a run
+    // that scanned cleanly is byte-identical to one that never scanned, and the recorder cannot
+    // tell "everything is fixed" from "the suite did not run" — which is exactly the state this
+    // file reached the moment the last five findings were fixed.
+    const lines = unique.length
+      ? unique.map((f) => JSON.stringify({ spec: basename(testInfo.file), ...f }))
+      : [JSON.stringify({ spec: basename(testInfo.file), states, fingerprint: null })]
+    appendFileSync(A11Y_PATH, lines.join('\n') + '\n')
+
+    if (!unique.length) return
 
     const problems = reconcile(unique, loadBaseline(), { seenStates: 1 })
 

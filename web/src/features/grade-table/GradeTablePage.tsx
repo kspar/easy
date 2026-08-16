@@ -71,6 +71,21 @@ const sortLabelInactiveSx = {
   '&:hover .MuiTableSortLabel-icon': { opacity: 0.5 },
 } as const
 
+/**
+ * Wraps an exercise column's link and its sort arrow, side by side.
+ *
+ * The hover rule lives here rather than on the sort control because the control has no text of its
+ * own any more: `sortLabelInactiveSx` keeps an inactive arrow at `opacity: 0` until hover, and with
+ * nothing inside it there would be nothing to hover over. Hovering anywhere in the header reveals
+ * it, which is what it did when the title was a child.
+ */
+const sortHeaderSx = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 0.25,
+  '&:hover .MuiTableSortLabel-icon': { opacity: 0.5 },
+} as const
+
 const sortedColBg = 'action.hover'
 const sortedColHoverBg = 'action.selected'
 
@@ -151,6 +166,9 @@ export default function GradeTablePage() {
         <IconButton
           onClick={() => navigate(`/courses/${courseId}/exercises`)}
           size="small"
+          // Icon-only, so without this a screen reader announces it as "button" and nothing else.
+          // It is the only way back from this page.
+          aria-label={t('general.back')}
         >
           <ArrowBackOutlined />
         </IconButton>
@@ -279,18 +297,25 @@ export default function GradeTablePage() {
                     const isActive = sortKey === ex.course_exercise_id
                     return (
                       <TableCell key={ex.course_exercise_id} align="center" sx={isActive ? { bgcolor: sortedColBg } : undefined}>
-                        <TableSortLabel
-                          active={isActive}
-                          direction={isActive ? sortDir : 'desc'}
-                          onClick={() => handleSort(ex.course_exercise_id)}
-                          sx={!isActive ? sortLabelInactiveSx : sortLabelSx}
-                        >
+                        {/*
+                        The link sits *beside* the sort control, not inside it.
+
+                        These were always two separate targets — clicking the words navigates,
+                        clicking the arrow sorts, and the spec says so in as many words — but the
+                        link used to be a child of the `TableSortLabel`, which renders a button. A
+                        focusable element inside a button is `nested-interactive`: focus order, what
+                        a screen reader announces and what activation does are all
+                        browser-dependent. Unnesting changes no behaviour and makes both reachable
+                        by keyboard as themselves.
+
+                        The sort control then has no text of its own, so it needs an explicit name.
+                        */}
+                        <Box sx={sortHeaderSx}>
                           <Typography
                             variant="caption"
                             component="a"
                             {...spaLinkProps(`/courses/${courseId}/exercises/${ex.course_exercise_id}`, navigate)}
                             onClick={(e: MouseEvent) => {
-                              e.stopPropagation()
                               if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
                               e.preventDefault()
                               navigate(`/courses/${courseId}/exercises/${ex.course_exercise_id}`)
@@ -310,7 +335,14 @@ export default function GradeTablePage() {
                           >
                             {ex.effective_title}
                           </Typography>
-                        </TableSortLabel>
+                          <TableSortLabel
+                            active={isActive}
+                            direction={isActive ? sortDir : 'desc'}
+                            onClick={() => handleSort(ex.course_exercise_id)}
+                            aria-label={t('general.sortByColumn', { title: ex.effective_title })}
+                            sx={!isActive ? sortLabelInactiveSx : sortLabelSx}
+                          />
+                        </Box>
                       </TableCell>
                     )
                   })}

@@ -50,7 +50,9 @@ if (missing.length) {
   process.exit(2)
 }
 
-const byFingerprint = new Map(found.map((f) => [f.fingerprint, f]))
+// A line with a null fingerprint means "this spec scanned and found nothing" — it exists so that a
+// clean run is distinguishable from a run that never happened. Only real findings go in the map.
+const byFingerprint = new Map(found.filter((f) => f.fingerprint).map((f) => [f.fingerprint, f]))
 const baseline = loadBaseline()
 const stale = Object.keys(baseline).filter((k) => !byFingerprint.has(k))
 const fresh = [...byFingerprint.keys()].filter((k) => !(k in baseline))
