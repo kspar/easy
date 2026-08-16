@@ -34,5 +34,6 @@
   "system-messages.spec.mjs": 2,
   "terms-redirect.spec.mjs": 0,
   "web-update-banner.spec.mjs": 0,
-  "courses-page.spec.mjs": 0
+  "courses-page.spec.mjs": 0,
+  "participants-groups.spec.mjs": 0
 }

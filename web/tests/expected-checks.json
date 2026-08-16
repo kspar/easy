@@ -26,6 +26,7 @@
   "library-share-recent.spec.mjs": 12,
   "markdown-upload.spec.mjs": 15,
   "nav-idp-admin.spec.mjs": 8,
+  "participants-groups.spec.mjs": 10,
   "participants-moodle.spec.mjs": 14,
   "participants-roster.spec.mjs": 11,
   "route-guards.spec.mjs": 21,
