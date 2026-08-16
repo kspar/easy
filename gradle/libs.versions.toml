@@ -24,7 +24,7 @@ jsoup = "1.22.1"
 # spring-boot-starter-test, whose version the Boot BOM decides; pinning it here for those two would
 # risk the two modules disagreeing on the platform version inside one build.
 junit = "5.14.2"
-kaml = "0.52.0"
+kaml = "0.53.0"
 kotlinLogging = "8.0.01"
 kotlinxSerializationJson = "1.5.0"
 liquibase = "4.31.1"
