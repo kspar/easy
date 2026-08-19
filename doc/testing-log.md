@@ -37,6 +37,7 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 24 | A link nested inside the sort button in every exercise column header: focus order, what is announced and what activation does are all browser-dependent. They were *already* two separate click targets — only the DOM nesting was wrong | `GradeTablePage.tsx` | axe, first run | fixed, EZ-1776 |
 | 25 | **MUI leaves `IconButton`, `TableSortLabel` and outlined `Chip` with no visual change at all when tabbed to** — computed background, outline and box-shadow byte-identical focused and unfocused. Their only feedback is the ripple, a click effect that plays once and fades, so a keyboard user who tabs and pauses has nothing on screen | `theme.ts` | the focus-ring rule, after three corrections to it | fixed, EZ-1776 |
 | 26 | Inline comment `type` is unvalidated free text in core (`text` column, no `@Pattern`, no enum, stored verbatim from the request) while the client declares it `'comment' \| 'suggestion'`. Inert today — web writes the field and never reads it back, branching on `suggested_code` instead — so it is a trap for the first reader rather than a live break | `TeacherInlineCommentCrud.kt`, `types.ts` | the `types.ts` contract check, its only surviving finding | EZ-1777 |
+| 27 | `AccessChecksBuilder.testFalse()` — a `@Deprecated("For debugging only")` helper that **refuses all access**, with no callers, living inside the access-control builder. One forgotten line from 403-ing an endpoint. Deleted with the `or` combinator | `access_control_dsl.kt` | the coverage gate naming it as an uncovered line | EZ-1773 |
 | 21 | One spec in the migration corpus compiles to a script with an unbalanced bracket — it would fail on the first submission. The tool that signed off the migration reported it as one of 721 successes | a live spec | `compileSpecTree` learning to parse its own output | EZ-1774 |
 
 Nothing new in production code came out of phase 7, which is itself worth recording: porting two
@@ -341,6 +342,36 @@ stale number is one keystroke from being caught rather than something only its a
 Also worth writing down: for the endpoint count there *is* no honest one-liner, and the nearest
 grep gives 123 against the inventory's 124. When a number has no command, say where it comes from
 instead of leaving a bare figure that looks measured.
+
+### Deleting dead code can fail a coverage gate, and that is the gate working
+
+Removing the `or` combinator (EZ-1773) took `core.ems.service.access_control` from **85% to 84%** and
+failed `koverVerifyTargets`. Nothing got worse. The deleted code was *the best-tested thing in the
+package* — six tests for a facility with zero callers — so taking it out left the ratio standing on
+the lines that were never covered.
+
+The tempting fix is to move the target to 84%. It is the wrong one, and the right one paid for
+itself: the gate was now telling the truth about **17 untested lines of access-control code**, and
+among them was `isCourseExerciseOnCourse`'s student-visibility branch — the whole of what stops a
+student reading an exercise before its visible-from date, reached by five `/student/` endpoints.
+Covering the real gaps took the package to **94%**, further above the line than before the deletion.
+
+Two things generalise:
+
+- **A coverage percentage is a ratio, so it moves when you change either side.** A drop after a
+  deletion says nothing about whether the remaining code got worse; look at what is missed, not at
+  the number. The Kover XML report answers this in about a minute:
+  `python3 -c` over `report.xml`, filtering `line[@mi!='0']`, gives the uncovered line numbers per
+  file, and reading fifteen of them is faster than arguing about a threshold.
+- **The dead code was hiding the live gap.** `student_visible_from = null` means "not scheduled" and
+  had to read as *hidden*; nothing had ever asserted that, and getting it wrong would be silent,
+  permissive, and indistinguishable from correct behaviour on any course whose exercises are all
+  published. It is now `access/unscheduled-reads-as-visible` in `bin/mutate.sh`, and it is CAUGHT.
+
+The same pass found two more dead things in that file: `testTrue()` and `testFalse()`, deprecated
+debug helpers with no callers, which were the package's last two uncovered lines. `testFalse()`
+refuses all access — a helper that 403s an endpoint, living inside the access-control builder, one
+forgotten line from being shipped. Deleted.
 
 ### About what coverage measures, and what it does not
 

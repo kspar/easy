@@ -61,6 +61,16 @@ object TestClock {
     /** The same instant every time — for asserting on ties on purpose. */
     fun fixed(minutesFromEpoch: Int): DateTime = EPOCH.plusMinutes(minutesFromEpoch)
 
+    /**
+     * A fixed instant far enough ahead to still be in the future whenever this suite runs.
+     *
+     * Needed because a little production code compares against the **real** wall clock, which no
+     * injected timeline reaches: `isCourseExerciseOnCourse` decides whether an exercise is hidden
+     * with `visibleFrom.isAfterNow`. The obvious `DateTime.now().plusDays(1)` is banned, and rightly,
+     * so this is the fixed alternative — a date, not an offset, so a failure still reproduces.
+     */
+    fun farFuture(): DateTime = DateTime.parse("2099-01-01T09:00:00Z")
+
     /** Called between tests so ids and instants do not drift across a run. */
     fun reset() = tick.set(0)
 }
@@ -141,6 +151,7 @@ object Fixtures {
         parentDirId: Long? = null,
         public: Boolean = true,
         anonymousAutoassessEnabled: Boolean = false,
+        solutionFileType: SolutionFileType = SolutionFileType.TEXT_EDITOR,
     ): Long {
         // Mirrors CreateExercise: an exercise owns an *implicit* dir whose **name is the exercise
         // id**, and `getImplicitDirFromExercise` finds it by that name rather than by following
@@ -174,7 +185,7 @@ object Fixtures {
             it[ExerciseVer.title] = title
             it[textHtml] = "<p>$title</p>"
             it[solutionFileName] = "solution.py"
-            it[solutionFileType] = SolutionFileType.TEXT_EDITOR
+            it[ExerciseVer.solutionFileType] = solutionFileType
         }
 
         // The rename that makes getImplicitDirFromExercise able to find it.

@@ -133,6 +133,24 @@ mutate "sweep/grace-cutoff-inclusive" \
   'run_core' \
   'StoredFileSweepTest.*strict cutoff'
 
+# The permissive-and-silent one: `student_visible_from = null` means "not scheduled", and reading it
+# as "no restriction" would show every unscheduled exercise to every student while looking correct on
+# any course whose exercises are all published.
+mutate "access/unscheduled-reads-as-visible" \
+  core/src/main/kotlin/core/ems/service/access_control/course.kt \
+  's/            val isHidden = visibleFrom == null \|\| visibleFrom\.isAfterNow/            val isHidden = visibleFrom != null \&\& visibleFrom.isAfterNow/' \
+  'val isHidden = visibleFrom != null' \
+  'run_core' \
+  'AccessControlRulesTest.*hidden from a student'
+
+# `userOnCourse`'s admin branch is a bypass of the *access* check, not of the existence check.
+mutate "access/admin-skips-course-exists" \
+  core/src/main/kotlin/core/ems/service/access_control/course.kt \
+  's/fun AccessChecksBuilder\.userOnCourse\(courseId: Long\) = add \{ caller: EasyUser ->\n    when \{\n        caller\.isAdmin\(\) -> assertCourseExists\(courseId\)/fun AccessChecksBuilder.userOnCourse(courseId: Long) = add { caller: EasyUser ->\n    when {\n        caller.isAdmin() -> Unit/' \
+  'caller.isAdmin() -> Unit' \
+  'run_core' \
+  'AccessControlRulesTest.*admin to any course that exists'
+
 mutate "security/resource-permitall-too-broad" \
   core/src/main/kotlin/core/conf/security/SecurityConf.kt \
   's{"/\*/resource/\*/\*",}{"/*/resource/**",}' \

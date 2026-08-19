@@ -2,8 +2,10 @@ package core.ems.service.access_control
 
 import core.conf.security.EasyRole
 import core.db.DirAccessLevel
+import core.db.SolutionFileType
 import core.exception.ForbiddenException
 import core.exception.InvalidRequestException
+import core.exception.ReqError
 import core.testing.Auth
 import core.testing.Fixtures
 import core.testing.IntegrationTest
@@ -154,6 +156,95 @@ class AccessControlRulesTest {
         assertThrows(ForbiddenException::class.java) {
             asAdmin().assertAccess { studentOnCourse(courseId) }
         }
+    }
+
+    /**
+     * `userOnCourse`'s admin branch, and the half of it that is easy to lose.
+     *
+     * It is not "admins skip the check": it still calls `assertCourseExists`, so an admin on a stale
+     * course id gets a 400 rather than being waved through to a handler that then reads no rows and
+     * answers an empty page. The note above `studentOnCourse` says this function has an admin bypass;
+     * until now nothing called it as an admin, so the claim was documentation rather than behaviour.
+     */
+    @Test
+    fun `userOnCourse admits an admin to any course that exists, and refuses one that does not`() {
+        asAdmin().assertAccess { userOnCourse(courseId) }
+        asAdmin().assertAccess { userOnCourse(otherCourseId) }
+
+        assertThrows(InvalidRequestException::class.java) {
+            asAdmin().assertAccess { userOnCourse(999_999) }
+        }
+    }
+
+    // --- the course exercise, and the student-visibility gate --------------------------------
+
+    @Test
+    fun `assertCourseExerciseIsOnCourse refuses a course exercise that is on another course`() {
+        assertCourseExerciseIsOnCourse(courseExId, courseId)
+
+        assertThrows(InvalidRequestException::class.java) {
+            assertCourseExerciseIsOnCourse(courseExId, otherCourseId)
+        }
+        assertThrows(InvalidRequestException::class.java) {
+            assertCourseExerciseIsOnCourse(999_999, courseId)
+        }
+    }
+
+    /**
+     * The visibility gate: five `/student/` endpoints pass `RequireStudentVisible(caller.id)` here,
+     * and this function is the whole of what stops a student reading an exercise before its
+     * visible-from date — the details, the drafts, the teacher's activities on it.
+     *
+     * Three states, and the third is the one worth having a test for. `student_visible_from = null`
+     * means "not scheduled", which must read as hidden and not as "no restriction" — the failure
+     * would be silent, permissive, and indistinguishable from correct behaviour on any course whose
+     * exercises are all published.
+     */
+    @Test
+    fun `a course exercise is hidden from a student until its visible-from date`() {
+        // Published at the start of the timeline: visible.
+        assertCourseExerciseIsOnCourse(courseExId, courseId, RequireStudentVisible(student))
+
+        val scheduled = transaction {
+            Fixtures.courseExercise(courseId, exerciseId, orderIdx = 2, studentVisibleFrom = TestClock.farFuture())
+        }
+        assertThrows(InvalidRequestException::class.java) {
+            assertCourseExerciseIsOnCourse(scheduled, courseId, RequireStudentVisible(student))
+        }
+
+        val unscheduled = transaction {
+            Fixtures.courseExercise(courseId, exerciseId, orderIdx = 3, studentVisibleFrom = null)
+        }
+        assertThrows(InvalidRequestException::class.java) {
+            assertCourseExerciseIsOnCourse(unscheduled, courseId, RequireStudentVisible(student))
+        }
+
+        // And without the flag, visibility is not consulted at all — this is a teacher's view.
+        assertCourseExerciseIsOnCourse(scheduled, courseId)
+        assertCourseExerciseIsOnCourse(unscheduled, courseId)
+    }
+
+    /**
+     * `assertExerciseHasTextEditorSubmission` guards the two anonymous endpoints — reading an
+     * exercise's details and submitting to it — both of which are `permitAll`. So this runs for
+     * callers off the internet, and its two refusals are different exceptions on purpose: an
+     * exercise that does not exist must not be distinguishable from one you cannot reach.
+     */
+    @Test
+    fun `the anonymous surface accepts only a text-editor exercise, and does not confirm the others exist`() {
+        assertExerciseHasTextEditorSubmission(exerciseId)
+
+        val uploadId = transaction {
+            Fixtures.exercise("Upload only", teacher, solutionFileType = SolutionFileType.TEXT_UPLOAD)
+        }
+        assertThrows(InvalidRequestException::class.java) {
+            assertExerciseHasTextEditorSubmission(uploadId)
+        }
+
+        val e = assertThrows(ForbiddenException::class.java) {
+            assertExerciseHasTextEditorSubmission(999_999)
+        }
+        assertEquals(ReqError.NO_EXERCISE_ACCESS, e.code)
     }
 
     // --- exerciseViaCourse -----------------------------------------------------------------

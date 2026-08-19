@@ -36,7 +36,7 @@ stale is exactly what happened to the first version of this table.
 
 | | Size | Tests |
 | --- | --- | --- |
-| **core** | 118 `@RestController` classes (124 endpoints) | 35 test files, **190 tests, all running** |
+| **core** | 118 `@RestController` classes (124 endpoints) | 35 test files, **189 tests, all running** |
 | **web** | 122 `.ts`/`.tsx` files | 14 unit files, 35 browser specs (34 in CI) |
 | **tsl** | the TSL compiler | 3 test files, **81 tests** |
 | **tsl-common** | the shared TSL model | 1 test file, **30 tests** |
@@ -55,7 +55,7 @@ Spring's resolved handler patterns. Grepping `@(Get|Post|…)Mapping` gives 123,
 number — a mapping declaring two paths is one annotation and two endpoints. When these disagree,
 the inventory is right and the grep is a coincidence.
 
-190 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
+189 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
 parameterised — `StorageServiceContractTest` is 9 annotations and 15 runs, over two backends — and
 counting annotations would have understated the suite while *looking* like a measurement. Read it
 off the last line of `./gradlew :core:test` instead. It takes about 28 seconds, measured over three
@@ -101,7 +101,7 @@ page in the app.
 
 ### The backend blocker is gone
 
-**All 190 core tests now run, in CI and on a laptop, with no setup** — 32 when this started, of which 25 ran. EZ-1715 landed on 2026-08-15,
+**All 189 core tests now run, in CI and on a laptop, with no setup** — 32 when this started, of which 25 ran. EZ-1715 landed on 2026-08-15,
 but not as written: Testcontainers rather than a postgres service container, because a service
 container fixes CI and leaves the laptop exactly as broken as it was — which is *why* the
 database-backed tests had stopped running in both places. `DEVELOPMENT.md` §5 has the mechanics.
@@ -487,7 +487,7 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
    directory `aae` lays out and the answers it gives. What is still missing is running a generated
    script against a real tiivad: **EZ-1775**.
 9. ~~**Measurement, a11y, flake**~~ — **done 2026-08-16.** Kover with class-level targets;
-   `bin/mutate.sh`, 23 deliberate defects and 23 caught; axe inside the browser specs, plus three
+   `bin/mutate.sh`, 25 deliberate defects and 25 caught; axe inside the browser specs, plus three
    rules axe does not have (a `<main>` landmark, a visible keyboard focus ring, links sharing a name
    but not a destination); and a nightly workflow running each spec five times to find the
    intermittence `retries: 0` refuses to paper over, alongside the mutation suite.
