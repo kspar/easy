@@ -32,23 +32,28 @@ and every count in here turned out to be wrong.
 Counted, not estimated — and this time with the commands, because hand-maintained numbers going
 stale is exactly what happened to the first version of this table.
 
-**As of 2026-08-16:**
+**As of 2026-08-19:**
 
 | | Size | Tests |
 | --- | --- | --- |
-| **core** | 117 `@RestController` classes (124 endpoints) | 35 test files, **190 tests, all running** |
-| **web** | 122 `.ts`/`.tsx` files | 13 unit files, 35 browser specs (34 in CI) |
+| **core** | 118 `@RestController` classes (124 endpoints) | 35 test files, **190 tests, all running** |
+| **web** | 122 `.ts`/`.tsx` files | 14 unit files, 35 browser specs (34 in CI) |
 | **tsl** | the TSL compiler | 3 test files, **81 tests** |
 | **tsl-common** | the shared TSL model | 1 test file, **30 tests** |
 | **aae** | the executor | 5 test files, **91 tests** |
 
 ```sh
-grep -rl '@RestController' core/src/main/kotlin | wc -l          # 117
+grep -rl '@RestController' core/src/main/kotlin | wc -l          # 118
 find core/src/test/kotlin -name '*.kt' | wc -l                   # 35
 find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 122
 ls web/tests/browser/*.spec.mjs | wc -l                          # 35
-ls web/tests/unit/*.test.mjs | wc -l                             # 13
+ls web/tests/unit/*.test.mjs | wc -l                             # 14
 ```
+
+The endpoint figure has no command, on purpose: it comes from `EndpointInventory`, which reads
+Spring's resolved handler patterns. Grepping `@(Get|Post|…)Mapping` gives 123, which is a different
+number — a mapping declaring two paths is one annotation and two endpoints. When these disagree,
+the inventory is right and the grep is a coincidence.
 
 190 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
 parameterised — `StorageServiceContractTest` is 9 annotations and 15 runs, over two backends — and
@@ -65,9 +70,10 @@ slower tick would make them slow rather than make them pass.
 The web numbers look better than they are, because the check counts are lopsided:
 
 ```
-unit      144 tests across 13 files — the markdown commands (11,903 property checks), merge
-          resolution, the grade table, api/client, i18n parity, localStorage, tslModel, the a11y
-          gate's own arithmetic, the flake reporter's, and the suite's bookkeeping
+unit      191 tests across 14 files — the markdown commands (11,903 property checks), merge
+          resolution, the grade table, api/client, i18n parity, localStorage, tslModel, the
+          api/types.ts contract, the a11y gate's own arithmetic, the flake reporter's, and the
+          suite's bookkeeping
 browser   748 checks across the 34 specs CI runs (a 35th needs a real core)
 ```
 
@@ -289,9 +295,9 @@ still match what core returns. The failure mode is a green suite and a broken ap
 live example on record: a fixture kept `anonymous_autoassess_template: null` after the column became
 non-nullable, and nothing noticed because both sides were mocked.
 
-**Done 2026-08-15 (EZ-1770).** `doc/core/api-shapes.json` is generated from core's Kotlin by
-reflection and committed: 122 endpoints, 189 types, 182 nullable fields. A plain `@Test` regenerates
-it and fails if the committed file differs.
+**Done 2026-08-15 (EZ-1770), completed 2026-08-19 (EZ-1772).** `doc/core/api-shapes.json` is
+generated from core's Kotlin by reflection and committed: 123 endpoints, 194 types, 184 nullable
+fields. A plain `@Test` regenerates it and fails if the committed file differs.
 
 The reason that beats generating OpenAPI is not size — it is that **the artefact is a file in git,
 so the diff is the review**. When a column becomes non-nullable, the pull request shows
@@ -310,6 +316,50 @@ is how you write a legible fixture, not drift. The line belongs at **values that
 wrong** — `null` in a non-nullable field, a wrong type, an enum value core cannot produce. Absent
 and unknown keys are warnings, ratcheted per spec in `web/tests/contract-baseline.json` so the
 count can fall but never rise.
+
+#### The TypeScript half (EZ-1772, 2026-08-19)
+
+Fixtures only cover the fields some test happens to read. `web/src/api/types.ts` covers everything
+*the app* reads, and for four days nothing compared it to anything.
+`web/tests/unit/api-types-contract.test.mjs` now does, off the committed shape file — no backend, no
+Docker, ~400 ms. 45 of the 67 interfaces under `web/src/api/` carry a line naming their endpoint and
+the path from the response root:
+
+```ts
+/** @endpoint GET /v2/teacher/courses -> courses[] */
+/** @requestBody PUT /v2/exercises/{exerciseId} */
+```
+
+Because the endpoint string has to exist in the shape file, this is also the only check in the repo
+that notices a route being renamed out from under the client.
+
+**Direction is the whole substance of it.** A naive version compares two property lists and
+complains about every difference, which is wrong both ways: a response field core sends that the app
+ignores is normal, while one the app declares and core does not send is a live bug — every read is
+`undefined` and TypeScript insists otherwise. For a request body those swap. So each of the six
+rules states which direction it applies to, and severity follows from that rather than from how
+different the two sides look.
+
+Result: **one** finding, EZ-1777 — core stores inline-comment `type` as unvalidated free text and
+the client declares it as `'comment' | 'suggestion'`. Inert today, because nothing reads the field
+back, so it is a trap rather than a break. Waived in `web/tests/api-types-baseline.json`, which
+demands a note and an issue per waiver and fails when a waiver stops firing.
+
+**What it does not reach**: only `interface` declarations. Request bodies are mostly declared inline
+in a `mutationFn` signature, so of ~40 mutating endpoints exactly one carries a `@requestBody` line
+and the two request-direction rules guard that one. An inline type literal is not just unchecked, it
+is also absent from the unannotated list — invisible to the gate whose job is making unchecked types
+visible. **EZ-1779.**
+
+**A finding of one is exactly when to distrust the detector**, so this one is built the other way
+round: half its 38 tests feed it a deliberately broken client and fail if the rule stays quiet, and
+`bin/mutate.sh` carries four mutations of the real `types.ts` — the first web mutations in that file.
+That discipline paid immediately. The first version had a rule comparing the *Kotlin type name* a
+reference resolved to; it opened with seven findings, and four were its own artefacts, because core
+declares a `RespAsset` and a `GroupResp` per controller and five structurally identical wire types
+therefore have five names. Replacing it with a recursive structural walk removed the four and is
+strictly stronger — a genuinely swapped reference now fails on the property names that do not line
+up. See `doc/testing-log.md`.
 
 ### Migration tests — have none, and we now have a reason to want them
 
@@ -377,10 +427,18 @@ one, it is worth making it fail on purpose once.
 
 The condition EZ-1710 can read to decide whether to ship: run conclusion is success **and** the
 JUnit report has zero failures **and** no quarantine entry has expired **and** contract-warning
-counts are at or below baseline **and** the a11y baseline produced no new fingerprints.
+counts are at or below baseline **and** the a11y baseline produced no new fingerprints **and** no
+`api-types-baseline.json` waiver has gone stale.
 
-All five are artefacts the suite produces anyway. The point of naming them is that "the build is
+All six are artefacts the suite produces anyway. The point of naming them is that "the build is
 green" and "this is safe to deploy" should be the same sentence, checkable by a script.
+
+The three baseline files — `contract-baseline.json`, `a11y-baseline.json`,
+`api-types-baseline.json` — all obey the same two rules, and both matter equally. An entry without a
+note and an issue is **rejected at load**, so "we looked and decided this is fine" cannot be spelled
+the same way as "nobody looked". And an entry that no longer fires **fails**, so the files can only
+shrink: without that, a baseline accumulates permissions for problems that were fixed long ago and
+silently re-permits them when they come back.
 
 ## Suggested order
 
@@ -393,9 +451,9 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
 2. ~~**Endpoint security surface and authorization matrix** (EZ-1769)~~ — **done 2026-08-15.**
    Anonymous gets 401 on all 124 endpoints bar the five public ones; a role outside `@Secured` gets
    exactly 403 across ~250 combinations.
-3. ~~**Contract checks** (EZ-1770)~~ — **done 2026-08-15.** `doc/core/api-shapes.json` is
-   generated and pinned; the browser harness checks every fixture against it. The TypeScript half
-   is EZ-1772.
+3. ~~**Contract checks** (EZ-1770, EZ-1772)~~ — **done 2026-08-15, completed 2026-08-19.**
+   `doc/core/api-shapes.json` is generated and pinned; the browser harness checks every fixture
+   against it, and a unit test checks `web/src/api/types.ts` against it too. Both halves closed.
 4. ~~**Service tests for access control**~~ — **done 2026-08-16**, with grading behaviour
    alongside it: the threshold boundary, the four counts, and per-student visibility exceptions.
 5. ~~**Web migration to `@playwright/test` + `vitest`**~~ — **done 2026-08-16.** All 27 specs and
@@ -429,7 +487,7 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
    directory `aae` lays out and the answers it gives. What is still missing is running a generated
    script against a real tiivad: **EZ-1775**.
 9. ~~**Measurement, a11y, flake**~~ — **done 2026-08-16.** Kover with class-level targets;
-   `bin/mutate.sh`, 19 deliberate defects and 19 caught; axe inside the browser specs, plus three
+   `bin/mutate.sh`, 23 deliberate defects and 23 caught; axe inside the browser specs, plus three
    rules axe does not have (a `<main>` landmark, a visible keyboard focus ring, links sharing a name
    but not a destination); and a nightly workflow running each spec five times to find the
    intermittence `retries: 0` refuses to paper over, alongside the mutation suite.

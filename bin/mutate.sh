@@ -103,6 +103,9 @@ run_core_only()  { ./gradlew :core:test --tests "$1" --rerun-tasks 2>&1; }
 run_tsl()        { ./gradlew :tsl:test :tsl-common:test --rerun-tasks 2>&1; }
 run_aae()        { (cd aae && PYTHONDONTWRITEBYTECODE=1 find . -name __pycache__ -not -path './.venv/*' -exec rm -rf {} + 2>/dev/null; \
                     cd "$REPO_ROOT/aae" && PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest tests -q --no-header -p no:warnings --tb=no -rf 2>&1); }
+# Only the contract spec, not the whole unit suite: it is the only one that reads src/api/types.ts,
+# and at ~400 ms a mutation costs less than deciding whether to bother.
+run_web_unit()   { (cd "$REPO_ROOT/web" && npx vitest run tests/unit/api-types-contract.test.mjs 2>&1); }
 
 echo "Mutating. Each line is one deliberate defect and whether the suite noticed."
 echo
@@ -245,6 +248,47 @@ mutate "aae/validation-disabled" \
   'if False and set(content.keys())' \
   'run_aae' \
   'test_every_field_is_required'
+
+# --- web: the client's own picture of what core sends ---------------------------------------------
+#
+# The first web mutations in this file, and they earn their place: the contract check they exercise
+# opened with **one** real finding, and a checker that reports almost nothing is precisely the shape
+# that turned out, seven times over, to be a checker that could not report anything.
+#
+# Each mutation renames or merges rather than simply deleting a line, because the guard above tests
+# for the mutated text with `grep -F` and a deletion leaves a substring of the original behind — so
+# "did the edit land" would answer yes either way.
+
+mutate "contract/nullable-dropped" \
+  web/src/api/types.ts \
+  's/  alias: string \| null\n  course_code/  alias: string; course_code/' \
+  'alias: string; course_code' \
+  'run_web_unit' \
+  'nullable-not-declared'
+
+mutate "contract/request-field-renamed" \
+  web/src/api/types.ts \
+  's/export interface LibraryExerciseUpdate \{\n  title: string/export interface LibraryExerciseUpdate {\n  titel: string/' \
+  'titel: string' \
+  'run_web_unit' \
+  'required-request-field-missing'
+
+mutate "contract/enum-value-dropped" \
+  web/src/api/types.ts \
+  "s/'UNSTARTED' \\| 'UNGRADED' \\| 'STARTED'/'UNSTARTED' | 'STARTED'/" \
+  "= 'UNSTARTED' | 'STARTED' | 'COMPLETED'" \
+  'run_web_unit' \
+  'enum-value-unhandled'
+
+# The one that guards the guard: a mistyped path must fail, not quietly leave the interface
+# unchecked. An annotation nobody can resolve is the same state as no annotation at all, and that
+# state is what this whole check exists to end.
+mutate "contract/annotation-path-typo" \
+  web/src/api/types.ts \
+  's/-> courses\[\]/-> kursused[]/' \
+  '-> kursused[]' \
+  'run_web_unit' \
+  'annotation-unresolvable'
 
 if $LIST_ONLY; then exit 0; fi
 

@@ -1,5 +1,6 @@
 // Course types
 
+/** @endpoint GET /v2/student/courses -> courses[] */
 export interface StudentCourse {
   id: string
   title: string
@@ -10,6 +11,7 @@ export interface StudentCourse {
   color: string
 }
 
+/** @endpoint GET /v2/teacher/courses -> courses[] */
 export interface TeacherCourse {
   id: string
   title: string
@@ -30,12 +32,14 @@ export type StudentExerciseStatus = 'UNSTARTED' | 'UNGRADED' | 'STARTED' | 'COMP
 export type AutoGradeStatus = 'NONE' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
 export type SolutionFileType = 'TEXT_EDITOR' | 'TEXT_UPLOAD'
 
+/** @endpoint GET /v2/student/courses/{courseId}/exercises -> exercises[].grade */
 export interface GradeResp {
   grade: number
   is_autograde: boolean
   is_graded_directly: boolean
 }
 
+/** @endpoint GET /v2/student/courses/{courseId}/exercises -> exercises[] */
 export interface CourseExercise {
   id: string
   effective_title: string
@@ -47,6 +51,7 @@ export interface CourseExercise {
   ordering_idx: number
 }
 
+/** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId} -> (root) */
 export interface ExerciseDetails {
   effective_title: string
   text_html: string | null
@@ -59,11 +64,13 @@ export interface ExerciseDetails {
   solution_file_type: SolutionFileType
 }
 
+/** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/all -> submissions[].auto_assessment */
 export interface AutomaticAssessmentResp {
   grade: number
   feedback: string | null
 }
 
+/** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/all -> submissions[] */
 export interface SubmissionResp {
   id: string
   number: number
@@ -75,6 +82,7 @@ export interface SubmissionResp {
   auto_assessment: AutomaticAssessmentResp | null
 }
 
+/** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/draft -> (root) */
 export interface DraftResp {
   solution: string
   created_at: string
@@ -82,12 +90,14 @@ export interface DraftResp {
 
 // Teacher activity types (student view)
 
+/** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/activities -> teacher_activities[].teacher */
 export interface TeacherResp {
   id: string
   given_name: string
   family_name: string
 }
 
+/** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/activities -> teacher_activities[] */
 export interface TeacherActivityResp {
   id: string
   submission_id: string
@@ -100,6 +110,8 @@ export interface TeacherActivityResp {
   teacher: TeacherResp
 }
 
+/** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/inline-comments -> inline_comments[] */
+/** @endpoint POST /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/inline-comments -> (root) */
 export interface InlineCommentResp {
   id: string
   submission_id: string
@@ -118,11 +130,13 @@ export interface InlineCommentResp {
 
 // Teacher exercise types
 
+/** @endpoint GET /v2/courses/{courseId}/groups -> groups[] */
 export interface GroupResp {
   id: string
   name: string
 }
 
+/** @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students -> latest_submissions[].submission */
 export interface LatestSubmissionResp {
   id: string
   submission_number: number
@@ -131,6 +145,7 @@ export interface LatestSubmissionResp {
   seen: boolean
 }
 
+/** @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students -> latest_submissions[] */
 export interface SubmissionRow {
   submission: LatestSubmissionResp | null
   status: StudentExerciseStatus
@@ -140,6 +155,7 @@ export interface SubmissionRow {
   groups: GroupResp[]
 }
 
+/** @endpoint GET /v2/teacher/courses/{courseId}/exercises -> exercises[] */
 export interface TeacherCourseExercise {
   course_exercise_id: string
   exercise_id: string
@@ -162,10 +178,12 @@ export interface TeacherCourseExercise {
 
 // Teacher exercise detail types
 
+/** @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId} -> exception_students[].soft_deadline */
 export interface ExceptionValue {
   value: string | null
 }
 
+/** @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId} -> exception_students[] */
 export interface ExceptionStudent {
   student_id: string
   soft_deadline: ExceptionValue | null
@@ -173,6 +191,7 @@ export interface ExceptionStudent {
   student_visible_from: ExceptionValue | null
 }
 
+/** @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId} -> exception_groups[] */
 export interface ExceptionGroup {
   group_id: number
   soft_deadline: ExceptionValue | null
@@ -180,6 +199,7 @@ export interface ExceptionGroup {
   student_visible_from: ExceptionValue | null
 }
 
+/** @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId} -> (root) */
 export interface TeacherExerciseDetails {
   exercise_id: string
   title: string
@@ -215,15 +235,23 @@ export interface TeacherExerciseDetails {
 
 // Participants types
 
+/** @endpoint GET /v2/courses/{courseId}/participants -> students[] */
 export interface StudentParticipant {
   id: string
   email: string
   given_name: string
   family_name: string
   created_at: string | null
+  /**
+   * The Moodle account this student is linked to, on a Moodle-linked course. Core has always sent
+   * it; it was undeclared here until EZ-1772, so the app could not read it. Nothing renders it yet
+   * — the participant table shows a Moodle username only for *pending* students — which is EZ-1778.
+   */
+  moodle_username: string | null
   groups: GroupResp[]
 }
 
+/** @endpoint GET /v2/courses/{courseId}/participants -> teachers[] */
 export interface TeacherParticipant {
   id: string
   email: string
@@ -232,6 +260,7 @@ export interface TeacherParticipant {
   created_at: string | null
 }
 
+/** @endpoint GET /v2/courses/{courseId}/participants -> students_moodle_pending[] */
 export interface MoodlePendingStudent {
   moodle_username: string
   email: string
@@ -239,6 +268,7 @@ export interface MoodlePendingStudent {
   groups: GroupResp[]
 }
 
+/** @endpoint GET /v2/courses/{courseId}/participants -> (root) */
 export interface ParticipantsResp {
   students: StudentParticipant[] | null
   teachers: TeacherParticipant[] | null
@@ -246,6 +276,7 @@ export interface ParticipantsResp {
   moodle_linked: boolean
 }
 
+/** @endpoint GET /v2/courses/{courseId}/moodle -> (root) */
 export interface MoodlePropsResp {
   moodle_props: {
     moodle_short_name: string
@@ -257,6 +288,7 @@ export interface MoodlePropsResp {
 }
 
 // Teacher submission summary (from all-submissions-by-student endpoint, no solution)
+/** @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/all/students/{studentId} -> submissions[] */
 export interface TeacherSubmissionSummaryResp {
   id: string
   submission_number: number
@@ -266,6 +298,7 @@ export interface TeacherSubmissionSummaryResp {
 }
 
 // Teacher submission detail (includes solution code)
+/** @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId} -> (root) */
 export interface TeacherSubmissionDetailResp {
   id: string
   submission_number: number
@@ -278,6 +311,7 @@ export interface TeacherSubmissionDetailResp {
 }
 
 // Teacher's own test submission
+/** @endpoint GET /v2/exercises/{exerciseId}/testing/autoassess/submissions -> submissions[] */
 export interface TeacherTestSubmissionResp {
   id: string
   solution: string
@@ -288,11 +322,13 @@ export interface TeacherTestSubmissionResp {
 }
 
 // Teacher autoassess result
+/** @endpoint POST /v2/exercises/{exerciseId}/testing/autoassess -> (root) */
 export interface TeacherAutoassessResp {
   grade: number
   feedback: string | null
 }
 
+/** @endpoint GET /v2/courses/{courseId}/invite -> (root) */
 export interface CourseInviteResp {
   invite_id: string
   expires_at: string
@@ -306,6 +342,7 @@ export interface CourseInviteResp {
 
 export type DirAccessLevel = 'P' | 'PR' | 'PRA' | 'PRAW' | 'PRAWM'
 
+/** @endpoint GET /v2/lib/dirs/{dirId} -> child_dirs[] */
 export interface LibraryDir {
   id: string
   name: string
@@ -315,6 +352,7 @@ export interface LibraryDir {
   modified_at: string
 }
 
+/** @endpoint GET /v2/lib/dirs/{dirId} -> child_exercises[] */
 export interface LibraryExercise {
   exercise_id: string
   dir_id: string
@@ -329,22 +367,26 @@ export interface LibraryExercise {
   modified_by: string
 }
 
+/** @endpoint GET /v2/lib/dirs/{dirId} -> (root) */
 export interface LibraryDirResp {
   current_dir: LibraryDir | null
   child_dirs: LibraryDir[]
   child_exercises: LibraryExercise[]
 }
 
+/** @endpoint GET /v2/lib/dirs/{dirId}/parents -> parents[] */
 export interface LibraryDirParent {
   id: string
   name: string
 }
 
+/** @endpoint GET /v2/exercises/{exerciseId} -> assets[] */
 export interface LibraryExerciseAsset {
   file_name: string
   file_content: string
 }
 
+/** @endpoint GET /v2/exercises/{exerciseId} -> on_courses[] */
 export interface LibraryExerciseCourse {
   id: string
   title: string
@@ -353,6 +395,7 @@ export interface LibraryExerciseCourse {
   course_exercise_title_alias: string | null
 }
 
+/** @endpoint GET /v2/exercises/{exerciseId} -> (root) */
 export interface LibraryExerciseDetail {
   dir_id: string
   effective_access: DirAccessLevel
@@ -381,6 +424,7 @@ export interface LibraryExerciseDetail {
 }
 
 /** Body of PUT /exercises/{id} — the whole exercise, not a patch. */
+/** @requestBody PUT /v2/exercises/{exerciseId} */
 export interface LibraryExerciseUpdate {
   title: string
   text_md: string | null
@@ -396,16 +440,19 @@ export interface LibraryExerciseUpdate {
 
 // Library sharing/access types
 
+/** @endpoint GET /v2/lib/dirs/{dirId}/access -> direct_accounts[].inherited_from */
 export interface InheritingDirRef {
   id: string
   name: string
 }
 
+/** @endpoint GET /v2/lib/dirs/{dirId}/access -> direct_any */
 export interface AnyAccessResp {
   access: DirAccessLevel
   inherited_from?: InheritingDirRef
 }
 
+/** @endpoint GET /v2/lib/dirs/{dirId}/access -> direct_accounts[] */
 export interface AccountAccessResp {
   username: string
   given_name: string
@@ -416,6 +463,7 @@ export interface AccountAccessResp {
   inherited_from?: InheritingDirRef
 }
 
+/** @endpoint GET /v2/lib/dirs/{dirId}/access -> direct_groups[] */
 export interface GroupAccessResp {
   id: string
   name: string
@@ -423,6 +471,7 @@ export interface GroupAccessResp {
   inherited_from?: InheritingDirRef
 }
 
+/** @endpoint GET /v2/lib/dirs/{dirId}/access -> (root) */
 export interface DirAccessesResp {
   direct_any: AnyAccessResp | null
   direct_accounts: AccountAccessResp[]
@@ -438,6 +487,7 @@ export interface DirAccessesResp {
 // coefficient over character bigrams, and a Levenshtein-based FuzzyWuzzy ratio. Neither understands
 // code, so renaming variables lowers both — worth knowing before reading a low score as innocence.
 
+/** @endpoint POST /v2/exercises/{exerciseId}/similarity -> submissions[] */
 export interface SimilarSubmissionResp {
   id: string
   created_at: string
@@ -447,6 +497,7 @@ export interface SimilarSubmissionResp {
   course_title: string
 }
 
+/** @endpoint POST /v2/exercises/{exerciseId}/similarity -> scores[] */
 export interface SimilarityScoreResp {
   sub_1: string
   sub_2: string
@@ -456,6 +507,7 @@ export interface SimilarityScoreResp {
   score_b: number
 }
 
+/** @endpoint POST /v2/exercises/{exerciseId}/similarity -> (root) */
 export interface SimilarityResp {
   submissions: SimilarSubmissionResp[]
   /** Core returns at most the 100 highest-scoring pairs, ordered by score_a + score_b. */

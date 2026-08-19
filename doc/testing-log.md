@@ -24,7 +24,7 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 10 | Per-cell `find()` over the roster: O(students × exercises × students), ≈2M comparisons per sort on a 300-student course | `GradeTablePage.tsx` | extracting it to test it | EZ-1767 |
 | 11 | Moodle sync poll dies mid-sync: cleanup cleared the interval without nulling the ref, so the guard then refused to start a replacement. Spinner spins forever; a reload fixes it, so nobody filed it | `ParticipantsPage.tsx` | reading the code | EZ-1768 |
 | 12 | Three columns whose Kotlin nullability disagrees with the schema | `Tables.kt` | schema-vs-Tables drift test | EZ-1771 |
-| 13 | `moodle_username` is sent by core and **not declared** in `web/src/api/types.ts`, so the app cannot read it | `types.ts` | contract check, incidentally | EZ-1772 |
+| 13 | `moodle_username` is sent by core and **not declared** in `web/src/api/types.ts`, so the app cannot read it | `types.ts` | contract check, incidentally | declared 2026-08-19 (EZ-1772); rendering it is EZ-1778 |
 | 14 | The grade input has no `label` and no `aria-label`: a screen reader announces the control that sets a student's grade as "edit text, blank" | `ActivityFeed.tsx` | writing a locator for it | EZ-1776 |
 | 15 | Course cards navigated with a bare `onClick`, so **ctrl/cmd+click could not open a course in a new tab** — on the first screen of every session, and against this repo's own written UI convention. The sanctioned helper already existed, stranded in another file | `CoursesPage.tsx` | writing a locator for it | fixed, `spaLink.ts` |
 | 16 | Two hooks wrote to `localStorage` **unguarded, from click handlers**. `setItem` throws in Safari private browsing, on a full quota, and on access inside an iframe with third-party cookies blocked — the last of which `useEmbedTheme` documents *because the embed hit it*. The failure is not a lost preference; it is an exception escaping a click handler | `useSavedGroup.ts`, `useRecentExercises.ts` | deduplicating four copies | fixed, `api/localStorage.ts` |
@@ -36,6 +36,7 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 23 | `<ul>`s whose direct children were `role="button"`, so assistive technology loses the item count or does not announce a list at all — the whole sidebar nav | `AppLayout.tsx` | axe, first run | fixed, EZ-1776 |
 | 24 | A link nested inside the sort button in every exercise column header: focus order, what is announced and what activation does are all browser-dependent. They were *already* two separate click targets — only the DOM nesting was wrong | `GradeTablePage.tsx` | axe, first run | fixed, EZ-1776 |
 | 25 | **MUI leaves `IconButton`, `TableSortLabel` and outlined `Chip` with no visual change at all when tabbed to** — computed background, outline and box-shadow byte-identical focused and unfocused. Their only feedback is the ripple, a click effect that plays once and fades, so a keyboard user who tabs and pauses has nothing on screen | `theme.ts` | the focus-ring rule, after three corrections to it | fixed, EZ-1776 |
+| 26 | Inline comment `type` is unvalidated free text in core (`text` column, no `@Pattern`, no enum, stored verbatim from the request) while the client declares it `'comment' \| 'suggestion'`. Inert today — web writes the field and never reads it back, branching on `suggested_code` instead — so it is a trap for the first reader rather than a live break | `TeacherInlineCommentCrud.kt`, `types.ts` | the `types.ts` contract check, its only surviving finding | EZ-1777 |
 | 21 | One spec in the migration corpus compiles to a script with an unbalanced bracket — it would fail on the first submission. The tool that signed off the migration reported it as one of 721 successes | a live spec | `compileSpecTree` learning to parse its own output | EZ-1774 |
 
 Nothing new in production code came out of phase 7, which is itself worth recording: porting two
@@ -260,6 +261,52 @@ difference was not skill — it was doing the two-minute check first rather than
 inline `node -e` and untestable; as `web/tests/support/flake-report.mjs` it has nine tests, one of
 them exactly the case it used to get wrong.
 
+### And the mirror: a detector that fires, about the wrong thing
+
+The seven above were silent. The `types.ts` contract check (EZ-1772) failed the other way, and it is
+worth recording next to them because the two mistakes feel completely different from the inside and
+have the same cause.
+
+Its first version had a rule for "is this nested reference the right type?" that compared the
+**Kotlin type name** the wire nests against the name the referenced interface was annotated with. It
+opened with seven findings. Four were artefacts: core declares a `RespAsset` and a `GroupResp` *per
+controller*, so five structurally identical wire types have five different names, and one TS
+interface legitimately stands for all of them.
+
+The rule was not too strict. It was **measuring a proxy** — name identity — for the property anyone
+actually depends on, which is structural compatibility. That the proxy happened to be false in this
+codebase is luck; the mistake was reachable without knowing anything about Kotlin conventions, by
+asking what a client breaks on.
+
+Two things generalise:
+
+- **A cluster of findings that all look alike is evidence about the rule, not the code.** Four of
+  those seven differed only in which interface they named. That shape should be read as "check the
+  rule" before "check the code" — and the check took two minutes: print the five wire types and see
+  whether they differ.
+- **The fix was to replace the proxy, not to relax it.** Recursing into the referenced interface and
+  comparing it structurally against the nested wire type removed the four artefacts *and* is strictly
+  stronger: a genuinely swapped reference now fails on the property names that do not line up, which
+  is the reason it is wrong, rather than on a name mismatch that merely correlates with it. Weakening
+  the rule to silence the noise would have kept a check that could not see the real defect.
+
+### When a check cannot decide, give the undecidable case its own name
+
+The one real finding out of those seven (EZ-1777) came from a case the checker genuinely cannot
+settle: a TS literal union over a field core declares as a bare `String`. That is safe exactly when
+the server validates the column, which the shape file does not record. Here core does not, so the
+client's union is a promise nothing keeps.
+
+The first version reported it as `kind-mismatch`, the same rule as a number read as a string. That
+would have been a quiet disaster: the only way to stop the build complaining is to waive
+`kind-mismatch` for that property, and a rule broad enough to cover an undecidable case is a rule
+whose waiver also covers the decidable ones. Splitting it out as `ts-narrows-wire-string` means the
+waiver in `web/tests/api-types-baseline.json` grants exactly one permission, carries the reason and
+the issue id, and fails the day the finding stops firing.
+
+Same shape as `noDataAssertion(id, reason)` and the a11y baseline: **"we looked and decided this is
+fine" must be representable, and must not be spelled the same way as "nobody looked."**
+
 ### A fix can be present, correct, and still do nothing
 
 `:focus-visible { outline: 2px solid }` was in the stylesheet, the element matched the selector, and
@@ -286,6 +333,14 @@ deriving *all* of them in one script rather than patching whichever one I had no
 The general form: a number in prose is a cache with no invalidation. Either print the command that
 produces it, or have a tool write it (`expected-checks.json`, the Kover report, the runner's own
 summary line).
+
+**A sixth, three days later, and a different flavour: the controller count was 117 when it was
+written and 118 by the end of the same programme**, because EZ-1774 added `AdminRecompileTsl.kt`.
+Measuring once is not the fix — printing the command is, because then the reader can re-run it and a
+stale number is one keystroke from being caught rather than something only its author could know.
+Also worth writing down: for the endpoint count there *is* no honest one-liner, and the nearest
+grep gives 123 against the inventory's 124. When a number has no command, say where it comes from
+instead of leaving a bare figure that looks measured.
 
 ### About what coverage measures, and what it does not
 
@@ -329,6 +384,14 @@ matter and a vacuous test is pronounced sound. Export `PYTHONDONTWRITEBYTECODE=1
 **Restore by `cp` from a backup, never `git checkout`.** It discards uncommitted work in tracked
 files, and does nothing at all for untracked ones — which is how nine golden files stayed blessed
 against a broken compiler.
+
+**A deletion is a bad mutation, because "did the edit land" cannot answer it.** The landing guard is
+`grep -F` for the mutated text, and deleting a line leaves a substring of the original behind:
+removing `| null` from `alias: string | null` leaves `alias: string`, which the original also
+contains. The four web mutations added for EZ-1772 rename or merge instead — `alias: string;
+course_code` — so the marker is genuinely absent before and present after. A deletion mutation would
+have skipped itself while reporting nothing wrong, which is the family of mistake this whole section
+is about.
 
 ### About replacing a script with a test
 

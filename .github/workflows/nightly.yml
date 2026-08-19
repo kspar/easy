@@ -75,7 +75,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # The mutation suite: nineteen deliberate defects, each paired with the test that must notice.
+  # The mutation suite: 23 deliberate defects, each paired with the test that must notice.
   # Nightly rather than per-push because it rebuilds and re-runs the whole JVM suite once per
   # mutation — minutes, not seconds — and because what it guards changes slowly. A survivor means a
   # guard is missing or cannot fail, which is a bug in the tests and rarely urgent by the hour.
@@ -92,6 +92,17 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      # Node is here for the four `contract/*` mutations, which run one vitest spec against
+      # web/src/api/types.ts. Without node_modules they would be reported as SURVIVED — a false
+      # alarm rather than a miss, but this job's whole value is that its output is trustworthy.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install web deps
+        run: npm ci
+        working-directory: web
       - name: Install aae test deps
         run: |
           python -m venv aae/.venv
