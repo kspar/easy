@@ -31,7 +31,14 @@ export default function ConfirmDialog({
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{confirmLabel ?? t('general.remove')}</DialogTitle>
       <DialogContent>
-        <Typography>{message}</Typography>
+        {/*
+          `component="div"` because `message` is a ReactNode and several callers pass block content
+          in it — the group-deletion confirmation renders a `<ul>` of the students who will be pulled
+          out, wrapped in `<Box>`. Typography's default body1 element is `<p>`, which may not contain
+          either, so React logged "<p> cannot contain a nested <div>" and the browser silently closed
+          the paragraph early. No visual change: body1 carries its own margins.
+        */}
+        <Typography component="div">{message}</Typography>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t('general.cancel')}</Button>

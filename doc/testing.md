@@ -37,7 +37,7 @@ stale is exactly what happened to the first version of this table.
 | | Size | Tests |
 | --- | --- | --- |
 | **core** | 118 `@RestController` classes (124 endpoints) | 35 test files, **189 tests, all running** |
-| **web** | 122 `.ts`/`.tsx` files | 14 unit files, 35 browser specs (34 in CI) |
+| **web** | 122 `.ts`/`.tsx` files | 14 unit files, 37 browser specs (36 in CI) |
 | **tsl** | the TSL compiler | 3 test files, **81 tests** |
 | **tsl-common** | the shared TSL model | 1 test file, **30 tests** |
 | **aae** | the executor | 5 test files, **91 tests** |
@@ -46,7 +46,7 @@ stale is exactly what happened to the first version of this table.
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 118
 find core/src/test/kotlin -name '*.kt' | wc -l                   # 35
 find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 122
-ls web/tests/browser/*.spec.mjs | wc -l                          # 35
+ls web/tests/browser/*.spec.mjs | wc -l                          # 37
 ls web/tests/unit/*.test.mjs | wc -l                             # 14
 ```
 
@@ -74,7 +74,7 @@ unit      191 tests across 14 files — the markdown commands (11,903 property c
           resolution, the grade table, api/client, i18n parity, localStorage, tslModel, the
           api/types.ts contract, the a11y gate's own arithmetic, the flake reporter's, and the
           suite's bookkeeping
-browser   748 checks across the 34 specs CI runs (a 35th needs a real core)
+browser   767 checks across the 36 specs CI runs (a 37th needs a real core)
 ```
 
 The browser number is now **measured rather than estimated** — it is the sum of
@@ -133,7 +133,7 @@ previous version were wrong and nine pages were missing.
 
 | Page | Lines | Coverage |
 | --- | --- | --- |
-| `ParticipantsPage` | 1823 | 35 — Moodle sync, the roster, and groups |
+| `ParticipantsPage` | 1823 | 54 — Moodle sync, the roster, and groups across five specs |
 | `LandingPage` | 1225 | 16 |
 | `CourseExercisesPage` | 1155 | 110 — the best-covered page in the app |
 | `CourseExercisePage` | 968 | 70 across five specs, now **including the grading flow** |

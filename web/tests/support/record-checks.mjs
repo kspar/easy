@@ -24,6 +24,24 @@ const counts = new Map()
 for (const line of readFileSync(COUNTS_PATH, 'utf8').split('\n')) {
   if (!line.trim()) continue
   const { spec, count } = JSON.parse(line)
+  // A spec file reporting twice with *different* counts means it holds more than one `test()`, and
+  // this Map would keep only the last one as the floor — while `spec.mjs` compares each test
+  // individually against that single number. So the smaller test fails the ratchet and recording
+  // "fixes" it by lowering the floor to whatever the last test happened to report. Silent, and in
+  // the reassuring direction, which is the family of harness defect this whole gate exists for.
+  //
+  // One test per spec file is therefore load-bearing rather than stylistic. Found when the
+  // participants-groups membership work first went in as a second test in one file; it is three
+  // files now.
+  if (counts.has(spec) && counts.get(spec) !== count) {
+    console.error(
+      `Refusing to record: ${spec} reported two different check counts ` +
+        `(${counts.get(spec)} and ${count}), which means it contains more than one test().\n` +
+        `The ratchet is one number per *file* and is compared per *test*, so this cannot work as ` +
+        `written — split the tests into separate spec files.`,
+    )
+    process.exit(1)
+  }
   counts.set(spec, count)
 }
 

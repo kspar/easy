@@ -38,6 +38,8 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 25 | **MUI leaves `IconButton`, `TableSortLabel` and outlined `Chip` with no visual change at all when tabbed to** — computed background, outline and box-shadow byte-identical focused and unfocused. Their only feedback is the ripple, a click effect that plays once and fades, so a keyboard user who tabs and pauses has nothing on screen | `theme.ts` | the focus-ring rule, after three corrections to it | fixed, EZ-1776 |
 | 26 | Inline comment `type` is unvalidated free text in core (`text` column, no `@Pattern`, no enum, stored verbatim from the request) while the client declares it `'comment' \| 'suggestion'`. Inert today — web writes the field and never reads it back, branching on `suggested_code` instead — so it is a trap for the first reader rather than a live break | `TeacherInlineCommentCrud.kt`, `types.ts` | the `types.ts` contract check, its only surviving finding | EZ-1777 |
 | 27 | `AccessChecksBuilder.testFalse()` — a `@Deprecated("For debugging only")` helper that **refuses all access**, with no callers, living inside the access-control builder. One forgotten line from 403-ing an endpoint. Deleted with the `or` combinator | `access_control_dsl.kt` | the coverage gate naming it as an uncovered line | EZ-1773 |
+| 28 | Unlinking a course from Moodle sets `moodle_short_name = null` and deletes nothing else, so every outstanding Moodle invitation stays live — and `join()` matches on invite id with **no predicate on the course still being linked**, so it still enrols. A teacher who unlinks to stop Moodle enrolment has not stopped it | `LinkCourseMoodle.kt`, `JoinMoodleLinkedCourseByInvite.kt` | asking how the client's `moodle_pending_students` partition is reachable at all | EZ-1780 |
+| 29 | `ConfirmDialog` wraps its message in a bare `<Typography>` (`<p>`), and the group-deletion confirmation passes a `<ul>` of affected students inside `<Box>`. Invalid nesting: React logs it, the browser closes the paragraph early, nothing fails | `ConfirmDialog.tsx` | a console error in the output of a *passing* spec | fixed, EZ-1766 |
 | 21 | One spec in the migration corpus compiles to a script with an unbalanced bracket — it would fail on the first submission. The tool that signed off the migration reported it as one of 721 successes | a live spec | `compileSpecTree` learning to parse its own output | EZ-1774 |
 
 Nothing new in production code came out of phase 7, which is itself worth recording: porting two
@@ -342,6 +344,57 @@ stale number is one keystroke from being caught rather than something only its a
 Also worth writing down: for the endpoint count there *is* no honest one-liner, and the nearest
 grep gives 123 against the inventory's 124. When a number has no command, say where it comes from
 instead of leaving a bare figure that looks measured.
+
+### A gate can have an invariant nobody wrote down
+
+The check-count ratchet is one number per spec **file**, and `spec.mjs` compares it in each test's
+teardown. Every one of the 34 specs had exactly one `test()`, so nobody had found out what happens
+with two — and what happens is bad in both directions at once:
+
+- each test compares *its own* count against the file's single number, so every test but the largest
+  fails the ratchet; and
+- `record-checks.mjs` keys its Map by file, so `counts.set(spec, count)` keeps only the **last**
+  test's count. Recording therefore "fixes" the failure by lowering the floor to whatever the last
+  test happened to report.
+
+The first symptom is loud, which is lucky, because the repair for it is silent and wrong. Adding two
+tests to `participants-groups.spec.mjs` produced exactly that: a red run whose obvious fix would have
+dropped the file's floor from 10 to 5.
+
+Split into three files, and `record-checks.mjs` now refuses a file that reports two different counts,
+naming the cause. The general shape is worth carrying: **a mechanism that has only ever been used one
+way has an untested invariant, and it is usually the invariant that the mechanism's own error message
+does not mention.** The ratchet's message talked about removed assertions and early returns — both
+real, neither what was happening.
+
+### Two findings that came out of writing one test
+
+Neither was in the application logic the spec set out to cover, and both were found by asking "how do
+I even reach this state?".
+
+**The state that makes the code reachable was itself the bug.** Group membership can only be edited
+when `!isMoodleLinked`, and Moodle-pending students only exist when the course syncs with Moodle — so
+`moodle_pending_students`, which the client partitions the selection to produce, looked like dead
+code. It is not: `LinkCourseMoodle` unlinks by setting `moodle_short_name = null` and deleting
+nothing, so an unlinked course still reports its pending rows. That is the only state where both
+halves exist at once — and following it one step further found that
+`JoinMoodleLinkedCourseByInvite.join()` matches on invite id with no predicate on the course still
+being linked, so **the outstanding invitations still enrol** (EZ-1780). A teacher who unlinks to stop
+Moodle enrolment has not stopped it.
+
+Worth generalising: when a code path looks unreachable, the interesting question is not "is it dead"
+but "what would have to be true for it to run" — the answer here was a bug two files away.
+
+**`<p>` cannot contain a `<div>`, and the browser does not complain.** `ConfirmDialog` wraps its
+message in a bare `<Typography>`, which renders `<p>`; the group-deletion confirmation passes a `<ul>`
+of affected students inside `<Box>`. React logs it, the browser silently closes the paragraph early,
+and nothing fails. It sat in the console output of a passing spec — the harness prints console errors
+and has never gated on them. Fixed with `component="div"` and pinned by a check that collects
+`cannot contain a nested` and asserts none, which fails when the fix is reverted.
+
+The broader gap stays open on purpose: **console errors are printed and never gated suite-wide**, and
+turning that into a gate is its own change with its own backlog. Recorded here so it is a decision
+rather than an oversight.
 
 ### Deleting dead code can fail a coverage gate, and that is the gate working
 

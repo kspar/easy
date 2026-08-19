@@ -1,5 +1,5 @@
 /**
- * Groups on `ParticipantsPage` — the last uncovered third of the biggest file in the repo.
+ * Groups on `ParticipantsPage` — counting them and deleting them.
  *
  * Three behaviours here are invisible when wrong, and all three are about *counting or addressing
  * the right people*:
@@ -13,79 +13,33 @@
  * 3. **The confirmation before deleting a group with people in it** names the students who will be
  *    pulled out of it, and that is the only warning before the fact.
  *
- * **Not covered here:** adding and removing students *from* a group, which partitions the selection
- * into `active_students` (by id) and `moodle_pending_students` (by username). The equivalent
- * partition on the way out of a *course* is pinned in `participants-roster.spec.mjs`; this one is
- * a separate code path and is still owed.
+ * Membership — putting students *into* a group and taking them out — is two separate specs, because
+ * it is gated on the course not being linked to Moodle and that turns out to be the interesting
+ * part: `participants-groups-moodle-locked` and `participants-groups-membership`.
  *
  *   cd web && npx playwright test participants-groups
  */
 import { test } from '../support/spec.mjs'
 import { fakeApi, waitUntil, BASE_URL } from '../support/harness.mjs'
-
-const COURSE = '88'
-
-const GROUPS = [
-  { id: 'g1', name: 'Rühm A' },
-  { id: 'g2', name: 'Rühm B' },
-  { id: 'g3', name: 'Empty group' },
-]
-
-const active = (id, given, family, groups = []) => ({
-  id,
-  email: `${id}@example.com`,
-  given_name: given,
-  family_name: family,
-  created_at: '2026-08-01T09:00:00.000Z',
-  moodle_username: null,
-  groups,
-})
-
-const pending = (username, groups = []) => ({
-  moodle_username: username,
-  email: `${username}@moodle.example.com`,
-  invite_id: `inv-${username}`,
-  groups,
-})
-
-const participants = {
-  students: [
-    active('s1', 'Mari', 'Maasikas', [GROUPS[0]]),
-    active('s2', 'Jaan', 'Tamm', [GROUPS[1]]),
-    active('s3', 'Peeter', 'Kask'),
-  ],
-  teachers: [],
-  // In Rühm A, so that group holds one active student and one pending one. A count that only
-  // counted active students would say 1 where the truth is 2, and look entirely reasonable.
-  students_moodle_pending: [pending('kati', [GROUPS[0]])],
-  moodle_linked: true,
-}
+import { COURSE, GROUPS, participants, baseStubs, participantsStub } from '../support/participants-groups-fixtures.mjs'
 
 test('participants-groups', async ({ launch, check }) => {
   const { page, shot, close } = await launch({ role: 'teacher,admin', shotPrefix: 'participants-groups-' })
 
   const deletedGroups = []
 
-  await fakeApi(page, [
-    ['/account/checkin', () => ({})],
-    [`/courses/${COURSE}/basic`, () => ({
-      title: 'Programming 101', alias: null, archived: false, color: '#1976d2', course_code: null,
-    })],
-    // Students in/out of a group, which carries a body; and deleting a group, which does not.
-    [/\/courses\/\d+\/groups\/[^/]+\/students$/, ({ method }) =>
-      // `deleted_count` on the DELETE, per RemoveStudentsFromCourseGroupController.Resp.
-      (method === 'DELETE' ? { deleted_count: 0 } : {})],
-    [/\/courses\/\d+\/groups\/[^/]+$/, ({ method, url }) => {
-      if (method === 'DELETE') deletedGroups.push(new URL(url).pathname.split('/').pop())
-      return {}
-    }],
-    [new RegExp(`/courses/${COURSE}/groups(\\?|$)`), () => ({ groups: GROUPS })],
-    [new RegExp(`/courses/${COURSE}/participants(\\?|$)`), () => participants],
-    [new RegExp(`/courses/${COURSE}/invite(\\?|$)`), ({ route }) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: '' })],
-    [/\/student\/courses\/\d+\/exercises(\?|$)/, () => ({ exercises: [] })],
-    [/\/teacher\/courses(\?|$)/, () => ({ courses: [] })],
-  ], { log: false })
+  // The confirmation renders a `<ul>` of affected students inside whatever ConfirmDialog wraps its
+  // message in, and Typography's default element is `<p>`, which may contain neither a `<ul>` nor a
+  // `<div>`. React says so and the browser closes the paragraph early rather than failing, so this
+  // was invisible until something read the console. Collected here rather than gated globally: the
+  // harness prints console errors and never fails on them, and turning that into a gate suite-wide
+  // is its own change with its own backlog.
+  const domNesting = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' && /cannot contain a nested/.test(m.text())) domNesting.push(m.text())
+  })
+
+  await fakeApi(page, [...baseStubs([], deletedGroups), ...participantsStub(participants)], { log: false })
 
   await page.goto(`${BASE_URL}/courses/${COURSE}/participants`)
   await page.getByRole('tab', { name: /Students/ }).waitFor()
@@ -137,6 +91,11 @@ test('participants-groups', async ({ launch, check }) => {
     (await page.getByRole('dialog').innerText()).replace(/\s+/g, ' ').slice(0, 160),
   )
   check('and nothing has been deleted yet', deletedGroups.length === 0, JSON.stringify(deletedGroups))
+  check(
+    'and the warning is valid HTML — no block element inside a paragraph',
+    domNesting.length === 0,
+    domNesting.join(' | '),
+  )
   await shot('02-delete-warning')
 
   await page.getByRole('dialog').getByRole('button', { name: /delete/i }).last().click()
