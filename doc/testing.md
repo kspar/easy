@@ -40,14 +40,14 @@ stale is exactly what happened to the first version of this table.
 | **web** | 122 `.ts`/`.tsx` files | 13 unit files, 35 browser specs (34 in CI) |
 | **tsl** | the TSL compiler | 3 test files, **81 tests** |
 | **tsl-common** | the shared TSL model | 1 test file, **30 tests** |
-| **aae** | the executor | 4 test files, **59 tests** |
+| **aae** | the executor | 5 test files, **91 tests** |
 
 ```sh
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 117
 find core/src/test/kotlin -name '*.kt' | wc -l                   # 35
 find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 122
 ls web/tests/browser/*.spec.mjs | wc -l                          # 35
-ls web/tests/unit/*.test.mjs | wc -l                             # 11
+ls web/tests/unit/*.test.mjs | wc -l                             # 13
 ```
 
 190 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
@@ -65,9 +65,9 @@ slower tick would make them slow rather than make them pass.
 The web numbers look better than they are, because the check counts are lopsided:
 
 ```
-unit      126 tests across 11 files — the markdown commands (11,903 property checks), merge
-          resolution, the grade table, api/client, i18n parity, localStorage, tslModel and the
-          suite's own bookkeeping
+unit      144 tests across 13 files — the markdown commands (11,903 property checks), merge
+          resolution, the grade table, api/client, i18n parity, localStorage, tslModel, the a11y
+          gate's own arithmetic, the flake reporter's, and the suite's bookkeeping
 browser   748 checks across the 34 specs CI runs (a 35th needs a real core)
 ```
 
@@ -127,7 +127,7 @@ previous version were wrong and nine pages were missing.
 
 | Page | Lines | Coverage |
 | --- | --- | --- |
-| `ParticipantsPage` | 1823 | 25 — Moodle sync and the roster. **Groups still uncovered** |
+| `ParticipantsPage` | 1823 | 35 — Moodle sync, the roster, and groups |
 | `LandingPage` | 1225 | 16 |
 | `CourseExercisesPage` | 1155 | 110 — the best-covered page in the app |
 | `CourseExercisePage` | 968 | 70 across five specs, now **including the grading flow** |
@@ -429,19 +429,27 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
    directory `aae` lays out and the answers it gives. What is still missing is running a generated
    script against a real tiivad: **EZ-1775**.
 9. ~~**Measurement, a11y, flake**~~ — **done 2026-08-16.** Kover with class-level targets;
-   `bin/mutate.sh`, 19 deliberate defects and 19 caught; axe inside the browser specs, which found
-   five real violations on its first run — one critical — now in `web/tests/a11y-baseline.json`
-   under EZ-1776, a file that can only shrink; and a nightly workflow running each spec five times
-   to find intermittence the `retries: 0` gate refuses to paper over, plus the mutation suite.
+   `bin/mutate.sh`, 19 deliberate defects and 19 caught; axe inside the browser specs, plus three
+   rules axe does not have (a `<main>` landmark, a visible keyboard focus ring, links sharing a name
+   but not a destination); and a nightly workflow running each spec five times to find the
+   intermittence `retries: 0` refuses to paper over, alongside the mutation suite.
 
-   Two things worth carrying out of it. **Coverage and mutation answer different questions**, and
-   the difference is measured: disabling all of `StoredFileSweepTest` takes the sweep from 94% to 7%
-   and fails the coverage gate, while disabling two of its tests leaves it at 92% and passes.
-   And **name the code, not the package it lives in** — the first Kover targets used packages and
-   measured the wrong thing in three cases of four. What the two measurement tools
-   are for, and how they differ, is worth stating once: **coverage catches an area falling out of the
-   suite, mutation catches a test that cannot fail.** Measured, on the same code: disabling all of
-   `StoredFileSweepTest` takes the sweep from 94% to 7% and fails the coverage gate; disabling two of
-   its tests leaves it at 92% and passes. Neither substitutes for the other.
+   It found **eight** real violations across two rounds — one critical — and all are fixed, so
+   `web/tests/a11y-baseline.json` is empty. The file can only shrink: a new fingerprint fails, and so
+   does an entry that no longer fires.
+
+   Three things worth carrying out of it.
+
+   **Coverage and mutation answer different questions**, measured on the same code: disabling all of
+   `StoredFileSweepTest` takes the sweep from 94% to 7% and fails the coverage gate, while disabling
+   two of its tests leaves it at 92% and passes. Coverage catches an area falling out of the suite;
+   mutation catches a test that cannot fail.
+
+   **Name the code, not the package it lives in.** The first Kover targets used packages and measured
+   the wrong thing in three cases of four.
+
+   **Feed every detector a positive case before believing a negative one.** Seven tools this
+   programme built or trusted could not detect what they watched for. See `doc/testing-log.md`.
+
 10. **Migration tests against an anonymised copy** — once dev exists.
 11. **Performance measurement of the two known suspects** — a fixture, not a framework.

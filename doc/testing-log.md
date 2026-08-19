@@ -25,13 +25,17 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 11 | Moodle sync poll dies mid-sync: cleanup cleared the interval without nulling the ref, so the guard then refused to start a replacement. Spinner spins forever; a reload fixes it, so nobody filed it | `ParticipantsPage.tsx` | reading the code | EZ-1768 |
 | 12 | Three columns whose Kotlin nullability disagrees with the schema | `Tables.kt` | schema-vs-Tables drift test | EZ-1771 |
 | 13 | `moodle_username` is sent by core and **not declared** in `web/src/api/types.ts`, so the app cannot read it | `types.ts` | contract check, incidentally | EZ-1772 |
-| 14 | The grade input has no `label` and no `aria-label`: a screen reader announces the control that sets a student's grade as "edit text, blank" | `ActivityFeed.tsx` | writing a locator for it | phase 9 |
+| 14 | The grade input has no `label` and no `aria-label`: a screen reader announces the control that sets a student's grade as "edit text, blank" | `ActivityFeed.tsx` | writing a locator for it | EZ-1776 |
 | 15 | Course cards navigated with a bare `onClick`, so **ctrl/cmd+click could not open a course in a new tab** — on the first screen of every session, and against this repo's own written UI convention. The sanctioned helper already existed, stranded in another file | `CoursesPage.tsx` | writing a locator for it | fixed, `spaLink.ts` |
 | 16 | Two hooks wrote to `localStorage` **unguarded, from click handlers**. `setItem` throws in Safari private browsing, on a full quota, and on access inside an iframe with third-party cookies blocked — the last of which `useEmbedTheme` documents *because the embed hit it*. The failure is not a lost preference; it is an exception escaping a click handler | `useSavedGroup.ts`, `useRecentExercises.ts` | deduplicating four copies | fixed, `api/localStorage.ts` |
-| 17 | `ParticipantsPage` has no `<main>` landmark, so there is nothing to skip to | layout | a locator that threw | phase 9 |
+| 17 | **No page had a `<main>` landmark** — wider than first thought — so reaching content by screen reader meant tabbing past the whole sidebar on every navigation | `AppLayout.tsx` | a locator that threw, then the landmark rule | fixed, EZ-1776 |
 | 18 | **Every check dictionary emitted with keys like `'\'check_type\''` since 2026-08-07** — `PyDict` learned to quote its own keys and three callers were already quoting theirs. 635 of 720 corpus exercises. On master and dev; never reached production | `python_classes.kt` | reading the emitter, then measuring against the corpus | EZ-1774 |
 | 19 | A value ending in a quote produced four consecutive quotes; Python closed the literal at the third and read the rest as an adjacent string, so a spec saying `1 4 7 ''` graded against `1 4 7 `. Two corpus exercises silently losing characters | `python_ast.kt` | asking CPython to parse the output | EZ-1774 |
 | 20 | A value ending in an odd number of backslashes escaped the closing quote and ran the literal to the end of the file | `python_ast.kt` | asking CPython to parse the output | EZ-1774 |
+| 22 | An icon-only back button with no accessible name — announced as "button" and nothing else, and the only way back from the grade table | `GradeTablePage.tsx` | axe, first run | fixed, EZ-1776 |
+| 23 | `<ul>`s whose direct children were `role="button"`, so assistive technology loses the item count or does not announce a list at all — the whole sidebar nav | `AppLayout.tsx` | axe, first run | fixed, EZ-1776 |
+| 24 | A link nested inside the sort button in every exercise column header: focus order, what is announced and what activation does are all browser-dependent. They were *already* two separate click targets — only the DOM nesting was wrong | `GradeTablePage.tsx` | axe, first run | fixed, EZ-1776 |
+| 25 | **MUI leaves `IconButton`, `TableSortLabel` and outlined `Chip` with no visual change at all when tabbed to** — computed background, outline and box-shadow byte-identical focused and unfocused. Their only feedback is the ripple, a click effect that plays once and fades, so a keyboard user who tabs and pauses has nothing on screen | `theme.ts` | the focus-ring rule, after three corrections to it | fixed, EZ-1776 |
 | 21 | One spec in the migration corpus compiles to a script with an unbalanced bracket — it would fail on the first submission. The tool that signed off the migration reported it as one of 721 successes | a live spec | `compileSpecTree` learning to parse its own output | EZ-1774 |
 
 Nothing new in production code came out of phase 7, which is itself worth recording: porting two
@@ -82,6 +86,11 @@ Worth as much as the list above: these are the failure modes of the safety net i
 | `copyTest changes the id and nothing else` compared two objects that had **both** been through `copyTest`, so a `copyTest` that cleared a field cleared it on both sides and the assertion could not fail | breaking `copyTest` on purpose |
 | A test named for the mid-run guard re-pointed the version *before* the scan, so the guard's branch never executed | breaking the guard on purpose |
 | A duplicate-asset test constructed the arrangement any implementation repairs, so it passed against the unfixed code | breaking the fix on purpose |
+| A focus-ring rule that required an `outline` or `box-shadow`: seven false findings, every one carrying `Mui-focusVisible`, because MUI indicates focus with a background change | reading the findings instead of baselining them |
+| The same rule read unfocused styles after `document.body.focus()`, which does not blur, so the entire tab order compared equal | probing it against a synthetic page |
+| And read mid-transition, because MUI animates `background-color` — eleven findings became four once transitions were frozen | freezing transitions and re-measuring |
+| The a11y recorder wrote nothing when a spec scanned cleanly, so a clean run was byte-identical to a run that never happened | fixing the findings, which put it in exactly that state |
+| A CI watcher that took the newest run across *all* workflows and reported a 42-second dependency-graph job as the build's verdict | noticing the job name in the output |
 
 ---
 
@@ -214,29 +223,69 @@ broken expectations, and `git checkout` did not restore them because they were u
 
 ### About tools that watch for a thing they cannot see
 
-Three times in one day, a tool built to detect something was structurally incapable of detecting it.
-The pattern is the same each time and it is worth naming: **the tool was never tested against a
-positive case**, only against a codebase that happened to be clean, where "reports nothing" and
-"cannot report anything" are the same output.
+**Seven times in one day**, something built to detect a problem was structurally incapable of
+detecting it. This is the single most repeated mistake in the programme and the pattern never varies:
+**the detector was only ever run against a clean case**, where "reports nothing" and "cannot report
+anything" produce identical output.
 
 - A verification `grep` that could not see a crash, so six failing runs read as passes.
 - A mutation harness whose regex silently matched nothing, so an unmutated run read as a suite
   catching nothing — twice, in two separate sessions.
-- **A flake hunter that could not see a flake.** `--repeat-each=N` emits N separate spec entries
-  with the same title, not N results under one; keying a Map by title with `.set()` kept only the
-  last repeat, so every spec reported 1/1 and a genuinely intermittent spec was classified as
-  "failed every time". Found by feeding it a real report with one repeat forced to fail — which took
-  a minute and should have been the first thing done.
+- A CI watcher matching the most recent run across *all* workflows, which reported a 42-second
+  `Dependency Graph` job as the build's verdict.
+- A flake hunter that could not see a flake. `--repeat-each=N` emits N separate spec entries with the
+  same title, not N results under one; keying a Map by title with `.set()` kept only the last repeat,
+  so every spec reported 1/1 and a genuinely intermittent spec was classified as "failed every time".
+- The a11y recorder could not tell "everything is fixed" from "the suite never ran": a spec that
+  scanned cleanly wrote nothing, so a clean run was byte-identical to no run. It reached exactly that
+  state the moment the last five findings were fixed.
+- The focus-ring check produced **seven false findings** by requiring an `outline` or `box-shadow`.
+  Every one carried `Mui-focusVisible` — MUI indicates focus with a background change. A rule that
+  prescribes *how* something must be done fails on every valid alternative; compare focused against
+  unfocused instead, which is what "visible" means.
+- The same check then read its unfocused styles after `document.body.focus()`, **which does not
+  blur** — probed: `activeElement` stayed on the button and its background stayed the focused colour,
+  so the whole tab order compared equal. And it read mid-transition, because MUI animates
+  `background-color`: eleven findings became four once transitions were frozen for the check.
 
-**Feed every detector a positive case before believing a negative one.** For the a11y baseline that
-means deleting an entry and checking the run goes red; for the coverage gate, disabling a test class;
-for the flake hunter, editing a report. Each of those took under two minutes and each found or
-confirmed something.
+**Feed every detector a positive case before believing a negative one.** Delete a baseline entry and
+check the run goes red. Disable a test class and check the coverage gate fails. Edit a report so one
+repeat fails. Remove the fix and check the rule fires. Each takes under two minutes; every single one
+of them either found a defect in the detector or was the only reason a negative result meant anything.
+
+The three a11y corrections were caught *before* acting on the output, unlike the first four. The
+difference was not skill — it was doing the two-minute check first rather than last.
+
+**A detector belongs in a file, not a YAML `run:` block.** The flake reporter was four lines of
+inline `node -e` and untestable; as `web/tests/support/flake-report.mjs` it has nine tests, one of
+them exactly the case it used to get wrong.
+
+### A fix can be present, correct, and still do nothing
+
+`:focus-visible { outline: 2px solid }` was in the stylesheet, the element matched the selector, and
+the computed outline was `none`. A single pseudo-class is specificity (0,1,0) — identical to MUI's own
+`.MuiButtonBase-root { outline: 0 }` — and `CssBaseline` is injected *before* component styles, so
+MUI wins the tie. Doubling the selector (`:focus-visible:focus-visible`) takes it to (0,2,0) and
+beats a class without reaching for `!important`.
+
+Worth generalising: in a themed component library, "I added the rule" and "the rule applies" are
+different claims. Check the computed value, not the source.
 
 The corollary: **a detector belongs in a file, not in a YAML `run:` block.** The flake reporter was
 four lines of inline `node -e` and could not be unit-tested; moved to
 `web/tests/support/flake-report.mjs` it has nine tests, one of which is precisely the case it used to
 get wrong.
+
+### About hand-maintained numbers
+
+**Five times in this programme a count in `doc/testing.md` was wrong because I typed it instead of
+measuring it** — in the document whose own opening argument is that hand-maintained numbers go stale.
+The counts now come from the shell commands printed beside them, and the fix that finally worked was
+deriving *all* of them in one script rather than patching whichever one I had noticed.
+
+The general form: a number in prose is a cache with no invalidation. Either print the command that
+produces it, or have a tool write it (`expected-checks.json`, the Kover report, the runner's own
+summary line).
 
 ### About what coverage measures, and what it does not
 
