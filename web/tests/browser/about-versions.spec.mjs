@@ -1,6 +1,9 @@
 // EZ-1709: the About page says what is deployed — web's version from the bundle, core's and the
 // executors' from the server, and something honest when an executor is not answering.
 //
+// EZ-1781 added a row per grading image under its executor, showing the version actually
+// installed and warning when that disagrees with what was declared.
+//
 //   cd web && npx playwright test about-versions
 import { test } from '../support/spec.mjs'
 import { fakeApi, BASE_URL } from '../support/harness.mjs'
@@ -11,10 +14,52 @@ test('about-versions', async ({ launch, check }) => {
   const VERSIONS = {
     core: { version: '4.0', commit: 'abc1234', built_at: '2026-08-10T09:26:52.903Z' },
     executors: [
-      { name: 'executor-1', version: '4.0', commit: 'abc1234', built_at: '2026-08-09T18:05:00Z', reachable: true },
+      {
+        name: 'executor-1',
+        version: '4.0',
+        commit: 'abc1234',
+        built_at: '2026-08-09T18:05:00Z',
+        reachable: true,
+        grading_images: [
+          // The ordinary case: declared and installed agree, so one number is shown.
+          {
+            name: 'silmused',
+            created_at: '2026-08-12T11:14:00Z',
+            source: 'label',
+            libraries: [{ name: 'silmused', declared: '1.7.11', installed: '1.7.11' }],
+          },
+          // The case worth shouting about, and the one that was invisible before: the image contains
+          // something other than what was asked for. This is the real August 2026 state.
+          {
+            name: 'tiivad',
+            created_at: '2026-08-12T11:03:00Z',
+            source: 'label',
+            libraries: [{ name: 'tiivad', declared: '0.0.33', installed: '0.0.30' }],
+          },
+          // Two libraries and no library of its own name — the real shape of imgrec, and the case
+          // where dropping the library names from the row would make it a lie.
+          {
+            name: 'imgrec',
+            created_at: '2026-08-12T11:20:00Z',
+            source: 'label',
+            libraries: [
+              { name: 'pillow', declared: '12.3.0', installed: '12.3.0' },
+              { name: 'requests', declared: '2.34.2', installed: '2.34.2' },
+            ],
+          },
+          // Nothing knowable. The build date still is, and it answers "was this ever rebuilt?".
+          {
+            name: 'pygrader',
+            created_at: '2024-03-12T08:20:00Z',
+            source: 'unknown',
+            libraries: [],
+          },
+        ],
+      },
       // Registered but silent. Rendering it is the point: an executor that is down is exactly what
-      // someone reading this page needs to see.
-      { name: 'executor-2', version: null, commit: null, built_at: null, reachable: false },
+      // someone reading this page needs to see. It gets no image rows — a stale list would read as
+      // current.
+      { name: 'executor-2', version: null, commit: null, built_at: null, reachable: false, grading_images: [] },
     ],
   }
 
@@ -62,6 +107,33 @@ test('about-versions', async ({ launch, check }) => {
         }
       }
       return out
+    })
+  }
+
+  /**
+   * The same block as an ordered array, with indentation.
+   *
+   * Separate from readVersions() rather than replacing it: that returns a map keyed by label, and
+   * two executors can each have an image called `tiivad`, so a map silently loses one. The existing
+   * checks below read the map and are left alone.
+   */
+  async function readVersionRows() {
+    await page.locator('dl').first().waitFor()
+    return await page.evaluate(() => {
+      const dl = document.querySelector('dl')
+      if (!dl) return []
+      return [...dl.querySelectorAll('dt')].map((dt) => {
+        const version = dt.nextElementSibling
+        const builtAt = version ? version.nextElementSibling : null
+        return {
+          name: dt.textContent.trim(),
+          value: version ? version.textContent.trim() : null,
+          builtAt: builtAt ? builtAt.textContent.trim() : null,
+          // The nesting is expressed as padding on the <dt>, since a nested <dl> would break the
+          // three-column grid.
+          indented: parseFloat(getComputedStyle(dt).paddingLeft) > 0,
+        }
+      })
     })
   }
 
@@ -113,6 +185,46 @@ test('about-versions', async ({ launch, check }) => {
     return res.status
   })
   check(`fetching versions with no session works (HTTP ${authHeaders})`, authHeaders === 200)
+
+  // --- grading images (EZ-1781) --------------------------------------------------------------------
+  const ordered = await readVersionRows()
+  const at = (name) => ordered.find((r) => r.name === name)
+
+  check(
+    `an image reports its installed version (${at('silmused')?.value})`,
+    at('silmused')?.value === 'silmused 1.7.11',
+  )
+  check('an image row is indented under its executor', at('silmused')?.indented === true)
+  check('an executor row is not indented', at('executor-1')?.indented === false)
+  check(
+    `a mismatch shows both numbers rather than picking one (${at('tiivad')?.value})`,
+    (at('tiivad')?.value ?? '').includes('0.0.30') && (at('tiivad')?.value ?? '').includes('0.0.33'),
+  )
+  check(
+    `an image with several libraries names them all (${at('imgrec')?.value})`,
+    at('imgrec')?.value === 'pillow 12.3.0, requests 2.34.2',
+  )
+  check(
+    `an image with no knowable version says so (${at('pygrader')?.value})`,
+    (at('pygrader')?.value ?? '').includes('version unknown'),
+  )
+  check(
+    `and still shows when it was built (${at('pygrader')?.builtAt})`,
+    (at('pygrader')?.builtAt ?? '').startsWith('12/03/2024'),
+  )
+  // Order matters: the images belong to executor-1, so they must appear after it and before the
+  // next executor. Rendered flat, position is the only thing saying which executor they are under.
+  const names = ordered.map((r) => r.name)
+  check(
+    'image rows sit between their executor and the next one',
+    names.indexOf('executor-1') < names.indexOf('silmused') &&
+      names.indexOf('pygrader') < names.indexOf('executor-2'),
+  )
+  check(
+    'an unreachable executor grows no image rows',
+    names.indexOf('executor-2') === names.length - 1,
+  )
+  await shot('03-grading-images')
 
   // --- core unreachable: web's own line must survive ------------------------------------------------
   // The two halves fail independently. Losing the server half must not take away the one version the

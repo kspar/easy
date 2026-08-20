@@ -31,6 +31,8 @@
     "tsl.ts:TslCompileResp",
     "versions.ts:ComponentVersion",
     "versions.ts:ExecutorVersion",
+    "versions.ts:GradingImage",
+    "versions.ts:GradingLibrary",
     "versions.ts:Versions",
     "webVersion.ts:WebBuild"
   ]

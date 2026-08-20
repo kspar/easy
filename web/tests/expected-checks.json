@@ -2,7 +2,7 @@
   "_rule": "The number may RISE, never fall. A spec reporting fewer checks than this fails — that is the guard against an early return, a swallowed locator error, or a deleted assertion, all of which are green without it. Regenerate on a green suite with `npm run test:browser:record`, and say in the commit why a number went down.",
   "_": "How many checks each browser spec must report. See tests/support/expected-checks.mjs.",
   "about-operating-info.spec.mjs": 15,
-  "about-versions.spec.mjs": 15,
+  "about-versions.spec.mjs": 24,
   "account-settings.spec.mjs": 14,
   "admin-system-messages.spec.mjs": 17,
   "articles.spec.mjs": 19,

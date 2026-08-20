@@ -1,9 +1,11 @@
 # coding=utf-8
 
 import enum
+import json
 import os
 import os.path
 import tempfile
+import threading
 from time import time, sleep
 
 import docker
@@ -11,6 +13,56 @@ import docker.errors
 
 # Interval in seconds for polling Docker daemon for container status
 POLL_INTERVAL_SEC = 0.5
+
+# --- reporting which grading libraries this host actually has (EZ-1781) -----------------------------
+#
+# "Which silmused graded this submission?" used to need an ssh session. The version existed only as a
+# literal in a Dockerfile, `container_image` has one column, and nothing anywhere recorded what was
+# installed — which is how dev spent a fortnight advertising silmused 1.7.11 while grading with 1.7.4.
+#
+# So the executor answers it. Core asks once every five minutes and passes it to the About page.
+#
+# ### Declared and installed are different questions
+#
+# `easy.grading.declared` is what the pins file asked for. `easy.grading.installed` is what pip
+# actually resolved, read out of the finished image by CI. They agree by construction for anything the
+# pipeline built, because the image's own smoke check refuses to publish otherwise — so a
+# *disagreement* is the interesting signal, and it is the one nobody could previously see.
+#
+# ### Why a label, and why a container as a last resort
+#
+# A label is answered by `docker image inspect` in about a millisecond, and cannot drift from the
+# image it is attached to. Production's images were built by hand before any of this existed, though,
+# and carry no labels at all — and production is exactly where version questions get asked. So an
+# unlabelled image is inspected the only way Docker allows: `pip list` inside a throwaway container.
+#
+# That is bounded hard, because this is the machine that runs student code: no network, capped memory,
+# killed after a timeout, removed in a `finally`, at most a few images, once an hour — and created
+# **by image id, never by name**, so this can never become a way to make a grading host fetch
+# something. It retires itself: every image the pipeline builds hits the label path instead.
+
+LABEL_PREFIX = "easy.grading."
+LABEL_DECLARED = LABEL_PREFIX + "declared"
+LABEL_INSTALLED = LABEL_PREFIX + "installed"
+LABEL_INPUTS = LABEL_PREFIX + "inputs"
+
+# An hour. Nothing here changes except when a deploy changes it, and the About page showing an
+# hour-old answer is not a problem worth paying for on every request.
+IMAGE_CACHE_TTL_SEC = 60 * 60
+# Enough for the four grading images and a little room; a host with hundreds of images is not this
+# script's problem to enumerate.
+IMAGE_INSPECT_LIMIT = 20
+PIP_TIMEOUT_SEC = 20
+# Shared between gunicorn workers. The unit sets PrivateTmp=true, so this is private to the service
+# and wiped on restart — which is the behaviour wanted: a restart re-asks. Without it ~30 workers on
+# a production host would each refresh separately.
+IMAGE_CACHE_FILE = os.environ.get(
+    "EASY_GRADING_IMAGE_CACHE", os.path.join(tempfile.gettempdir(), "easy-grading-images.json")
+)
+
+_image_cache = {"at": 0.0, "images": []}
+_image_cache_lock = threading.Lock()
+_refresh_running = threading.Event()
 
 DOCKERFILE_TEMPLATE = '''FROM {}
 COPY student-submission /student-submission
@@ -132,3 +184,169 @@ class RunStatus(enum.Enum):
     SUCCESS = enum.auto()
     TIME_EXCEEDED = enum.auto()
     MEM_EXCEEDED = enum.auto()
+
+
+# --- grading image reporting ------------------------------------------------------------------------
+
+def parse_versions(summary):
+    """`numpy==1.23.5 tiivad==0.0.33` -> [{"name": ..., "version": ...}], ignoring anything else.
+
+    `grader@<sha>` and the like are skipped rather than guessed at: a commit is not a version, and
+    inventing one would put a number on the About page that no installed package agrees with.
+    """
+    out = []
+    for token in (summary or "").split():
+        if "==" not in token:
+            continue
+        name, _, version = token.partition("==")
+        if name and version:
+            out.append({"name": name, "version": version})
+    return out
+
+
+def _merge(declared, installed):
+    """One row per library, carrying both answers so a disagreement is visible rather than resolved."""
+    declared_names = [d["name"] for d in declared]
+    extra = [i["name"] for i in installed if i["name"] not in set(declared_names)]
+    want = {d["name"]: d["version"] for d in declared}
+    got = {i["name"]: i["version"] for i in installed}
+    return [
+        {"name": name, "declared": want.get(name), "installed": got.get(name)}
+        for name in declared_names + extra
+    ]
+
+
+def _installed_from_pip(docker_client, image, packages, logger):
+    """Ask an unlabelled image what it has, by running pip inside it.
+
+    Created **by image id, never by name**: `containers.run("silmused")` would pull a missing image,
+    and no read-only endpoint should be able to make a grading host fetch anything. Everything else
+    about this call is a bound, because this is the machine that runs student code — no network,
+    capped memory, killed on timeout, removed in a finally.
+    """
+    if not packages:
+        return []
+    container = None
+    try:
+        container = docker_client.containers.create(
+            image=image.id,
+            command=["python3", "-m", "pip", "list", "--format=json", "--disable-pip-version-check"],
+            network_disabled=True,
+            mem_limit="256m",
+        )
+        container.start()
+        container.wait(timeout=PIP_TIMEOUT_SEC)
+        # stdout only: pip writes warnings to stderr, and mixing them in would corrupt the JSON.
+        raw = container.logs(stdout=True, stderr=False).decode("utf-8", "replace")
+        listed = {entry["name"].lower(): entry["version"] for entry in json.loads(raw)}
+        return [{"name": name, "version": listed[name]} for name in packages if name in listed]
+    except Exception as e:
+        logger.info("could not read installed versions from {}: {}".format(image.id[:19], e))
+        return []
+    finally:
+        if container is not None:
+            try:
+                container.remove(force=True)
+            except Exception:
+                # A stopped container left on a grading host is the sort of thing nobody notices for
+                # a year, so this is worth attempting even when the run above failed.
+                logger.info("could not remove the container used to inspect {}".format(image.id[:19]))
+
+
+def _refresh_grading_images(logger):
+    """Rebuild the cache. Runs on a background thread, never on a request."""
+    client = docker.from_env()
+    images = []
+    for image in client.images.list()[:IMAGE_INSPECT_LIMIT]:
+        labels = image.labels or {}
+        declared_label = labels.get(LABEL_DECLARED)
+        installed_label = labels.get(LABEL_INSTALLED)
+        # Only images this deployment considers grading images. Either label is that signal; an image
+        # with neither is one of the many other things on a Docker host.
+        if not (declared_label or installed_label):
+            continue
+
+        declared = parse_versions(declared_label)
+        installed = parse_versions(installed_label)
+        source = "label"
+        if not installed:
+            installed = _installed_from_pip(client, image, [d["name"] for d in declared], logger)
+            source = "pip" if installed else "unknown"
+
+        names = sorted(t.split(":")[0] for t in (image.tags or []))
+        images.append({
+            "name": names[0] if names else image.id[7:19],
+            "created_at": (image.attrs or {}).get("Created"),
+            "source": source,
+            "inputs": labels.get(LABEL_INPUTS),
+            "libraries": _merge(declared, installed),
+        })
+    return sorted(images, key=lambda i: i["name"])
+
+
+def _read_cache_file():
+    try:
+        with open(IMAGE_CACHE_FILE, encoding="utf-8") as f:
+            cached = json.load(f)
+        if time() - cached.get("at", 0) < IMAGE_CACHE_TTL_SEC:
+            return cached
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def _write_cache_file(payload):
+    try:
+        tmp = IMAGE_CACHE_FILE + ".new"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(payload, f)
+        os.replace(tmp, IMAGE_CACHE_FILE)
+    except OSError:
+        # In-memory only then: one refresh per worker per hour instead of one per host. Worth
+        # degrading to rather than failing, and worth saying can happen rather than assuming the file
+        # always works.
+        pass
+
+
+def grading_images(logger):
+    """What this host can grade with, and which library versions each image has.
+
+    Never blocks, and never touches Docker on the calling thread. An empty list is a legitimate
+    answer — a cold cache, a daemon that is down, an executor older than this code — and all of them
+    mean the same thing to whoever is reading: we cannot say.
+    """
+    global _image_cache
+
+    with _image_cache_lock:
+        fresh = time() - _image_cache["at"] < IMAGE_CACHE_TTL_SEC
+        current = list(_image_cache["images"])
+
+    if fresh:
+        return current
+
+    from_file = _read_cache_file()
+    if from_file is not None:
+        with _image_cache_lock:
+            _image_cache = {"at": from_file["at"], "images": from_file["images"]}
+        return list(from_file["images"])
+
+    # One refresh at a time, and the request does not wait for it.
+    if not _refresh_running.is_set():
+        _refresh_running.set()
+
+        def run():
+            global _image_cache
+            try:
+                images = _refresh_grading_images(logger)
+                payload = {"at": time(), "images": images}
+                with _image_cache_lock:
+                    _image_cache = payload
+                _write_cache_file(payload)
+            except Exception as e:
+                logger.info("could not list grading images: {}".format(e))
+            finally:
+                _refresh_running.clear()
+
+        threading.Thread(target=run, daemon=True, name="grading-images").start()
+
+    return current

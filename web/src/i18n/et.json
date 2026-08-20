@@ -589,6 +589,8 @@
     "versionsLoading": "Küsime serverilt…",
     "versionsFailed": "Ülejäänud versioonide saamiseks ei õnnestunud serveriga ühendust saada.",
     "versionUnreachable": "ei vasta",
+    "versionUnknown": "versioon teadmata",
+    "versionMismatch": "{{name}} {{installed}} (oodati {{declared}})",
     "operating": "Süsteemi info (admin)",
     "operatingFailed": "Süsteemi info laadimine ebaõnnestus.",
     "opUptime": "töötanud",

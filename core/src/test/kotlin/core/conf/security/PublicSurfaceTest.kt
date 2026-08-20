@@ -76,7 +76,16 @@ class PublicSurfaceTest(
         // A version unique to this test, so an assertion about it cannot be satisfied by a previous
         // test's cached snapshot. See the note on clearCache below — that hazard is real here, and
         // an identical fixture would have hidden it.
-        executor = FakeExecutor(version = "aae-${counter.incrementAndGet()}")
+        executor = FakeExecutor(
+            version = "aae-${counter.incrementAndGet()}",
+            // Deliberately disagreeing with itself: declared 1.7.11, installed 1.7.4. That is the
+            // real August 2026 state, and a fixture where the two matched would not prove the
+            // payload can express a disagreement at all — which is the only reason both fields exist.
+            gradingImagesJson = """
+                [{"name": "silmused", "created_at": "2026-08-12T11:14:00Z", "source": "label",
+                  "libraries": [{"name": "silmused", "declared": "1.7.11", "installed": "1.7.4"}]}]
+            """.trimIndent(),
+        )
 
         // VersionsService caches executor versions for five minutes in a plain field, so it survives
         // both the database truncation and the Spring cache invalidation the reset extension does.
@@ -153,6 +162,38 @@ class PublicSurfaceTest(
             assertFalse(executors[0].has(it)) { "The version endpoint published an executor's '$it'" }
         }
         assertFalse(resp.body.contains(executor.baseUrl)) { "An executor's address is in a public payload" }
+
+        // EZ-1781 put grading images on this payload. They are safe to publish for the same reason
+        // the versions are — the image names are in this public repository, and every teacher can
+        // already list them through `/v2/container-images` — but only the names and versions are.
+        // A digest or a size would be a fact about the host rather than about what it grades with,
+        // and the widening-by-one-field risk this test exists for applies to that DTO too.
+        listOf("digest", "repo_digests", "size", "id", "path").forEach {
+            assertFalse(executors[0].has(it)) { "The version endpoint published an executor's '$it'" }
+        }
+    }
+
+    /**
+     * Grading library versions reach the public payload, and say both what was asked for and what is
+     * there.
+     *
+     * The two being separate is the point. `declared` is what the pins file asked for; `installed`
+     * is what is in the image. They agree for anything CI built, so a disagreement means somebody's
+     * belief about a host is wrong — which is the state that went unnoticed for a fortnight in
+     * August 2026, when a Dockerfile said silmused 1.7.11 and the image graded with 1.7.4.
+     */
+    @Test
+    fun `grading image versions are published, declared and installed separately`() {
+        val resp = api.get("/v2/unauth/versions", api.anonymous())
+
+        val images = resp.elements("executors").single().get("grading_images")
+        assertTrue(images.isArray) { "grading_images must always be an array, never null" }
+
+        val silmused = images.toList().single { it.get("name").asString() == "silmused" }
+        val library = silmused.get("libraries").toList().single()
+        assertEquals("silmused", library.get("name").asString())
+        assertEquals("1.7.11", library.get("declared").asString())
+        assertEquals("1.7.4", library.get("installed").asString())
     }
 
     // --- /unauth/exercises/{id}/anonymous/details -------------------------------------------------

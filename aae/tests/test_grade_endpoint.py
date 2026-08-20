@@ -177,11 +177,23 @@ def test_a_bad_request_answers_with_json_rather_than_an_html_error_page(client, 
 
 # --- version reporting ------------------------------------------------------------------------------
 
-def test_the_version_endpoint_answers_the_three_fields_core_asks_for(client):
+def test_the_version_endpoint_answers_the_fields_core_asks_for(client):
+    """The exact key set, in both directions, because two services deploy separately.
+
+    `grading_images` joined the three original fields in EZ-1781. Adding it was safe in both
+    directions and the asymmetry is worth knowing: core has `FAIL_ON_UNKNOWN_PROPERTIES` off, so an
+    old core reading a new executor ignores it — but `FAIL_ON_NULL_FOR_PRIMITIVES` is *on*, so the
+    field on core's side has to be nullable or a new core reading an old executor fails to
+    deserialise. Which is why this asserts the set exactly rather than merely a superset: if a field
+    is ever dropped from here, core's side has to be checked before this test is relaxed.
+    """
     body = client.get("/v1/version").get_json()
 
-    assert set(body) == {"version", "commit", "built_at"}
+    assert set(body) == {"version", "commit", "built_at", "grading_images"}
     # Never blank: core renders "unreachable" for an executor that does not answer, so a blank
     # version would show as a reachable executor with nothing to say.
     assert body["version"]
     assert body["commit"]
+    # A list, always — never null. An executor that cannot say which images it has says so with an
+    # empty list, and core maps that straight through to "no rows" rather than to an error.
+    assert isinstance(body["grading_images"], list)

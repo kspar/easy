@@ -305,9 +305,21 @@
     "core.ems.service.VersionsController.ExecutorResp": {
       "built_at": { "kind": "string", "nullable": true },
       "commit": { "kind": "string", "nullable": true },
+      "grading_images": { "kind": "array", "type": "core.ems.service.VersionsController.GradingImageResp" },
       "name": { "kind": "string" },
       "reachable": { "kind": "boolean" },
       "version": { "kind": "string", "nullable": true }
+    },
+    "core.ems.service.VersionsController.GradingImageResp": {
+      "created_at": { "kind": "string", "nullable": true },
+      "libraries": { "kind": "array", "type": "core.ems.service.VersionsController.GradingLibraryResp" },
+      "name": { "kind": "string" },
+      "source": { "kind": "string", "nullable": true }
+    },
+    "core.ems.service.VersionsController.GradingLibraryResp": {
+      "declared": { "kind": "string", "nullable": true },
+      "installed": { "kind": "string", "nullable": true },
+      "name": { "kind": "string" }
     },
     "core.ems.service.VersionsController.Resp": {
       "core": { "kind": "object", "type": "core.ems.service.VersionsController.ComponentResp" },

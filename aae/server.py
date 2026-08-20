@@ -12,6 +12,7 @@ from flask import jsonify
 from flask import request
 from werkzeug.exceptions import BadRequest
 
+import containers
 from containers import grade_submission, RunStatus
 
 # TODO: move to conf file
@@ -197,10 +198,26 @@ def post_grade():
 @app.route('/v1/version', methods=['GET'])
 def get_version():
     """
-    What this executor is running (EZ-1709). Core calls it and passes the answer on to the About
-    page, since nothing in a browser can reach an executor directly.
+    What this executor is running (EZ-1709), and which grading libraries it can grade with (EZ-1781).
+    Core calls it and passes the answer on to the About page, since nothing in a browser can reach an
+    executor directly.
+
+    `grading_images` is added to this endpoint rather than given one of its own. A second endpoint
+    would double the round trips core makes and double its exposure to the two-second timeout it
+    allows for a page render, in exchange for a few hundred bytes. It is safe in both directions:
+    core ignores fields it does not know, and a core that predates this simply does not read it.
+
+    Answered from a cache that a background thread fills, so no Docker work ever happens on this
+    request. An empty list means "we cannot say" — a cold cache, a daemon that is down, an image
+    nobody can identify — and the About page renders all of those the same way, because to a reader
+    they are the same statement.
     """
-    return jsonify({"version": VERSION, "commit": COMMIT, "built_at": DEPLOYED_AT})
+    return jsonify({
+        "version": VERSION,
+        "commit": COMMIT,
+        "built_at": DEPLOYED_AT,
+        "grading_images": containers.grading_images(app.logger),
+    })
 
 
 @app.errorhandler(BadRequest)

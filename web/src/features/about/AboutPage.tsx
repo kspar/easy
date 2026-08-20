@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import config from '../../config.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import { useStatistics } from '../../api/statistics.ts'
-import { useVersions, formatVersion, formatBuiltAt } from '../../api/versions.ts'
+import { useVersions, formatVersion, formatBuiltAt, formatLibraries } from '../../api/versions.ts'
 import { useOperatingInfo, formatUptime } from '../../api/operatingInfo.ts'
 import { useAuth } from '../../auth/useAuth.ts'
 import harnoLogo from '../../assets/sponsors/harno.svg'
@@ -182,8 +182,20 @@ function Versions() {
   const { t } = useTranslation()
   const { data, isLoading, isError } = useVersions()
 
-  const rows: { name: string; value: string; builtAt?: string; muted?: boolean }[] = [
+  // `key` is separate from `name` because two executors can each have an image called `tiivad`, and
+  // React keys have to be unique while the label deliberately is not — the indentation says which
+  // executor a row belongs to, so repeating the executor's name in it would be noise.
+  const rows: {
+    key: string
+    name: string
+    value: string
+    builtAt?: string
+    muted?: boolean
+    nested?: boolean
+    warn?: boolean
+  }[] = [
     {
+      key: 'web',
       name: 'web',
       value: formatVersion(__APP_VERSION__, __APP_COMMIT__),
       builtAt: formatBuiltAt(__APP_BUILT_AT__),
@@ -192,12 +204,14 @@ function Versions() {
 
   if (data) {
     rows.push({
+      key: 'core',
       name: 'core',
       value: formatVersion(data.core.version, data.core.commit),
       builtAt: formatBuiltAt(data.core.built_at),
     })
     for (const ex of data.executors) {
       rows.push({
+        key: `executor:${ex.name}`,
         name: ex.name,
         value: ex.reachable && ex.version
           ? formatVersion(ex.version, ex.commit)
@@ -205,6 +219,35 @@ function Versions() {
         builtAt: ex.reachable ? formatBuiltAt(ex.built_at) : '',
         muted: !ex.reachable,
       })
+      // Only under an executor that answered. An unreachable one gets its own row and nothing
+      // invented beneath it — a stale list of images would read as current.
+      if (!ex.reachable) continue
+      // `?? []` because a core deployed before EZ-1781 omits the field entirely, and web and core
+      // deploy separately. The type says it is always there; the wire does not have to agree.
+      for (const image of ex.grading_images ?? []) {
+        const mismatched = image.libraries.filter(
+          (lib) => lib.declared && lib.installed && lib.declared !== lib.installed,
+        )
+        rows.push({
+          key: `image:${ex.name}:${image.name}`,
+          name: image.name,
+          value: mismatched.length > 0
+            ? mismatched
+                .map((lib) => t('about.versionMismatch', {
+                  name: lib.name,
+                  installed: lib.installed,
+                  declared: lib.declared,
+                }))
+                .join(', ')
+            : formatLibraries(image) || t('about.versionUnknown'),
+          builtAt: formatBuiltAt(image.created_at),
+          // Dimmed when there is no version to show. The build date is still worth having: it
+          // answers "was this image ever rebuilt?", which is often the real question.
+          muted: image.libraries.length === 0 && mismatched.length === 0,
+          warn: mismatched.length > 0,
+          nested: true,
+        })
+      }
     }
   }
 
@@ -230,11 +273,24 @@ function Versions() {
         }}
       >
         {rows.map((row) => (
-          <Box key={row.name} sx={{ display: 'contents' }}>
-            <Box component="dt" sx={{ color: 'text.secondary' }}>
+          <Box key={row.key} sx={{ display: 'contents' }}>
+            {/* Indented rather than nested in its own <dl>: a second list would break the grid, so
+                the three columns would stop lining up — which is the one thing the comment above
+                says they are for. */}
+            <Box component="dt" sx={{ color: 'text.secondary', pl: row.nested ? 2 : 0 }}>
               {row.name}
             </Box>
-            <Box component="dd" sx={{ m: 0, color: row.muted ? 'text.disabled' : 'text.primary' }}>
+            <Box
+              component="dd"
+              sx={{
+                m: 0,
+                color: row.warn
+                  ? 'warning.main'
+                  : row.muted
+                    ? 'text.disabled'
+                    : 'text.primary',
+              }}
+            >
               {row.value}
             </Box>
             {/* Dimmer than the version: it answers a follow-up question ("is that today's build?"),

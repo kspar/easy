@@ -589,6 +589,8 @@
     "versionsLoading": "Asking the server…",
     "versionsFailed": "Could not reach the server for the other versions.",
     "versionUnreachable": "not responding",
+    "versionUnknown": "version unknown",
+    "versionMismatch": "{{name}} {{installed}} (expected {{declared}})",
     "operating": "Operating info (admin)",
     "operatingFailed": "Could not load operating info.",
     "opUptime": "uptime",

@@ -38,6 +38,40 @@ class VersionsController(private val versionsService: VersionsService) {
         @get:JsonProperty("built_at") val builtAt: String?,
     )
 
+    /**
+     * One grading library inside one image: what the pins asked for, and what is actually there.
+     *
+     * Both, rather than one resolved answer, because they are different questions and the difference
+     * is the interesting part. `declared` is intent; `installed` is what pip put in the image. For
+     * anything CI built they agree by construction — the image's own smoke check refuses to publish
+     * otherwise — so a disagreement means somebody's belief about a host is wrong, which is exactly
+     * the state that went unnoticed for a fortnight in August 2026 (EZ-1781).
+     *
+     * Either may be null. An unpinned library has nothing declared; one whose version cannot be read
+     * out of an unlabelled image has nothing installed.
+     */
+    data class GradingLibraryResp(
+        @get:JsonProperty("name") val name: String,
+        @get:JsonProperty("declared") val declared: String?,
+        @get:JsonProperty("installed") val installed: String?,
+    )
+
+    /**
+     * A grading image on one executor.
+     *
+     * `source` says how the versions were established — `label` for anything CI built and stamped,
+     * `pip` for an image inspected by running pip inside it, `unknown` when neither worked. Carried
+     * for diagnostics rather than for display: the About page does not render it, because on a quiet
+     * list of versions a provenance badge is noise, and the number is either right or visibly
+     * disagreeing with itself either way.
+     */
+    data class GradingImageResp(
+        @get:JsonProperty("name") val name: String,
+        @get:JsonProperty("created_at") val createdAt: String?,
+        @get:JsonProperty("source") val source: String?,
+        @get:JsonProperty("libraries") val libraries: List<GradingLibraryResp>,
+    )
+
     data class ExecutorResp(
         @get:JsonProperty("name") val name: String,
         @get:JsonProperty("version") val version: String?,
@@ -49,6 +83,13 @@ class VersionsController(private val versionsService: VersionsService) {
         // False when the executor did not answer in time. Rendering "unreachable" is more useful
         // than omitting the row: an executor that is registered but silent is worth seeing.
         @get:JsonProperty("reachable") val reachable: Boolean,
+        /**
+         * Empty for an executor that did not answer, for one running a version of aae that predates
+         * this, and for one whose Docker daemon is down. Three states that are all honestly "we
+         * cannot say", and which the About page renders identically — because to a reader they are
+         * the same statement, and a public field nobody branches on will be wrong within a year.
+         */
+        @get:JsonProperty("grading_images") val gradingImages: List<GradingImageResp>,
     )
 
     data class Resp(
@@ -136,13 +177,23 @@ class VersionsService(buildPropertiesProvider: ObjectProvider<BuildProperties>) 
                 client.getForObject(baseUrl + EXECUTOR_VERSION_URL, ExecutorVersionResponse::class.java)
             }.fold(
                 onSuccess = {
-                    VersionsController.ExecutorResp(name, it?.version, it?.commit, it?.builtAt, reachable = it != null)
+                    VersionsController.ExecutorResp(
+                        name, it?.version, it?.commit, it?.builtAt,
+                        reachable = it != null,
+                        // Straight through, with no interpretation. Core deliberately knows nothing
+                        // about grading libraries — it does not decide which images exist, cannot
+                        // reach a Docker daemon, and has no business acquiring an opinion about
+                        // either. The executor is the only thing that can answer, so this is a pipe.
+                        gradingImages = it?.gradingImages.orEmpty(),
+                    )
                 },
                 onFailure = {
                     // Info, not error: an executor being drained or restarted is ordinary, and this
                     // endpoint asking about it should not fill the log with stack traces.
                     log.info { "Executor $name did not report a version: ${it.message}" }
-                    VersionsController.ExecutorResp(name, null, null, null, reachable = false)
+                    VersionsController.ExecutorResp(
+                        name, null, null, null, reachable = false, gradingImages = emptyList()
+                    )
                 },
             )
         }
@@ -152,6 +203,17 @@ class VersionsService(buildPropertiesProvider: ObjectProvider<BuildProperties>) 
         @get:JsonProperty("version") val version: String?,
         @get:JsonProperty("commit") val commit: String?,
         @get:JsonProperty("built_at") val builtAt: String?,
+        /**
+         * Nullable.
+         *
+         * `application.yaml` sets `FAIL_ON_NULL_FOR_PRIMITIVES: true`, so a non-nullable field here
+         * would make an executor that predates EZ-1781 — one that simply omits the key — fail to
+         * deserialise, and core would report a perfectly healthy executor as unreachable. The
+         * opposite direction is already safe: `FAIL_ON_UNKNOWN_PROPERTIES` is off, so an old core
+         * reading a new executor ignores what it does not know. Deploy order does not matter in
+         * either direction, which is the point.
+         */
+        @get:JsonProperty("grading_images") val gradingImages: List<VersionsController.GradingImageResp>?,
     )
 
     companion object {

@@ -35,7 +35,17 @@ import java.util.concurrent.atomic.AtomicReference
  * status assertion cannot reach — a grading request that carried the wrong solution would still
  * produce a perfectly good grade.
  */
-class FakeExecutor(val version: String = "test-executor") : AutoCloseable {
+class FakeExecutor(
+    val version: String = "test-executor",
+    /**
+     * What `/v1/version` reports for `grading_images`, as raw JSON (EZ-1781).
+     *
+     * Defaulted, so every existing call site is unchanged and keeps describing an executor that
+     * reports no images — which is also what a real executor running an older aae does, and
+     * therefore the case most worth having as the default.
+     */
+    val gradingImagesJson: String = "[]",
+) : AutoCloseable {
 
     /** What a `/v1/grade` call does. Replace per test; the default grades everything 100. */
     sealed interface Behaviour {
@@ -99,8 +109,11 @@ class FakeExecutor(val version: String = "test-executor") : AutoCloseable {
         }
     }
 
-    private fun handleVersion(exchange: HttpExchange) =
-        send(exchange, 200, """{"version": ${quote(version)}, "commit": "abc1234", "built_at": null}""")
+    private fun handleVersion(exchange: HttpExchange) = send(
+        exchange, 200,
+        """{"version": ${quote(version)}, "commit": "abc1234", "built_at": null, """ +
+            """"grading_images": $gradingImagesJson}""",
+    )
 
     private fun send(exchange: HttpExchange, status: Int, body: String) {
         val bytes = body.toByteArray()

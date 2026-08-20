@@ -132,3 +132,49 @@ def test_the_three_run_statuses_are_distinct():
     # silently route memory failures into the timeout message.
     values = {s.value for s in containers.RunStatus}
     assert len(values) == 3
+
+
+# --- what /v1/version answers -----------------------------------------------------------------------
+
+
+def test_the_version_endpoint_reports_grading_images(client, monkeypatch):
+    """Core reads this and passes it to the About page, so the key has to be there and be a list."""
+    monkeypatch.setattr(
+        containers,
+        "grading_images",
+        lambda logger: [
+            {
+                "name": "silmused",
+                "created_at": "2026-08-20T10:00:00Z",
+                "source": "label",
+                "inputs": "abc123",
+                "libraries": [{"name": "silmused", "declared": "1.7.11", "installed": "1.7.11"}],
+            }
+        ],
+    )
+    body = client.get("/v1/version").get_json()
+    assert body["version"]
+    assert body["grading_images"][0]["libraries"][0]["installed"] == "1.7.11"
+
+
+def test_the_version_endpoint_answers_without_touching_docker(client, monkeypatch):
+    """The two-second budget core allows for a page render must never include Docker work.
+
+    An executor that has just restarted has a cold cache, and the honest answer then is "we cannot
+    say" — not "wait while I find out".
+    """
+
+    def boom():
+        raise AssertionError("/v1/version reached the Docker daemon")
+
+    monkeypatch.setattr(containers.docker, "from_env", boom)
+    monkeypatch.setattr(containers, "_image_cache", {"at": 0.0, "images": []})
+    monkeypatch.setattr(containers, "_refresh_grading_images", lambda logger: [])
+
+    body = client.get("/v1/version").get_json()
+    assert body["grading_images"] == []
+
+
+def test_an_empty_grading_image_list_is_a_valid_answer(client, monkeypatch):
+    monkeypatch.setattr(containers, "grading_images", lambda logger: [])
+    assert client.get("/v1/version").get_json()["grading_images"] == []

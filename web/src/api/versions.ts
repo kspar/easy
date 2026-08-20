@@ -20,6 +20,31 @@ export interface ComponentVersion {
   built_at: string | null
 }
 
+/**
+ * One grading library inside one image (EZ-1781).
+ *
+ * `declared` is the version the pins file asked for; `installed` is what is actually in the image.
+ * They match for every image CI built, because its own smoke check refuses to publish otherwise — so
+ * a mismatch means somebody's belief about a host is wrong, and that is what the row shows.
+ *
+ * Either can be null: an unpinned library declares nothing, and a version that cannot be read out of
+ * an unlabelled image has nothing installed.
+ */
+export interface GradingLibrary {
+  name: string
+  declared: string | null
+  installed: string | null
+}
+
+export interface GradingImage {
+  name: string
+  /** When the image was built. Often the more useful field: it answers "was this ever rebuilt?". */
+  created_at: string | null
+  /** How the versions were established — `label`, `pip`, or `unknown`. Diagnostic; not rendered. */
+  source: string | null
+  libraries: GradingLibrary[]
+}
+
 export interface ExecutorVersion {
   name: string
   /** Null when the executor did not answer. */
@@ -28,6 +53,11 @@ export interface ExecutorVersion {
   /** aae has no build step, so this is when its source was last written to its host. */
   built_at: string | null
   reachable: boolean
+  /**
+   * Empty for an executor that did not answer, one running an aae that predates this, and one whose
+   * Docker daemon is down. All three mean "we cannot say" and render the same way.
+   */
+  grading_images: GradingImage[]
 }
 
 export interface Versions {
@@ -50,6 +80,27 @@ export function useVersions() {
 export function formatVersion(version: string, commit?: string | null): string {
   const hasCommit = commit && commit !== 'unknown'
   return hasCommit ? `v${version} (${commit})` : `v${version}`
+}
+
+/**
+ * `silmused 1.7.11`, or `pillow 12.3.0, requests 2.34.2` for an image with more than one.
+ *
+ * Empty string when nothing is known, so the caller can substitute its own wording rather than
+ * render a blank cell.
+ *
+ * Shows the installed version, falling back to the declared one. Installed is the number that says
+ * grading actually works; declared only says what was asked for. The library name is repeated even
+ * when it matches the image name, because the exception — imgrec, which contains Pillow and requests
+ * and no library called imgrec — is the case where dropping it would be a lie.
+ */
+export function formatLibraries(image: GradingImage): string {
+  return image.libraries
+    .map((lib) => {
+      const version = lib.installed ?? lib.declared
+      return version ? `${lib.name} ${version}` : ''
+    })
+    .filter(Boolean)
+    .join(', ')
 }
 
 /**

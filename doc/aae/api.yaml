@@ -54,3 +54,65 @@ paths:
                 type: integer
               feedback:
                 type: string
+
+  /version:
+    get:
+      summary: What this executor is running, and what it can grade with.
+      description: >
+        Added by EZ-1709 and extended by EZ-1781, and undocumented here until the second of those —
+        which is why it is written down now rather than after a third change.
+
+        Core polls this and passes the answer to the About page, since nothing in a browser can reach
+        an executor directly. It answers from a cache filled on a background thread, so no Docker work
+        happens on the request: core allows two seconds for a page render, and an executor that has
+        just restarted must not spend them here.
+      responses:
+        200:
+          description: What is deployed.
+          schema:
+            properties:
+              version:
+                type: string
+                description: From the VERSION file beside the source, or "unknown".
+              commit:
+                type: string
+                description: From the COMMIT file a deploy stamps, else git, else "unknown".
+              built_at:
+                type: string
+                description: >
+                  When the source was last written to this host. aae has no build step, so this is the
+                  mtime of server.py — the same question a build time answers, answered the only way a
+                  copied-not-compiled component can.
+              grading_images:
+                type: array
+                description: >
+                  The grading images on this host. Empty is a legitimate answer, meaning "we cannot
+                  say" — a cold cache, a Docker daemon that is down, or images nothing can identify.
+                items:
+                  properties:
+                    name:
+                      type: string
+                    created_at:
+                      type: string
+                      description: When the image was built.
+                    source:
+                      type: string
+                      description: >
+                        How the versions were established: "label" for an image CI built and stamped,
+                        "pip" for one inspected by running pip inside it, "unknown" when neither
+                        worked.
+                    libraries:
+                      type: array
+                      items:
+                        properties:
+                          name:
+                            type: string
+                          declared:
+                            type: string
+                            description: The version the pins file asked for. Null if unpinned.
+                          installed:
+                            type: string
+                            description: >
+                              The version actually in the image. Null when it cannot be read. This is
+                              the one worth trusting; a disagreement with `declared` means somebody's
+                              belief about this host is wrong.
