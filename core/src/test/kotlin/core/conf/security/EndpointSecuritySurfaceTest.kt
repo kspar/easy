@@ -146,7 +146,9 @@ class EndpointSecuritySurfaceTest(@Autowired private val mapping: RequestMapping
         val intendedlyPublic = setOf(
             "POST /v2/unauth/exercises/{exerciseId}/anonymous/autoassess",
             "GET /v2/unauth/exercises/{exerciseId}/anonymous/details",
-            "GET /v2/unauth/versions",
+            // `GET /v2/unauth/versions` was here until EZ-1782 made component versions
+            // teacher-and-admin. It is `GET /v2/versions` now — this test caught the stale entry,
+            // which is the half of its job that is easy to forget it does.
             "GET /v2/unauth/articles/{articleId}",
             "GET /v2/resource/{key}/{filename}",
         )

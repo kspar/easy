@@ -22,15 +22,17 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.web.servlet.MockMvc
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import core.aas.AutoGradeScheduler
-import core.ems.service.VersionsService
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Everything reachable from the internet with no account, exercised as the internet reaches it.
  *
- * There are five patterns in `PERMIT_ALL_PATTERNS` and this is the whole surface: versions, an
- * anonymous exercise's details, an anonymous submission, a published article, an uploaded file. Two
- * of them return content whose visibility is decided by a column, and one of them **runs code**.
+ * There are four patterns in `PERMIT_ALL_PATTERNS` and this is the whole surface: an anonymous
+ * exercise's details, an anonymous submission, a published article, an uploaded file. Two of them
+ * return content whose visibility is decided by a column, and one of them **runs code**.
+ *
+ * `/unauth/versions` was the fifth until EZ-1782 made it teacher-and-admin. Its assertions moved
+ * to `VersionsApiTest` rather than being deleted — what that payload refuses to contain is worth
+ * the same whoever is allowed to read it.
  *
  * ### What already exists, and what this adds
  *
@@ -54,7 +56,6 @@ import java.util.concurrent.atomic.AtomicInteger
 class PublicSurfaceTest(
     @Autowired mockMvc: MockMvc,
     @Autowired private val scheduler: AutoGradeScheduler,
-    @Autowired private val versions: VersionsService,
 ) {
 
     private val api = HttpApi(mockMvc)
@@ -66,32 +67,12 @@ class PublicSurfaceTest(
     private var publicExercise = 0L
     private var privateExercise = 0L
 
-    private companion object {
-        val counter = AtomicInteger()
-    }
-
     @BeforeEach
     fun populate() {
         TestClock.reset()
-        // A version unique to this test, so an assertion about it cannot be satisfied by a previous
-        // test's cached snapshot. See the note on clearCache below — that hazard is real here, and
-        // an identical fixture would have hidden it.
-        executor = FakeExecutor(
-            version = "aae-${counter.incrementAndGet()}",
-            // Deliberately disagreeing with itself: declared 1.7.11, installed 1.7.4. That is the
-            // real August 2026 state, and a fixture where the two matched would not prove the
-            // payload can express a disagreement at all — which is the only reason both fields exist.
-            gradingImagesJson = """
-                [{"name": "silmused", "created_at": "2026-08-12T11:14:00Z", "source": "label",
-                  "libraries": [{"name": "silmused", "declared": "1.7.11", "installed": "1.7.4"}]}]
-            """.trimIndent(),
-        )
-
-        // VersionsService caches executor versions for five minutes in a plain field, so it survives
-        // both the database truncation and the Spring cache invalidation the reset extension does.
-        // Without this the first test to read /unauth/versions decides what the rest of the suite
-        // sees.
-        versions.clearCache()
+        // What this class needs from an executor is that it grades; its version is asserted in
+        // VersionsApiTest, which is also where the cache hazard that wanted a unique one lives now.
+        executor = FakeExecutor()
 
         transaction {
             Fixtures.teacher(teacher)
@@ -115,85 +96,6 @@ class PublicSurfaceTest(
             ExecutorTable.deleteAll()
         }
         scheduler.syncExecutorsFromDB()
-    }
-
-    // --- /unauth/versions -------------------------------------------------------------------------
-
-    /**
-     * The version endpoint is public so that whoever is reporting a bug can read it off the About
-     * page — including someone who cannot log in, which is the report that needs a version most.
-     */
-    @Test
-    fun `versions are readable with no account`() {
-        val resp = api.get("/v2/unauth/versions", api.anonymous())
-        assertEquals(200, resp.status)
-
-        val core = resp.jsonOrNull!!.get("core")
-        assertTrue(core.get("version").asString().isNotBlank())
-        assertTrue(core.get("commit").asString().isNotBlank())
-
-        // The executor version too, in *both* tests that read this endpoint, and each against the
-        // executor this test started. `VersionsService` caches for five minutes in a plain field
-        // that no reset reaches, so whichever of the two runs first would otherwise decide what the
-        // other one sees — and with a shared fixture that reads as a pass. Asserting it twice is
-        // what makes the missing `clearCache()` fail rather than merely be lucky.
-        assertEquals(executor.version, resp.elements("executors").single().get("version").asString())
-    }
-
-    /**
-     * And it is deliberately narrow: names and versions of executors, **never their base URLs**.
-     *
-     * An executor's base URL is an internal address that grades arbitrary submitted code. It stays
-     * behind the teacher/admin-only `/executors`, and the reason this is asserted rather than
-     * trusted is that the two endpoints read the same rows — so widening the DTO by one field is a
-     * one-line change with no other symptom.
-     */
-    @Test
-    fun `the version endpoint names executors but never their base urls`() {
-        val resp = api.get("/v2/unauth/versions", api.anonymous())
-
-        val executors = resp.elements("executors")
-        assertEquals(1, executors.size)
-        assertEquals("test", executors[0].get("name").asString())
-        assertEquals(executor.version, executors[0].get("version").asString())
-        assertTrue(executors[0].get("reachable").asBoolean())
-
-        listOf("base_url", "baseUrl", "url").forEach {
-            assertFalse(executors[0].has(it)) { "The version endpoint published an executor's '$it'" }
-        }
-        assertFalse(resp.body.contains(executor.baseUrl)) { "An executor's address is in a public payload" }
-
-        // EZ-1781 put grading images on this payload. They are safe to publish for the same reason
-        // the versions are — the image names are in this public repository, and every teacher can
-        // already list them through `/v2/container-images` — but only the names and versions are.
-        // A digest or a size would be a fact about the host rather than about what it grades with,
-        // and the widening-by-one-field risk this test exists for applies to that DTO too.
-        listOf("digest", "repo_digests", "size", "id", "path").forEach {
-            assertFalse(executors[0].has(it)) { "The version endpoint published an executor's '$it'" }
-        }
-    }
-
-    /**
-     * Grading library versions reach the public payload, and say both what was asked for and what is
-     * there.
-     *
-     * The two being separate is the point. `declared` is what the pins file asked for; `installed`
-     * is what is in the image. They agree for anything CI built, so a disagreement means somebody's
-     * belief about a host is wrong — which is the state that went unnoticed for a fortnight in
-     * August 2026, when a Dockerfile said silmused 1.7.11 and the image graded with 1.7.4.
-     */
-    @Test
-    fun `grading image versions are published, declared and installed separately`() {
-        val resp = api.get("/v2/unauth/versions", api.anonymous())
-
-        val images = resp.elements("executors").single().get("grading_images")
-        assertTrue(images.isArray) { "grading_images must always be an array, never null" }
-
-        val silmused = images.toList().single { it.get("name").asString() == "silmused" }
-        val library = silmused.get("libraries").toList().single()
-        assertEquals("silmused", library.get("name").asString())
-        assertEquals("1.7.11", library.get("declared").asString())
-        assertEquals("1.7.4", library.get("installed").asString())
     }
 
     // --- /unauth/exercises/{id}/anonymous/details -------------------------------------------------

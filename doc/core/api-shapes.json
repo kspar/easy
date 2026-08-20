@@ -62,7 +62,7 @@
     "GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}": { "response": "core.ems.service.exercise.ReadSubmissionDetails.Resp" },
     "GET /v2/unauth/articles/{articleId}": { "response": "core.ems.service.article.ReadArticleDetailsController.Resp" },
     "GET /v2/unauth/exercises/{exerciseId}/anonymous/details": { "response": "core.ems.service.exercise.AnonymousReadExerciseDetails.Resp" },
-    "GET /v2/unauth/versions": { "response": "core.ems.service.VersionsController.Resp" },
+    "GET /v2/versions": { "response": "core.ems.service.VersionsController.Resp" },
     "PATCH /v2/courses/{courseId}/exercises/{courseExerciseId}": { "request": "core.ems.service.exercise.UpdateCourseExercise.Req" },
     "PATCH /v2/exercises/{exerciseId}": { "request": "core.ems.service.exercise.UpdateExercisePatch.Req" },
     "PATCH /v2/lib/dirs/{dirId}": { "request": "core.ems.service.exercise.dir.UpdateDir.Req" },

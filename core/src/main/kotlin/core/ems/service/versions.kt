@@ -1,6 +1,7 @@
 package core.ems.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import core.conf.security.EasyUser
 import core.db.Executor
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -8,6 +9,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.info.BuildProperties
 import org.springframework.boot.restclient.RestTemplateBuilder
+import org.springframework.security.access.annotation.Secured
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -18,13 +20,21 @@ import java.time.Instant
 private val log = KotlinLogging.logger {}
 
 /**
- * What is actually deployed (EZ-1709).
+ * What is actually deployed (EZ-1709), and which grading libraries each executor has (EZ-1781).
  *
- * Unauthenticated on purpose: the point is that whoever is reporting a bug can read the version off
- * the About page, and requiring a session excludes exactly the reporter who could not log in. The
- * repo is public and the versions are in it, so this reveals nothing that `git log` does not — but
- * it is still deliberately narrow: names and versions of executors, never their base URLs, which
- * stay behind the teacher/admin-only `/executors`.
+ * **Teacher and admin only, since EZ-1782.** It was unauthenticated for its first year, on the
+ * argument that a bug reporter who could not log in is exactly the reporter whose version matters
+ * most. kspar decided against publishing the deployment's component versions to the internet, so the
+ * cost of that decision is a bug report from a signed-out user that no longer carries a version, and
+ * the About page tells such a viewer to sign in rather than silently showing them less.
+ *
+ * It moved off `/unauth/` at the same time: leaving it there would have made the path say the
+ * opposite of what the annotation does, and the patterns in `PERMIT_ALL_PATTERNS` match on that
+ * `unauth` segment, so it is load-bearing rather than decorative.
+ *
+ * Still deliberately narrow: names and versions of executors, never their base URLs, which stay
+ * behind `/executors`. Narrowing the audience does not make the payload's own limits less worth
+ * keeping — a teacher has no more business knowing an executor's internal address than anyone else.
  *
  * Web reports its own version without asking anyone: it is baked into the bundle at build time.
  */
@@ -97,9 +107,10 @@ class VersionsController(private val versionsService: VersionsService) {
         @get:JsonProperty("executors") val executors: List<ExecutorResp>,
     )
 
-    @GetMapping("/unauth/versions")
-    fun controller(): Resp {
-        log.debug { "Getting component versions" }
+    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
+    @GetMapping("/versions")
+    fun controller(caller: EasyUser): Resp {
+        log.debug { "${caller.id} is getting component versions" }
         return Resp(versionsService.core(), versionsService.executors())
     }
 }

@@ -5,12 +5,14 @@ import { apiFetch } from './client.ts'
 /**
  * What is deployed (EZ-1709).
  *
- * `permitAll()` in `SecurityConf` and fetched with `noAuth`, like the embed's two endpoints: the
- * About page is reachable without signing in, and the bug report that needs a version most is the
- * one from someone who could not log in.
+ * **Teacher and admin only, since EZ-1782.** It was `permitAll()` and fetched with `noAuth` for its
+ * first year, on the argument that the bug report needing a version most is the one from somebody who
+ * could not sign in. That is no longer the trade being made, so the endpoint moved off `/unauth/` and
+ * this asks with a session.
  *
  * Web's own version is not in here — it is baked into this bundle at build time, see
- * `build-info.d.ts`.
+ * `build-info.d.ts`. It is still gated with the rest, because "which versions is this deployment
+ * running" is now one question with one audience rather than one public half and one private half.
  */
 
 export interface ComponentVersion {
@@ -65,10 +67,13 @@ export interface Versions {
   executors: ExecutorVersion[]
 }
 
-export function useVersions() {
+export function useVersions(enabled: boolean) {
   return useQuery({
     queryKey: ['versions'],
-    queryFn: () => apiFetch<Versions>('/unauth/versions', { noAuth: true }),
+    queryFn: () => apiFetch<Versions>('/versions'),
+    // Not asked for at all unless the viewer may have it, so a student loading the About page does
+    // not spend a request earning a 403. Same shape as `useOperatingInfo`.
+    enabled,
     // A deployed version changes only when someone deploys, and core caches the executor half for
     // five minutes anyway — re-asking on every focus would be pure noise.
     staleTime: 5 * 60 * 1000,

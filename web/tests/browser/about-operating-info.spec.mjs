@@ -48,7 +48,7 @@ test('about-operating-info', async ({ launch, check }) => {
       [
         ['/account/checkin', () => ({})],
         ['/statistics/common', () => ({ in_auto_assessing: 0, total_submissions: 0, total_users: 0 })],
-        ['/unauth/versions', () => ({ core: { version: '4.0', commit: 'abc1234', built_at: null }, executors: [] })],
+        ['/versions', () => ({ core: { version: '4.0', commit: 'abc1234', built_at: null }, executors: [] })],
         [
           '/admin/operating-info',
           ({ route }) => {

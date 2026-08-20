@@ -178,9 +178,25 @@ function OperatingInfo() {
  * needs "which version were you on", it has to be somewhere a person can be pointed at in one
  * sentence. Web's line needs no request — it is compiled into this bundle.
  */
+/**
+ * What is deployed — teachers and admins only (EZ-1782).
+ *
+ * Gated on the *acting* role, the same reasoning as `OperatingInfo` below: an admin working as a
+ * teacher is doing teacher things, and this is a diagnostic rather than something they are in the
+ * middle of. The endpoint is `@Secured` regardless, so this hides a block rather than protecting
+ * anything.
+ *
+ * Nothing is shown to anyone else — not even web's own version, which the bundle knows without
+ * asking. Showing that alone would answer "which versions is this deployment running" with a third of
+ * an answer, which is worse than declining to answer.
+ */
 function Versions() {
   const { t } = useTranslation()
-  const { data, isLoading, isError } = useVersions()
+  const { activeRole } = useAuth()
+  const maySee = activeRole === 'teacher' || activeRole === 'admin'
+  const { data, isLoading, isError } = useVersions(maySee)
+
+  if (!maySee) return null
 
   // `key` is separate from `name` because two executors can each have an image called `tiivad`, and
   // React keys have to be unique while the label deliberately is not — the indentation says which

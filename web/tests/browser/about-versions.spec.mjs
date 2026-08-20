@@ -4,6 +4,9 @@
 // EZ-1781 added a row per grading image under its executor, showing the version actually
 // installed and warning when that disagrees with what was declared.
 //
+// EZ-1782 made the whole block teacher-and-admin. It was public for a year, so the checks that
+// used to prove it was readable with no account now prove the opposite.
+//
 //   cd web && npx playwright test about-versions
 import { test } from '../support/spec.mjs'
 import { fakeApi, BASE_URL } from '../support/harness.mjs'
@@ -72,7 +75,7 @@ test('about-versions', async ({ launch, check }) => {
       ['/account/checkin', () => ({})],
       ['/statistics/common', () => ({ in_auto_assessing: 1, total_submissions: 2, total_users: 3 })],
       [
-        '/unauth/versions',
+        '/versions',
         ({ route }) => {
           versionsCalls.push(route.request().headers()['authorization'] ?? null)
           if (versionsStatus !== 200) {
@@ -172,19 +175,13 @@ test('about-versions', async ({ launch, check }) => {
     'an unreachable executor gets no invented timestamp',
     (rows['executor-2']?.builtAt ?? '') === '',
   )
-  // No bearer token on the wire. The About page is reachable signed out and the endpoint is
-  // permitAll in SecurityConf precisely so a reporter who cannot log in can still read it; sending a
-  // stale token from an unrelated session would be worse than sending none.
+  // A bearer token on the wire, which is the inversion EZ-1782 made. Until then this asserted the
+  // opposite: the endpoint was permitAll and deliberately asked for without a session.
   check(
-    `called with no Authorization header (${versionsCalls.length} call(s))`,
-    versionsCalls.length > 0 && versionsCalls.every((h) => h === null),
+    `called with a bearer token (${versionsCalls.length} call(s))`,
+    versionsCalls.length > 0 && versionsCalls.every((h) => (h ?? '').startsWith('Bearer ')),
   )
   await shot('01-versions')
-  const authHeaders = await page.evaluate(async () => {
-    const res = await fetch('/v2/unauth/versions')
-    return res.status
-  })
-  check(`fetching versions with no session works (HTTP ${authHeaders})`, authHeaders === 200)
 
   // --- grading images (EZ-1781) --------------------------------------------------------------------
   const ordered = await readVersionRows()
@@ -225,6 +222,48 @@ test('about-versions', async ({ launch, check }) => {
     names.indexOf('executor-2') === names.length - 1,
   )
   await shot('03-grading-images')
+
+  // --- a student sees none of it (EZ-1782) ----------------------------------------------------------
+  {
+    // launch({ role }) rather than a second init script setting activeRole. Setting activeRole alone
+    // does not work: stubRole would still say teacher,admin, and the app corrects an acting role that
+    // is not among the available ones — so the page came back as a teacher and both this block and the
+    // admin panel rendered.
+    const { page: studentPage, shot: studentShot, close: closeStudent } =
+      await launch({ shotPrefix: 'about-versions-student-', role: 'student' })
+
+    const studentCalls = []
+    await fakeApi(
+      studentPage,
+      [
+        ['/account/checkin', () => ({})],
+        ['/statistics/common', () => ({ in_auto_assessing: 1, total_submissions: 2, total_users: 3 })],
+        [
+          '/versions',
+          ({ route }) => {
+            studentCalls.push(route.request().url())
+            return VERSIONS
+          },
+        ],
+      ],
+      { log: false },
+    )
+
+    await studentPage.goto(`${BASE_URL}/about`)
+    await studentPage.getByText('Lahendus is operated').waitFor()
+    const studentText = (await studentPage.locator('#root').innerText()).replace(/\s+/g, ' ')
+
+    check('student: the versions block is absent', !studentText.includes('Versions'))
+    check(
+      `student: no version is leaked into the page (${studentText.includes('abc1234')})`,
+      !studentText.includes('abc1234'),
+    )
+    // Not asked for at all, rather than asked for and refused. A 403 per About page view would be
+    // noise in the logs and a request nobody needed.
+    check(`student: the endpoint is never called (${studentCalls.length})`, studentCalls.length === 0)
+    await studentShot('04-student')
+    await closeStudent()
+  }
 
   // --- core unreachable: web's own line must survive ------------------------------------------------
   // The two halves fail independently. Losing the server half must not take away the one version the

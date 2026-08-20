@@ -59,10 +59,11 @@ internal val PERMIT_ALL_PATTERNS = arrayOf(
     // Allow unauthenticated access to anonymous auto-assess services
     "/*/unauth/exercises/*/anonymous/autoassess",
     "/*/unauth/exercises/*/anonymous/details",
-    // What is deployed (EZ-1709). Unauthenticated so that whoever is reporting a bug can read it
-    // off the About page — including someone who cannot log in, which is the report that needs a
-    // version most.
-    "/*/unauth/versions",
+    // `/unauth/versions` was here from EZ-1709 until EZ-1782. It was public so that a bug reporter
+    // who could not log in could still read a version off the About page; kspar decided the
+    // deployment's component versions are not something to publish to the internet, so it is
+    // teacher-and-admin now and lives at `/v2/versions` — the `unauth` segment would have been a
+    // lie. The tradeoff given up is real and worth remembering if the decision is ever revisited.
     // Published articles are public content: the FAQ and the guides, one of which is about logging
     // in and is therefore needed by someone who cannot. Drafts are unreachable through it — the
     // handler holds no caller, passes isAdmin = false, and the query filters on published.
