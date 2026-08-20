@@ -51,7 +51,7 @@ BUCKET="${BUCKET:-}"
 
 KEYCHAIN_ITEM="${EASY_TOKEN_KEYCHAIN:-easy-dev-test-token}"
 TOKEN_CLIENT="${EASY_TOKEN_CLIENT_ID:-easy-dev-test-runner}"
-TOKEN_URL="${EASY_TOKEN_URL:-https://easy-idp-dev.cloud.ut.ee/auth/realms/master/protocol/openid-connect/token}"
+TOKEN_URL="${EASY_TOKEN_URL:-https://dev.idp.lahendus.ut.ee/auth/realms/master/protocol/openid-connect/token}"
 
 # Mint one if we were not handed one. Deliberately quiet about everything except success or the
 # IdP's own error string: the secret must not reach a terminal, a log or a transcript, and neither

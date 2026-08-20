@@ -161,21 +161,30 @@ write the release tree.
 Then set `SSH_TARGET` in `deploy/dev/dev.env`. It ships as a placeholder and the script
 refuses to run until it is real.
 
-## Values still to confirm
+## The IdP values in `deploy/dev/config.json`
 
-`deploy/dev/config.json` is written from the plan, not from a live IdP — `dev.idp.lahendus.ut.ee`
-currently resolves to `proxy.hpc.ut.ee`, which answers `tlsv1 unrecognized name`, so the dev realm
-could not be inspected. Check all three before the first login attempt:
+All confirmed against the live dev IdP on 2026-08-08, and `doc/idp-setup.md` is where they come from.
+Two of the three are not what a Keycloak guide would tell you, so they are worth knowing before
+"fixing" one:
 
-- **`keycloak.url`** — the `/auth/` path prefix is Keycloak 16-and-earlier. Keycloak 17+ dropped it,
-  so a rebuilt dev IdP most likely wants `https://dev.idp.lahendus.ut.ee/` with no suffix.
-- **`keycloak.realm`** — `master` mirrors production. The dev realm may not be called that.
-- **`keycloak.clientId`** — needs a public client with PKCE whose redirect URIs and web origins
-  cover `https://dev.lahendus.ut.ee` (§7).
+- **`keycloak.url`** keeps the `/auth/` prefix Keycloak dropped in the Quarkus rewrite. The IdP is
+  configured to serve it (`http-relative-path`) because core hardcodes it too — removing it means
+  changing core, both `config.json` files and production together.
+- **`keycloak.realm`** is `master`, mirroring production. Not best practice, kept deliberately so dev
+  is a release gate; `doc/idp-setup.md` §4.1 has the consequences.
+- **`keycloak.clientId`** is `lahendus.ut.ee`, a public PKCE client whose redirect URIs and web
+  origins cover `https://dev.lahendus.ut.ee`.
 
-`emsRoot` is an absolute cross-origin URL, which requires `dev.ems.lahendus.ut.ee` to exist (it has
-no A record yet) and requires `easy.core.cors.allowed-origins` on the host to contain
-`https://dev.lahendus.ut.ee` (§4.3).
+The host in the first two is `dev.idp.lahendus.ut.ee` since 2026-08-21 — it and `keycloak_hostname`
+in the dev inventory must always name the same host, or the browser logs in against one IdP and core
+validates against another. `doc/idp-setup.md` §5.1 is the order to change it in.
+
+`idpAdminUrl` points the SPA's admin link at `/idp-admin/`, the gate page in front of the Keycloak
+console, on the same host.
+
+`emsRoot` is an absolute cross-origin URL — web and API are separate names on dev — so it also
+requires `easy_core_cors_allowed_origins` on the host to contain `https://dev.lahendus.ut.ee`. It
+does; the failure mode if it ever stops is a browser CORS error with nothing in the server log.
 
 ## Rollback
 

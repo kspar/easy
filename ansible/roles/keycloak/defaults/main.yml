@@ -56,7 +56,7 @@ keycloak_postgres_listen_addresses: 127.0.0.1
 # No default for the hostname. It decides which certificate is requested, which issuer ends up in
 # every token, and which origin the browser is redirected to — a wrong guess is a certificate request
 # for a name someone else owns, and tokens core will refuse.
-# keycloak_hostname — the public name, e.g. easy-idp-dev.cloud.ut.ee
+# keycloak_hostname — the public name, e.g. dev.idp.lahendus.ut.ee
 
 # `/auth` is not decoration and not nostalgia. Keycloak dropped this prefix in the Quarkus rewrite,
 # but core still builds `{base}/auth/admin/realms/...` in delete_inactive_users.kt with the prefix

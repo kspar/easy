@@ -85,7 +85,7 @@ One new VM, plus the existing IDP elsewhere:
 | --- | --- | --- |
 | `dev.lahendus.ut.ee` | web dist | Already in core's CORS allowlist — see §4.3 |
 | `dev.ems.lahendus.ut.ee` | core API | Already resolves to the VM |
-| `dev.idp.lahendus.ut.ee` | Keycloak | CNAME to a proxy that does not serve it — see §7 |
+| `dev.idp.lahendus.ut.ee` | Keycloak | CNAME to `easy-idp-dev.cloud.ut.ee`, its own VM — see §7 |
 
 **Decided 2026-08-03: keep `dev.ems`, drop the planned `dev.core`.** This document previously
 recommended renaming to `dev.core.lahendus.ut.ee`, on the grounds that "ems" is the pre-rename
@@ -565,10 +565,12 @@ pointed at `jdbc:postgresql://localhost:5432/cloakdb`, and no postgres was insta
 all: the 2026-08-07 home-directory restore carried the Keycloak distribution and the theme, and
 nothing else. There was no dump, so the realm was **rebuilt from scratch** rather than restored.
 
-The other finding was that the name in every config in this repo had never been right.
-`dev.idp.lahendus.ut.ee` is a CNAME to `proxy.hpc.ut.ee`, which has never served this IdP. The VM
-answers to **`easy-idp-dev.cloud.ut.ee`**, and that is now what Keycloak's `hostname` is set to,
-which makes it the `issuer` in every token core validates.
+The other finding was that the name in every config in this repo had not been right.
+`dev.idp.lahendus.ut.ee` was a CNAME to `proxy.hpc.ut.ee`, which has never served this IdP, so
+everything moved to **`easy-idp-dev.cloud.ut.ee`**, the VM's own name. On **2026-08-21** the alias was
+repointed at the VM and everything moved back: `dev.idp.lahendus.ut.ee` is what Keycloak's `hostname`
+is set to, which makes it the `issuer` in every token core validates. `doc/idp-setup.md` §5 has both
+halves, and §5.1 the order to apply such a change in — the issuer moving signs everyone out.
 
 What is running: Keycloak 25.0.2 behind nginx with a Let's Encrypt certificate, on its own postgres,
 built by `ansible/roles/keycloak` and applied with `./run.sh site.yml --limit easyidpdev`.
@@ -594,7 +596,7 @@ The realm, as decided here and built there:
 by core at `POST /v2/account/checkin` (200), and a malformed one is refused on the same endpoint
 (401) — so the 200 means verification happened rather than being skipped.
 
-**Use `https://easy-idp-dev.cloud.ut.ee/idp-admin/` for admin work**, not `/auth/admin/` directly.
+**Use `https://dev.idp.lahendus.ut.ee/idp-admin/` for admin work**, not `/auth/admin/` directly.
 Because we kept the `master` realm, every application user is a user in the realm whose admin console
 that is, and Keycloak's answer to "signed in, but not an admin" is a blank page with two spinners
 rather than a message. `/idp-admin/` checks first and either sends you through or says why not. It is

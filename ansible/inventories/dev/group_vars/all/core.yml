@@ -33,14 +33,18 @@ easy_core_cors_allowed_origins: https://dev.lahendus.ut.ee
 # Verified against a live IdP as of 2026-08-08, which is new: everything here used to be a guess
 # because there was nothing to check it against. See doc/idp-setup.md for how the realm was built.
 #
-# The hostname changed at the same time, and the old one was never right. `dev.idp.lahendus.ut.ee` is
-# a CNAME to `proxy.hpc.ut.ee` — a host that has never served this IdP — so every config in this repo
-# pointed at a name that could not have worked. The VM answers to `easy-idp-dev.cloud.ut.ee`, which is
-# what Keycloak's `hostname` is set to and therefore what appears in the `issuer` of every token.
+# This must be, character for character, the origin in the `issuer` of the tokens Keycloak mints —
+# i.e. `https://` plus keycloak_hostname from inventories/dev/group_vars/idp.yml. The keycloak role
+# asserts the two agree after every run, because a mismatch is a 401 on every login that looks
+# nothing like a hostname problem.
+#
+# `dev.idp.lahendus.ut.ee` was a CNAME to `proxy.hpc.ut.ee` — a host that never served this IdP — so
+# between 2026-08-08 and 2026-08-21 this said `easy-idp-dev.cloud.ut.ee`, the VM's own name. The alias
+# now points at the VM, so the intended name is back. doc/idp-setup.md §5 has the history.
 #
 # ORIGIN ONLY, no path. The role asserts it. `/auth` is added by easy_core_idp_path_prefix for the
 # Spring resource-server URIs; core's admin-API code appends its own. See core_config/defaults.
-easy_core_idp_base_url: https://easy-idp-dev.cloud.ut.ee
+easy_core_idp_base_url: https://dev.idp.lahendus.ut.ee
 
 # Keycloak's own admin realm, doubling as the application realm — which is not best practice and is
 # kept anyway, because production does the same and dev is meant to be the release gate. One

@@ -1,11 +1,11 @@
 {
   "emsRoot": "https://dev.ems.lahendus.ut.ee/v2",
   "keycloak": {
-    "url": "https://easy-idp-dev.cloud.ut.ee/auth/",
+    "url": "https://dev.idp.lahendus.ut.ee/auth/",
     "realm": "master",
     "clientId": "lahendus.ut.ee"
   },
-  "idpAdminUrl": "https://easy-idp-dev.cloud.ut.ee/idp-admin/",
+  "idpAdminUrl": "https://dev.idp.lahendus.ut.ee/idp-admin/",
   "environment": {
     "label": "DEV",
     "colour": "#b26a00"

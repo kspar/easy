@@ -42,9 +42,9 @@ server {
     ssl_stapling on;
     ssl_stapling_verify on;
 
-    # No includeSubDomains: this name has siblings under cloud.ut.ee that this repo does not own and
-    # cannot vouch for, and a subdomain-wide pin is remembered by browsers long after the header
-    # stops being sent.
+    # No includeSubDomains: nothing is served under this name, so the pin would buy nothing, and it
+    # is remembered by browsers long after the header stops being sent. The parent zone has siblings
+    # this repo does not own and cannot vouch for — which is the reason not to move the pin up either.
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;

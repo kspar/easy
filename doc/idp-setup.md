@@ -1,7 +1,9 @@
 # Setting up the dev IdP
 
-`easy-idp-dev.cloud.ut.ee` (193.40.11.153, OpenStack, Ubuntu 24.04.4 LTS) — Keycloak 25.0.2 serving
-the realm that every login on dev goes through.
+`dev.idp.lahendus.ut.ee` — a CNAME to `easy-idp-dev.cloud.ut.ee`, the VM's own name (193.40.11.153,
+OpenStack, Ubuntu 24.04.4 LTS) — Keycloak 25.0.2 serving the realm that every login on dev goes
+through. Both names reach it; the `lahendus.ut.ee` one is what the configs use and what the tokens
+say, and §5 is why that took two attempts.
 
 Built from nothing on **2026-08-08**. This document is the whole procedure: what runs the machine,
 what had to be decided, and the parts a playbook cannot do. `ansible/roles/keycloak/` is the
@@ -19,9 +21,12 @@ HTTPS, is accepted by core: `POST /v2/account/checkin` returns 200 and creates t
 deliberately malformed token returns 401 on the same endpoint, so the acceptance means verification
 happened rather than being skipped.
 
+**Renamed 2026-08-21** to `dev.idp.lahendus.ut.ee`, now that the alias points here (§5). The issuer
+changes with it, so this is not a config-only edit — the checklist for applying it is §5.1.
+
 ```
-easy-idp-dev.cloud.ut.ee   ->  nginx :443  ->  Keycloak 127.0.0.1:8080/auth  ->  postgres cloakdb
-issuer                     https://easy-idp-dev.cloud.ut.ee/auth/realms/master
+dev.idp.lahendus.ut.ee     ->  nginx :443  ->  Keycloak 127.0.0.1:8080/auth  ->  postgres cloakdb
+issuer                     https://dev.idp.lahendus.ut.ee/auth/realms/master
 realm                      master
 SPA client                 lahendus.ut.ee     public, PKCE S256
 core's client              easy-core          confidential, service account, view-users only
@@ -70,7 +75,7 @@ That restore carried the Keycloak *install* and the theme, and nothing else:
 | No JVM installed | `./bin/kc.sh` answered `java: not found` |
 | A database password in plaintext, world-readable, in that conf file | Removed by the role now; see §2 |
 | `~kspar/easy-kc-theme/` | The lahendus theme, last touched 2023 |
-| `hostname=dev.idp.lahendus.ut.ee` in the conf | **A name that has never served this IdP** — see §5 |
+| `hostname=dev.idp.lahendus.ut.ee` in the conf | **A name that did not resolve to this host** — it does again since 2026-08-21, see §5 |
 
 That answers the open question in `doc/dev-environment.md` §7. The realm was not on disk, because
 it was never on disk. **Rebuilt from scratch** (§4) rather than restored — there was no dump.
@@ -372,7 +377,7 @@ $K update realms/master -s loginTheme=keycloak
 
 ### 4.6 The admin-console gate
 
-`https://easy-idp-dev.cloud.ut.ee/idp-admin/` is a page of ours that stands in front of the admin
+`https://dev.idp.lahendus.ut.ee/idp-admin/` is a page of ours that stands in front of the admin
 console, because the console's own answer to "signed in, but not an admin" is a blank page with two
 spinners (§4.1). It gets a token, asks `/auth/admin/serverinfo` a question only an admin may ask, and
 branches on the answer: **200 → straight to the console**, **403 → say so, and offer to sign out and
@@ -387,7 +392,7 @@ wrong on a page whose entire job is to prevent a confusing failure.
 lives here like every other client:
 
 ```sh
-HOST=easy-idp-dev.cloud.ut.ee
+HOST=dev.idp.lahendus.ut.ee
 $K create clients -r master \
   -s clientId=idp-admin-gate -s enabled=true -s publicClient=true \
   -s standardFlowEnabled=true -s directAccessGrantsEnabled=false \
@@ -433,21 +438,79 @@ teacher's courses, which is the deliberate, auditable way to get realistic acces
 
 ---
 
-## 5. The hostname, which was wrong everywhere
+## 5. The hostname, which went round in a circle
 
-Every config in this repo pointed the IdP at **`dev.idp.lahendus.ut.ee`**. That name is a CNAME to
-`proxy.hpc.ut.ee` (193.40.46.68/69) — a host that has never served this IdP. It could not have worked.
+Every config in this repo pointed the IdP at **`dev.idp.lahendus.ut.ee`**, and on 2026-08-08 that
+name was a CNAME to `proxy.hpc.ut.ee` (193.40.46.68/69) — a host that had never served this IdP. It
+could not have worked, so everything was moved to **`easy-idp-dev.cloud.ut.ee`**, the VM's own name,
+which resolves to 193.40.11.153.
 
-The VM answers to **`easy-idp-dev.cloud.ut.ee`**, which resolves to 193.40.11.153.
+On **2026-08-21** the alias was repointed at the VM, and everything moved back:
+
+```
+dev.idp.lahendus.ut.ee.  ->  easy-idp-dev.cloud.ut.ee.  ->  193.40.11.153
+```
+
+Both names reach the VM, so this is a choice rather than a fix. The `lahendus.ut.ee` name wins
+because it is ours: it can follow the IdP to another VM, where `easy-idp-dev.cloud.ut.ee` is
+whatever OpenStack called the machine we happen to be running on today. Tokens minted on dev now say
+`https://dev.idp.lahendus.ut.ee/auth/realms/master`.
 
 This matters more than a rename usually does, because Keycloak's `hostname` decides the `issuer`
 claim in every token, and core rejects any token whose issuer is not the configured one. The role
 asserts the two agree after every run.
 
-Changed in: `ansible/inventories/dev/group_vars/all/core.yml`, `deploy/dev/config.json`, and
-the deployed `config.json` on the core host (a redeploy would place the same file).
+Set in: `ansible/inventories/dev/group_vars/idp.yml` (`keycloak_hostname`, which is also the
+certificate's name), `ansible/inventories/dev/group_vars/all/core.yml`
+(`easy_core_idp_base_url`), and `deploy/dev/config.json` (`keycloak.url` and `idpAdminUrl`, which a
+web deploy copies onto the core host).
 
 `web/public/config.json` is **unchanged** — it holds production's values, not dev's.
+
+### 5.1 Applying a hostname change
+
+Three things break in three different ways if this is done piecemeal, so the order is the point.
+
+1. **The realm's gate client first**, over kcadm on the host. `idp-admin-gate` has the IdP's own
+   hostname in `rootUrl`, `redirectUris` and `webOrigins` — realm data, so no playbook touches it —
+   and Keycloak refuses a redirect URI it does not recognise. Both names at once, so the page works
+   either side of the switch:
+
+   ```sh
+   HOST=dev.idp.lahendus.ut.ee
+   OLD=easy-idp-dev.cloud.ut.ee
+   ID=$($K get clients -r master -q clientId=idp-admin-gate --fields id --format csv --noquotes)
+   $K update clients/$ID -r master \
+     -s rootUrl="https://$HOST" \
+     -s "redirectUris=[\"https://$HOST/idp-admin/*\",\"https://$OLD/idp-admin/*\"]" \
+     -s "webOrigins=[\"https://$HOST\",\"https://$OLD\"]"
+   ```
+
+   The SPA client `lahendus.ut.ee` needs nothing: its redirect URIs are `dev.lahendus.ut.ee`, the
+   web origin, which does not change when the IdP is renamed.
+
+2. **Then the playbook**, which does Keycloak and core in one run and asserts they agree:
+
+   ```sh
+   cd ansible && ./run.sh site.yml --limit easyidpdev,easycoredev
+   ```
+
+   Expect a **short HTTPS gap on the IdP**, by design: the vhost is written without its TLS block
+   while no certificate exists for the new name, certbot then obtains one over HTTP-01 (port 80 is
+   already answering on the new name), and the second write puts TLS back. Logins fail for that
+   minute. If certbot fails the IdP stays HTTP-only until it is fixed, so this is a thing to watch
+   rather than start and walk away from.
+
+   Everyone is signed out regardless: tokens carrying the old issuer are rejected by the newly
+   configured core, which is correct and looks exactly like an outage to anyone mid-session.
+
+3. **Then a web deploy**, so the SPA's `config.json` on the core host points at the new IdP. Until
+   it does, the browser is sent to the old name to log in and comes back with a token core now
+   refuses.
+
+Afterwards, the old certificate keeps renewing for a name nothing serves. Once the new one has been
+seen working, `sudo certbot delete --cert-name easy-idp-dev.cloud.ut.ee` on the IdP host, and then
+drop the extra entries from the gate client added in step 1.
 
 ---
 
@@ -458,14 +521,14 @@ Three things, of which the second is a bug that had been live and invisible.
 ### 6.1 The base URL is the origin only
 
 ```yaml
-easy_core_idp_base_url: https://easy-idp-dev.cloud.ut.ee    # NO path
-easy_core_idp_path_prefix: /auth                            # added by the template
+easy_core_idp_base_url: https://dev.idp.lahendus.ut.ee    # NO path
+easy_core_idp_path_prefix: /auth                          # added by the template
 easy_core_keycloak_realm: master
 easy_core_keycloak_client_id: easy-core
 ```
 
-`easy_core_idp_base_url` used to be `https://dev.idp.lahendus.ut.ee/auth`, and one variable was doing
-two incompatible jobs:
+`easy_core_idp_base_url` used to have the `/auth` on the end of it, and one variable was doing two
+incompatible jobs:
 
 - `jwk-set-uri` / `issuer-uri` are built as `{base}/realms/...` and **need** the `/auth` prefix.
 - `easy.core.keycloak.base-url` is consumed by `delete_inactive_users.kt`, which appends `/auth`
@@ -546,13 +609,13 @@ except 22, 80 and 443. That last check is what would have caught §3.4's JGroups
 Directly:
 
 ```sh
-curl -s https://easy-idp-dev.cloud.ut.ee/auth/realms/master/.well-known/openid-configuration | jq .issuer
+curl -s https://dev.idp.lahendus.ut.ee/auth/realms/master/.well-known/openid-configuration | jq .issuer
 ssh easyidpdev 'systemctl is-active keycloak; curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:9000/auth/health/ready'
 ```
 
-For admin work go to <https://easy-idp-dev.cloud.ut.ee/idp-admin/>, which checks whether your account
+For admin work go to <https://dev.idp.lahendus.ut.ee/idp-admin/>, which checks whether your account
 may use the console and sends you there if it may. The console's own URL,
-<https://easy-idp-dev.cloud.ut.ee/auth/admin/>, works too — but only if you are already an
+<https://dev.idp.lahendus.ut.ee/auth/admin/>, works too — but only if you are already an
 administrator, and gives no clue at all if you are not (§4.6).
 
 ---

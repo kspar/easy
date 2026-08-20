@@ -62,7 +62,7 @@ off — it is not a login client). Its secret lives in the login keychain, the s
 security add-generic-password -a "$USER" -s easy-dev-test-token -T /usr/bin/security -U -w
 curl -s -d grant_type=client_credentials -d client_id=easy-dev-test-runner \
   --data-urlencode "client_secret=$(security find-generic-password -a "$USER" -s easy-dev-test-token -w)" \
-  https://easy-idp-dev.cloud.ut.ee/auth/realms/master/protocol/openid-connect/token
+  https://dev.idp.lahendus.ut.ee/auth/realms/master/protocol/openid-connect/token
 ```
 
 `s3-check.sh` does this itself, so normally you never touch it.
