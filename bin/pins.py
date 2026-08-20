@@ -41,7 +41,6 @@ import hashlib
 import json
 import os
 import re
-import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -280,6 +279,63 @@ def package_for(arg: str) -> str | None:
     return arg[: -len("_VERSION")].lower()
 
 
+# A pin whose value is not a version of a PyPI package still names something whose installed version
+# is worth reporting. `PYTHON_GRADER_REF` is a commit, but the thing it installs is a distribution
+# called `grader`, and "which grader is in this image" is exactly the question the About page asks.
+NON_PYPI_PACKAGES = {"PYTHON_GRADER_REF": "grader"}
+
+
+def report_packages(env: str, image: str) -> list[str]:
+    """Distributions whose *installed* version this image should report.
+
+    Wider than `check_exists` looks at, on purpose: a `_SPEC` range has no single release to confirm
+    on PyPI, but which version it resolved to is precisely the fact nobody could previously answer.
+    """
+    out = []
+    for key in sorted(args_for(env, image)):
+        if key in NON_PYPI_PACKAGES:
+            out.append(NON_PYPI_PACKAGES[key])
+        elif key.endswith("_VERSION"):
+            out.append(key[: -len("_VERSION")].lower())
+        elif key.endswith("_SPEC"):
+            out.append(key[: -len("_SPEC")].lower())
+    return out
+
+
+def declared(env: str, image: str) -> str:
+    """What the pins say this image contains, as a pip-shaped string for the image's own label.
+
+    Written onto the image as `easy.grading.declared` so the artefact carries its own intent, and can
+    be compared against `easy.grading.installed` by anything looking at it later — which is the
+    comparison nobody could make when a Dockerfile said 1.7.11 and the image graded with 1.7.4.
+    """
+    out = []
+    for key, value in args_for(env, image).items():
+        if key.endswith("_VERSION"):
+            out.append(f"{key[: -len('_VERSION')].lower()}=={value}")
+        elif key.endswith("_SPEC"):
+            out.append(f"{key[: -len('_SPEC')].lower()}~={value}")
+        elif key in NON_PYPI_PACKAGES:
+            out.append(f"{NON_PYPI_PACKAGES[key]}@{value}")
+    return " ".join(out)
+
+
+def expect_env(env: str, image: str) -> dict[str, str]:
+    """The `EASY_EXPECT_*` variables this image's smoke script must be run with.
+
+    Exact pins become an equality check; `_SPEC` ranges become a compatible-release check, because
+    which 1.23.x pip picks is its decision and asserting equality would fail the day it changed. A
+    `_REF` yields nothing: a commit sha is not a version any installed package reports.
+    """
+    out = {}
+    for key, value in args_for(env, image).items():
+        if key.endswith("_VERSION"):
+            out[f"EASY_EXPECT_{key[: -len('_VERSION')]}"] = value
+        elif key.endswith("_SPEC"):
+            out[f"EASY_EXPECT_{key[: -len('_SPEC')]}_COMPATIBLE"] = value
+    return out
+
+
 def check_exists(env: str, image: str | None = None, *, timeout: int = 30) -> list[str]:
     """Confirm every pinned thing is actually published. Returns a list of problems.
 
@@ -337,33 +393,43 @@ def _nearby(pkg: str, *, timeout: int) -> str:
 
 
 def _check_git_ref(key: str, sha: str, *, timeout: int) -> list[str]:
-    repo = GIT_REPOS.get(key)
-    if not repo:
+    """Does this commit exist in the repository the pin points at?
+
+    Asks GitHub's commits API rather than git. `git ls-remote <repo> <sha>` looks tempting and is
+    wrong: ls-remote matches *ref names*, so it answers "nothing" for every commit that is not itself
+    the tip of a branch or tag — including, as it happens, the one this pin currently names. A check
+    that reports a problem for the normal case is worse than no check, because the first thing anyone
+    does with it is stop reading its output.
+    """
+    slug = GIT_REPOS.get(key)
+    if not slug:
         return [f"{key}: no repository known for this ref — add it to GIT_REPOS in bin/pins.py"]
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{slug}/commits/{sha}",
+        headers={"Accept": "application/vnd.github+json"},
+    )
+    # Unauthenticated works and is rate-limited; in CI a token is present and raises the limit.
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        request.add_header("Authorization", f"Bearer {token}")
     try:
-        out = subprocess.run(
-            ["git", "ls-remote", repo, sha],
-            capture_output=True, text=True, timeout=timeout, check=False,
-        )
-    except subprocess.TimeoutExpired:
-        return [f"{key}: timed out asking {repo} about {sha}"]
-    if out.returncode != 0:
-        return [f"{key}: could not reach {repo} ({out.stderr.strip()})"]
-    if out.stdout.strip():
-        return []
-    # `git ls-remote <sha>` only matches advertised refs, so a commit that is real but not at the
-    # tip of anything prints nothing. That is not proof of absence, and treating it as an error
-    # would refuse a perfectly good pin — so say what is known and let a human decide.
-    return [
-        f"{key}: {sha} is not the tip of any branch or tag in {repo}. It may still be a real "
-        "commit; confirm by hand rather than auto-merging."
-    ]
+        with urllib.request.urlopen(request, timeout=timeout):
+            return []
+    except urllib.error.HTTPError as e:
+        if e.code in (404, 422):
+            return [f"{key}: {slug} has no commit {sha}"]
+        # 403 and 429 are rate limiting. Fail closed, for the same reason as PyPI: "we were not
+        # allowed to look" must not read as "it is fine".
+        return [f"{key}: GitHub returned HTTP {e.code} for {slug}@{sha} — cannot confirm it exists"]
+    except Exception as e:  # noqa: BLE001
+        return [f"{key}: could not reach GitHub to confirm {slug}@{sha} ({e})"]
 
 
-# The repository each `_REF` pin points into. Here rather than in the pins file because it is not a
-# thing anybody bumps, and a URL in an auto-mergeable file would be a way to redirect a build.
+# The `owner/repo` each `_REF` pin points into. Here rather than in the pins file because it is not
+# a thing anybody bumps, and a repository name inside an auto-mergeable file would be a way to
+# redirect a build at somebody else's code.
 GIT_REPOS = {
-    "pygrader.PYTHON_GRADER_REF": "https://github.com/kspar/python-grader.git",
+    "pygrader.PYTHON_GRADER_REF": "kspar/python-grader",
 }
 
 
@@ -504,6 +570,18 @@ def _cmd_digest(a) -> int:
     return 0
 
 
+def _cmd_packages(a) -> int:
+    for pkg in report_packages(a.env, a.image):
+        print(pkg)
+    return 0
+
+
+def _cmd_expect_env(a) -> int:
+    for k, v in sorted(expect_env(a.env, a.image).items()):
+        print(f"{k}={v}")
+    return 0
+
+
 def _cmd_check_exists(a) -> int:
     problems = check_exists(a.env, a.image)
     for p in problems:
@@ -566,6 +644,21 @@ def main(argv: list[str] | None = None) -> int:
     env_arg(d)
     d.add_argument("image")
     d.set_defaults(fn=_cmd_digest)
+
+    dc = sub.add_parser("declared", help="pip-shaped summary of what an image should contain")
+    env_arg(dc)
+    dc.add_argument("image")
+    dc.set_defaults(fn=lambda a: (print(declared(a.env, a.image)), 0)[1])
+
+    pk = sub.add_parser("packages", help="distributions whose installed version to report")
+    env_arg(pk)
+    pk.add_argument("image")
+    pk.set_defaults(fn=_cmd_packages)
+
+    ee = sub.add_parser("expect-env", help="EASY_EXPECT_* variables for the smoke check")
+    env_arg(ee)
+    ee.add_argument("image")
+    ee.set_defaults(fn=_cmd_expect_env)
 
     c = sub.add_parser("check-exists", help="confirm every pinned version is published")
     env_arg(c)

@@ -183,6 +183,25 @@
   loop_control:
     label: "{{ item.name }}"
 
+# Every image's Dockerfile ends with `COPY smoke/...`, so without this the build context is missing
+# a file the Dockerfile names and `docker build` fails outright. The whole directory goes into every
+# context rather than just that image's own script: it is four small files, and a per-image copy
+# would be one more place for a new image to be forgotten.
+#
+# Temporary, like the host-side build itself. Once the reconciler pulls images instead of building
+# them, nothing here needs a build context at all.
+- name: Place the smoke checks each image carries
+  ansible.builtin.copy:
+    src: "{{ executor_dockerfile_src }}/smoke/"
+    dest: "{{ executor_root }}/images/{{ item.name }}/smoke/"
+    owner: root
+    group: root
+    mode: "0755"
+  register: placed_smoke
+  loop: "{{ executor_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
 - name: Fetch the sources an image build COPYs in
   ansible.builtin.git:
     repo: "{{ item.git.repo }}"
@@ -196,8 +215,8 @@
   loop_control:
     label: "{{ item.name }}"
 
-# The two tasks above are the only things that decide what an image *would* contain, so a change in
-# either is the signal that the image on the host is now older than its own build context.
+# The three tasks above are the only things that decide what an image *would* contain, so a change in
+# any of them is the signal that the image on the host is now older than its own build context.
 #
 # Without this the role could only ever build an image that was **missing**, which made a version
 # bump undeployable in the most misleading way available: `silmused==1.7.4` -> `1.7.11` updated the
@@ -218,9 +237,14 @@
 # `docker image rm imgrec` before a run is the manual answer.
 - name: Work out whose build context moved
   ansible.builtin.set_fact:
+    # `unique` because an image whose Dockerfile *and* smoke script both changed would otherwise be
+    # named twice. Harmless to the `in` test below, but the debug line right after this is read by a
+    # person, and "tiivad, silmused, tiivad, silmused" reads like a bug in the thing reporting it.
     executor_images_stale: "{{
-      (placed_dockerfiles.results | default([]) | selectattr('changed') | map(attribute='item.name') | list)
-      + (fetched_contexts.results | default([]) | selectattr('changed') | map(attribute='item.name') | list)
+      ((placed_dockerfiles.results | default([]) | selectattr('changed') | map(attribute='item.name') | list)
+       + (placed_smoke.results | default([]) | selectattr('changed') | map(attribute='item.name') | list)
+       + (fetched_contexts.results | default([]) | selectattr('changed') | map(attribute='item.name') | list))
+      | unique
     }}"
 
 - name: Say which images are being rebuilt because their context moved

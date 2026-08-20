@@ -7,3 +7,9 @@ RUN apt-get update \
     && pip3 install Pillow \
     && pip3 install requests
 
+# Overwrites the /easy-smoke.sh inherited from pygrader, which is the point: this image's check is
+# not its base's. `expect-versions.py` is copied again rather than inherited so that the two images
+# cannot drift apart in what they verify with.
+COPY smoke/expect-versions.py /easy-smoke-expect-versions.py
+COPY smoke/imgrec.sh /easy-smoke.sh
+

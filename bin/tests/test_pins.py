@@ -353,6 +353,33 @@ def test_a_published_version_is_accepted(monkeypatch):
     assert pins._check_pypi("k", "silmused", "1.7.11", timeout=1) == []
 
 
+def test_a_missing_commit_is_reported(monkeypatch):
+    import urllib.error
+
+    def boom(req, timeout=0):
+        raise urllib.error.HTTPError("u", 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(pins.urllib.request, "urlopen", boom)
+    problems = pins._check_git_ref("pygrader.PYTHON_GRADER_REF", "a" * 40, timeout=1)
+    assert problems and "has no commit" in problems[0]
+
+
+def test_a_rate_limited_commit_check_fails_closed(monkeypatch):
+    # 403 is how GitHub says "rate limited". Reading that as "fine" would let an unverified sha
+    # through on exactly the runs where the API is busiest.
+    import urllib.error
+
+    def boom(req, timeout=0):
+        raise urllib.error.HTTPError("u", 403, "Forbidden", {}, None)
+
+    monkeypatch.setattr(pins.urllib.request, "urlopen", boom)
+    assert pins._check_git_ref("pygrader.PYTHON_GRADER_REF", "a" * 40, timeout=1)
+
+
+def test_a_ref_with_no_known_repository_is_reported():
+    assert pins._check_git_ref("mystery.SOMETHING_REF", "a" * 40, timeout=1)
+
+
 def test_a_yanked_version_is_refused(monkeypatch):
     class R:
         def read(self):
@@ -369,6 +396,55 @@ def test_a_yanked_version_is_refused(monkeypatch):
     monkeypatch.setattr(pins.urllib.request, "urlopen", lambda url, timeout=0: R())
     problems = pins._check_pypi("k", "silmused", "1.7.11", timeout=1)
     assert problems and "yanked" in problems[0]
+
+
+# ------------------------------------------------------------------------------------------------
+# What the build script asks for: what to verify, and what to report
+
+
+def test_expect_env_asks_for_equality_on_an_exact_pin():
+    env = pins.expect_env("dev", "silmused")
+    assert env["EASY_EXPECT_SILMUSED"] == pins.load("dev")["silmused.SILMUSED_VERSION"]
+
+
+def test_expect_env_asks_for_a_range_on_a_spec():
+    # numpy~=1.23.4 is a range, so demanding equality would fail the day pip picked 1.23.6 — which
+    # it already has: the real images install 1.23.5.
+    env = pins.expect_env("dev", "tiivad")
+    assert env["EASY_EXPECT_NUMPY_COMPATIBLE"] == "1.23.4"
+    assert "EASY_EXPECT_NUMPY" not in env
+
+
+def test_expect_env_asks_nothing_of_a_commit_ref():
+    # A sha is not a version any installed package reports, so there is nothing to assert.
+    assert pins.expect_env("dev", "pygrader") == {"EASY_EXPECT_NUMPY_COMPATIBLE": "1.23.4"}
+
+
+def test_a_smoke_check_is_never_handed_nothing():
+    """Every image must have at least one expectation, or its gate verifies nothing.
+
+    `expect-versions.py` fails when handed no variables, so this would be caught at build time too —
+    but catching it here says which image, without waiting for a build.
+    """
+    for image in pins.images():
+        assert pins.expect_env("dev", image), f"{image} would run a smoke check that asserts nothing"
+
+
+def test_packages_reports_what_a_spec_resolved_to():
+    # The whole point of the installed label: a range's actual version is the fact nobody could
+    # previously answer, so numpy has to be *reported* even though it cannot be *asserted*.
+    assert "numpy" in pins.report_packages("dev", "tiivad")
+
+
+def test_packages_maps_the_grader_ref_to_its_distribution():
+    # python-grader installs a distribution called `grader`; the pin names a commit.
+    assert "grader" in pins.report_packages("dev", "pygrader")
+
+
+def test_declared_is_pip_shaped():
+    declared = pins.declared("dev", "tiivad")
+    assert "tiivad==" in declared
+    assert "numpy~=" in declared
 
 
 # ------------------------------------------------------------------------------------------------

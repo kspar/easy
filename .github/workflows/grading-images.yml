@@ -1,0 +1,109 @@
+name: Grading images
+
+# Build every grading image, prove it works, and publish it to GHCR.
+#
+# Separate from `CI` rather than a job inside it, for three reasons. A pin bump should not wait for
+# Playwright to finish before anything can happen. `paths:` keeps it off the many pushes that cannot
+# possibly change an image. And once .github/workflows/pins-automerge.yml exists, "this workflow went
+# green" becomes the thing that decides whether a pull request from somebody with no write access may
+# merge itself — which is a narrower and far more relevant claim than "all of CI went green".
+#
+# On a pull request this builds and verifies but **publishes nothing**, so a fork's read-only token is
+# all it needs and no secret is ever exposed to code the PR author controls.
+
+on:
+  pull_request:
+    paths:
+      - 'doc/aae/pins/**'
+      - 'doc/aae/dockerfiles/**'
+      - 'bin/pins.py'
+      - 'bin/build-grading-images.sh'
+      - '.github/workflows/grading-images.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'doc/aae/pins/**'
+      - 'doc/aae/dockerfiles/**'
+      - 'bin/pins.py'
+      - 'bin/build-grading-images.sh'
+      - '.github/workflows/grading-images.yml'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Rebuild even digests that are already published'
+        type: boolean
+        default: false
+
+jobs:
+  images:
+    name: Grading images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Used only by the publish step, which is itself conditional on this not being a pull request.
+      # A fork PR gets a read-only token regardless of what is written here, so the condition is the
+      # real control and this is just the smaller of the two.
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      # The cheapest gate, first. A typo'd, unpublished or yanked version is the overwhelmingly
+      # common mistake, and catching it here costs seconds instead of a full image build. It fails
+      # closed: a network error is a failure, because "we could not check" must never be treated as
+      # "it is fine".
+      - name: Every pinned version is published
+        run: |
+          python bin/pins.py check-exists --env dev
+          python bin/pins.py check-exists --env prod
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # One step, one script, one loop — because imgrec builds `FROM pygrader` and both have to
+      # exist in the same daemon under the bare name for that unqualified reference to resolve. A
+      # matrix cannot express an ordering, and splitting into jobs would mean pushing a base and
+      # pulling it back to build its child.
+      - name: Build, verify and publish
+        env:
+          REGISTRY: ghcr.io/kspar/easy
+          ENVIRONMENTS: dev prod
+          CACHE: gha
+          PUSH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
+          FORCE: ${{ inputs.force }}
+        run: bin/build-grading-images.sh
+
+      # The other half of the tiivad contract, which the smoke script inside the image cannot cover:
+      # the compiler's generated output, executed by the grader that consumes it. Running it here
+      # means "Grading images went green" also says the TSL seam still holds, which is what makes
+      # auto-merging a tiivad bump defensible rather than merely convenient.
+      - name: TSL compiler and tiivad still agree
+        run: |
+          pip install -r aae/requirements-dev.txt
+          pip install "tiivad==$(python bin/pins.py get tiivad.TIIVAD_VERSION)"
+          python -m pytest aae/tests/test_tiivad_contract.py -q
+
+      # What was published, in the run's own summary — so "which artefact went to dev" is answerable
+      # from the workflow without pulling anything or logging into a host.
+      - name: Say what the images contain
+        if: always()
+        run: |
+          {
+            echo '| image | inputs | declared | installed |'
+            echo '| --- | --- | --- | --- |'
+            for image in $(python bin/pins.py order); do
+              docker image inspect "$image" \
+                --format '| {{index .Config.Labels "easy.grading.inputs"}} | {{index .Config.Labels "easy.grading.declared"}} | {{index .Config.Labels "easy.grading.installed"}} |' \
+                2>/dev/null | sed "s|^|\| $image |" || echo "| $image | not built | | |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
