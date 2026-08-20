@@ -147,6 +147,30 @@ def test_digest_changes_when_the_rebuild_serial_changes():
     assert pins.digest("dev", "silmused", base) != pins.digest("dev", "silmused", moved)
 
 
+def test_digest_changes_when_the_shared_smoke_checker_changes(tmp_path, monkeypatch):
+    """Every image COPYs `smoke/expect-versions.py`, so it is a build input of all four.
+
+    Left out of the hash, editing the checker changed no digest — so CI found every `:i<digest>`
+    already published, pulled the old images, and the new checker reached nothing at all. A review
+    caught it; this is the test that would have.
+    """
+    before = {image: pins.digest("dev", image) for image in pins.images()}
+
+    shared = os.path.join(pins.SMOKE_DIR, "expect-versions.py")
+    original = open(shared, "rb").read()
+    try:
+        with open(shared, "ab") as f:
+            f.write(b"\n# a change to the checker\n")
+        after = {image: pins.digest("dev", image) for image in pins.images()}
+    finally:
+        with open(shared, "wb") as f:
+            f.write(original)
+
+    assert all(before[i] != after[i] for i in pins.images()), (
+        f"editing the shared smoke checker moved no digest for {[i for i in pins.images() if before[i] == after[i]]}"
+    )
+
+
 def test_digest_of_a_child_changes_when_its_base_changes():
     # The imgrec/pygrader gap the ansible role documented and declined to fix. If this ever passes
     # trivially, the recursion in digest() has been lost and a pygrader bump would silently leave

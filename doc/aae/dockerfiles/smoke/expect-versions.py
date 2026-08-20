@@ -58,14 +58,38 @@ def installed(package):
         return None
 
 
+def from_declared(summary):
+    """`silmused==1.7.11 numpy~=1.23.4` -> the same expectations the `EASY_EXPECT_*` variables carry.
+
+    CI stamps that string into the finished image as `EASY_GRADING_DECLARED`, so a published image can
+    check itself with nothing but `docker run … /easy-smoke.sh` — which is what the production
+    promotion runbook asks an operator to do, and what this file's docstring has always claimed.
+    Before it existed the claim was false: a label is metadata *about* an image and is invisible to a
+    process inside it, so the script found no expectations and exited 1.
+
+    CI's own pre-publication run still passes explicit variables, because at that point the image has
+    not been stamped yet — there is nothing to read.
+    """
+    out = {}
+    for token in (summary or "").split():
+        for operator, suffix in (("==", ""), ("~=", COMPATIBLE_SUFFIX)):
+            name, sep, version = token.partition(operator)
+            if sep and name and version:
+                out[f"{PREFIX}{name.upper()}{suffix}"] = version
+                break
+    return out
+
+
 def main():
     expectations = {k: v for k, v in os.environ.items() if k.startswith(PREFIX) and v}
+    if not expectations:
+        expectations = from_declared(os.environ.get("EASY_GRADING_DECLARED"))
     if not expectations:
         # Not "nothing to check, fine". An image whose smoke test was handed no expectations is an
         # image nobody is checking, and silently passing would make the whole gate decorative.
         print(
-            f"no {PREFIX}* variables were set, so nothing was verified. The image's smoke script "
-            f"must pass the pins it was built with.",
+            f"no {PREFIX}* variables were set and this image carries no EASY_GRADING_DECLARED, so "
+            f"nothing was verified.",
             file=sys.stderr,
         )
         return 1

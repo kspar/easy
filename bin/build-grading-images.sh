@@ -149,24 +149,27 @@ build_one() {
 
     staged="easy-grading-staging/$image:i$digest"
 
-    # The GitHub Actions cache only exists inside a workflow, and asking for it anywhere else fails
-    # the build rather than degrading. So it is opt-in: CI sets CACHE=gha, a laptop sets nothing and
-    # relies on the local layer cache.
-    local cache=()
-    if [[ "${CACHE:-}" == "gha" ]]; then
-        cache+=(--cache-from "type=gha,scope=$image" --cache-to "type=gha,scope=$image,mode=max")
-    fi
-
     local ctx
     ctx="$(stage_context "$env" "$image")"
     # shellcheck disable=SC2064  # $ctx must expand now, not when the trap fires
     trap "rm -rf '$ctx'" RETURN
 
-    docker buildx build \
-        --load \
+    # Plain `docker build`, on the default builder, and **not** buildx with a container driver.
+    #
+    # Two things here need the daemon's own image store, which the `docker-container` driver cannot
+    # see: `imgrec` resolves `FROM pygrader` against an image built moments earlier in this loop, and
+    # the label step below builds `FROM $staged`. Under a container driver both fail to resolve, and
+    # a build with no `--load` leaves its result in the build cache where `docker push` cannot find
+    # it — so the first CI run would have failed at the first child image.
+    #
+    # The cost is the `type=gha` layer cache, which only the container driver supports. That is a
+    # real cost — silmused installs postgres — and it is the right way round: this workflow runs only
+    # when a pin or a Dockerfile changes, and a slow correct build beats a fast broken one. Making
+    # the cache usable means publishing each base and having its children pull it by digest, which
+    # is a bigger change than it sounds and would take `FROM pygrader` out of the Dockerfile.
+    docker build \
         --tag "$staged" \
         ${args[@]+"${args[@]}"} \
-        ${cache[@]+"${cache[@]}"} \
         "$ctx"
 
     say "$env/$image: verifying i$digest before it is given a published name"
@@ -182,8 +185,16 @@ build_one() {
     # The labels have to be applied *after* the smoke test, because one of them is a fact only the
     # finished image can answer. A one-line image FROM the staged one is the cheapest way to add
     # them: it shares every layer and adds only metadata.
+    # `ENV` as well as `LABEL`, so the image can check itself with nothing but `docker run`.
+    #
+    # A label is metadata about the image and is invisible to a process inside it, so
+    # `/easy-smoke.sh` on a published image had no expectations to compare against and exited 1
+    # saying nothing was verified — which is what the production promotion runbook told an operator
+    # to run. They would have concluded the artefact dev had been grading with for weeks was broken.
+    # Caught in review before anybody followed those steps.
     docker build -q -t "$pinned" -t "$bare" - <<EOF
 FROM $staged
+ENV EASY_GRADING_DECLARED="$declared"
 LABEL easy.grading.inputs="$digest"
 LABEL easy.grading.declared="$declared"
 LABEL easy.grading.installed="$installed"
@@ -210,14 +221,11 @@ publish() {
 
     docker push -q "$pinned"
 
-    local version
-    version="$("$PINS" declared --env "$env" "$image" \
-        | tr ' ' '\n' | grep -E "^$image==" | cut -d= -f3 || true)"
-    if [[ -n "$version" ]]; then
-        docker tag "$pinned" "$REGISTRY/$image:$version"
-        docker push -q "$REGISTRY/$image:$version"
-    fi
-
+    # No `:<version>` alias, deliberately. It read as though it identified an artefact and did not:
+    # two environments pinning the same library version but a different rebuild.SERIAL produce two
+    # digests, both of which would claim that tag, and the second push would silently win. The
+    # digest is the identity, the channel is what a host follows, and the package page shows both
+    # plus the labels.
     docker tag "$pinned" "$REGISTRY/$image:$env"
     docker push -q "$REGISTRY/$image:$env"
     say "$env/$image: published, and the $env channel now points at i${pinned##*:i}"

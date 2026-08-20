@@ -110,6 +110,11 @@ After a successful build and smoke, three labels are stamped on:
 anything, and why a `docker inspect` answers about the artefact rather than about a source file that
 may have been placed but never built.
 
+The declared string is also set as the environment variable `EASY_GRADING_DECLARED`, so a published
+image can check *itself*: a label is metadata about an image and is invisible to a process inside it,
+so `/easy-smoke.sh` had nothing to compare against and exited saying nothing was verified — which is
+what the production runbook below tells an operator to run.
+
 ```sh
 docker inspect --format '{{index .Config.Labels "easy.grading.installed"}}' silmused
 ```
@@ -122,12 +127,22 @@ not even the read-only token the core deploy path requires.
 | Reference | Mutable | Purpose |
 | --- | --- | --- |
 | `:i<12 hex>` | never | the identity. What a host pulls, what a rollback names |
-| `:<version>` | yes | for a human reading the package page |
+| — | — | there is deliberately no `:<version>` tag; see below |
 | `:dev`, `:prod` | yes | the channel an environment tracks |
 
 CI **never rebuilds a digest it has already published**. That is what makes the pinned tag genuinely
 immutable, and it is why a revert is fast: the reverted pins reproduce a digest that already exists,
 so the build is skipped and the host usually still has the image.
+
+There is no `:<version>` alias, though an early draft had one. It read as if it identified an
+artefact and did not: two environments pinning the same library version but a different
+`rebuild.SERIAL` produce two digests, both of which would claim `:1.7.11`, and the second push would
+silently win. The digest is the identity; the labels on the package page say the rest.
+
+Builds run on the daemon's default builder rather than a buildx container driver, which costs the
+`type=gha` layer cache. `imgrec` resolves `FROM pygrader` against an image built moments earlier in
+the same loop, and the label step builds `FROM` the staged image — neither of which a container
+driver can see, since it has no access to the daemon's image store.
 
 > **GHCR packages do not inherit repository visibility.** Each of the four has to be set public once,
 > by hand, after its first publish. Until then a host cannot pull them anonymously.

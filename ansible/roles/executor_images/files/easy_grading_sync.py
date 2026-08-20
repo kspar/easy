@@ -164,7 +164,10 @@ def grade_once(executor_url: str, image: str, timeout: int = 300) -> tuple[bool,
 def load_state(path):
     try:
         with open(path, encoding="utf-8") as f:
-            return json.load(f)
+            loaded = json.load(f)
+        if not isinstance(loaded, dict):
+            raise ValueError("state must be an object")
+        return loaded
     except (OSError, ValueError):
         # A first run, or a file somebody truncated. Rebuilding it from what is live is not possible
         # — the point of the file is to remember what came before — so start empty and let the next
@@ -210,109 +213,127 @@ def reconcile(cfg, docker, state, log, grade=grade_once):
     changed = False
 
     for image in cfg["images"]:
-        name = image["name"]
-        extra_tags = image.get("tags", [])
-        entry = dict(state.get(name) or {})
-        quarantined = list(entry.get("quarantine", []))
-
-        channel_ref = f"{registry}/{name}:{channel}"
         try:
-            docker.pull(channel_ref)
+            if _reconcile_one(cfg, docker, state, log, grade, image):
+                changed = True
         except Exception as e:  # noqa: BLE001
-            log(f"{name}: could not pull {channel_ref} ({e}); leaving it as it is")
-            continue
-
-        want = docker.label(channel_ref, LABEL_INPUTS)
-        if not want:
-            log(f"{name}: {channel_ref} carries no {LABEL_INPUTS} label — refusing to make it live")
-            continue
-
-        pinned = f"{registry}/{name}:i{want}"
-        docker.tag(channel_ref, pinned)
-
-        # Steady state, and the overwhelmingly common case: this runs every few minutes. Checking
-        # that the bare tag really resolves to the wanted image — rather than trusting the state
-        # file — is what makes "documented 1.7.11, grading with 1.7.4" unrepresentable rather than
-        # merely unlikely.
-        if entry.get("inputs") == want and docker.image_id(name) == docker.image_id(pinned):
-            continue
-
-        if want in quarantined:
-            log(
-                f"{name}: i{want} failed its gate before and is quarantined; still on "
-                f"i{entry.get('inputs')}. Clear it with --unquarantine {name} to try again."
-            )
-            continue
-
-        need = cfg.get("min_free_gb", 0)
-        available = free_gb(cfg["state_path"])
-        if need and available is None:
-            # Proceeding rather than refusing: a host that cannot measure its own disk would
-            # otherwise stop updating silently, which is worse than the risk being guarded against.
-            # Said out loud so it is not silent either way.
-            log(f"{name}: cannot determine free space, so the {need} GB floor is not being enforced")
-        elif need and available < need:
-            log(
-                f"{name}: {available:.1f} GB free, below the {need} GB floor — refusing to pull more "
-                f"onto the disk that grades student code. Prune old versions or raise the floor."
-            )
-            continue
-
-        declared = docker.label(pinned, LABEL_DECLARED) or ""
-        expectations = declared_to_expectations(declared)
-        if not expectations:
-            log(f"{name}: i{want} declares no versions to verify — refusing to make it live")
-            continue
-
-        ok, output = docker.smoke(pinned, expectations)
-        if not ok:
-            # Before the bare tag moves, so nothing has graded on it.
-            quarantined.append(want)
-            entry["quarantine"] = quarantined
-            state[name] = entry
-            changed = True
-            log(f"{name}: i{want} failed its smoke check and was NOT made live:\n{output}")
-            continue
-
-        previous = entry.get("ref")
-        for target in [name, *extra_tags]:
-            docker.tag(pinned, target)
-        log(f"{name}: i{want} is live ({declared})")
-
-        # `tiivad:tsl-compose` and friends move with the bare name, because TSL exercises ask for
-        # that exact string and core rejects a save whose container_image has no row.
-        gate_ok, detail = grade(cfg["executor_url"], name)
-        if not gate_ok:
-            if previous:
-                for target in [name, *extra_tags]:
-                    docker.tag(previous, target)
-                log(f"{name}: i{want} graded wrong ({detail}) — reverted to {previous}")
-            else:
-                log(
-                    f"{name}: i{want} graded wrong ({detail}) and there is nothing to revert to, so "
-                    f"it stays live. Grading with this image is broken until somebody looks."
-                )
-            quarantined.append(want)
-            entry["quarantine"] = quarantined
-            state[name] = entry
-            changed = True
-            continue
-
-        entry.update({
-            "ref": pinned,
-            "inputs": want,
-            "declared": declared,
-            "installed": docker.label(pinned, LABEL_INSTALLED) or "",
-            "previous": previous,
-            "quarantine": quarantined,
-        })
-        state[name] = entry
-        changed = True
-        prune(docker, cfg, name, keep=cfg.get("keep", 3), never=[pinned, previous])
+            # One image's daemon error must not take the rest of the pass with it. It used to: only
+            # the pull was guarded, so a failed `docker tag` on image 3 raised past the save below
+            # and discarded the quarantine recorded for image 1 — which then failed again on the next
+            # tick, and the one after, which is precisely the flapping quarantine exists to stop.
+            log(f"{image['name']}: reconcile failed ({e}); leaving it as it is")
 
     if changed:
         save_state(cfg["state_path"], state)
     return state
+
+
+def _reconcile_one(cfg, docker, state, log, grade, image):
+    """One image. Returns whether anything worth persisting changed."""
+    registry = cfg["registry"]
+    channel = cfg["channel"]
+
+    name = image["name"]
+    extra_tags = image.get("tags", [])
+    entry = dict(state.get(name) or {})
+    quarantined = list(entry.get("quarantine", []))
+
+    channel_ref = f"{registry}/{name}:{channel}"
+    try:
+        docker.pull(channel_ref)
+    except Exception as e:  # noqa: BLE001
+        log(f"{name}: could not pull {channel_ref} ({e}); leaving it as it is")
+        return False
+
+    want = docker.label(channel_ref, LABEL_INPUTS)
+    if not want:
+        log(f"{name}: {channel_ref} carries no {LABEL_INPUTS} label — refusing to make it live")
+        return False
+
+    pinned = f"{registry}/{name}:i{want}"
+    docker.tag(channel_ref, pinned)
+
+    # Steady state, and the overwhelmingly common case: this runs every few minutes. Checking
+    # that the bare tag really resolves to the wanted image — rather than trusting the state
+    # file — is what makes "documented 1.7.11, grading with 1.7.4" unrepresentable rather than
+    # merely unlikely.
+    if entry.get("inputs") == want and docker.image_id(name) == docker.image_id(pinned):
+        return False
+
+    if want in quarantined:
+        log(
+            f"{name}: i{want} failed its gate before and is quarantined; still on "
+            f"i{entry.get('inputs')}. Clear it with --unquarantine {name} to try again."
+        )
+        return False
+
+    need = cfg.get("min_free_gb", 0)
+    available = free_gb(cfg["state_path"])
+    if need and available is None:
+        # Proceeding rather than refusing: a host that cannot measure its own disk would
+        # otherwise stop updating silently, which is worse than the risk being guarded against.
+        # Said out loud so it is not silent either way.
+        log(f"{name}: cannot determine free space, so the {need} GB floor is not being enforced")
+    elif need and available < need:
+        log(
+            f"{name}: {available:.1f} GB free, below the {need} GB floor — refusing to pull more "
+            f"onto the disk that grades student code. Prune old versions or raise the floor."
+        )
+        return False
+
+    declared = docker.label(pinned, LABEL_DECLARED) or ""
+    expectations = declared_to_expectations(declared)
+    if not expectations:
+        log(f"{name}: i{want} declares no versions to verify — refusing to make it live")
+        return False
+
+    ok, output = docker.smoke(pinned, expectations)
+    if not ok:
+        # Before the bare tag moves, so nothing has graded on it.
+        quarantined.append(want)
+        entry["quarantine"] = quarantined
+        state[name] = entry
+        log(f"{name}: i{want} failed its smoke check and was NOT made live:\n{output}")
+        # Persisted immediately rather than at the end of the pass: a later image raising must
+        # not lose the record that this one is bad.
+        save_state(cfg["state_path"], state)
+        return True
+
+    previous = entry.get("ref")
+    for target in [name, *extra_tags]:
+        docker.tag(pinned, target)
+    log(f"{name}: i{want} is live ({declared})")
+
+    # `tiivad:tsl-compose` and friends move with the bare name, because TSL exercises ask for
+    # that exact string and core rejects a save whose container_image has no row.
+    gate_ok, detail = grade(cfg["executor_url"], name)
+    if not gate_ok:
+        if previous:
+            for target in [name, *extra_tags]:
+                docker.tag(previous, target)
+            log(f"{name}: i{want} graded wrong ({detail}) — reverted to {previous}")
+        else:
+            log(
+                f"{name}: i{want} graded wrong ({detail}) and there is nothing to revert to, so "
+                f"it stays live. Grading with this image is broken until somebody looks."
+            )
+        quarantined.append(want)
+        entry["quarantine"] = quarantined
+        state[name] = entry
+        save_state(cfg["state_path"], state)
+        return True
+
+    entry.update({
+        "ref": pinned,
+        "inputs": want,
+        "declared": declared,
+        "installed": docker.label(pinned, LABEL_INSTALLED) or "",
+        "previous": previous,
+        "quarantine": quarantined,
+    })
+    state[name] = entry
+    prune(docker, cfg, name, keep=cfg.get("keep", 3), never=[pinned, previous])
+    return True
 
 
 def prune(docker, cfg, name, keep, never):

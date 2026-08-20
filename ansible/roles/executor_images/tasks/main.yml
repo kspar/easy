@@ -126,7 +126,6 @@
   ansible.builtin.include_role:
     name: executor
     tasks_from: register_in_db.yml
-  when: executor_images_present | length > 0
 
 - name: Say plainly which images are missing, if any
   ansible.builtin.debug:
@@ -144,3 +143,7 @@
     fail_msg: >-
       {{ executor_images_missing | join(', ') }} not present on this host.
     success_msg: "All {{ executor_images_present | length }} grading images present and registered."
+  # Without this, `executor_images_enabled: false` — the flag for a host that is not meant to grade
+  # yet — skipped everything that would create the images and then failed on their absence, which is
+  # the opposite of what turning something off should do.
+  when: executor_images_enabled | bool

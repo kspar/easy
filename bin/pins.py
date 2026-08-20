@@ -258,6 +258,11 @@ def digest(env: str, image: str, values: dict[str, str] | None = None) -> str:
         "name": image,
         "dockerfile": _sha256_file(os.path.join(DOCKERFILE_DIR, image)),
         "smoke": _sha256_file(os.path.join(SMOKE_DIR, f"{image}.sh")),
+        # Every Dockerfile also COPYs the shared checker, so it is a build input of all four. Left
+        # out of this hash — as it was until a review caught it — editing it changed no digest, CI
+        # found each `:i<digest>` already published and pulled the old image, and the new checker
+        # reached nothing. Silently: exactly the drift this hash exists to make impossible.
+        "smoke_shared": _sha256_file(os.path.join(SMOKE_DIR, "expect-versions.py")),
         "args": args_for(env, image, values),
         "serial": values.get("rebuild.SERIAL", "0"),
         "base": digest(env, base, values) if base else None,

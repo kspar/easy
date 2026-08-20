@@ -288,6 +288,60 @@ def test_a_disk_below_the_floor_refuses_to_pull_more(tmp_path, logs):
     assert any("below the" in m for m in logs)
 
 
+def test_one_image_failing_does_not_discard_another_image_s_quarantine(tmp_path, logs):
+    """A daemon error on image B must not lose the record that image A is bad.
+
+    It used to. Only the pull was guarded, so a raise anywhere else escaped the loop and skipped the
+    single `save_state` at the end — and the next tick re-pulled, re-smoked and re-failed image A,
+    every five minutes, which is exactly what the quarantine exists to stop.
+    """
+    docker = FakeDocker(
+        {"bad": {"declared": "tiivad==9.9.9", "installed": "tiivad==0.0.33"}}, smoke_ok=False
+    )
+    docker.publish_channel("tiivad", "dev", "bad")
+    docker.tags["tiivad"] = "sha256:previous"
+
+    # silmused's channel was never published, so pulling it raises.
+    cfg = config(tmp_path, images=[{"name": "tiivad", "tags": []}, {"name": "silmused", "tags": []}])
+
+    state = run(cfg, docker, {}, logs)
+
+    assert state["tiivad"]["quarantine"] == ["bad"]
+    # And on disk, not merely in the dict we happen to be holding.
+    assert sync.load_state(cfg["state_path"])["tiivad"]["quarantine"] == ["bad"]
+    assert any("could not pull" in m for m in logs)
+
+
+def test_a_raise_midway_is_logged_and_the_pass_continues(tmp_path, logs):
+    docker = FakeDocker({"aaa": {"declared": "tiivad==1.0", "installed": "tiivad==1.0"}})
+    docker.publish_channel("tiivad", "dev", "aaa")
+    docker.publish_channel("silmused", "dev", "aaa")
+
+    original = docker.tag
+
+    def explode(source, target):
+        if target == "silmused":
+            raise RuntimeError("daemon says no")
+        return original(source, target)
+
+    docker.tag = explode
+    cfg = config(tmp_path, images=[{"name": "silmused", "tags": []}, {"name": "tiivad", "tags": []}])
+
+    state = run(cfg, docker, {}, logs)
+
+    assert any("reconcile failed" in m for m in logs)
+    # tiivad comes after the image that raised, and still gets its turn.
+    assert state["tiivad"]["inputs"] == "aaa"
+
+
+def test_a_state_file_holding_the_wrong_shape_is_ignored(tmp_path):
+    # Valid JSON, wrong type. Reaching `.get` on a list would raise out of load_state and, on the
+    # executor side, turn a healthy host into an unreachable one.
+    path = tmp_path / "state.json"
+    path.write_text('["not", "an", "object"]')
+    assert sync.load_state(str(path)) == {}
+
+
 # ------------------------------------------------------------------------------------------------
 # Retention, which is what makes rollback offline
 

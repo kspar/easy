@@ -100,6 +100,7 @@ def fresh_cache(tmp_path, monkeypatch):
     containers._refresh_running.clear()
 
 
+# A live grading image: labelled, and carrying the bare tag that grading resolves.
 def labelled(name, declared, installed, inputs="abc123"):
     return FakeImage(
         "sha256:" + name * 8,
@@ -229,10 +230,72 @@ def test_an_image_with_no_grading_labels_is_ignored(monkeypatch):
     assert containers._refresh_grading_images(FakeLogger()) == []
 
 
-def test_an_untagged_image_is_named_by_its_id(monkeypatch):
+def test_a_retained_rollback_copy_is_not_reported(monkeypatch):
+    """The reconciler keeps up to three superseded versions so a rollback needs no network.
+
+    Every one of them still carries the labels, so selecting on "has a grading label" reported about
+    twelve images for four — with nothing saying which one grading used, and duplicate names breaking
+    the About page's React keys. Only what a bare tag resolves to is live.
+    """
+    live = FakeImage(
+        "sha256:" + "1" * 20,
+        ["silmused:latest", "ghcr.io/kspar/easy/silmused:inew"],
+        {containers.LABEL_DECLARED: "silmused==1.7.11", containers.LABEL_INSTALLED: "silmused==1.7.11"},
+    )
+    kept = FakeImage(
+        "sha256:" + "2" * 20,
+        ["ghcr.io/kspar/easy/silmused:iold"],
+        {containers.LABEL_DECLARED: "silmused==1.7.4", containers.LABEL_INSTALLED: "silmused==1.7.4"},
+    )
+    fake = FakeDocker([live, kept])
+    monkeypatch.setattr(containers.docker, "from_env", lambda: fake)
+
+    images = containers._refresh_grading_images(FakeLogger())
+    assert len(images) == 1
+    assert images[0]["libraries"][0]["installed"] == "1.7.11"
+
+
+def test_the_name_is_the_bare_one_not_the_registry_reference(monkeypatch):
+    # `ghcr.io/…` sorts before `silmused`, so taking the first tag alphabetically produced a
+    # registry-qualified name nothing else in the system uses.
+    image = FakeImage(
+        "sha256:" + "3" * 20,
+        ["ghcr.io/kspar/easy/tiivad:idigest", "tiivad:latest"],
+        {containers.LABEL_DECLARED: "tiivad==0.0.33", containers.LABEL_INSTALLED: "tiivad==0.0.33"},
+    )
+    monkeypatch.setattr(containers.docker, "from_env", lambda: FakeDocker([image]))
+    assert containers._refresh_grading_images(FakeLogger())[0]["name"] == "tiivad"
+
+
+def test_an_unlabelled_image_with_a_grading_name_is_still_reported(monkeypatch):
+    """Production's images were built by hand and carry no labels at all.
+
+    Selecting on labels alone skipped them entirely — and production is where version questions
+    actually get asked, so it is the case most worth getting right.
+    """
+    image = FakeImage("sha256:" + "4" * 20, ["silmused:latest"], {})
+    fake = FakeDocker([image], pip_payload=[{"name": "silmused", "version": "1.6.3"}])
+    monkeypatch.setattr(containers.docker, "from_env", lambda: fake)
+
+    images = containers._refresh_grading_images(FakeLogger())
+    assert images[0]["source"] == "pip"
+    assert images[0]["libraries"] == [{"name": "silmused", "declared": None, "installed": "1.6.3"}]
+
+
+def test_an_untagged_image_is_not_reported(monkeypatch):
+    # Nothing can grade with it: containers.py builds `FROM <bare name>`.
     fake = FakeDocker([FakeImage("sha256:abcdef0123456789", [], {containers.LABEL_DECLARED: "x==1"})])
     monkeypatch.setattr(containers.docker, "from_env", lambda: fake)
-    assert containers._refresh_grading_images(FakeLogger())[0]["name"]
+    assert containers._refresh_grading_images(FakeLogger()) == []
+
+
+def test_the_expected_names_can_be_configured(monkeypatch):
+    # roles/executor_images writes this from the same list that decides what the host pulls, so the
+    # two cannot disagree about which images exist.
+    monkeypatch.setenv("EASY_GRADING_IMAGE_NAMES", "kohandatud")
+    assert containers.grading_image_names() == ["kohandatud"]
+    monkeypatch.delenv("EASY_GRADING_IMAGE_NAMES")
+    assert "silmused" in containers.grading_image_names()
 
 
 # ------------------------------------------------------------------------------------------------

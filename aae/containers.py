@@ -60,6 +60,10 @@ IMAGE_CACHE_FILE = os.environ.get(
     "EASY_GRADING_IMAGE_CACHE", os.path.join(tempfile.gettempdir(), "easy-grading-images.json")
 )
 
+# Overridden by roles/executor_images from the same list that decides what the host pulls. The
+# default is what every environment has run for years.
+DEFAULT_GRADING_IMAGE_NAMES = ("tiivad", "silmused", "pygrader", "imgrec")
+
 _image_cache = {"at": 0.0, "images": []}
 _image_cache_lock = threading.Lock()
 _refresh_running = threading.Event()
@@ -253,29 +257,69 @@ def _installed_from_pip(docker_client, image, packages, logger):
                 logger.info("could not remove the container used to inspect {}".format(image.id[:19]))
 
 
+def grading_image_names():
+    """The bare image names this host is expected to grade with.
+
+    From the environment, written by `roles/executor_images` out of the same `executor_images` list
+    that decides what gets pulled, so the two cannot disagree. The default is what every environment
+    has had for years, and is what a hand-built production host has too.
+    """
+    configured = os.environ.get("EASY_GRADING_IMAGE_NAMES", "")
+    return [n for n in configured.split() if n] or list(DEFAULT_GRADING_IMAGE_NAMES)
+
+
+def _live_grading_images(client):
+    """The images grading actually uses, one per name — not every copy lying around.
+
+    Two mistakes are possible here and this avoids both.
+
+    **Reporting too much.** The reconciler deliberately keeps up to three superseded versions of each
+    image so a rollback needs no network, and each of them still carries the labels. Selecting on
+    "has a grading label" therefore reported about twelve images for four, with nothing to say which
+    one grading used — and, because their names collided, duplicate React keys on the About page.
+
+    **Reporting too little.** Selecting on labels alone also skipped production entirely, whose images
+    were built by hand before any of this existed and carry none. Production is where version
+    questions actually get asked, so that is the case worth getting right.
+
+    So the rule is the one grading itself uses: `aae/containers.py` builds `FROM <bare name>`, so the
+    image a bare tag resolves to *is* the image that grades. A retained rollback copy has only its
+    `<registry>/<name>:i<digest>` tag and is correctly invisible.
+    """
+    wanted = set(grading_image_names())
+    live = {}
+    for image in client.images.list():
+        for tag in image.tags or []:
+            name = tag.split(":")[0]
+            # A bare name — no registry, no slash. `ghcr.io/kspar/easy/silmused:i9f3…` is a retained
+            # copy; `silmused:latest` is what grading resolves.
+            if "/" in name or name not in wanted:
+                continue
+            live[name] = image
+            break
+        if len(live) >= IMAGE_INSPECT_LIMIT:
+            break
+    return live
+
+
 def _refresh_grading_images(logger):
     """Rebuild the cache. Runs on a background thread, never on a request."""
     client = docker.from_env()
     images = []
-    for image in client.images.list()[:IMAGE_INSPECT_LIMIT]:
+    for name, image in _live_grading_images(client).items():
         labels = image.labels or {}
-        declared_label = labels.get(LABEL_DECLARED)
-        installed_label = labels.get(LABEL_INSTALLED)
-        # Only images this deployment considers grading images. Either label is that signal; an image
-        # with neither is one of the many other things on a Docker host.
-        if not (declared_label or installed_label):
-            continue
-
-        declared = parse_versions(declared_label)
-        installed = parse_versions(installed_label)
+        declared = parse_versions(labels.get(LABEL_DECLARED))
+        installed = parse_versions(labels.get(LABEL_INSTALLED))
         source = "label"
         if not installed:
-            installed = _installed_from_pip(client, image, [d["name"] for d in declared], logger)
+            # No label: either a hand-built production image, or one built before EZ-1781. Ask pip,
+            # which is the only way Docker offers. For a labelled image this never runs.
+            asked = [d["name"] for d in declared] or [name]
+            installed = _installed_from_pip(client, image, asked, logger)
             source = "pip" if installed else "unknown"
 
-        names = sorted(t.split(":")[0] for t in (image.tags or []))
         images.append({
-            "name": names[0] if names else image.id[7:19],
+            "name": name,
             "created_at": (image.attrs or {}).get("Created"),
             "source": source,
             "inputs": labels.get(LABEL_INPUTS),
