@@ -39,10 +39,10 @@
 # every single time.
 dev.silmused: "nuubis"
 
-# Karmo Saviauk bumped tiivad through PR #31. Eerik Muuli made the 0.0.33 bump (daf1db58) but that
-# commit has no linked GitHub account, so his login is not known here — kspar to add it. Until then
-# his bumps need review, which is the correct failure mode for "we are not sure who this is".
-dev.tiivad: "KarmoSaviauk"
+# Eerik Muuli made the 0.0.33 bump and Karmo Saviauk bumped tiivad through PR #31. Eerik's login came
+# from kspar rather than from the commit: daf1db58 has no linked GitHub account, so nothing in the
+# repository could have told us.
+dev.tiivad: "emuuli KarmoSaviauk"
 
 # Deliberately nobody. pygrader is pinned to a commit in an unreviewed upstream tree rather than to a
 # released package, so moving it is a judgement rather than a version bump.

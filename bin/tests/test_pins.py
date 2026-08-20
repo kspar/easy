@@ -303,7 +303,13 @@ def test_refuses_an_image_absent_from_the_allowlist():
 def test_the_real_allowlist_parses_and_grants_nothing_on_production():
     allow = pins.load_allowlist()
     assert allow["dev.silmused"] == ["nuubis"]
+    # More than one login on a line has to keep working — tiivad has two maintainers.
+    assert allow["dev.tiivad"] == ["emuuli", "KarmoSaviauk"]
+    # Production stays empty until it has a reconciler, so that merging a prod pin change cannot be
+    # mistaken for having deployed it.
     assert all(not v for k, v in allow.items() if k.startswith("prod."))
+    # pygrader is a commit in an unreviewed upstream tree, not a released package.
+    assert allow["dev.pygrader"] == []
 
 
 # ------------------------------------------------------------------------------------------------
