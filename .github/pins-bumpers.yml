@@ -35,13 +35,7 @@
 
 # --- dev ---------------------------------------------------------------------------------------
 
-# Martti Kakk, who has bumped silmused twenty-odd times since 2024 and had to wait for a core dev
-# every single time.
 dev.silmused: "nuubis"
-
-# Eerik Muuli made the 0.0.33 bump and Karmo Saviauk bumped tiivad through PR #31. Eerik's login came
-# from kspar rather than from the commit: daf1db58 has no linked GitHub account, so nothing in the
-# repository could have told us.
 dev.tiivad: "emuuli KarmoSaviauk"
 
 # Deliberately nobody. pygrader is pinned to a commit in an unreviewed upstream tree rather than to a
