@@ -12,9 +12,23 @@ RUN apt-get update && \
 	apt-get install postgresql-18 -y
 
 RUN pip3 install --upgrade pip
-RUN pip3 install --no-cache-dir psycopg2==2.9.9
 
-RUN pip3 install --no-cache-dir silmused==1.7.11
+# The versions live once, in doc/aae/pins/<environment>.yml beside this file, and CI passes them in.
+# See the tiivad Dockerfile for the whole reasoning, and ask a built image what it contains with
+# `docker inspect --format '{{index .Config.Labels "easy.grading.installed"}}' silmused`.
+#
+# Both ARGs are declared as late as they can be. That matters more here than anywhere else: the
+# postgres install above is by far the most expensive layer in any of these images, and a silmused
+# version bump must not be able to rebuild it.
+# Each ARG is checked in the same layer that uses it — see the tiivad Dockerfile for why, including
+# what a build given no argument at all would otherwise do.
+ARG PSYCOPG2_VERSION
+RUN printf '%s' "$PSYCOPG2_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){0,3}$' \
+    && pip3 install --no-cache-dir "psycopg2==${PSYCOPG2_VERSION}"
+
+ARG SILMUSED_VERSION
+RUN printf '%s' "$SILMUSED_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){0,3}$' \
+    && pip3 install --no-cache-dir "silmused==${SILMUSED_VERSION}"
 
 RUN sed -i 's/port = 5432/port = 5433/' /etc/postgresql/18/main/postgresql.conf
 

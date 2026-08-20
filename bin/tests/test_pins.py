@@ -441,6 +441,27 @@ def test_packages_maps_the_grader_ref_to_its_distribution():
     assert "grader" in pins.report_packages("dev", "pygrader")
 
 
+def test_only_pygrader_needs_a_cloned_source():
+    assert pins.git_source("dev", "tiivad") is None
+    slug, sha, directory = pins.git_source("dev", "pygrader")
+    assert slug == "kspar/python-grader"
+    assert len(sha) == 40
+    # The Dockerfile says `COPY python-grader /python-grader`, so the directory name is not free.
+    assert directory == "python-grader"
+
+
+def test_a_ref_naming_no_known_repository_is_an_error(monkeypatch):
+    """A `_REF` pin whose repository is not in GIT_REPOS must fail, not be silently ignored.
+
+    GIT_REPOS is deliberately not in the pins file — a repository name inside an auto-mergeable file
+    would be a way to point a build at somebody else's code. The cost of keeping it here is that a
+    new `_REF` needs a matching entry, so forgetting one has to be loud.
+    """
+    monkeypatch.setattr(pins, "args_for", lambda env, image, values=None: {"MYSTERY_REF": "a" * 40})
+    with pytest.raises(pins.PinsError, match="names no repository"):
+        pins.git_source("dev", "tiivad")
+
+
 def test_declared_is_pip_shaped():
     declared = pins.declared("dev", "tiivad")
     assert "tiivad==" in declared
@@ -468,6 +489,20 @@ def test_cli_args_prints_build_args():
     out = _cli("args", "silmused")
     assert out.returncode == 0
     assert "SILMUSED_VERSION=" in out.stdout
+
+
+def test_cli_args_docker_prints_one_line_of_flags():
+    # The Ansible role interpolates this verbatim, so it must be a single line and already flagged.
+    out = _cli("args", "--docker", "silmused")
+    assert out.returncode == 0
+    assert out.stdout.count("\n") == 1
+    assert out.stdout.startswith("--build-arg ")
+    assert "--build-arg SILMUSED_VERSION=" in out.stdout
+
+
+def test_cli_git_ref_prints_a_bare_sha_or_nothing():
+    assert len(_cli("git-ref", "pygrader").stdout.strip()) == 40
+    assert _cli("git-ref", "tiivad").stdout.strip() == ""
 
 
 def test_cli_order_lists_bases_first():

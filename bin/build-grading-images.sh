@@ -76,6 +76,38 @@ print(" ".join(out))
 '
 }
 
+# Assemble a build context for one image in a temporary directory, and print its path.
+#
+# A temporary directory rather than building straight from doc/aae/dockerfiles, for two reasons.
+# `pygrader` needs a clone of kspar/python-grader in its context at an exact commit, and cloning that
+# into the repository tree would leave an untracked directory that every other image's context would
+# then also contain. And a context holding only what one image names makes an accidental dependency
+# on a neighbouring file impossible.
+stage_context() {
+    local env="$1" image="$2" ctx source slug sha dir
+    ctx="$(mktemp -d)"
+
+    cp "$CONTEXT/$image" "$ctx/Dockerfile"
+    cp -R "$CONTEXT/smoke" "$ctx/smoke"
+
+    source="$("$PINS" git-source --env "$env" "$image")"
+    if [[ -n "$source" ]]; then
+        read -r slug sha dir <<<"$source"
+        # A bare fetch of one commit rather than a full clone: the whole history of the grader is not
+        # a build input, and `--depth 1` of a named sha is the smallest thing that produces the tree
+        # the Dockerfile COPYs.
+        git init -q "$ctx/$dir"
+        git -C "$ctx/$dir" remote add origin "https://github.com/$slug.git"
+        git -C "$ctx/$dir" fetch -q --depth 1 origin "$sha"
+        git -C "$ctx/$dir" checkout -q FETCH_HEAD
+        # The .git directory is not part of what gets installed, and leaving it in would make the
+        # context — and every layer built from it — needlessly larger.
+        rm -rf "$ctx/$dir/.git"
+    fi
+
+    printf '%s' "$ctx"
+}
+
 build_one() {
     local env="$1" image="$2"
     local digest pinned bare declared expect packages installed staged
@@ -125,13 +157,17 @@ build_one() {
         cache+=(--cache-from "type=gha,scope=$image" --cache-to "type=gha,scope=$image,mode=max")
     fi
 
+    local ctx
+    ctx="$(stage_context "$env" "$image")"
+    # shellcheck disable=SC2064  # $ctx must expand now, not when the trap fires
+    trap "rm -rf '$ctx'" RETURN
+
     docker buildx build \
         --load \
-        --file "$CONTEXT/$image" \
         --tag "$staged" \
         ${args[@]+"${args[@]}"} \
         ${cache[@]+"${cache[@]}"} \
-        "$CONTEXT"
+        "$ctx"
 
     say "$env/$image: verifying i$digest before it is given a published name"
     local smoke_env=()

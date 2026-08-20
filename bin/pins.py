@@ -302,6 +302,23 @@ def report_packages(env: str, image: str) -> list[str]:
     return out
 
 
+def git_source(env: str, image: str) -> tuple[str, str, str] | None:
+    """`(owner/repo, sha, directory)` this image needs cloned into its build context, if any.
+
+    Only `pygrader` has one. Its Dockerfile `COPY`s a directory rather than cloning, because a clone
+    inside a layer would be a network fetch nobody could pin — so whoever assembles the context does
+    the checkout, and this is how they know what to check out. The directory name is the repository's
+    own, which is what the Dockerfile's `COPY python-grader` already expects.
+    """
+    for key, value in args_for(env, image).items():
+        if key.endswith("_REF"):
+            slug = GIT_REPOS.get(f"{image}.{key}")
+            if not slug:
+                raise PinsError(f"{image}.{key} names no repository — see GIT_REPOS in bin/pins.py")
+            return slug, value, slug.split("/")[-1]
+    return None
+
+
 def declared(env: str, image: str) -> str:
     """What the pins say this image contains, as a pip-shaped string for the image's own label.
 
@@ -555,8 +572,16 @@ def _cmd_get(a) -> int:
 
 
 def _cmd_args(a) -> int:
-    for k, v in args_for(a.env, a.image).items():
-        print(f"{k}={v}")
+    pairs = args_for(a.env, a.image)
+    if a.docker:
+        # One ready-made line, so a caller that is not a shell — the Ansible role uses a `lookup`
+        # — can interpolate it without needing string filters of its own. Assembling flags out of
+        # KEY=VALUE lines in Jinja is possible and is exactly the kind of expression that breaks
+        # silently on a filter that turns out not to exist in the installed ansible-core.
+        print(" ".join(f"--build-arg {k}={v}" for k, v in pairs.items()))
+    else:
+        for k, v in pairs.items():
+            print(f"{k}={v}")
     return 0
 
 
@@ -567,6 +592,13 @@ def _cmd_order(a) -> int:
 
 def _cmd_digest(a) -> int:
     print(digest(a.env, a.image))
+    return 0
+
+
+def _cmd_git_source(a) -> int:
+    source = git_source(a.env, a.image)
+    if source:
+        print(" ".join(source))
     return 0
 
 
@@ -635,7 +667,15 @@ def main(argv: list[str] | None = None) -> int:
     ar = sub.add_parser("args", help="KEY=VALUE build args for one image")
     env_arg(ar)
     ar.add_argument("image")
+    ar.add_argument("--docker", action="store_true", help="one line of --build-arg flags")
     ar.set_defaults(fn=_cmd_args)
+
+    gr = sub.add_parser("git-ref", help="just the commit an image's source is pinned to")
+    env_arg(gr)
+    gr.add_argument("image")
+    gr.set_defaults(
+        fn=lambda a: (print((git_source(a.env, a.image) or ("", "", ""))[1]), 0)[1]
+    )
 
     o = sub.add_parser("order", help="images, bases first")
     o.set_defaults(fn=_cmd_order)
@@ -644,6 +684,11 @@ def main(argv: list[str] | None = None) -> int:
     env_arg(d)
     d.add_argument("image")
     d.set_defaults(fn=_cmd_digest)
+
+    gs = sub.add_parser("git-source", help="'owner/repo sha dir' to clone into the build context")
+    env_arg(gs)
+    gs.add_argument("image")
+    gs.set_defaults(fn=_cmd_git_source)
 
     dc = sub.add_parser("declared", help="pip-shaped summary of what an image should contain")
     env_arg(dc)

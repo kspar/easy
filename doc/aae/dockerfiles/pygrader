@@ -6,10 +6,25 @@ FROM python:3.10
 
 ENV PYTHONIOENCODING utf-8
 
+# Declared but not used here, and that is not an oversight: the clone happens *outside* this file,
+# because the source arrives as a build context rather than over the network from inside a layer.
+# Whoever assembles that context — bin/build-grading-images.sh, or the Ansible role — checks out this
+# exact commit. Naming it here is what stops the pin being invisible to anyone reading the Dockerfile,
+# and `easy.grading.declared` on the built image records it as `grader@<sha>`.
+#
+# It was `HEAD` until 2026-08-20, so no two builds of this image were guaranteed alike and there was
+# nothing to roll back to.
+ARG PYTHON_GRADER_REF
+
 COPY python-grader /python-grader
 
 RUN pip3 install --upgrade pip
-RUN pip3 install --no-cache-dir numpy~=1.23.4
+
+# For student code. A compatible-release range; the image records which 1.23.x it actually got.
+# Checked in the same layer that uses it — see the tiivad Dockerfile for why.
+ARG NUMPY_SPEC
+RUN printf '%s' "$NUMPY_SPEC" | grep -Eq '^[0-9]+(\.[0-9]+){0,3}$' \
+    && pip3 install --no-cache-dir "numpy~=${NUMPY_SPEC}"
 
 RUN cd /python-grader \
     && python3 /python-grader/setup.py install \

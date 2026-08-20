@@ -206,7 +206,12 @@
   ansible.builtin.git:
     repo: "{{ item.git.repo }}"
     dest: "{{ executor_root }}/images/{{ item.name }}/{{ item.git.dest }}"
-    version: HEAD
+    # The pinned commit, not HEAD. Until 2026-08-20 this tracked the grader's master branch, so no
+    # two runs of this role were guaranteed to build the same image and there was nothing to roll
+    # back to — the version is in doc/aae/pins/<environment>.yml now, like every other version.
+    version: >-
+      {{ lookup('pipe', playbook_dir ~ '/../bin/pins.py git-ref --env '
+                        ~ (easy_environment | default('dev')) ~ ' ' ~ item.name) }}
     # The build context, not a working copy anyone edits. A forced update keeps a re-run honest
     # rather than silently building last month's grader.
     force: true
@@ -273,10 +278,23 @@
 # tag once the build succeeds, so a failure here leaves the previous image serving grading requests
 # and is reported by the two tasks at the end of this file. That is why the stale case needs no
 # separate temporary tag.
+# The versions come from doc/aae/pins/<environment>.yml, read through bin/pins.py on the controller
+# — the same parser CI and the auto-merge guard use, so a file one accepts cannot be one this
+# misreads. A `lookup` runs locally, which is what makes that possible without putting Python on the
+# managed host's critical path.
+#
+# `docker build` with no `--build-arg` for an `ARG` that has no default does not fail; it substitutes
+# the empty string. So `pip install "silmused=="` would be the symptom, which is why each Dockerfile
+# also greps its own version before using it: an empty value fails there, loudly, rather than
+# producing a confusing pip error.
 - name: Build the grading images
   ansible.builtin.command:
-    cmd: "docker build -t {{ item.item.name }} ."
+    cmd: "docker build {{ build_args }} -t {{ item.item.name }} ."
     chdir: "{{ executor_root }}/images/{{ item.item.name }}"
+  vars:
+    build_args: >-
+      {{ lookup('pipe', playbook_dir ~ '/../bin/pins.py args --docker --env '
+                        ~ (easy_environment | default('dev')) ~ ' ' ~ item.item.name) }}
   when: item.rc != 0 or item.item.name in executor_images_stale
   loop: "{{ existing_images.results }}"
   loop_control:

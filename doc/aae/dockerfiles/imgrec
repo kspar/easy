@@ -3,9 +3,21 @@ FROM pygrader
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y xvfb \
-    && apt-get install -y ghostscript \
-    && pip3 install Pillow \
-    && pip3 install requests
+    && apt-get install -y ghostscript
+
+# Unpinned until 2026-08-20, which meant this image could not be given a tag that meant anything —
+# and a tag that means something is what rollback is built on. The values live in
+# doc/aae/pins/<environment>.yml; see the tiivad Dockerfile for the reasoning.
+#
+# Separated from the apt layer above so that bumping either of these does not reinstall xvfb and
+# ghostscript, which is the slow half of this image.
+# Each value is checked separately — see the tiivad Dockerfile for why, and note that checking them
+# concatenated would happily accept one of them being empty.
+ARG PILLOW_VERSION
+ARG REQUESTS_VERSION
+RUN printf '%s' "$PILLOW_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){0,3}$' \
+    && printf '%s' "$REQUESTS_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){0,3}$' \
+    && pip3 install --no-cache-dir "Pillow==${PILLOW_VERSION}" "requests==${REQUESTS_VERSION}"
 
 # Overwrites the /easy-smoke.sh inherited from pygrader, which is the point: this image's check is
 # not its base's. `expect-versions.py` is copied again rather than inherited so that the two images

@@ -1,11 +1,43 @@
 FROM python:3.10
 
-ENV PYTHONIOENCODING utf-8
+ENV PYTHONIOENCODING=utf-8
 
 RUN pip3 install --upgrade pip
-RUN pip3 install --no-cache-dir numpy~=1.23.4
 
-RUN pip3 install --no-cache-dir tiivad==0.0.33
+# The versions are not written here. They live once, in doc/aae/pins/<environment>.yml beside this
+# file, and CI passes them in. To ask what a *built* image contains, ask the image rather than this
+# file — it carries the answer, and unlike a source file it cannot be out of date:
+#
+#   docker inspect --format '{{index .Config.Labels "easy.grading.installed"}}' tiivad
+#
+# On 2026-08-20 those two questions had different answers: this file said silmused 1.7.11 while the
+# image graded with 1.7.4, because the Ansible role only rebuilt images that were missing. A label
+# cannot drift from the image it is on.
+#
+# Each ARG is declared immediately above the install that uses it, never at the top: an ARG
+# invalidates every layer after it, so a version bump must not be able to rebuild the layers above.
+
+# Every ARG is checked in the same layer that uses it, immediately before the install.
+#
+# Two reasons rather than one. A hand build with `--build-arg` and no CI in front of it reaches pip
+# directly, so the shape of the value matters here as well as in
+# .github/workflows/pins-guard.yml. And a build given *no* argument at all does not fail: docker
+# substitutes the empty string, so without this the error is pip complaining about `numpy~=`, which
+# says nothing about the missing argument that caused it.
+#
+# In the same `RUN`, not a separate one, so the guard costs no layer and cannot be separated from the
+# install it guards.
+
+# For student code, not for tiivad, which has no dependencies of its own. `~=` rather than `==`
+# because this is deliberately a compatible-release range; which 1.23.x pip picks is its decision,
+# and the image records what it actually got.
+ARG NUMPY_SPEC
+RUN printf '%s' "$NUMPY_SPEC" | grep -Eq '^[0-9]+(\.[0-9]+){0,3}$' \
+    && pip3 install --no-cache-dir "numpy~=${NUMPY_SPEC}"
+
+ARG TIIVAD_VERSION
+RUN printf '%s' "$TIIVAD_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){0,3}$' \
+    && pip3 install --no-cache-dir "tiivad==${TIIVAD_VERSION}"
 
 # Last, so adding or editing a check never rebuilds anything above it.
 #
