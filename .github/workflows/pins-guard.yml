@@ -1,0 +1,72 @@
+name: Pins
+
+# Is this pull request a version bump we would merge unattended?
+#
+# This is the check a **human** reads. It runs on the pull request, with a read-only token, and works
+# from a fork.
+#
+# It is deliberately NOT what decides the merge. On a `pull_request` event the workflows that run are
+# the ones in the pull request's own head, so a malicious contributor could replace this file with
+# `exit 0` and a required check with the right name would go green. The decision is made by
+# pins-automerge.yml, which runs the same validator from `master` where a pull request cannot reach
+# it. Two consequences worth keeping in mind:
+#
+#   * A green check here is fast feedback, not authority.
+#   * The one-changed-file rule in bin/pins.py is what stops a pull request editing a workflow and a
+#     pin together, so this file's own integrity is protected by the rule it is checking.
+
+on:
+  pull_request:
+    paths:
+      - 'doc/aae/pins/**'
+
+jobs:
+  shape:
+    name: Pins shape
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Enough to read a public repository's pull request. A fork pull request gets a read-only token
+      # regardless of what is asked for here.
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      # Untrusted values — the author's login, the branch name, the patch itself — reach Python
+      # through the environment and a file, never through shell interpolation into a `run:` block.
+      # `${{ github.event.pull_request.title }}` in a shell line is the classic way to hand somebody
+      # else's string to `bash`.
+      - name: Is this a version-only change, from somebody allowed to make it?
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          gh api "/repos/$REPO/pulls/$NUMBER/files" --paginate > files.json
+          python bin/pins.py validate-patch files.json --author "$AUTHOR" --base-ref "$BASE"
+
+      # Second, because there is no point asking PyPI about a value that is not a version. Fails
+      # closed: a network error is a failure, since "we could not check" must never read as "fine".
+      - name: Is every pinned version actually published?
+        run: |
+          for env in dev prod; do
+            python bin/pins.py check-exists --env "$env"
+          done
+
+      - name: What happens next
+        run: |
+          {
+            echo '### This is an auto-mergeable pins change'
+            echo
+            echo 'Once `Grading images`, `Backend (Gradle)`, `Web (TypeScript)` and'
+            echo '`Executor (Python)` are green, it will merge itself and reach dev within minutes.'
+            echo 'Nobody needs to press anything.'
+            echo
+            echo 'To undo it afterwards, press **Revert** on the merge commit: that produces a pull'
+            echo 'request touching only this one file, which is auto-mergeable for the same reason.'
+          } >> "$GITHUB_STEP_SUMMARY"

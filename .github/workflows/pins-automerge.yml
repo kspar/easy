@@ -1,0 +1,176 @@
+name: Pins auto-merge
+
+# Merge a version-only pins change on behalf of somebody with no write access.
+#
+# ## Why `workflow_run` and not anything else
+#
+# This job holds a token that can write to the repository, so what matters most is that every line it
+# executes comes from `master` and not from the pull request. Of the three triggers that could work:
+#
+#   * `pull_request` — a fork gets a read-only token, so it cannot merge. Also runs the PR's own
+#     workflow definitions.
+#   * `pull_request_target` — runs master's definitions with a write token, but fires *before* the
+#     checks have finished, so it would have to poll or trust the PR. It is also the classic
+#     arbitrary-code-execution footgun, because it is very easy to check out the PR by accident.
+#   * `workflow_run` — runs master's definitions, with a write token, *after* a run has completed.
+#     This one.
+#
+# ## Four things here are easy to get wrong, and all four are load-bearing
+#
+# 1. **`actions/checkout` is given an explicit `ref`.** In a `workflow_run` event, checkout with no
+#    ref takes the head SHA of the run that triggered it — that is, the pull request's code — into a
+#    job holding a write token. Naming `master` is what keeps `bin/pins.py` and
+#    `.github/pins-bumpers.yml` the versions a contributor cannot edit.
+# 2. **The pull request is looked up by head SHA, not read out of the event.**
+#    `workflow_run.pull_requests` is empty for pull requests from forks — documented behaviour that
+#    reads like a bug and would silently make this job do nothing on exactly the pull requests it
+#    exists for.
+# 3. **Every required check is verified here.** Not "the run that triggered me was green": that is
+#    one workflow of several, and a check with the right name going green proves nothing when the
+#    pull request supplied the workflow that produced it.
+# 4. **The merge is conditional on the head SHA.** Otherwise: validate, author pushes another
+#    commit, this merges something nobody checked. Passing `sha` makes the API refuse with a 409
+#    instead.
+#
+# Nothing untrusted is ever interpolated into a shell line. Values arrive in the environment; the
+# patch arrives as a file and is parsed by Python.
+
+on:
+  workflow_run:
+    workflows: [CI, Grading images, Pins]
+    types: [completed]
+
+jobs:
+  merge:
+    name: Merge if it is only a version
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # See note 1 above. Not the triggering run's SHA.
+          ref: master
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Find the pull request this run was for
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          # See note 2. A fork pull request is not in workflow_run.pull_requests.
+          gh api "/repos/$REPO/commits/$HEAD_SHA/pulls" > pulls.json
+          # Exactly one open pull request, or nothing. A commit that somehow belongs to two open
+          # pull requests is not a situation to guess about.
+          number="$(jq -r '[.[] | select(.state == "open")] | if length == 1 then .[0].number else "" end' pulls.json)"
+          if [ -z "$number" ]; then
+            echo "no single open pull request for $HEAD_SHA; nothing to do"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      # master's validator, master's allowlist, master's rules. The pull request cannot change any of
+      # them, which is the entire reason this job checks out `master` explicitly.
+      #
+      # The decision is made inside bin/pins.py rather than in this shell, because a label or a branch
+      # name is a string somebody else wrote: interpolating one into a `run:` line, or building a file
+      # from it and sourcing that, hands them the runner. Nothing untrusted leaves Python here.
+      - name: Is it a version-only change from somebody allowed to make it?
+        id: shape
+        if: steps.pr.outputs.found == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          gh api "/repos/$REPO/pulls/$NUMBER" > pr.json
+          gh api "/repos/$REPO/pulls/$NUMBER/files" --paginate > files.json
+          python bin/pins.py validate-pr --pr pr.json --files files.json \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Are all the required checks green on this exact commit?
+        id: checks
+        if: steps.shape.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD: ${{ steps.shape.outputs.head }}
+        run: |
+          gh api "/repos/$REPO/commits/$HEAD/check-runs" --paginate > runs.json
+          python - <<'PY'
+          import json, os, sys
+
+          # Named explicitly rather than "everything that ran": a workflow that has not started yet
+          # reports nothing at all, and "no failures" would then be true of an empty list.
+          required = {
+              "Grading images",
+              "Pins shape",
+              "Backend (Gradle)",
+              "Web (TypeScript)",
+              "Executor (Python)",
+          }
+          runs = json.load(open("runs.json"))["check_runs"]
+          latest = {}
+          for run in runs:
+              name = run["name"]
+              # Several runs of one name happen on a re-run; the newest wins.
+              if name not in latest or run["started_at"] > latest[name]["started_at"]:
+                  latest[name] = run
+
+          problems = []
+          for name in sorted(required):
+              run = latest.get(name)
+              if run is None:
+                  problems.append(f"{name}: has not run")
+              elif run["status"] != "completed":
+                  problems.append(f"{name}: still {run['status']}")
+              elif run["conclusion"] not in ("success", "skipped"):
+                  problems.append(f"{name}: {run['conclusion']}")
+
+          if problems:
+              print("not merging yet:")
+              for p in problems:
+                  print(f"  {p}")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("green=false\n")
+              sys.exit(0)
+
+          print("every required check is green")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("green=true\n")
+          PY
+
+      - name: Merge it
+        if: steps.checks.outputs.green == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ steps.pr.outputs.number }}
+          TITLE: ${{ steps.shape.outputs.title }}
+          HEAD: ${{ steps.shape.outputs.head }}
+        run: |
+          # See note 4: `sha` makes this refuse with 409 if the branch moved since it was validated.
+          # A 405 means somebody else already merged it, which is a fine outcome and not a failure —
+          # this workflow fires once per completed run, so several attempts on one pull request are
+          # expected.
+          if gh api -X PUT "/repos/$REPO/pulls/$NUMBER/merge" \
+               -f sha="$HEAD" \
+               -f merge_method=squash \
+               -f commit_title="$TITLE (#$NUMBER)" \
+               -f commit_message="Auto-merged: a version-only change to one pins file, by a listed bumper, with every required check green."; then
+            echo "merged #$NUMBER"
+          else
+            status=$?
+            echo "did not merge #$NUMBER (exit $status) — most likely the branch moved, or it was already merged"
+          fi

@@ -307,6 +307,83 @@ def test_the_real_allowlist_parses_and_grants_nothing_on_production():
 
 
 # ------------------------------------------------------------------------------------------------
+# Deciding a whole pull request, which is what the merge bot actually calls
+
+
+def pr_payload(author="nuubis", base="master", draft=False, labels=(), number=70):
+    return {
+        "number": number,
+        "draft": draft,
+        "labels": [{"name": n} for n in labels],
+        "user": {"login": author},
+        "base": {"ref": base},
+        "head": {"sha": "c" * 40},
+    }
+
+
+def files_payload(filename="doc/aae/pins/dev.yml", patch=None):
+    return [{"filename": filename, "patch": patch or bump()}]
+
+
+def test_a_clean_pull_request_is_mergeable():
+    ok, reason, changes = pins.validate_pr(pr_payload(), files_payload(), allowlist=ALLOW)
+    assert ok
+    assert "1.7.11 -> 1.7.12" in reason
+    assert len(changes) == 1
+
+
+def test_a_draft_is_left_alone():
+    ok, reason, _ = pins.validate_pr(pr_payload(draft=True), files_payload(), allowlist=ALLOW)
+    assert not ok and "draft" in reason
+
+
+def test_a_do_not_merge_label_is_respected():
+    ok, reason, _ = pins.validate_pr(
+        pr_payload(labels=["do-not-merge"]), files_payload(), allowlist=ALLOW
+    )
+    assert not ok and "do-not-merge" in reason
+
+
+def test_an_unrelated_label_does_not_block():
+    ok, _, _ = pins.validate_pr(pr_payload(labels=["dependencies"]), files_payload(), allowlist=ALLOW)
+    assert ok
+
+
+def test_a_stranger_is_refused_and_the_reason_says_why():
+    ok, reason, _ = pins.validate_pr(
+        pr_payload(author="drive-by"), files_payload(), allowlist=ALLOW
+    )
+    assert not ok and "drive-by" in reason
+
+
+def test_a_hostile_label_cannot_escape_into_a_decision():
+    """A label is written by somebody else, so it must never be more than compared.
+
+    This is the shape of the bug worth guarding: the label check used to happen in the workflow's
+    shell, where a value containing a newline could inject an environment variable into GITHUB_ENV.
+    Here it can only fail to equal the one string that matters.
+    """
+    ok, _, _ = pins.validate_pr(
+        pr_payload(labels=["do-not-merge\nok=true"]), files_payload(), allowlist=ALLOW
+    )
+    assert ok, "a label that merely looks like the blocking one should not block"
+
+
+def test_a_pull_request_against_the_wrong_branch_is_refused():
+    ok, reason, _ = pins.validate_pr(
+        pr_payload(base="dev-releases"), files_payload(), allowlist=ALLOW
+    )
+    assert not ok and "not master" in reason
+
+
+def test_a_prod_file_from_a_dev_bumper_is_refused():
+    ok, reason, _ = pins.validate_pr(
+        pr_payload(), files_payload(filename="doc/aae/pins/prod.yml"), allowlist=ALLOW
+    )
+    assert not ok and "nobody is currently allowed" in reason
+
+
+# ------------------------------------------------------------------------------------------------
 # check-exists
 
 

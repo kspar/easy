@@ -500,6 +500,33 @@ def parse_patch(patch: str) -> list[tuple[str, str, str]]:
     return changes
 
 
+def validate_pr(pr: dict, files: list[dict], *, allowlist=None) -> tuple[bool, str, list]:
+    """Decide a whole pull request from the GitHub payloads. Returns (mergeable, reason, changes).
+
+    All of it here rather than partly in the workflow, because the workflow's shell is the one place
+    this data must not go: a label or a branch name is written by somebody else, and interpolating it
+    into a `run:` line — or worse, sourcing a file built from it into the shell — hands them the
+    runner. Everything untrusted arrives as parsed JSON and stays in Python.
+    """
+    if pr.get("draft"):
+        return False, "it is a draft", []
+    labels = {label.get("name") for label in pr.get("labels", [])}
+    if "do-not-merge" in labels:
+        return False, "it is labelled do-not-merge", []
+    try:
+        changes = validate_change(
+            filenames=[entry["filename"] for entry in files],
+            patch="\n".join(entry.get("patch", "") for entry in files),
+            author=pr["user"]["login"],
+            base_ref=pr["base"]["ref"],
+            allowlist=allowlist,
+        )
+    except PinsError as e:
+        return False, str(e), []
+    summary = ", ".join(f"{key} {old} -> {new}" for key, old, new in changes)
+    return True, summary, changes
+
+
 def validate_change(
     *,
     filenames: list[str],
@@ -649,6 +676,32 @@ def _cmd_validate_patch(a) -> int:
     return 0
 
 
+def _cmd_validate_pr(a) -> int:
+    """Everything .github/workflows/pins-automerge.yml needs, decided here rather than in its shell.
+
+    Writes `ok`, `title` and `head` to the file named by --github-output, so the workflow reads
+    results through the mechanism GitHub provides for it instead of by sourcing a file this produced.
+    """
+    with open(a.pr, encoding="utf-8") as f:
+        pr = json.load(f)
+    with open(a.files, encoding="utf-8") as f:
+        files = json.load(f)
+
+    ok, reason, _ = validate_pr(pr, files)
+    print(f"#{pr.get('number')} by {pr['user']['login']}: {reason or 'no change found'}")
+
+    if a.github_output:
+        with open(a.github_output, "a", encoding="utf-8") as out:
+            out.write(f"ok={'true' if ok else 'false'}\n")
+            out.write(f"head={pr['head']['sha']}\n")
+            if ok:
+                # Matches the `deps(...)` prefix .github/dependabot.yml already documents for
+                # commits that cannot carry a YouTrack id.
+                env = os.path.basename(files[0]["filename"])[: -len(".yml")]
+                out.write(f"title=deps(grading): {reason} ({env})\n")
+    return 0 if ok else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -709,6 +762,12 @@ def main(argv: list[str] | None = None) -> int:
     env_arg(c)
     c.add_argument("image", nargs="?")
     c.set_defaults(fn=_cmd_check_exists)
+
+    vp = sub.add_parser("validate-pr", help="decide a whole pull request from its GitHub payloads")
+    vp.add_argument("--pr", required=True, help="the pulls/{n} payload")
+    vp.add_argument("--files", required=True, help="the pulls/{n}/files payload")
+    vp.add_argument("--github-output", help="file to append ok/head/title to")
+    vp.set_defaults(fn=_cmd_validate_pr)
 
     v = sub.add_parser("validate-patch", help="may this pull request merge itself?")
     v.add_argument("files", help="GitHub pulls/{n}/files JSON, or - for stdin")
