@@ -224,15 +224,19 @@ jobs:
       - name: Pins
         working-directory: .
         run: python -m pytest bin/tests -q
-      # tiivad is the grader that consumes the TSL compiler's output, and
-      # doc/aae/dockerfiles/tiivad is the source of truth for which version an executor runs — so
-      # the version is read from there rather than pinned a second time here. A test asserts the
-      # installed version matches it, which is what makes bumping the Dockerfile enough: get this
-      # wrong and the suite fails rather than silently testing a version nobody grades with.
+      # tiivad is the grader that consumes the TSL compiler's output, and doc/aae/pins/dev.yml is
+      # the source of truth for which version dev's executor runs — so the version is read from
+      # there rather than pinned a second time here. A test asserts the installed version matches
+      # it, which is what makes bumping the pin enough: get this wrong and the suite fails rather
+      # than silently testing a version nobody grades with.
       #
-      # tiivad has no dependencies of its own. The numpy in that Dockerfile is for student code.
+      # This used to grep the literal out of doc/aae/dockerfiles/tiivad. It reads the pin through
+      # bin/pins.py now, which is the same code the image builder, the auto-merge guard and Ansible
+      # use — one parser, so a format the others accept cannot be one this step misreads.
+      #
+      # tiivad has no dependencies of its own. The numpy in that image is for student code.
       - name: Install tiivad, at the version the executor uses
-        run: pip install "tiivad==$(grep -oE 'tiivad==[0-9.]+' ../doc/aae/dockerfiles/tiivad | head -1 | cut -d= -f3)"
+        run: pip install "tiivad==$(python ../bin/pins.py get tiivad.TIIVAD_VERSION)"
       # Nothing imported server.py in CI before this job existed, so a syntax error or a bad import
       # in the executor reached a deploy. Docker is faked throughout — what is tested is the
       # directory aae lays out and the answers it gives — so this job needs no daemon and takes

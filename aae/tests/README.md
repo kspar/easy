@@ -41,13 +41,13 @@ while the generated script is unusable, which is exactly what EZ-1774 was. Reint
 makes **14 of these 32 fail**; `PythonSyntaxTest` stays green throughout, because the defect is valid
 Python.
 
-**The tiivad version comes from `doc/aae/dockerfiles/tiivad`**, which is what a real executor
-installs. CI parses it and installs that version; `test_the_installed_tiivad_is_the_one_the_executor_uses`
-asserts the two agree, so bumping the Dockerfile is enough and a wrong install fails loudly instead
-of testing a version nobody grades with. Locally:
+**The tiivad version comes from `doc/aae/pins/dev.yml`**, which is what dev's executor installs. CI
+reads it through `bin/pins.py` and installs that version;
+`test_the_installed_tiivad_is_the_one_the_executor_uses` asserts the two agree, so bumping the pin is
+enough and a wrong install fails loudly instead of testing a version nobody grades with. Locally:
 
 ```sh
-.venv/bin/pip install "tiivad==$(grep -oE 'tiivad==[0-9.]+' ../doc/aae/dockerfiles/tiivad | cut -d= -f3)"
+.venv/bin/pip install "tiivad==$(python ../bin/pins.py get tiivad.TIIVAD_VERSION)"
 ```
 
 Without tiivad installed those tests **skip with the install command in the reason**, so a partial

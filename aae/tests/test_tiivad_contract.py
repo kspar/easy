@@ -17,13 +17,23 @@ produced by `:tsl`'s own test run and reviewed as a diff, so they are the artefa
 agree on. Reaching across module boundaries for them is honest coupling: if they change, this should
 re-run against the new output, and it does.
 
-### The version comes from the Dockerfile
+### The version comes from the pins file
 
-`doc/aae/dockerfiles/tiivad` is the source of truth for which tiivad grades on a real executor, so
-that is what this parses — and then **asserts the installed version matches it**. Pinning the version
-here as well would create a second truth that drifts; asserting equality means bumping the Dockerfile
-is picked up automatically, and a CI step that installs the wrong one fails loudly rather than
-testing a version nobody runs.
+`doc/aae/pins/dev.yml` is the source of truth for which tiivad grades on dev's executor, so that is
+what this reads — and then **asserts the installed version matches it**. Pinning the version here as
+well would create a second truth that drifts; asserting equality means bumping the pin is picked up
+automatically, and a CI step that installs the wrong one fails loudly rather than testing a version
+nobody runs.
+
+It used to read the literal out of `doc/aae/dockerfiles/tiivad`, with a note saying that if the way
+that file installed tiivad ever changed, the parser had to change with it rather than be deleted.
+That is exactly what happened: the Dockerfile now takes its version as a build argument, so there is
+no literal left to parse, and the reading moved to `bin/pins.py` — the one parser everything else
+uses too.
+
+**dev, specifically.** Production's pins are promoted from what dev has proved, so the version worth
+testing against is the one about to reach dev. If the two environments ever pin different tiivads,
+this suite is deliberately testing dev's.
 
 ### What this still does not cover
 
@@ -38,7 +48,6 @@ import io
 import json
 import os
 import pathlib
-import re
 import shutil
 import sys
 
@@ -46,18 +55,27 @@ import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 GOLDEN = REPO_ROOT / "tsl" / "src" / "test" / "resources" / "golden"
-DOCKERFILE = REPO_ROOT / "doc" / "aae" / "dockerfiles" / "tiivad"
+
+# bin/ is not a package and aae does not depend on it, so this is a path insert rather than an
+# import from somewhere. It is still better than a second parser: `bin/pins.py` is what CI, the
+# image builder, the auto-merge guard and Ansible all read the pins with, and a copy of its regex
+# here is precisely the drift this suite exists to catch.
+sys.path.insert(0, str(REPO_ROOT / "bin"))
+
+import pins  # noqa: E402
+
+PINS_FILE = "doc/aae/pins/dev.yml"
 
 
 def pinned_tiivad_version() -> str:
-    """The version a real executor installs, read from the Dockerfile that installs it."""
-    match = re.search(r"tiivad==([0-9]+(?:\.[0-9]+)*)", DOCKERFILE.read_text(encoding="utf-8"))
-    assert match, (
-        f"No `tiivad==<version>` found in {DOCKERFILE}. That file is the source of truth for which "
-        f"tiivad grades on an executor; if the way it installs tiivad changed, this parser has to "
-        f"change with it rather than be deleted."
+    """The version dev's executor installs, read from the pins file that decides it."""
+    values = pins.load("dev")
+    version = values.get("tiivad.TIIVAD_VERSION")
+    assert version, (
+        "doc/aae/pins/dev.yml has no tiivad.TIIVAD_VERSION. That file decides which tiivad grades "
+        "on dev; if the pin was renamed, this reader has to move with it rather than be deleted."
     )
-    return match.group(1)
+    return version
 
 
 def installed_tiivad_version():
@@ -75,14 +93,14 @@ needs_tiivad = pytest.mark.skipif(
     reason=(
         f"tiivad is not installed. Install the version the executor uses:\n"
         f"    pip install tiivad=={PINNED}\n"
-        f"CI derives it from {DOCKERFILE.relative_to(REPO_ROOT)}."
+        f"CI derives it from {PINS_FILE}."
     ),
 )
 
 
-def test_the_dockerfile_pins_a_tiivad_version():
-    # Runs even without tiivad installed: if this file stops naming a version, every test below
-    # would skip with a confusing reason instead of failing.
+def test_the_pins_file_pins_a_tiivad_version():
+    # Runs even without tiivad installed: if the pin disappears, every test below would skip with a
+    # confusing reason instead of failing.
     assert PINNED
     assert PINNED[0].isdigit()
 
@@ -94,11 +112,11 @@ def test_the_installed_tiivad_is_the_one_the_executor_uses():
 
     Without it, a CI step that installed the wrong version — or a stale local venv — would test a
     tiivad nobody grades with, and every assertion below would still pass. Bump
-    `doc/aae/dockerfiles/tiivad` and this fails until CI reinstalls, which is the intended
-    behaviour: the Dockerfile leads.
+    `doc/aae/pins/dev.yml` and this fails until CI reinstalls, which is the intended behaviour: the
+    pin leads.
     """
     assert INSTALLED == PINNED, (
-        f"tiivad {INSTALLED} is installed but {DOCKERFILE.relative_to(REPO_ROOT)} pins {PINNED}.\n"
+        f"tiivad {INSTALLED} is installed but {PINS_FILE} pins {PINNED}.\n"
         f"Reinstall with: pip install tiivad=={PINNED}"
     )
 

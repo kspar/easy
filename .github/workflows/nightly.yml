@@ -107,6 +107,6 @@ jobs:
         run: |
           python -m venv aae/.venv
           aae/.venv/bin/pip install -r aae/requirements-dev.txt
-          aae/.venv/bin/pip install "tiivad==$(grep -oE 'tiivad==[0-9.]+' doc/aae/dockerfiles/tiivad | head -1 | cut -d= -f3)"
+          aae/.venv/bin/pip install "tiivad==$(python bin/pins.py get tiivad.TIIVAD_VERSION)"
       - name: Break things on purpose
         run: bin/mutate.sh
