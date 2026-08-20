@@ -178,6 +178,7 @@
     owner: root
     group: root
     mode: "0644"
+  register: placed_dockerfiles
   loop: "{{ executor_images }}"
   loop_control:
     label: "{{ item.name }}"
@@ -190,9 +191,42 @@
     # The build context, not a working copy anyone edits. A forced update keeps a re-run honest
     # rather than silently building last month's grader.
     force: true
+  register: fetched_contexts
   loop: "{{ executor_images | selectattr('git', 'defined') | list }}"
   loop_control:
     label: "{{ item.name }}"
+
+# The two tasks above are the only things that decide what an image *would* contain, so a change in
+# either is the signal that the image on the host is now older than its own build context.
+#
+# Without this the role could only ever build an image that was **missing**, which made a version
+# bump undeployable in the most misleading way available: `silmused==1.7.4` -> `1.7.11` updated the
+# Dockerfile, reported `changed`, restarted nothing, and left grading running on 1.7.4. The host then
+# *documented* a version it was not using — and since the Dockerfile is also how anyone answers
+# "what is dev grading with", the answer was wrong in the one place people look. Found on
+# 2026-08-20 deploying PR #70; the fix is to let the same evidence that says the context moved also
+# say the image must be built again.
+#
+# This makes the `force: true` on the git fetch honest as well. Its comment claims a forced update
+# keeps a re-run from "silently building last month's grader" — it did not, because nothing rebuilt
+# after the fetch. Now it does.
+#
+# What this deliberately does **not** cover: an image whose own context is untouched but whose *base*
+# was rebuilt. `imgrec` builds FROM `pygrader`, so a pygrader rebuild leaves imgrec on the old base
+# until something edits the imgrec Dockerfile. Expressing that needs a declared dependency between
+# entries in `executor_images`, which is a bigger change than the bug being fixed here; until then,
+# `docker image rm imgrec` before a run is the manual answer.
+- name: Work out whose build context moved
+  ansible.builtin.set_fact:
+    executor_images_stale: "{{
+      (placed_dockerfiles.results | default([]) | selectattr('changed') | map(attribute='item.name') | list)
+      + (fetched_contexts.results | default([]) | selectattr('changed') | map(attribute='item.name') | list)
+    }}"
+
+- name: Say which images are being rebuilt because their context moved
+  ansible.builtin.debug:
+    msg: "Rebuilding on changed build context: {{ executor_images_stale | join(', ') }}"
+  when: executor_images_stale | length > 0
 
 - name: Ask which images already exist
   ansible.builtin.command: "docker image inspect {{ item.name }}"
@@ -210,11 +244,16 @@
 # depends on Docker Hub and PyPI, so it is the task most likely to fail for reasons having nothing
 # to do with this host — and when one does, registering the images that *did* build is far more
 # useful than abandoning the run. Nothing is hidden: the missing ones are named twice below.
+#
+# A rebuild of a *present* image cannot leave the host worse off: `docker build -t` only moves the
+# tag once the build succeeds, so a failure here leaves the previous image serving grading requests
+# and is reported by the two tasks at the end of this file. That is why the stale case needs no
+# separate temporary tag.
 - name: Build the grading images
   ansible.builtin.command:
     cmd: "docker build -t {{ item.item.name }} ."
     chdir: "{{ executor_root }}/images/{{ item.item.name }}"
-  when: item.rc != 0
+  when: item.rc != 0 or item.item.name in executor_images_stale
   loop: "{{ existing_images.results }}"
   loop_control:
     label: "{{ item.item.name }}"
