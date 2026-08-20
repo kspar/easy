@@ -13,7 +13,7 @@ After=docker.socket
 [Service]
 Type=oneshot
 
-# Root, and no dedicated account.
+# Runs as root, with no dedicated service account.
 #
 # `roles/executor` already records that membership of the `docker` group is equivalent to root on any
 # Linux host, so a service account in that group would be confinement theatre — it could replace any

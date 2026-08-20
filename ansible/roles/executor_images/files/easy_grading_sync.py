@@ -33,8 +33,8 @@ does by hand on whichever image happened to be first; here it runs on the image 
 every time one changes. A failure retags the previous image back before anyone notices.
 
 A failed digest is then **quarantined**. Without that it would be retried every tick — grading broken
-for a minute in every five, indefinitely — and the host would keep flapping between a working image
-and a broken one instead of staying put and saying so.
+for a minute in every five, indefinitely — with the host flapping between a working image and a
+broken one instead of staying put and saying so.
 
 ### Why it runs as root
 

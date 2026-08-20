@@ -5,6 +5,15 @@ Deploying a CI-built release to dev. The reasoning behind all of it is in
 
 There are two paths, and the automatic one is the normal one.
 
+> **This covers core and web only.** Since EZ-1781 the grading images are on their own track: they
+> are published to GHCR by CI and pulled by a timer on the host, following `master` rather than
+> `dev-releases`. So "what is dev running" has two answers, and this file only answers one of them —
+> `doc/aae/grading-images.md` has the other.
+>
+> They are decoupled because promoting `dev-releases` needs push access, and the people who bump a
+> grading library do not have it. Coupling the two would have meant a core dev in the loop for every
+> version bump, which is the thing that change existed to remove.
+
 ## Automatic: push to `dev-releases`
 
 ```sh

@@ -19,9 +19,9 @@ RUN printf '%s' "$PILLOW_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){0,3}$' \
     && printf '%s' "$REQUESTS_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){0,3}$' \
     && pip3 install --no-cache-dir "Pillow==${PILLOW_VERSION}" "requests==${REQUESTS_VERSION}"
 
-# Overwrites the /easy-smoke.sh inherited from pygrader, which is the point: this image's check is
-# not its base's. `expect-versions.py` is copied again rather than inherited so that the two images
-# cannot drift apart in what they verify with.
+# Overwrites the /easy-smoke.sh inherited from pygrader: this image's check is not its base's.
+# `expect-versions.py` is copied again rather than inherited so the two images cannot drift apart in
+# what they verify with.
 COPY smoke/expect-versions.py /easy-smoke-expect-versions.py
 COPY smoke/imgrec.sh /easy-smoke.sh
 

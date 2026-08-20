@@ -527,6 +527,32 @@ Four things the plan did not anticipate, all found by building it:
 Verified end to end on 2026-08-10: the executor graded a submission 100 directly, and core graded
 one 100 through the anonymous auto-assess path. `./run.sh grading-check.yml` re-runs both.
 
+### The images stopped being built here (2026-08-21, EZ-1781)
+
+A fifth thing, found later and worth adding to the four above: **this role could not deploy a version
+bump.** It only built images that were *missing*, so changing `silmused==1.7.4` to `1.7.11` updated
+the Dockerfile on the host, reported `changed`, and left grading on 1.7.4 — for a fortnight, because
+nothing recorded what was installed. `b3607bf8` made a changed build context trigger a rebuild, which
+fixed the symptom.
+
+The cause was that the host built at all. Building here meant a version bump needed somebody with a
+shell, every host produced its own subtly different image, and rollback did not exist:
+`docker build -t` moves the tag in place, so the previous image survived only as untagged layers.
+
+So the versions live in `doc/aae/pins/<environment>.yml`, CI builds and verifies the images once and
+publishes them to GHCR under a tag it never overwrites, and `roles/executor_images` pulls them —
+smoke-checking each one before it goes live and grading a synthetic submission after, reverting if
+that fails. `doc/aae/grading-images.md` is the reference.
+
+Two consequences for this document. §6's "the four grading images built from `doc/aae/dockerfiles`" is
+no longer what happens. And **the graders now follow `master` rather than `dev-releases`**, so "what is
+dev running" has two answers — deliberately, because promoting `dev-releases` needs push access and
+the people who bump a grading library do not have it.
+
+Open question #3 — *which container images does prod actually have?* — is still open, and now has a
+better answer available: pull the digest dev has been grading with rather than rebuilding from a
+version number.
+
 ---
 
 ## 7. Dev Keycloak realm

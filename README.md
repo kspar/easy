@@ -95,6 +95,11 @@ Come talk to us on Discord first — the invite is on the
 
 Issues live in [YouTrack](https://easy.myjetbrains.com/youtrack).
 
+**Maintaining one of the grading libraries?** Updating `tiivad`, `silmused` or the other graders needs
+a GitHub account and nothing else — see
+[Updating a grading library](doc/aae/bumping-a-grading-library.md). The reference for how it all works
+is [Grading images](doc/aae/grading-images.md).
+
 ## Licence
 
 MIT.
