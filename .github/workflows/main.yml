@@ -214,6 +214,16 @@ jobs:
           cache-dependency-path: aae/requirements-dev.txt
       - name: Install
         run: pip install -r requirements-dev.txt
+      # bin/pins.py decides which version of each grading library an environment runs, and — once
+      # .github/workflows/pins-automerge.yml exists — whether a pull request from somebody with no
+      # write access may merge itself. Most of its tests are refusals, so they run here rather than
+      # in some later job: a permissive bug in that parser is a hole in a public repository, and it
+      # should fail the same build that would otherwise have gone green and merged.
+      #
+      # `working-directory: .` because this job otherwise runs in aae/, and pins.py is not aae's.
+      - name: Pins
+        working-directory: .
+        run: python -m pytest bin/tests -q
       # tiivad is the grader that consumes the TSL compiler's output, and
       # doc/aae/dockerfiles/tiivad is the source of truth for which version an executor runs — so
       # the version is read from there rather than pinned a second time here. A test asserts the

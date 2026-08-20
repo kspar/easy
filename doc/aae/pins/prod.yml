@@ -1,0 +1,48 @@
+# What production's grading images should be built from.
+#
+# ## These values are a belief, not a measurement
+#
+# Nothing in this repository has ever been run against production, and production's executor host
+# does not appear in it: there is no inventory entry, no group_vars, and `ansible/run.sh` refuses any
+# production-shaped inventory outright. doc/dev-environment.md still carries the open question
+# "which container images does prod actually have?" — and it is still open.
+#
+# So the values below are what the Dockerfiles have historically been *understood* to describe. They
+# have not been compared against 193.40.22.68. Before anything reconciles this file, somebody has to
+# go and look:
+#
+#   ssh easyexecprod 'sudo docker images --format "{{.Repository}}:{{.Tag}} {{.ID}} {{.CreatedAt}}"'
+#   ssh easyexecprod 'sudo docker run --rm --entrypoint pip3 silmused show silmused'
+#
+# and correct this file to match, or deliberately decide to move production to these versions.
+#
+# ## Nothing reconciles this yet
+#
+# There is no production reconciler, so changing this file deploys nothing. That is why every entry
+# in .github/pins-bumpers.yml under `prod:` is empty: a change here needs a core dev, who will know
+# it is inert. When production is onboarded — an inventory entry plus `easy_environment: prod` — the
+# same CI and the same role apply, and the allowlist is the only thing that has to be filled in.
+#
+# ## Why a separate file at all, given that
+#
+# Because the unit of permission is the file. Somebody trusted to move silmused on dev is not thereby
+# trusted to move it on production, and no pull request should be able to do both at once. Building
+# that in now costs one file; retrofitting it later would mean redoing the guard, the allowlist and
+# the channel naming.
+
+schema: "1"
+environment: "prod"
+
+rebuild.SERIAL: "1"
+
+tiivad.TIIVAD_VERSION: "0.0.33"
+tiivad.NUMPY_SPEC: "1.23.4"
+
+silmused.SILMUSED_VERSION: "1.7.11"
+silmused.PSYCOPG2_VERSION: "2.9.9"
+
+pygrader.PYTHON_GRADER_REF: "7105517ef40085691dc6b02deffa26345270232a"
+pygrader.NUMPY_SPEC: "1.23.4"
+
+imgrec.PILLOW_VERSION: "12.3.0"
+imgrec.REQUESTS_VERSION: "2.34.2"

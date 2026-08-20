@@ -1,0 +1,55 @@
+# What dev's grading images are built from.
+#
+# To bump a library: change one value here and open a pull request. Nothing else. If you are listed
+# for that image in .github/pins-bumpers.yml and CI is green, the pull request merges itself and dev
+# picks it up within minutes. To undo one: press Revert on the merge commit. See
+# doc/aae/grading-images.md.
+#
+# One pin per line, `<image>.<BUILD ARG>: "value"`, and the quotes are not optional — unquoted, YAML
+# reads 1.10 as the number 1.1, and an image built from `silmused==1.1` would install a real, wrong,
+# years-old release. bin/pins.py refuses an unquoted value rather than guessing.
+#
+# Production has its own file. That is what lets someone be trusted with dev and not with prod, and
+# it is why a single pull request can never move both.
+
+schema: "1"
+environment: "dev"
+
+# Rebuild everything even though no version below changed.
+#
+# CI never rebuilds an inputs digest it has already published, which is what makes a published tag
+# immutable and a rollback instant. The cost is that a fixed base image or apt package would never
+# be picked up on its own, because nothing in this file changed. Bumping this is how you say "build
+# it again anyway". Never auto-merged, whoever asks.
+rebuild.SERIAL: "1"
+
+# tiivad — the grader that runs a compiled TSL spec. Bumped by Eerik and Karmo.
+tiivad.TIIVAD_VERSION: "0.0.33"
+# For student code, not for tiivad, which has no dependencies of its own. A compatible-release range
+# rather than an exact pin (the Dockerfile supplies the `~=`), so which 1.23.x lands is decided at
+# build time — and recorded afterwards in the image's easy.grading.installed label, which is the
+# honest place for a fact nobody chose.
+tiivad.NUMPY_SPEC: "1.23.4"
+
+# silmused — the SQL grader. Bumped by Martti, twenty-odd times so far, every one a fork pull
+# request that a core dev had to merge by hand. That is the thing this file exists to end.
+silmused.SILMUSED_VERSION: "1.7.11"
+silmused.PSYCOPG2_VERSION: "2.9.9"
+
+# pygrader — the Python grader, whose source is a separate repository.
+#
+# This was `version: HEAD` with `force: true` until 2026-08-20, so dev silently tracked
+# python-grader's master and no two builds were guaranteed alike. A commit sha costs somebody
+# remembering to open a pull request when upstream moves; it buys a build that can be reproduced and
+# an image that can be rolled back to. Not auto-mergeable: an unreviewed upstream tree is not a
+# released package.
+pygrader.PYTHON_GRADER_REF: "7105517ef40085691dc6b02deffa26345270232a"
+pygrader.NUMPY_SPEC: "1.23.4"
+
+# imgrec — pygrader plus image handling. Nobody has ever bumped these; they were entirely unpinned
+# until now, so these values are *recorded* rather than chosen: they are what `pip3 install Pillow`
+# and `pip3 install requests` resolved to on Python 3.10 on 2026-08-20. They are here because an
+# image whose contents are not pinned cannot be given a tag that means anything, and a tag that
+# means something is what rollback is built on.
+imgrec.PILLOW_VERSION: "12.3.0"
+imgrec.REQUESTS_VERSION: "2.34.2"

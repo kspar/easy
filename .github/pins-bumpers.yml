@@ -1,0 +1,65 @@
+# Who may bump which grading library, in which environment, without a core dev reviewing it.
+#
+# A login here grants **no repository access whatsoever**. It is not a collaborator list and GitHub
+# does not read this file. It tells .github/workflows/pins-automerge.yml whose pull request against
+# which pins file it may merge on its own, and nothing else.
+#
+# `<environment>.<image>: "login login"`, space separated. Same grammar as the pins files, parsed by
+# the same code in bin/pins.py, so there is one format to learn and one parser to trust.
+#
+# ## Empty means "a core dev has to merge it"
+#
+# An empty value is the safe state and the default. Fail-closed is deliberate throughout: a typo in
+# an image name here does not open a hole, it just means nobody is listed for the real image and that
+# image's bumps need review.
+#
+# ## Why this file has to exist
+#
+# kspar/easy is public, so anyone on the internet can open a pull request against it. Without an
+# allowlist, auto-merge would let a stranger move dev's grading library to any published version of
+# silmused — and a green CI run does not make that not-vandalism, because CI's job is to check the
+# version works, not to check somebody wanted it.
+#
+# The GitHub-native alternative is to add bumpers as `triage` collaborators (which grants no push
+# access) and gate on author_association == COLLABORATOR. That was rejected because it cannot say
+# "may bump silmused but not pygrader" or "may bump dev but not production", which is the whole
+# requirement.
+#
+# ## This file is always read from master
+#
+# pins-automerge.yml checks out master explicitly. A pull request cannot add itself here, because the
+# copy of this file in the pull request is never the one consulted.
+
+# Every key here is an `<environment>.<image>` pair. There is deliberately no schema or environment
+# header: this file is not a pins file, it only borrows the grammar.
+
+# --- dev ---------------------------------------------------------------------------------------
+
+# Martti Kakk, who has bumped silmused twenty-odd times since 2024 and had to wait for a core dev
+# every single time.
+dev.silmused: "nuubis"
+
+# Karmo Saviauk bumped tiivad through PR #31. Eerik Muuli made the 0.0.33 bump (daf1db58) but that
+# commit has no linked GitHub account, so his login is not known here — kspar to add it. Until then
+# his bumps need review, which is the correct failure mode for "we are not sure who this is".
+dev.tiivad: "KarmoSaviauk"
+
+# Deliberately nobody. pygrader is pinned to a commit in an unreviewed upstream tree rather than to a
+# released package, so moving it is a judgement rather than a version bump.
+dev.pygrader: ""
+
+# Deliberately nobody. Nothing in imgrec has ever been bumped; its pins were captured from a build,
+# not chosen, and a change to them wants somebody to say why.
+dev.imgrec: ""
+
+# --- production --------------------------------------------------------------------------------
+#
+# All empty, and not as a placeholder: there is no production reconciler, so a merged change to
+# doc/aae/pins/prod.yml deploys nothing. Leaving these empty means such a change needs a core dev,
+# who will know that. Filling them in before production has a reconciler would let somebody merge a
+# prod bump and reasonably believe production had been updated.
+
+prod.silmused: ""
+prod.tiivad: ""
+prod.pygrader: ""
+prod.imgrec: ""
