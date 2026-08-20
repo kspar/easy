@@ -1,8 +1,18 @@
-# The executor tier: Docker, the aae service, the grading images, and the database rows that make
-# core aware of all three. doc/dev-environment.md §6.
+# The executor tier: Docker, and the aae service. doc/dev-environment.md §6.
 #
-# Written to be re-runnable: images are built only when absent, and every insert is conditional, so
-# a second run reports almost nothing changed.
+# The grading images used to be here too — built on this host, from Dockerfiles copied onto it. They
+# are `roles/executor_images`' business now: CI builds and verifies them once, publishes them under a
+# tag it never overwrites, and the host pulls. That moved three problems off this role. A version
+# bump no longer needs somebody with a shell; every host runs provably the same bytes rather than its
+# own build of the same recipe; and rollback exists at all, which it did not while `docker build -t`
+# moved a tag in place and left the previous image as untagged layers nobody would find in a hurry.
+#
+# `register_in_db.yml` stays here, because the executor row and the database name are this role's, and
+# `ansible/import-prod-dump.yml` includes it by this role's name to put dev's executor back after a
+# restore. `roles/executor_images` calls it once it knows which images the host actually has.
+#
+# Written to be re-runnable: every insert is conditional, so a second run reports almost nothing
+# changed.
 
 - name: Install Docker and the tools the image builds need
   ansible.builtin.apt:
@@ -158,194 +168,3 @@
   ansible.builtin.debug:
     msg: "executor reports {{ executor_version.json }}"
 
-# --- the grading images -----------------------------------------------------------------------
-
-- name: Create the image build directories
-  ansible.builtin.file:
-    path: "{{ executor_root }}/images/{{ item.name }}"
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
-  loop: "{{ executor_images }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-- name: Place each Dockerfile
-  ansible.builtin.copy:
-    src: "{{ executor_dockerfile_src }}/{{ item.dockerfile }}"
-    dest: "{{ executor_root }}/images/{{ item.name }}/Dockerfile"
-    owner: root
-    group: root
-    mode: "0644"
-  register: placed_dockerfiles
-  loop: "{{ executor_images }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-# Every image's Dockerfile ends with `COPY smoke/...`, so without this the build context is missing
-# a file the Dockerfile names and `docker build` fails outright. The whole directory goes into every
-# context rather than just that image's own script: it is four small files, and a per-image copy
-# would be one more place for a new image to be forgotten.
-#
-# Temporary, like the host-side build itself. Once the reconciler pulls images instead of building
-# them, nothing here needs a build context at all.
-- name: Place the smoke checks each image carries
-  ansible.builtin.copy:
-    src: "{{ executor_dockerfile_src }}/smoke/"
-    dest: "{{ executor_root }}/images/{{ item.name }}/smoke/"
-    owner: root
-    group: root
-    mode: "0755"
-  register: placed_smoke
-  loop: "{{ executor_images }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-- name: Fetch the sources an image build COPYs in
-  ansible.builtin.git:
-    repo: "{{ item.git.repo }}"
-    dest: "{{ executor_root }}/images/{{ item.name }}/{{ item.git.dest }}"
-    # The pinned commit, not HEAD. Until 2026-08-20 this tracked the grader's master branch, so no
-    # two runs of this role were guaranteed to build the same image and there was nothing to roll
-    # back to — the version is in doc/aae/pins/<environment>.yml now, like every other version.
-    version: >-
-      {{ lookup('pipe', playbook_dir ~ '/../bin/pins.py git-ref --env '
-                        ~ (easy_environment | default('dev')) ~ ' ' ~ item.name) }}
-    # The build context, not a working copy anyone edits. A forced update keeps a re-run honest
-    # rather than silently building last month's grader.
-    force: true
-  register: fetched_contexts
-  loop: "{{ executor_images | selectattr('git', 'defined') | list }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-# The three tasks above are the only things that decide what an image *would* contain, so a change in
-# any of them is the signal that the image on the host is now older than its own build context.
-#
-# Without this the role could only ever build an image that was **missing**, which made a version
-# bump undeployable in the most misleading way available: `silmused==1.7.4` -> `1.7.11` updated the
-# Dockerfile, reported `changed`, restarted nothing, and left grading running on 1.7.4. The host then
-# *documented* a version it was not using — and since the Dockerfile is also how anyone answers
-# "what is dev grading with", the answer was wrong in the one place people look. Found on
-# 2026-08-20 deploying PR #70; the fix is to let the same evidence that says the context moved also
-# say the image must be built again.
-#
-# This makes the `force: true` on the git fetch honest as well. Its comment claims a forced update
-# keeps a re-run from "silently building last month's grader" — it did not, because nothing rebuilt
-# after the fetch. Now it does.
-#
-# What this deliberately does **not** cover: an image whose own context is untouched but whose *base*
-# was rebuilt. `imgrec` builds FROM `pygrader`, so a pygrader rebuild leaves imgrec on the old base
-# until something edits the imgrec Dockerfile. Expressing that needs a declared dependency between
-# entries in `executor_images`, which is a bigger change than the bug being fixed here; until then,
-# `docker image rm imgrec` before a run is the manual answer.
-- name: Work out whose build context moved
-  ansible.builtin.set_fact:
-    # `unique` because an image whose Dockerfile *and* smoke script both changed would otherwise be
-    # named twice. Harmless to the `in` test below, but the debug line right after this is read by a
-    # person, and "tiivad, silmused, tiivad, silmused" reads like a bug in the thing reporting it.
-    executor_images_stale: "{{
-      ((placed_dockerfiles.results | default([]) | selectattr('changed') | map(attribute='item.name') | list)
-       + (placed_smoke.results | default([]) | selectattr('changed') | map(attribute='item.name') | list)
-       + (fetched_contexts.results | default([]) | selectattr('changed') | map(attribute='item.name') | list))
-      | unique
-    }}"
-
-- name: Say which images are being rebuilt because their context moved
-  ansible.builtin.debug:
-    msg: "Rebuilding on changed build context: {{ executor_images_stale | join(', ') }}"
-  when: executor_images_stale | length > 0
-
-- name: Ask which images already exist
-  ansible.builtin.command: "docker image inspect {{ item.name }}"
-  register: existing_images
-  changed_when: false
-  failed_when: false
-  loop: "{{ executor_images }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-# Sequentially and in the order they are declared, because imgrec builds FROM pygrader. A first run
-# takes several minutes; later runs skip everything.
-#
-# Errors are carried rather than fatal, and the play asserts on them at the very end. An image build
-# depends on Docker Hub and PyPI, so it is the task most likely to fail for reasons having nothing
-# to do with this host — and when one does, registering the images that *did* build is far more
-# useful than abandoning the run. Nothing is hidden: the missing ones are named twice below.
-#
-# A rebuild of a *present* image cannot leave the host worse off: `docker build -t` only moves the
-# tag once the build succeeds, so a failure here leaves the previous image serving grading requests
-# and is reported by the two tasks at the end of this file. That is why the stale case needs no
-# separate temporary tag.
-# The versions come from doc/aae/pins/<environment>.yml, read through bin/pins.py on the controller
-# — the same parser CI and the auto-merge guard use, so a file one accepts cannot be one this
-# misreads. A `lookup` runs locally, which is what makes that possible without putting Python on the
-# managed host's critical path.
-#
-# `docker build` with no `--build-arg` for an `ARG` that has no default does not fail; it substitutes
-# the empty string. So `pip install "silmused=="` would be the symptom, which is why each Dockerfile
-# also greps its own version before using it: an empty value fails there, loudly, rather than
-# producing a confusing pip error.
-- name: Build the grading images
-  ansible.builtin.command:
-    cmd: "docker build {{ build_args }} -t {{ item.item.name }} ."
-    chdir: "{{ executor_root }}/images/{{ item.item.name }}"
-  vars:
-    build_args: >-
-      {{ lookup('pipe', playbook_dir ~ '/../bin/pins.py args --docker --env '
-                        ~ (easy_environment | default('dev')) ~ ' ' ~ item.item.name) }}
-  when: item.rc != 0 or item.item.name in executor_images_stale
-  loop: "{{ existing_images.results }}"
-  loop_control:
-    label: "{{ item.item.name }}"
-  ignore_errors: true
-
-- name: Ask which images exist now
-  ansible.builtin.command: "docker image inspect {{ item.name }}"
-  register: built_images
-  changed_when: false
-  failed_when: false
-  loop: "{{ executor_images }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-- name: Work out what actually built
-  ansible.builtin.set_fact:
-    executor_images_present: "{{ built_images.results | selectattr('rc', 'equalto', 0) | map(attribute='item.name') | list }}"
-    executor_images_missing: "{{ built_images.results | rejectattr('rc', 'equalto', 0) | map(attribute='item.name') | list }}"
-
-# An image can answer to more than one reference: TSL exercises ask for `tiivad:tsl-compose`, which
-# is the tiivad image under the tag production uses. Only tags of images that actually built.
-- name: Apply the extra tags an image answers to
-  ansible.builtin.command: "docker tag {{ item.0.name }} {{ item.1 }}"
-  loop: "{{ executor_images | subelements('tags', skip_missing=True) }}"
-  loop_control:
-    label: "{{ item.0.name }} -> {{ item.1 }}"
-  when: item.0.name in executor_images_present
-  changed_when: false  # `docker tag` is idempotent; re-tagging the same image is a no-op
-
-- name: Say plainly which images are missing, if any
-  ansible.builtin.debug:
-    msg: >-
-      These images did not build and will NOT be registered, so no exercise can be graded with
-      them: {{ executor_images_missing | join(', ') }}
-  when: executor_images_missing | length > 0
-
-# --- the database rows core looks up ---------------------------------------------------------------
-# In their own file because a database restore has to be able to put them back on its own, without
-# rebuilding four Docker images to get there. See register_in_db.yml.
-- name: Register this executor and its images with core
-  ansible.builtin.include_tasks: register_in_db.yml
-
-# Last, so that everything above has run and the host is in the best state it can be, and only then
-# does the run go red. A build failure is a real failure — it means some exercise type cannot be
-# graded here — but it should not cost the environment its executor.
-- name: Fail the run if any declared image is missing
-  ansible.builtin.assert:
-    that: executor_images_missing | length == 0
-    fail_msg: >-
-      The executor is deployed and running, and every image that built is registered — but these
-      did not build: {{ executor_images_missing | join(', ') }}. Exercises using them cannot be
-      graded on this host. The build output is above.
-    success_msg: "All {{ executor_images_present | length }} grading images built and registered."

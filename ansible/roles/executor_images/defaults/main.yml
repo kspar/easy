@@ -1,0 +1,61 @@
+---
+# Grading images, pulled rather than built.
+#
+# This host used to build them. That is why a version bump needed a core dev with a shell, why every
+# host built its own subtly different image, and why rollback was impossible: `docker build -t` moves
+# the tag in place, so the previous image survived only as untagged layers. CI builds and verifies
+# them once now, publishes them under a tag it never overwrites, and this pulls.
+#
+# **Pull, not push**, for the reason roles/core_autodeploy gives at length: a push-based deploy needs
+# a private key for this machine stored in GitHub, on a public repository. This is one better than
+# that role — because the packages are public, it needs no registry credential at all, not even a
+# read-only token.
+#
+# The whole role is environment-parameterised. Bringing production under it is an inventory entry and
+# `easy_environment: prod`; there is nothing here that assumes dev.
+
+# ## This role runs after roles/executor, in the same play
+#
+# It uses that role's variables — `executor_images` (the list of images and their extra tags),
+# `executor_root`, `executor_bind_address`, `executor_port` — rather than declaring its own copies,
+# because a second definition of which images exist is a second thing to keep in step. Role defaults
+# stay in scope for the rest of the play, so the ordering in `ansible/site.yml` is what makes this
+# work, and reordering those two roles would break it.
+#
+# Deliberately mirrors how roles/core_autodeploy leans on roles/core_service, for the same reason
+# stated there: these describe one thing, and a disagreement between them would be a deploy that
+# lands somewhere nothing is looking.
+
+executor_images_enabled: true
+
+executor_grading_registry: ghcr.io/kspar/easy
+
+# Which environment's channel this host tracks. CI moves `<registry>/<image>:<channel>` only after
+# that image has built, passed its own smoke check, and had every image it builds on do the same — so
+# the tag moving is already a claim that the image works, and this host needs no access to CI to
+# believe it.
+executor_grading_channel: "{{ easy_environment | default('dev') }}"
+
+# Five minutes, not one. The core deploy polls every minute because a person is usually waiting for
+# it; a grading library bump is not that, and the pull is a manifest check either way.
+executor_grading_interval: 5min
+executor_grading_splay: 30
+
+executor_grading_config: /etc/easy/grading-sync.json
+executor_grading_state: "{{ executor_root }}/images/state.json"
+
+# How many superseded versions of each image to keep locally. This is what makes a rollback a local
+# `docker tag` with no network — the same reasoning as core_autodeploy keeping five releases on disk,
+# with a smaller number because these are whole images rather than jars. silmused carries
+# postgresql-18, so a base-image drift costs more than a gigabyte per retained version.
+#
+# See EZ-1737: this is also the first thing in the repo that bounds image accumulation on this host
+# rather than letting it grow until grading fails for no visible reason.
+executor_grading_keep: 3
+
+# Refuse to pull onto a nearly-full disk. The machine that grades student code filling up is a much
+# worse failure than a grading library staying a version behind, and `ansible/smoke.yml` only notices
+# at 80% after the fact.
+executor_grading_min_free_gb: 12
+
+executor_grading_executor_url: "http://{{ executor_bind_address }}:{{ executor_port }}"

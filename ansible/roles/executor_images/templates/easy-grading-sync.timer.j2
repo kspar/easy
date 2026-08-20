@@ -1,0 +1,20 @@
+# Managed by Ansible (roles/executor_images) — local edits are overwritten.
+
+[Unit]
+Description=Check for newly published grading images for the {{ executor_grading_channel }} environment
+
+[Timer]
+# From boot, so a host that has been down catches up on its own. Later than core_autodeploy's two
+# minutes because the Docker daemon has to be up first, and nothing is waiting on this.
+OnBootSec=5min
+# Measured from the end of the last run, not the start: a first reconcile pulls four images and must
+# not have the next tick queued behind it.
+OnUnitInactiveSec={{ executor_grading_interval }}
+RandomizedDelaySec={{ executor_grading_splay }}
+# Deliberately not Persistent=true. The question is "is there something newer", which is answered by
+# looking now; replaying missed ticks after downtime would reach the same conclusion several times.
+Persistent=false
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

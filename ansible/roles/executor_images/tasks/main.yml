@@ -1,0 +1,146 @@
+---
+# Install the reconciler, run it once, then let a timer keep it running.
+#
+# Running it once here rather than only installing the timer is deliberate: provisioning and the timer
+# then share one implementation of pull/verify/retag/gate/prune. `deploy/deploy-dev.sh` and
+# `easy-autodeploy.py` are two implementations of the same layout, and they need a comment telling
+# whoever edits one to remember the other. One is better than two.
+
+# The host used to hold a Dockerfile per image and a clone of python-grader, as build inputs. Nothing
+# builds here now, so those files describe nothing — and a stale Dockerfile on a grading host is
+# exactly the "wrong answer in the one place people look" that b3607bf8 was written about. Anyone
+# asking what this host grades with would read a file that stopped being true the day CI took over.
+#
+# Removed rather than left harmless. The images' own labels are the answer now:
+#   docker inspect --format '{{ '{{' }}index .Config.Labels "easy.grading.installed"{{ '}}' }}' silmused
+- name: Remove the build inputs the host no longer uses
+  ansible.builtin.file:
+    path: "{{ executor_root }}/images/{{ item.name }}/{{ item.path }}"
+    state: absent
+  loop: >-
+    {{ executor_images | product([{'path': 'Dockerfile'}, {'path': 'smoke'}, {'path': 'python-grader'}])
+       | map('combine') | list }}
+  loop_control:
+    label: "{{ item.name }}/{{ item.path }}"
+
+- name: Install the reconciler
+  ansible.builtin.copy:
+    src: easy_grading_sync.py
+    dest: /usr/local/bin/easy-grading-sync
+    owner: root
+    group: root
+    mode: "0755"
+  # Underscored in the repository so its tests can import it, hyphenated on the host to match every
+  # other command here. Renaming on copy is cheaper than an import shim.
+
+- name: Create the state directory
+  ansible.builtin.file:
+    path: "{{ executor_grading_state | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Write the reconciler's configuration
+  ansible.builtin.template:
+    src: grading-sync.json.j2
+    dest: "{{ executor_grading_config }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install the unit and its timer
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - easy-grading-sync.service
+    - easy-grading-sync.timer
+  notify: Reload systemd
+
+# Before the first reconcile, so the end-to-end grade gate has something to talk to. Without this a
+# first run would pull and smoke-check correctly and then log that it could not grade — which is
+# handled, but is a confusing first impression of a working install.
+- name: Flush handlers so the units exist before anything runs
+  ansible.builtin.meta: flush_handlers
+
+- name: Reconcile the grading images now
+  ansible.builtin.command: "/usr/local/bin/easy-grading-sync --config {{ executor_grading_config }}"
+  register: executor_grading_sync
+  # The script decides what changed; it says so in its output and records it in state.json. Reporting
+  # `changed` for every run would make a converged host look busy.
+  changed_when: executor_grading_sync.stdout | length > 0
+  # Carried rather than fatal, for the same reason roles/executor carries a failed image build: a
+  # registry or network problem has nothing to do with this host, and the tasks below still have
+  # useful work to do. The assert at the end of this file is what makes it visible.
+  failed_when: false
+  when: executor_images_enabled | bool
+
+- name: Say what the reconciler did
+  ansible.builtin.debug:
+    msg: "{{ executor_grading_sync.stdout_lines | default([]) }}"
+  when: executor_grading_sync.stdout | default('') | length > 0
+
+- name: Start the timer and enable it at boot
+  ansible.builtin.systemd_service:
+    name: easy-grading-sync.timer
+    enabled: "{{ executor_images_enabled | bool }}"
+    state: "{{ 'started' if executor_images_enabled | bool else 'stopped' }}"
+    daemon_reload: true
+  # A dry run has not actually written the unit file, so systemd cannot be asked about it — the error
+  # is "Could not find the requested service", which reads like a broken role rather than an artefact
+  # of --check. Same guard, for the same reason, as roles/core_autodeploy's timer.
+  when: not ansible_check_mode
+
+# Which images this host actually has, under the bare names grading uses. Kept in the same variables
+# roles/executor used to set, so `register_in_db.yml` and `ansible/grading-check.yml` keep working
+# unchanged — what produces the tags has changed, not what they are.
+- name: Ask which grading images are present
+  ansible.builtin.command: "docker image inspect {{ item.name }}"
+  register: executor_grading_present
+  changed_when: false
+  failed_when: false
+  # Asking is read-only, so a dry run should still ask — and has to, because the facts below are
+  # derived from this result and the assert at the end of the file reads them. Skipped, a `--check`
+  # run against a perfectly healthy host would conclude that every image is missing. Same reasoning
+  # as "Ask the executor what it is" in roles/executor.
+  check_mode: false
+  loop: "{{ executor_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Work out what is here
+  ansible.builtin.set_fact:
+    executor_images_present: "{{ executor_grading_present.results | selectattr('rc', 'equalto', 0) | map(attribute='item.name') | list }}"
+    executor_images_missing: "{{ executor_grading_present.results | rejectattr('rc', 'equalto', 0) | map(attribute='item.name') | list }}"
+
+# Still roles/executor's file, included by name rather than copied here. Its variables — the database
+# name, this executor's registered name and base URL, the mock-repointing — are that role's defaults,
+# and `ansible/import-prod-dump.yml` includes it the same way to put dev's executor back after a
+# restore. Two copies of the SQL that decides which executor may grade what is not a trade worth
+# making for tidier role boundaries.
+- name: Register this executor and its images with core
+  ansible.builtin.include_role:
+    name: executor
+    tasks_from: register_in_db.yml
+  when: executor_images_present | length > 0
+
+- name: Say plainly which images are missing, if any
+  ansible.builtin.debug:
+    msg: >-
+      These images are not on this host and will NOT be registered, so no exercise can be graded
+      with them: {{ executor_images_missing | join(', ') }}.
+      Look at `journalctl -u easy-grading-sync` and at {{ executor_grading_state }} — the usual
+      causes are a channel tag that has never been published, and a digest quarantined after failing
+      its gate.
+  when: executor_images_missing | length > 0
+
+- name: Fail the run if any declared image is missing
+  ansible.builtin.assert:
+    that: executor_images_missing | length == 0
+    fail_msg: >-
+      {{ executor_images_missing | join(', ') }} not present on this host.
+    success_msg: "All {{ executor_images_present | length }} grading images present and registered."

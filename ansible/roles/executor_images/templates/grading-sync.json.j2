@@ -1,0 +1,30 @@
+{# Managed by Ansible (roles/executor_images) — local edits are overwritten. #}
+{#
+  Everything easy-grading-sync needs, and nothing it can work out for itself.
+
+  Notably absent: the versions to verify. Those are read off each image's own easy.grading.declared
+  label at reconcile time, so this host can check anything it has pulled without being told what the
+  pins file says — and so the question is always "does this image contain what *it* claims" rather
+  than "what we happen to believe about it". Those are the same question only while nothing has gone
+  wrong.
+
+  Only `name` and `tags` are projected out of executor_images. The rest of each entry — `dockerfile`,
+  `git` — described how to *build* it, which this host no longer does; carrying them here would
+  suggest they still meant something.
+
+  `tags` is not derivable and has to be carried: TSL exercises ask for `tiivad:tsl-compose` by that
+  exact string, and core rejects a save whose container_image has no matching row.
+#}
+{
+  "registry": {{ executor_grading_registry | to_json }},
+  "channel": {{ executor_grading_channel | to_json }},
+  "state_path": {{ executor_grading_state | to_json }},
+  "keep": {{ executor_grading_keep | int }},
+  "min_free_gb": {{ executor_grading_min_free_gb | int }},
+  "executor_url": {{ executor_grading_executor_url | to_json }},
+  "images": [
+{% for image in executor_images %}
+    {"name": {{ image.name | to_json }}, "tags": {{ image.tags | default([]) | to_json }}}{{ "," if not loop.last }}
+{% endfor %}
+  ]
+}

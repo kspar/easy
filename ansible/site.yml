@@ -42,6 +42,14 @@
     # code, which is a good reason for it to be the last thing added to a host rather than the
     # first. See doc/dev-environment.md §6.
     - executor
+    # After `executor`, and not interchangeable with it. This role uses that one's variables — which
+    # images exist, where they live, where the executor listens — rather than declaring a second copy
+    # of them, and role defaults only stay in scope for roles that come afterwards. It also registers
+    # the database rows, which it can only do once it knows which images the host actually has.
+    #
+    # In production the executor is its own host, which is why this is a separate role rather than
+    # more tasks in `executor`: it has to be installable there on its own.
+    - executor_images
 
 # The IdP is already its own host in dev, which is how production is laid out too — so unlike the
 # core roles, nothing here has ever been able to assume co-location. The role brings its own postgres

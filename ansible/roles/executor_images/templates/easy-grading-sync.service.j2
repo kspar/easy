@@ -1,0 +1,49 @@
+# Managed by Ansible (roles/executor_images) — local edits are overwritten.
+
+[Unit]
+Description=Pull the grading images published for the {{ executor_grading_channel }} environment
+Documentation=https://github.com/kspar/easy/blob/master/doc/aae/grading-images.md
+After=network-online.target docker.service easy-executor.service
+Wants=network-online.target
+# Not Requires=: a reconcile with the executor down still does something useful — it pulls and
+# smoke-checks the image — and only the end-to-end grade gate needs the service. Refusing to run at
+# all would mean an executor restart could leave images behind indefinitely.
+After=docker.socket
+
+[Service]
+Type=oneshot
+
+# Root, and no dedicated account.
+#
+# `roles/executor` already records that membership of the `docker` group is equivalent to root on any
+# Linux host, so a service account in that group would be confinement theatre — it could replace any
+# image on this machine either way. This is the honest version of the same privilege. It differs from
+# core_autodeploy, whose account genuinely cannot read secrets.yaml, and the difference is worth
+# stating rather than leaving somebody to wonder which pattern was intended.
+User=root
+
+ExecStart=/usr/local/bin/easy-grading-sync --config {{ executor_grading_config }}
+
+# A failed reconcile should be loud and then leave the host alone until the next tick. It already
+# quarantines a digest that failed its gates, so retrying instantly would only rediscover that.
+Restart=no
+# Generous: a first run on an empty host pulls four images, one of which carries postgres.
+TimeoutStartSec=3600
+
+# --- confinement ------------------------------------------------------------------------------
+# There is no point pretending this is confined — it drives the Docker daemon, which is root. What
+# is worth having is the small set of protections that do not interfere with that, so an unrelated
+# mistake in this script cannot reach the rest of the filesystem.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+LockPersonality=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

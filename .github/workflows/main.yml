@@ -220,10 +220,15 @@ jobs:
       # in some later job: a permissive bug in that parser is a hole in a public repository, and it
       # should fail the same build that would otherwise have gone green and merged.
       #
-      # `working-directory: .` because this job otherwise runs in aae/, and pins.py is not aae's.
-      - name: Pins
+      # The reconciler that decides which image a grading host makes live runs here too. Its tests are
+      # almost all about what must *not* happen — a failed image never becoming live, a bad grade
+      # being reverted, a broken digest not being retried every five minutes forever — and the
+      # alternative to testing that here is finding out on the host that grades real submissions.
+      #
+      # `working-directory: .` because this job otherwise runs in aae/, and neither of these is aae's.
+      - name: Pins and the grading-image reconciler
         working-directory: .
-        run: python -m pytest bin/tests -q
+        run: python -m pytest bin/tests ansible/roles/executor_images/tests -q
       # tiivad is the grader that consumes the TSL compiler's output, and doc/aae/pins/dev.yml is
       # the source of truth for which version dev's executor runs — so the version is read from
       # there rather than pinned a second time here. A test asserts the installed version matches
