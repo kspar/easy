@@ -568,9 +568,10 @@ nothing else. There was no dump, so the realm was **rebuilt from scratch** rathe
 The other finding was that the name in every config in this repo had not been right.
 `dev.idp.lahendus.ut.ee` was a CNAME to `proxy.hpc.ut.ee`, which has never served this IdP, so
 everything moved to **`easy-idp-dev.cloud.ut.ee`**, the VM's own name. On **2026-08-21** the alias was
-repointed at the VM and everything moved back: `dev.idp.lahendus.ut.ee` is what Keycloak's `hostname`
-is set to, which makes it the `issuer` in every token core validates. `doc/idp-setup.md` §5 has both
-halves, and §5.1 the order to apply such a change in — the issuer moving signs everyone out.
+repointed at the VM and everything moved back, and applied the same day: `dev.idp.lahendus.ut.ee` is
+what Keycloak's `hostname` is set to, which makes it the `issuer` in every token core validates.
+`doc/idp-setup.md` §5 has both halves, and §5.1 the order to apply such a change in — the issuer
+moving signs everyone out, and the SPA needs a deploy of its own before logins work again.
 
 What is running: Keycloak 25.0.2 behind nginx with a Let's Encrypt certificate, on its own postgres,
 built by `ansible/roles/keycloak` and applied with `./run.sh site.yml --limit easyidpdev`.

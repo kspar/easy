@@ -21,8 +21,12 @@ HTTPS, is accepted by core: `POST /v2/account/checkin` returns 200 and creates t
 deliberately malformed token returns 401 on the same endpoint, so the acceptance means verification
 happened rather than being skipped.
 
-**Renamed 2026-08-21** to `dev.idp.lahendus.ut.ee`, now that the alias points here (§5). The issuer
-changes with it, so this is not a config-only edit — the checklist for applying it is §5.1.
+**Renamed 2026-08-21** to `dev.idp.lahendus.ut.ee`, now that the alias points here (§5), and applied
+the same day. Verified end to end: a token minted by the renamed IdP carries
+`iss=https://dev.idp.lahendus.ut.ee/auth/realms/master`, and core resolves a user from it
+(`user=service-account-easy-dev-test-runner` in its log) while a tampered copy of the same token gets
+401 — so the acceptance means verification happened. The certificate for the old name has been
+deleted and the gate client no longer lists it. §5.1 is the procedure, if this is ever done again.
 
 ```
 dev.idp.lahendus.ut.ee     ->  nginx :443  ->  Keycloak 127.0.0.1:8080/auth  ->  postgres cloakdb
@@ -504,13 +508,33 @@ Three things break in three different ways if this is done piecemeal, so the ord
    Everyone is signed out regardless: tokens carrying the old issuer are rejected by the newly
    configured core, which is correct and looks exactly like an outage to anyone mid-session.
 
-3. **Then a web deploy**, so the SPA's `config.json` on the core host points at the new IdP. Until
-   it does, the browser is sent to the old name to log in and comes back with a token core now
-   refuses.
+3. **Then a deploy, promptly**, because step 2 does not finish the job. `core_autodeploy` writes
+   `/srv/easy/conf/config.json`, but the copy a browser loads is `web/config.json` inside the
+   *current release*, which only gets it when a release is placed. So between step 2 and this, the
+   SPA is still sending people to the old name — which by then has no certificate that matches, so
+   they get a TLS warning rather than a login page.
 
-Afterwards, the old certificate keeps renewing for a name nothing serves. Once the new one has been
-seen working, `sudo certbot delete --cert-name easy-idp-dev.cloud.ut.ee` on the IdP host, and then
-drop the extra entries from the gate client added in step 1.
+   ```sh
+   SSH_TARGET=easycoredev ./deploy/deploy-dev.sh latest
+   ```
+
+   The autodeploy timer would also do it on the next release, which is not soon enough to leave
+   logins broken.
+
+Then check it, rather than assuming: a token from the new IdP should be accepted by core, and a
+tampered copy of that same token should not — otherwise "accepted" only tells you verification is
+switched off. `doc/core/api-testing.md` has the client-credentials recipe.
+
+Afterwards, the old certificate keeps renewing for a name nothing serves, and the gate client still
+lists it. Once the new name has been seen working: `sudo certbot delete --cert-name <old>` on the IdP
+host, and re-run the step 1 command with only the new name in it.
+
+**One wrinkle if dev is behind master.** Step 2's `--limit easycoredev` runs the whole `Core` play, so
+any other role with pending changes applies too — `./run.sh site.yml --check --diff --limit easycoredev`
+first, and if it names roles you did not intend to touch, run a copy of site.yml's `Core` play with
+those roles removed instead. It must live inside `ansible/`: `core_autodeploy` resolves this
+environment's `config.json` relative to `playbook_dir`, so a playbook kept outside the repo fails on
+that task with `Could not find or access .../deploy/dev/config.json`.
 
 ---
 
