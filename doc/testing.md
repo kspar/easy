@@ -71,6 +71,11 @@ python -m pytest bin/tests -q                                     # 74
 python -m pytest ansible/roles/executor_images/tests -q           # 19
 ```
 
+Those three want an interpreter with `aae/requirements-dev.txt` installed — the one CI's
+`Executor (Python)` job builds. On a laptop that is `aae/.venv/bin/python`, not the system `python`,
+which has no pytest and says so in a way that reads like the suite is missing rather than the
+interpreter. `bin/testcounts --run` picks the venv for all three.
+
 **Always write down the commit these were measured at.** Two of these suites did not exist a day
 before this line was written, and a reader who measures a different commit and finds smaller numbers
 has no way to tell whether the table is stale or wrong — that exact confusion happened once, and was
@@ -91,6 +96,11 @@ Both halves of that split move as tests are added, and this sentence has already
 it said 22/91/113, measured a few commits earlier. `bin/testcounts --run` derives the split from
 which tests carry `@needs_tiivad` and prints it, so the numbers here are a snapshot and the script is
 the answer.
+
+The endpoint figure has no command, on purpose: it comes from `EndpointInventory`, which reads
+Spring's resolved handler patterns. Grepping `@(Get|Post|…)Mapping` gives 123, which is a different
+number — a mapping declaring two paths is one annotation and two endpoints. When these disagree,
+the inventory is right and the grep is a coincidence.
 
 194 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
 parameterised — `StorageServiceContractTest` is 9 annotations and 15 runs, over two backends — and
