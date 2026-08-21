@@ -144,13 +144,26 @@ Builds run on the daemon's default builder rather than a buildx container driver
 the same loop, and the label step builds `FROM` the staged image — neither of which a container
 driver can see, since it has no access to the daemon's image store.
 
-> **GHCR packages do not inherit repository visibility.** Each of the four has to be set public once,
-> by hand, after its first publish. Until then a host cannot pull them anonymously.
+The four packages are **public without anybody making them so**: a package published by
+`GITHUB_TOKEN` from this repository is linked to it and inherits its visibility. Confirmed by
+anonymous pull — a token from `ghcr.io/token` with no credentials fetches every `:dev` manifest.
+
+Worth knowing rather than assuming, because it is a property of *how* they were published. A package
+created any other way — by hand with a PAT, or from a different repository — does not inherit
+anything, and would have to have its visibility set before a host could pull it.
 
 ### The host
 
 `ansible/roles/executor_images` installs `/usr/local/bin/easy-grading-sync` and a timer that runs it
-every five minutes. Per image, per tick:
+every five minutes.
+
+**It gets there by an Ansible run** — `ansible/run.sh site.yml --limit core` — and not by itself.
+Nothing pulls this onto a host automatically: the `core_autodeploy` timer installs core build
+artifacts and knows nothing about Ansible roles. So a host that has never had the role applied keeps
+whatever grading images it already had, however many versions CI has published in the meantime. Easy
+to misread as broken, because everything upstream looks green.
+
+Per image, per tick:
 
 1. Pull `<registry>/<image>:<channel>`.
 2. If its digest matches what is recorded **and** the bare tag really resolves to it, stop. This is the

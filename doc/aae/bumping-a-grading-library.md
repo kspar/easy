@@ -56,6 +56,10 @@ both, which means something is wrong and a developer should see it.
 
 Give it about five minutes after the merge. Then grade something on dev to be sure.
 
+If the number never changes, it is not your pull request — ask a developer. The server picks up new
+images on a timer that a developer has to install once per machine, so a version can be published and
+waiting while the About page still shows the old one.
+
 ## Undo it
 
 Go to the merge commit on GitHub and press **Revert**. That opens a pull request putting the old
