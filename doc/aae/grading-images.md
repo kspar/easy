@@ -215,7 +215,7 @@ running" has two answers, one for the application and one for the graders.
 | Nobody | a failed gate reverts and quarantines by itself | — |
 
 Stop the timer first, or the next tick puts the channel's version back — the same non-stickiness
-`deploy/README.md` documents for `deploy-dev.sh`. `state.json` names the previous reference.
+`deploy/README.md` documents for `deploy.sh`. `state.json` names the previous reference.
 
 ## Production
 

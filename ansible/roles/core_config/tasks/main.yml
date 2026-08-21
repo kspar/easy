@@ -67,7 +67,7 @@
   ansible.builtin.assert:
     that: easy_core_bind_address in ['127.0.0.1', '::1', 'localhost']
     fail_msg: >-
-      easy_core_bind_address is '{{ easy_core_bind_address }}'. Apache terminates TLS and proxies to
+      easy_core_bind_address is '{{ easy_core_bind_address }}'. nginx terminates TLS and proxies to
       core; a directly reachable core bypasses that, and ufw does not cover ports Docker publishes.
     quiet: true
 

@@ -170,6 +170,13 @@
 
 # --- firewall ------------------------------------------------------------------------------------
 # Rules first, `enabled` last. ufw applies the default-deny the moment it comes up.
+#
+# Tagged `firewall`, alone in this role, so it can be applied without the rest — which is not a
+# convenience but the only way to reach a host this role cannot otherwise touch. Production was
+# Ubuntu 22.04 with ufw disabled and an unauthenticated service on a public port; the OS assert at
+# the top of this file refuses 22.04, correctly, and would otherwise have held the firewall hostage
+# to a release upgrade. `--tags firewall` skips the assert along with everything else, which is
+# exactly what is wanted when the firewall is the emergency and the OS is the project.
 
 - name: Install ufw
   ansible.builtin.apt:
@@ -177,6 +184,7 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+  tags: firewall
 
 - name: Allow SSH
   community.general.ufw:
@@ -185,27 +193,20 @@
     proto: tcp
     from_ip: "{{ hardening_ssh_allow_from }}"
     comment: SSH — the only way onto this host
+  tags: firewall
 
 - name: Allow the web ports
   community.general.ufw:
     rule: allow
     port: "{{ item }}"
     proto: tcp
-    comment: Apache (TLS termination, ACME)
+    comment: nginx (TLS termination, ACME)
   loop: "{{ hardening_open_tcp_ports }}"
+  tags: firewall
 
-- name: Default deny inbound, allow outbound
-  community.general.ufw:
-    direction: "{{ item.direction }}"
-    policy: "{{ item.policy }}"
-  loop:
-    - { direction: incoming, policy: deny }
-    - { direction: outgoing, policy: allow }
-  notify: Reload ufw
-
-# Ports reachable only from a named source. Not the same thing as the list above and not a
-# convenience: the sources here are the whole grant, so a rule for an unauthenticated service is
-# doing the work no application-level check is doing for it.
+# Ports reachable only from a named source. Not the same thing as the list above, and not a
+# convenience: the sources here are the whole grant, so a rule for a service with no authentication
+# of its own is doing the work nothing else is doing for it.
 - name: Allow the scoped ports
   community.general.ufw:
     rule: allow
@@ -216,14 +217,26 @@
   loop: "{{ hardening_scoped_tcp_rules }}"
   loop_control:
     label: "{{ item.port }} from {{ item.from_ip }}"
+  tags: firewall
+
+- name: Default deny inbound, allow outbound
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+  notify: Reload ufw
+  tags: firewall
 
 # Core (8080) and postgres (5432) are not listed above on purpose: they bind 127.0.0.1, so the
-# firewall is their second line rather than their first. The executor is only that on a host that
-# also runs core — where it is a separate machine it needs a scoped rule, because core reaches it
-# over the network and `callExecutor` sends no credentials.
+# firewall is their second line rather than their first. The executor is only in that position on a
+# host that also runs core — where it is a machine of its own it needs a scoped rule, because core
+# reaches it over the network and `callExecutor` sends no credentials.
 - name: Enable ufw
   community.general.ufw:
     state: enabled
+  tags: firewall
 
 # --- sshd ------------------------------------------------------------------------------------
 

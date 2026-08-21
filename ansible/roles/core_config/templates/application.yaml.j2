@@ -14,7 +14,7 @@
 ## it; it holds no secrets either.
 
 server:
-  ## Loopback only. Apache terminates TLS and proxies to here.
+  ## Loopback only. nginx terminates TLS and proxies to here.
   address: {{ easy_core_bind_address }}
   port: {{ easy_core_port }}
 

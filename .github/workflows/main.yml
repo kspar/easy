@@ -66,7 +66,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      # Dev fetches this instead of building on the host — deploy/deploy-dev.sh,
+      # Dev fetches this instead of building on the host — deploy/deploy.sh,
       # doc/dev-environment.md §8. The jar is environment-agnostic: every setting lives in the
       # external application.yaml, so the artifact dev exercises is byte-for-byte the one that
       # can later go to production.
@@ -179,7 +179,7 @@ jobs:
           # IdP and API as local-dev defaults, so an artifact carrying it is one forgotten deploy
           # step away from dev quietly talking to production — the failure §4.1 is written
           # around, and not one anybody debugs quickly. Without the file the app renders a
-          # "Configuration error" page naming the problem, and deploy-dev.sh writes the real
+          # "Configuration error" page naming the problem, and deploy.sh writes the real
           # one from deploy/<env>/config.json.
           rm -f dist/config.json
           tar -czf "../web-${{ github.sha }}.tar.gz" -C dist .

@@ -1,7 +1,7 @@
 ---
 # The systemd unit that runs core, plus the directory layout the deploy script expects to find.
 #
-# This role does not put a jar on the host — `deploy/deploy-dev.sh` does that, from a CI
+# This role does not put a jar on the host — `deploy/deploy.sh` does that, from a CI
 # artifact. So a freshly converged host has a unit that is enabled and correct and has nothing to
 # run yet, which is the intended intermediate state.
 
@@ -50,3 +50,8 @@ easy_core_log_helper_path: /usr/local/bin/easy-core-log
 # The group that owns write access to the release tree. Separate from the service account on purpose:
 # core needs to read the jar, deployers need to replace it, and those are different privileges.
 easy_core_deploy_group: easy-deploy
+
+# The unit `deploy/deploy.sh` starts to take a restore point before it restarts core, on the
+# environments whose env file sets PRE_RESTART_DUMP. It comes from roles/postgres, so this is only
+# a name — but it is the name that has to appear in sudoers, and the grant is an exact match.
+easy_core_deploy_dump_service: easy-db-backup.service

@@ -515,7 +515,7 @@ Three things break in three different ways if this is done piecemeal, so the ord
    they get a TLS warning rather than a login page.
 
    ```sh
-   SSH_TARGET=easycoredev ./deploy/deploy-dev.sh latest
+   SSH_TARGET=easycoredev ./deploy/deploy.sh dev latest
    ```
 
    Any release placement does it, which is a more useful way to think about it than "a deploy":

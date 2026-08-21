@@ -7,7 +7,7 @@
 # Polling costs latency and nothing else: no inbound access, and the only credential involved is a
 # read-only token that lives on the host and can do nothing but read CI artifacts of a public repo.
 #
-# It writes the same on-host layout as deploy/deploy-dev.sh, which remains the way to deploy an
+# It writes the same on-host layout as deploy/deploy.sh, which remains the way to deploy an
 # arbitrary commit — a rollback, or something off master. See the header of the deploy script
 # template for the contract between them.
 

@@ -4,8 +4,10 @@
 # nginx rather than Apache, decided 2026-08-04. Apache was in the plan because mod_auth_openidc made
 # it the security boundary; EZ-1724 moved JWT verification into core, so the proxy no longer
 # authenticates anything and what remains is short in either. nginx is the simpler of the two to
-# write and read. The trade accepted: production runs Apache/2.4.52 today, so until the same role
-# replaces it, dev and production differ in the component terminating TLS.
+# write and read. The trade accepted at the time: production runs Apache/2.4.52, so until this role
+# reaches it the two environments differ in the component terminating TLS — which is a real gap in
+# dev's value as a release gate, and the reason `/v2/unauth/versions` answers 200 on dev and 401 on
+# production. Closing it is what doc/production-update.md §3 step 3 does.
 
 # No defaults for the hostnames. They decide which certificate is requested and which origin the
 # browser talks to, and a wrong guess here is a certificate request for a name someone else owns.

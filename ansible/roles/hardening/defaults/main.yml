@@ -75,7 +75,7 @@ hardening_ssh_allow_from: any
 # somewhere.
 hardening_ssh_allow_tcp_forwarding: false
 
-# Apache terminates TLS for both vhosts and certbot needs 80 reachable for ACME.
+# nginx terminates TLS for both vhosts and certbot needs 80 reachable for ACME.
 hardening_open_tcp_ports:
   - 80
   - 443

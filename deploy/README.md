@@ -1,9 +1,16 @@
 # deploy
 
-Deploying a CI-built release to dev. The reasoning behind all of it is in
-`doc/dev-environment.md` §8; this is the operating manual.
+Deploying a CI-built release. `deploy/deploy.sh <env> <sha|latest>`, where the environment is a
+directory beside this file — `dev/` and `prod/` today, each holding that environment's `config.json`
+and `<env>.env`. The reasoning behind the dev half is in `doc/dev-environment.md` §8 and the
+production half in `doc/production-update.md`; this is the operating manual for both.
 
-There are two paths, and the automatic one is the normal one.
+**The environment has no default and never will.** Same rule as `ansible/`, for the same reason: an
+omitted environment should fail at the command line rather than resolve to whichever one somebody
+hardcoded. `deploy/deploy.sh 1a2b3c4` is a usage error, not a deploy.
+
+On dev there are two paths and the automatic one is the normal one. On production there is one, and
+it asks first.
 
 > **This covers core and web only.** Since EZ-1781 the grading images are on their own track: they
 > are published to GHCR by CI and pulled by a timer on the host, following `master` rather than
@@ -77,15 +84,15 @@ Still the way to deploy something that is not the tip of `dev-releases` — a ro
 off master:
 
 ```sh
-deploy/deploy-dev.sh latest        # newest green CI run on master
-deploy/deploy-dev.sh 1a2b3c4       # a specific commit, full or short sha
-deploy/deploy-dev.sh 1a2b3c4 --dry-run
+deploy/deploy.sh dev latest        # newest green CI run on master
+deploy/deploy.sh dev 1a2b3c4       # a specific commit, full or short sha
+deploy/deploy.sh dev 1a2b3c4 --dry-run
 ```
 
 **A manual deploy is not sticky, whatever you deploy.** The timer asks what `dev-releases` points at
 and compares it to `current-sha` — a plain equality check, with no notion of which commit is newer.
 So *any* hand-deployed commit that is not the tip of that branch is replaced within a tick, including
-one straight off master: `deploy/deploy-dev.sh latest` was undone about a minute later on 2026-08-21,
+one straight off master: `deploy/deploy.sh dev latest` was undone about a minute later on 2026-08-21,
 which reads as the deploy having silently failed. To pin the host, stop the timer first:
 
 ```sh
@@ -102,12 +109,59 @@ but they write the same on-host layout, and that layout is a contract between th
 together; it is written out at the top of
 `ansible/roles/core_autodeploy/templates/easy-autodeploy.py.j2`.
 
-Needs `gh` (authenticated), `jq`, and SSH to the dev host — no JDK, no Node. The jar and the
+Needs `gh` (authenticated), `jq`, and SSH to the host — no JDK, no Node. The jar and the
 dist come from the CI run that gated that commit, so the build dev exercises is byte-for-byte
-the one that can later go to production.
+the one that goes to production.
 
 **SSH access is the deploy permission.** There is no other gate; anyone who can reach the host can
 restart core on it.
+
+## Production
+
+```sh
+deploy/deploy.sh prod 1a2b3c4              # the only form; see below
+deploy/deploy.sh prod 1a2b3c4 --dry-run    # resolve and download, touch nothing remote
+```
+
+**`deploy/prod/` is not in the repo.** `deploy/dev/` is — dev is the environment a fresh checkout is
+meant to be able to deploy to, and production is deliberately not. What it holds is the SSH target,
+the release branch production is allowed to run, and its hostnames; the same reasoning as
+`ansible/inventories/production/group_vars/`, and the same asymmetry. Ask kspar, or write the two
+files from the description below.
+
+Being precise about what is actually secret: `config.json` is fetched by every browser that loads
+the site, so its four values are public by design and withholding the file protects nothing. It is
+withheld anyway, so the rule is "production's deploy directory is not in git" rather than a per-file
+judgement somebody has to re-make each time a key is added.
+
+```
+deploy/prod/prod.env       SSH_TARGET, REMOTE_ROOT, CORE_SERVICE, DEPLOY_BRANCH, WEB_URL,
+                           HEALTH_URL, KEEP_RELEASES, plus the two below
+deploy/prod/config.json    emsRoot and the three keycloak values, and NO "environment" key —
+                           absent means production, which is what leaves the site unbadged (EZ-1733)
+```
+
+Same script and the same seven steps. Three differences, all in `prod/prod.env`:
+
+- **No `latest`.** The script refuses it for any environment that asks for confirmation. `latest`
+  resolves to whatever the branch points at right now, which is the correct affordance for a host
+  that redeploys several times a day and the wrong one for a host that is deployed on purpose.
+- **It asks.** It prints the commit, the run URL, the target and the service, and waits for the
+  environment name to be typed back. Everything before that prompt is read-only, so it is the last
+  point where stopping costs nothing. `--yes` skips it, for a scripted rollback where the decision
+  was already made out loud.
+- **It dumps the database first.** `PRE_RESTART_DUMP=true` starts `easy-db-backup.service` — the
+  nightly backup unit from `roles/postgres` — after every check has passed and immediately before
+  the restart that runs the migrations. It is a oneshot, so the deploy waits for a dump that has
+  been written *and* verified. Liquibase is forward-only: this is the only way back across a
+  migration, and production had no backups at all before 2026-08.
+
+Deliberately **no polling autodeploy on production**. The dev timer re-asserts what `dev-releases`
+points at within a minute, which is exactly right there and turns a rollback here into a rollback
+plus a remembered `systemctl stop`. Production's deploys are named by a person.
+
+`DEPLOY_BRANCH` is a `releases/*` branch rather than `master`, so a hotfix is a deliberate push to a
+named branch. CI builds `releases/*`.
 
 ## What CI publishes
 
@@ -165,8 +219,14 @@ Worth knowing about the split: core *reads* the jar, a deploy *replaces* it, and
 privileges on purpose. The deploy account cannot read `secrets.yaml`, and the service account cannot
 write the release tree.
 
-Then set `SSH_TARGET` in `deploy/dev/dev.env`. It ships as a placeholder and the script
+Then set `SSH_TARGET` in the environment's `<env>.env`. It ships as a placeholder and the script
 refuses to run until it is real.
+
+**Production needs one more grant than dev**: the sudoers line for
+`systemctl start easy-db-backup.service`, so a deploy can take its own restore point. It comes from
+`roles/core_service` for every environment, so there is nothing extra to do — but a deploy that
+fails at the dump with a password prompt means that role has not been re-run since the grant was
+added.
 
 ## The IdP values in `deploy/dev/config.json`
 
@@ -199,7 +259,11 @@ Same command with an older sha. Releases stay on the host — `KEEP_RELEASES` of
 to one still present needs neither a download nor a surviving CI run.
 
 A rollback across a Liquibase migration does **not** roll the schema back. Migrations are
-forward-only through the `SpringLiquibase` bean; going back over one needs the nightly dump (§3.5).
+forward-only through the `SpringLiquibase` bean; going back over one needs a dump (§3.5).
+
+On production that dump exists by construction: `PRE_RESTART_DUMP=true` means the deploy that
+applied the migration took one first, so the restore point is dated a few seconds before the change
+it undoes. On dev the newest nightly is as close as it gets.
 
 ## What a deploy does
 
@@ -209,13 +273,19 @@ forward-only through the `SpringLiquibase` bean; going back over one needs the n
 4. Unpacks the dist, writes `config.json` into it and verifies all four keys parse
 5. Renames both symlinks into place — built beside and `mv -T`'d over, since `ln -sfn` unlinks
    first and a request landing in that window 404s
-6. `sudo systemctl restart easy-core` — Liquibase migrates on startup
-7. Polls the public API until it answers, then confirms the unit is active
-8. Prunes old releases, keeping the newest `KEEP_RELEASES`
+6. Dumps the database, where the environment asks for it — after every check that can fail, before
+   the restart that migrates
+7. `sudo systemctl restart easy-core` — Liquibase migrates on startup
+8. Polls the public API until it answers, then confirms the unit is active
+9. Prunes old releases, keeping the newest `KEEP_RELEASES`
 
-Step 7 waits for an HTTP **401**, which is the healthy answer: core has no unauthenticated health
+Step 8 waits for an HTTP **401**, which is the healthy answer: core has no unauthenticated health
 endpoint, so Spring Security answers a bare `/v2/` that way once its filter chain is up. A 502 or no
 answer at all means core is down. On timeout the script prints the last 40 journal lines.
+
+Worth knowing that this check meant less on production before v4.0: the Apache vhost ran
+`mod_auth_openidc` and answered 401 itself, so it would have passed over a dead core. `systemctl
+is-active` is what covered that, and still does.
 
 ## Not done yet
 

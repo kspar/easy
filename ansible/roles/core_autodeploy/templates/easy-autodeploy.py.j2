@@ -9,7 +9,7 @@ Idempotent by design: it compares the newest green run's commit against `current
 having done nothing when they match, which is what makes a {{ core_autodeploy_interval }} timer
 cheap — one API call per tick in the steady state.
 
-It writes the SAME on-host layout as deploy/deploy-dev.sh, which stays the way to deploy an
+It writes the SAME on-host layout as deploy/deploy.sh, which stays the way to deploy an
 arbitrary commit (a rollback, or something off master). Those two implementations are separate on
 purpose — one pushes from a laptop, one pulls on the host — but the layout below is a contract
 between them, so change both together:
@@ -126,7 +126,7 @@ def green_run_for(sha, tok):
 
     `status=success` on the query is not the same question as `conclusion == "success"`, and
     artifacts are published per job — a run whose web job failed can still have left a jar behind.
-    Gate on the run's own conclusion, exactly as deploy-dev.sh does.
+    Gate on the run's own conclusion, exactly as deploy.sh does.
     """
     runs = api(f"/repos/{REPO}/actions/runs?head_sha={sha}&status=success&per_page=20", tok)
     runs = [r for r in runs["workflow_runs"]

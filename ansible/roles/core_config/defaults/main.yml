@@ -36,7 +36,7 @@ easy_core_group: easy-core
 easy_core_config_mode: "0640"
 
 # --- the listener -----------------------------------------------------------------------------------
-# Loopback, always. Apache terminates TLS and proxies; core has no business being reachable directly,
+# Loopback, always. nginx terminates TLS and proxies; core has no business being reachable directly,
 # and §2 keeps this as defence in depth now that core verifies JWTs itself rather than trusting
 # headers from the proxy.
 easy_core_bind_address: 127.0.0.1

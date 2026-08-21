@@ -79,6 +79,16 @@ ansible/inventories/production/group_vars/
 # worked from rather than published. Ask kspar.
 doc/production-update.md
 
+# Production's deploy environment, for the same reason as its group_vars above: the SSH target, the
+# release branch it is allowed to run, and the hostnames. `deploy/dev/` stays in the repo — dev is
+# the environment a fresh checkout is meant to be able to deploy to, and production is not.
+#
+# Worth being precise about what is and is not secret here: `config.json` is served to every browser
+# that loads the site, so its contents are public by design and ignoring it protects nothing. It is
+# ignored anyway, so that the rule is "production's deploy directory is not in git" rather than a
+# per-file judgement somebody has to re-make. `deploy/README.md` says what belongs in it.
+deploy/prod/
+
 # Playwright output, if a run is ever started from the repo root rather than web/. web/.gitignore
 # covers the normal case; this catches the stray one, which is otherwise a committed artifact
 # nobody notices.

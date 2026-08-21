@@ -662,7 +662,7 @@ outlive that or become prod-promotable, switch to prereleases tagged `dev-<sha>`
 
 ### 8.2 The deploy script
 
-**Written.** `deploy/deploy-dev.sh <sha|latest>`, run by any team member from their laptop;
+**Written.** `deploy/deploy.sh dev <sha|latest>`, run by any team member from their laptop;
 `deploy/README.md` is the operating manual and lists what the host must already have. Requires only
 `gh` auth and SSH — no local JDK or Node, which is the main win over building on the server. It does
 the seven steps above, plus:
@@ -759,7 +759,7 @@ Greenfield, so this is a small amount of setup done once:
 | 2 | Core deployed from a CI artifact with a **migrated-but-empty** DB; login works end to end against the dev realm. Proves the auth chain (§2, §4) before any real data exists. **Half done 2026-08-04**: deployed, serving, 42 tables migrated on first start — login blocked on §7, there is no IdP to log in to |
 | 3 | Anonymisation script rewritten and reviewed; prod dump imported; backups running. **Done 2026-08-10.** `import-prod-dump.yml` runs the whole sequence; `anonymise.sql` was fixed to tolerate the older schema a production dump carries (§3.6); the nightly dump exists and is on-host only (§3.5) |
 | 4 | Executor + base images; auto-assessment verified on a real imported exercise. **Executor and all four images done 2026-08-10**, and grading verified end to end by `ansible/grading-check.yml` — which now creates its own fixture exercise rather than borrowing testdata's 9001, since the import removed it |
-| 5 | `deploy/deploy-dev.sh` documented; whole team can deploy. **Done 2026-08-04** — first real deploy succeeded, `SSH_TARGET` set. "Whole team" still means one account: the host has `kspar` and the break-glass `ubuntu`, and adding a deployer means `hardening_ssh_users` plus `easy_core_deploy_users` |
+| 5 | `deploy/deploy.sh` documented; whole team can deploy. **Done 2026-08-04** — first real deploy succeeded, `SSH_TARGET` set. "Whole team" still means one account: the host has `kspar` and the break-glass `ubuntu`, and adding a deployer means `hardening_ssh_users` plus `easy_core_deploy_users` |
 | 6 | Automatic deploy on green master; dev added to `doc/release-procedure.md` |
 
 Phase 2 before phase 3 is the point worth keeping: the environment that can't yet leak anything is

@@ -115,10 +115,19 @@ new production host silently inherits. Safe by omission; every relaxation delibe
 is co-located behind loopback there, a longer fail2ban leash because verifying the host means failing
 auth at it, unattended reboots because there is nothing to interrupt.
 
-**Nothing has been run against production.** `inventories/production/hosts.example.yml` records the
-intended shape and the order to approach it in — the first useful run is `--check --diff` as an
-*audit* of hosts nobody configured with this role, not an apply. Expect the Ubuntu 24.04 assert to
-refuse if production is older, which is the assert working.
+**Production has an inventory now, and still nothing has been applied to it.**
+`inventories/production/` describes the three hosts as they were audited on 2026-08-21 — a
+description first and a desired state second, which is why the first useful run is `--check --diff`
+as an *audit* of how the hand-built hosts differ from what this repository believes, not an apply.
+
+Expect the Ubuntu 24.04 assert to refuse: all three hosts are 22.04, and that refusal is the assert
+working. The one thing that can be applied before the release upgrades is `--tags firewall`, which
+skips the assert along with the rest of the role — the only tag in here, and it exists because ufw
+was disabled on all three hosts while an unauthenticated service listened on a public port.
+
+`doc/production-update.md` is the plan, the audit and the day-of runbook. Read §Phase 1 before
+pointing anything at these hosts; there is one ordering mistake in there
+(`secrets.yaml` before `core_config`) that breaks the *running* service rather than the run.
 
 The connecting account needs a password for sudo — that is the right posture and is left alone,
 hence `--ask-become-pass`.
@@ -207,8 +216,14 @@ inventories/
     hosts.yml                NOT IN GIT — real hosts and who may log in
     group_vars/all.yml       what dev loosens, and why
   production/
-    hosts.example.yml        intended shape; nothing has been run against it
-    group_vars/all.yml       near-empty on purpose — the defaults are the prod answer
+    hosts.example.yml        the committed template, and the order to approach production in
+    hosts.yml                NOT IN GIT — the three real hosts, who may log in, the executor's
+                             address, and the one mail recipient that is a person's name
+    group_vars/all/
+      core.yml               every value transcribed from what production was running on 2026-08-21
+      hardening.yml          production's first firewall, one rule per reason
+      smoke.yml              the extra public listeners production genuinely has
+    group_vars/executor.yml  the ufw rule for a grader with no authentication of its own
 ```
 
 Hosts are named by their `~/.ssh/config` alias, so the address, user and key live in one place and

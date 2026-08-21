@@ -2,7 +2,7 @@
 # Install the reconciler, run it once, then let a timer keep it running.
 #
 # Running it once here rather than only installing the timer is deliberate: provisioning and the timer
-# then share one implementation of pull/verify/retag/gate/prune. `deploy/deploy-dev.sh` and
+# then share one implementation of pull/verify/retag/gate/prune. `deploy/deploy.sh` and
 # `easy-autodeploy.py` are two implementations of the same layout, and they need a comment telling
 # whoever edits one to remember the other. One is better than two.
 

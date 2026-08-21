@@ -1,6 +1,6 @@
 # Managed by Ansible (roles/core_service) — local edits are overwritten.
 #
-# The one privilege a deploy needs. deploy/deploy-dev.sh restarts core after flipping the
+# The one privilege a deploy needs. deploy/deploy.sh restarts core after flipping the
 # release symlinks; everything else it does — unpacking, writing config.json, pruning old releases —
 # happens as the deploy account's own user under /srv/easy.
 #
@@ -20,11 +20,19 @@
 # The unit can only be pinned outside sudoers. The script is root-owned and must stay unwritable by
 # these accounts, or the grant becomes equivalent to root.
 #
-# The fixed `-n 40` line stays because deploy/deploy-dev.sh spells exactly that, and a deploy failing
+# The fixed `-n 40` line stays because deploy/deploy.sh spells exactly that, and a deploy failing
 # for want of a sudo password is the failure this whole file exists to prevent.
+#
+# The dump line is what lets a deploy take a restore point before it restarts core, which production
+# does on every deploy: Liquibase migrations are forward-only, so the dump is the only way back
+# across one. `start` and not `restart` or `stop`, and the unit is spelled out — a systemctl grant
+# with a free argument is equivalent to root, because it can start a unit the caller can write.
+# Starting a backup is not a privilege in any other sense: the unit runs as postgres, writes one
+# directory, and cannot reach the network.
 {% for user in easy_core_deploy_users %}
 {{ user }} ALL=(root) NOPASSWD: /usr/bin/systemctl restart {{ easy_core_service_name }}
 {{ user }} ALL=(root) NOPASSWD: /usr/bin/journalctl -u {{ easy_core_service_name }} -n 40 --no-pager
 {{ user }} ALL=(root) NOPASSWD: {{ easy_core_log_helper_path }}
 {{ user }} ALL=(root) NOPASSWD: {{ easy_core_log_helper_path }} *
+{{ user }} ALL=(root) NOPASSWD: /usr/bin/systemctl start {{ easy_core_deploy_dump_service }}
 {% endfor %}

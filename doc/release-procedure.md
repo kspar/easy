@@ -3,6 +3,12 @@
 Two parts: config changes each environment needs before the new build starts, and the YouTrack
 "In release" bookkeeping.
 
+**v4.0 to production is not an ordinary release** — the table below is one of five things it needs,
+and production has not been deployed since 2025-07-31. `doc/production-update.md` is that plan.
+Every row here is already satisfied on production by `ansible/roles/core_config`, which writes the
+config from `inventories/production/group_vars/`, so the rows are a checklist for anywhere the role
+does not reach rather than something to apply by hand there.
+
 ## Config changes to apply before deploying
 
 Each environment keeps its own `application.yaml` outside the repo, so a renamed or added
