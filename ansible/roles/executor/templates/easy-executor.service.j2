@@ -20,7 +20,13 @@ WorkingDirectory={{ executor_root }}
 # Which bare image names count as grading images when /v1/version is asked what this host has
 # (EZ-1781). From the same `executor_images` list that decides what gets pulled, so the executor's
 # answer and the reconciler's actions cannot disagree about which images exist.
-Environment=EASY_GRADING_IMAGE_NAMES={{ executor_images | map(attribute='name') | join(' ') }}
+#
+# Comma-separated, and quoted. `Environment=` splits on whitespace, so a space-separated list here
+# silently keeps only the first name and parses the rest as further assignments that go nowhere —
+# which is exactly what happened on dev: the About page showed one grading image out of four, and
+# every layer above it was correct. Commas cannot be split that way, so the value survives even if
+# somebody later removes the quotes.
+Environment="EASY_GRADING_IMAGE_NAMES={{ executor_images | map(attribute='name') | join(',') }}"
 
 ExecStart={{ executor_venv }}/bin/gunicorn -c {{ executor_root }}/gunicorn-conf.py server:app
 

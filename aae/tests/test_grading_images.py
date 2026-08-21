@@ -90,14 +90,8 @@ class FakeDocker:
         self.containers = FakeContainers(pip_payload or [], fail=fail)
 
 
-@pytest.fixture(autouse=True)
-def fresh_cache(tmp_path, monkeypatch):
-    """Every test starts with an empty cache, and never writes to the real shared file."""
-    monkeypatch.setattr(containers, "_image_cache", {"at": 0.0, "images": []})
-    monkeypatch.setattr(containers, "IMAGE_CACHE_FILE", str(tmp_path / "cache.json"))
-    containers._refresh_running.clear()
-    yield
-    containers._refresh_running.clear()
+# The cache is isolated by an autouse fixture in conftest.py, which covers this file and every other
+# test that reaches /v1/version — the in-memory cache and the shared file are both global state.
 
 
 # A live grading image: labelled, and carrying the bare tag that grading resolves.
@@ -290,12 +284,47 @@ def test_an_untagged_image_is_not_reported(monkeypatch):
 
 
 def test_the_expected_names_can_be_configured(monkeypatch):
-    # roles/executor_images writes this from the same list that decides what the host pulls, so the
+    # The easy-executor unit writes this from the same list that decides what the host pulls, so the
     # two cannot disagree about which images exist.
     monkeypatch.setenv("EASY_GRADING_IMAGE_NAMES", "kohandatud")
     assert containers.grading_image_names() == ["kohandatud"]
     monkeypatch.delenv("EASY_GRADING_IMAGE_NAMES")
     assert "silmused" in containers.grading_image_names()
+
+
+def test_the_names_parse_whether_separated_by_commas_or_spaces(monkeypatch):
+    """Both, because the separator turned out to be a trap.
+
+    `Environment=EASY_GRADING_IMAGE_NAMES=a b c d` in a systemd unit sets the variable to just `a`:
+    the line is split on whitespace and the rest is parsed as further assignments that go nowhere. On
+    dev that reduced four grading images to one, and everything above it — CI, the registry, the
+    reconciler, `state.json` — was correct, so the About page simply showed one row and looked
+    plausible. The unit sends commas now; accepting both means the same mistake cannot return by
+    another route.
+    """
+    for value in ("tiivad,silmused,pygrader,imgrec", "tiivad silmused pygrader imgrec",
+                  "tiivad, silmused,  pygrader imgrec"):
+        monkeypatch.setenv("EASY_GRADING_IMAGE_NAMES", value)
+        assert containers.grading_image_names() == ["tiivad", "silmused", "pygrader", "imgrec"], value
+
+
+def test_all_four_images_are_reported_when_all_four_are_present(monkeypatch):
+    """The end state dev should be in, asserted as a whole rather than one image at a time.
+
+    The systemd bug above passed every per-image test — each one only ever set up a single image, so
+    "four go in, four come out" was never checked.
+    """
+    monkeypatch.delenv("EASY_GRADING_IMAGE_NAMES", raising=False)
+    fake = FakeDocker([
+        labelled("tiivad", "tiivad==0.0.33", "tiivad==0.0.33"),
+        labelled("silmused", "silmused==1.7.11", "silmused==1.7.11"),
+        labelled("pygrader", "numpy~=1.23.4", "numpy==1.23.5"),
+        labelled("imgrec", "pillow==12.3.0", "pillow==12.3.0"),
+    ])
+    monkeypatch.setattr(containers.docker, "from_env", lambda: fake)
+
+    names = [i["name"] for i in containers._refresh_grading_images(FakeLogger())]
+    assert names == ["imgrec", "pygrader", "silmused", "tiivad"]
 
 
 # ------------------------------------------------------------------------------------------------
@@ -369,4 +398,6 @@ def test_a_corrupt_cache_file_does_not_break_anything(monkeypatch, tmp_path):
 
 def test_an_unwritable_cache_file_degrades_to_memory_only(monkeypatch):
     monkeypatch.setattr(containers, "IMAGE_CACHE_FILE", "/definitely/not/writable/cache.json")
-    containers._write_cache_file({"at": containers.time(), "images": []})  # must not raise
+    containers._write_cache_file(
+        "/definitely/not/writable/cache.json", {"at": containers.time(), "images": []}
+    )  # must not raise

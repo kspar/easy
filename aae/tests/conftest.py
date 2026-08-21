@@ -46,6 +46,28 @@ def logger():
     return RecordingLogger()
 
 
+@pytest.fixture(autouse=True)
+def isolated_grading_image_cache(tmp_path, monkeypatch):
+    """Neutralise `containers`' grading-image cache for every test in this suite.
+
+    Two pieces of global state, and both leak. The in-memory `_image_cache` is a module attribute, so
+    one test populating it decides what a later one sees. Worse, the file cache defaults to a path in
+    the machine's tempdir — shared between *runs* — so a test asserting the endpoint answers `[]`
+    passes on a fresh CI runner and fails on a laptop that has run the suite before. Found exactly
+    that way round, which is the direction that hides a flake rather than showing it.
+
+    Autouse and in conftest rather than in one test file, because anything that touches `/v1/version`
+    reads this cache whether it means to or not.
+    """
+    import containers
+
+    monkeypatch.setattr(containers, "_image_cache", {"at": 0.0, "images": []})
+    monkeypatch.setattr(containers, "IMAGE_CACHE_FILE", str(tmp_path / "grading-images.json"))
+    containers._refresh_running.clear()
+    yield
+    containers._refresh_running.clear()
+
+
 @pytest.fixture
 def client():
     """A Flask test client, with exception propagation off so error handling is the app's own."""

@@ -4,6 +4,7 @@ import enum
 import json
 import os
 import os.path
+import re
 import tempfile
 import threading
 from time import time, sleep
@@ -260,12 +261,18 @@ def _installed_from_pip(docker_client, image, packages, logger):
 def grading_image_names():
     """The bare image names this host is expected to grade with.
 
-    From the environment, written by `roles/executor_images` out of the same `executor_images` list
-    that decides what gets pulled, so the two cannot disagree. The default is what every environment
-    has had for years, and is what a hand-built production host has too.
+    From the environment, set by the `easy-executor` unit out of the same `executor_images` list that
+    decides what gets pulled, so the two cannot disagree. The default is what every environment has
+    had for years, and is what a hand-built production host has too.
+
+    Accepts commas or whitespace. The unit sends commas because systemd's `Environment=` splits an
+    unquoted value on whitespace — which on dev quietly reduced a list of four names to one, and the
+    About page showed a single grading image while every layer above it was correct. Accepting both
+    means the same mistake cannot come back by a different route.
     """
     configured = os.environ.get("EASY_GRADING_IMAGE_NAMES", "")
-    return [n for n in configured.split() if n] or list(DEFAULT_GRADING_IMAGE_NAMES)
+    names = [n for n in re.split(r"[,\s]+", configured) if n]
+    return names or list(DEFAULT_GRADING_IMAGE_NAMES)
 
 
 def _live_grading_images(client):
@@ -339,12 +346,21 @@ def _read_cache_file():
     return None
 
 
-def _write_cache_file(payload):
+def _write_cache_file(path, payload):
+    """Takes the path rather than reading the module global.
+
+    The caller is a background thread that outlives the request which started it, so reading
+    `IMAGE_CACHE_FILE` here would read whatever the attribute says *when the thread gets round to
+    it*. That is a race in production only in theory — nothing rewrites it — but it is a real one in
+    the test suite, where the value is patched per test: a thread finishing after its test had
+    written to the machine-wide path, leaving a cache file that made a later run of the same suite
+    fail. Capturing the path at spawn removes the question.
+    """
     try:
-        tmp = IMAGE_CACHE_FILE + ".new"
+        tmp = path + ".new"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(payload, f)
-        os.replace(tmp, IMAGE_CACHE_FILE)
+        os.replace(tmp, path)
     except OSError:
         # In-memory only then: one refresh per worker per hour instead of one per host. Worth
         # degrading to rather than failing, and worth saying can happen rather than assuming the file
@@ -377,6 +393,8 @@ def grading_images(logger):
     # One refresh at a time, and the request does not wait for it.
     if not _refresh_running.is_set():
         _refresh_running.set()
+        # Captured now, not read inside the thread. See _write_cache_file.
+        cache_path = IMAGE_CACHE_FILE
 
         def run():
             global _image_cache
@@ -385,7 +403,7 @@ def grading_images(logger):
                 payload = {"at": time(), "images": images}
                 with _image_cache_lock:
                     _image_cache = payload
-                _write_cache_file(payload)
+                _write_cache_file(cache_path, payload)
             except Exception as e:
                 logger.info("could not list grading images: {}".format(e))
             finally:
