@@ -32,7 +32,7 @@ and every count in here turned out to be wrong.
 Counted, not estimated — and this time with the commands, because hand-maintained numbers going
 stale is exactly what happened to the first version of this table.
 
-**As of 2026-08-21, at master `8088b9db`:**
+**As of 2026-08-21, at master `b56531a2`:**
 
 | | Size | Tests |
 | --- | --- | --- |
