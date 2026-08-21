@@ -434,7 +434,12 @@ environment has the row, which by definition is the one nobody tested against.
 
 Generalising: for a data-rewriting changeset, the test that matters runs against data. Write the
 `BEGIN … ROLLBACK` dry run before writing the changeset, not after, because it is also how you find
-out whether your backfill source is populated for the rows that need it.
+out whether your backfill source is populated for the rows that need it — a source that is itself
+missing on some rows leaves them behind, and the constraint then fails.
+
+`doc/core/migration-dry-run.sql` is that as a fill-in-the-blanks template, including the two steps
+easy to skip: checking the backfill source's coverage *before* trusting it, and re-counting after the
+`ROLLBACK` so a dry run cannot be mistaken for having applied it.
 
 **And the guard for the other direction already existed.** Deleting the two changesets and re-running
 `SchemaMatchesTablesTest` names all three columns — because `knownNullabilityDrift` is now empty, so

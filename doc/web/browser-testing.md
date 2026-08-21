@@ -40,12 +40,33 @@ web/tests/
     harness.mjs                  launch() / fakeApi() / json() / waitUntil()
     spec.mjs                     the `test` every spec imports: check(), the ratchets
     contract.mjs                 fixtures vs doc/core/api-shapes.json
+    api-types-contract.mjs       src/api/*.ts vs the same file — a unit test, no browser
+    a11y.mjs                     axe, plus three rules axe does not have
     quarantine.mjs               the rules for muting a check, and their expiry
+    record-checks.mjs            rewrites expected-checks.json from a full green run
+    record-a11y.mjs              the same for a11y-baseline.json
+    *-fixtures.mjs               shared payloads where several specs differ on one field
   expected-checks.json           per-spec check counts — the ratchet
   contract-baseline.json         per-spec allowed fixture drift
+  a11y-baseline.json             known accessibility findings (currently empty)
+  api-types-baseline.json        unannotated API interfaces, plus waived contract findings
   quarantine.json                temporary, expiring exemptions (normally empty)
   screenshots/                   output (gitignored)
 ```
+
+Not an exhaustive listing — `support/` has a few more modules that exist to be unit-tested rather
+than imported by specs.
+
+The five ratcheted files come in two shapes, and it is worth knowing which you are editing:
+
+- **Counts that may fall but never rise** — `expected-checks.json` and `contract-baseline.json`.
+  Both are regenerated from a green run; the number moving the wrong way is the failure.
+- **Named entries that must justify themselves** — `a11y-baseline.json`, `api-types-baseline.json`
+  and `quarantine.json`. An entry without a note and an issue id (an expiry, for quarantine) is
+  **rejected when the file loads**, so "we looked and decided this is fine" cannot be spelled the
+  same way as "nobody looked". And an entry that no longer fires **fails**, so the file can only
+  shrink — without that half, a baseline accumulates permissions for problems fixed long ago and
+  silently re-permits them when they return.
 
 `web/dev-harness/` is gone: it had its own `package.json`, its own lockfile and its own dependabot
 entry, all for two dependencies. `@playwright/test` and `vitest` are devDependencies of
@@ -154,6 +175,19 @@ browser: an unresolvable `sx` token producing no stroke, `animation-fill-mode` o
 transition, MUI only wiring `InputLabel`→`Select` when both carry ids, a `<button>` nested inside
 another. jsdom catches none of those while duplicating the browser suite at lower fidelity.
 
+**A third kind lives here too: tests that read the source rather than run it.**
+`api-types-contract.test.mjs` parses `src/api/*.ts` with the TypeScript compiler API and compares
+every annotated interface against `doc/core/api-shapes.json` — so it catches a field the app declares
+that core does not send, a nullable field declared non-null, an enum value the app cannot handle, and
+an endpoint renamed out from under the client. No browser, no backend, ~400 ms. `i18n.test.mjs` and
+`suite-integrity.test.mjs` are the same shape: assertions about the repo, not about a function.
+
+Half of that file's tests feed the checker a **deliberately broken** client and fail if the rule
+stays quiet, which is not decoration. Its first version opened with seven findings of which four were
+its own artefacts, and a checker whose only test is "the real code passes" cannot be told apart from
+one that is incapable of failing. `bin/mutate.sh` carries four mutations of the real `types.ts` for
+the same reason.
+
 ## Why the app can't just be pointed at a fake IdP
 
 `AuthProvider` does `new Keycloak(...)` from an ES module import, so it can't be replaced
@@ -201,9 +235,23 @@ stdout, which is how you notice a broken query without asserting on it. Call it 
 a spec that needs a second visitor or a dark-mode pass; `close()` closes that context, and anything
 you forget is closed for you.
 
-**One test per spec file** is the convention, not a rule. Splitting a spec into several `test()`
-blocks buys parallelism inside the file — but the specs share a screenshot prefix and a single
-check count, so do it deliberately rather than by habit.
+**One test per spec file is a rule**, and this paragraph used to say it was only a convention.
+
+It is load-bearing because of how the check-count ratchet is built: `expected-checks.json` holds one
+number per spec **file**, and `spec.mjs` compares it in each *test's* teardown. With two tests in a
+file, every test but the largest fails that comparison — and `record-checks.mjs` keys its map by
+file, so re-recording "fixes" the failure by writing the **last** test's count as the new floor.
+Loud symptom, silent repair, and the floor ends up wherever the last test happened to land.
+
+All 34 specs happened to have one `test()`, so nobody had found out. Adding two to
+`participants-groups.spec.mjs` did: a red run whose obvious fix would have dropped that file's floor
+from 10 to 5. `record-checks.mjs` now refuses a file that reports two different counts and says why,
+so the trap is a message rather than a discovery.
+
+If you want the scenarios separate, use separate spec files and share the fixtures through a support
+module — `participants-groups*.spec.mjs` and `tests/support/participants-groups-fixtures.mjs` are the
+worked example. That also gives each scenario its own screenshot prefix and its own floor, which is
+strictly better than one file with a combined number.
 
 ## Gotchas, all of which cost me time
 

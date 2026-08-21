@@ -92,17 +92,6 @@ it said 22/91/113, measured a few commits earlier. `bin/testcounts --run` derive
 which tests carry `@needs_tiivad` and prints it, so the numbers here are a snapshot and the script is
 the answer.
 
-The endpoint figure has no command, on purpose: it comes from `EndpointInventory`, which reads
-Spring's resolved handler patterns. Grepping `@(Get|Post|…)Mapping` gives 123, which is a different
-number — a mapping declaring two paths is one annotation and two endpoints. When these disagree,
-the inventory is right and the grep is a coincidence.
-
-The endpoint figure is the one number with no command, on purpose: it comes from
-`EndpointInventory`, which reads Spring's resolved handler patterns. Grepping
-`@(Get|Post|…)Mapping` gives 123, which is a different number — a mapping declaring two paths is one
-annotation and two endpoints. When these disagree, the inventory is right and the grep is a
-coincidence.
-
 194 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
 parameterised — `StorageServiceContractTest` is 9 annotations and 15 runs, over two backends — and
 counting annotations would have understated the suite while *looking* like a measurement. Read it
@@ -439,9 +428,9 @@ because migrations run inside the Spring context, **core does not start** — on
 has that row, which by definition is the one nobody tested against.
 
 So the shape of the eventual test is now known from having done it twice by hand, which is the
-argument for building it. Until then: for any data-rewriting changeset, run the dry run **before**
-writing the changeset, because it is also how you discover whether your backfill source is populated
-for the rows that need it.
+argument for building it. Until then, `doc/core/migration-dry-run.sql` is the manual version as a
+template — run it **before** writing the changeset, because it is also how you discover whether your
+backfill source is populated for the rows that need it.
 
 ### Performance tests — none, and mostly fine
 

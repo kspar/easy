@@ -120,6 +120,15 @@ Useful variations:
 EASY_TEST_JDBC_URL=jdbc:postgresql://localhost:5432/easyems_test ./gradlew :core:test
 ```
 
+`./gradlew test` is the JVM modules only. There are five more suites — web unit, web browser, `aae`,
+the pins parser and the grading-image reconciler — each with its own runner, listed in
+`doc/testing.md`. To see all of them at once:
+
+```sh
+bin/testcounts          # how big each suite is
+bin/testcounts --run    # run every suite and report what it says
+```
+
 `EASY_TEST_JDBC_URL` skips Docker and uses a database you made yourself — handy when you want to
 `psql` into it afterwards and look. Create it with:
 
