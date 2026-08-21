@@ -51,7 +51,26 @@ Two fixtures also described responses core cannot produce (`anonymous_autoassess
 after the column became non-nullable; a `grade` sent as a bare number). Those are test defects, but
 they are the ones the contract check was built for.
 
----
+### EZ-1781, the grading-image pins system (2026-08-21)
+
+A different shape from the rest of this log. The application code was fine; everything below is
+**deploy machinery, and nine of the eleven were caught before a user could see them** — six by a
+`/code-review` pass, two by running the thing, one by a test. Worth recording because deploy paths
+have no users to complain, so the only feedback is somebody looking.
+
+| # | What | Where | Found by |
+| --- | --- | --- | --- |
+| 30 | The Ansible role could only build an image that was **missing**, so a version bump updated the Dockerfile on the host, reported `changed`, and left grading on the old version. Dev advertised silmused 1.7.11 while grading with 1.7.4 for a fortnight | `roles/executor/tasks/main.yml` | deploying PR #70 and looking | fixed, `b3607bf8` |
+| 31 | The inputs digest hashed each image's own smoke script but **not the shared version checker every Dockerfile COPYs**. Editing the checker moved no digest, so CI found every tag already published, pulled the old images, and the new checker reached nothing | `bin/pins.py` | `/code-review` |
+| 32 | `docker/setup-buildx-action` selects the `docker-container` driver, which cannot see the daemon's image store — so `imgrec`'s `FROM pygrader` could not resolve and the label build had no `--load`. The first CI run would have died at the first child image | `bin/build-grading-images.sh` | `/code-review`, before the run |
+| 33 | The documented production promotion told an operator to run `/easy-smoke.sh` on a published image. A label is metadata *about* an image and is invisible inside it, so it found no expectations and exited 1 — the operator would have concluded the artefact dev had graded with for weeks was broken | `doc/aae/grading-images.md` | `/code-review` |
+| 34 | The About page selected images by "has a grading label", which reported **every retained rollback copy** (twelve rows for four images, with colliding React keys) *and* skipped production entirely, whose hand-built images carry no labels | `aae/containers.py` | `/code-review` |
+| 35 | The reconciler guarded only the pull, so a `docker tag` failure on a later image escaped the loop and skipped the single `save_state` — discarding the quarantine recorded for an earlier one, which then failed again every five minutes | `easy_grading_sync.py` | `/code-review` |
+| 36 | No `concurrency` group on a workflow that moves a mutable channel tag a host follows. Two master pushes in one build window and the *older* image could own the channel, get pulled, pass its smoke check and go live — a silent downgrade with nothing failing | `grading-images.yml` | `/code-review` |
+| 37 | `executor_images_enabled: false` skipped everything that creates the images and then asserted they existed | `roles/executor_images` | `/code-review` |
+| 38 | The version-exists gate asked `git ls-remote <repo> <sha>`. ls-remote matches **ref names**, so it reported a problem for the pin that was correct | `bin/pins.py` | running it |
+| 39 | The free-space floor called `disk_usage` on the state *file*, which does not exist on a first run — so the check silently did nothing on exactly the run where a host is emptiest | `easy_grading_sync.py` | a test |
+| 40 | `Environment=EASY_GRADING_IMAGE_NAMES=tiivad silmused pygrader imgrec` in a systemd unit. `Environment=` **splits on whitespace**: systemd kept `tiivad` and parsed the rest as assignments that went nowhere, so the About page showed one grading image out of four while CI, the registry, the reconciler and `state.json` were all correct | `easy-executor.service.j2` | applying it to dev and reading the page |
 
 ## Defects introduced *by* this programme, and what caught them
 
@@ -97,6 +116,13 @@ Worth as much as the list above: these are the failure modes of the safety net i
 | A CI watcher that took the newest run across *all* workflows and reported a 42-second dependency-graph job as the build's verdict | noticing the job name in the output |
 
 ---
+
+### And from EZ-1781, one that hid rather than failed
+
+| What | Found by |
+| --- | --- |
+| The grading-image cache in `aae/containers.py` is two pieces of global state — a module attribute, and a file whose default path is in the machine's tempdir and so is **shared between runs**. Only the one test file that knew about it neutralised them, so a test asserting the endpoint answers `[]` passed on a fresh CI runner and failed on a laptop that had run the suite before | running the suite twice on one machine |
+| The background refresh thread read that path from the module global *when it got round to writing*, which in the suite meant after its own test had put the value back — so it wrote to the real machine-wide path | the same, once the fixture was in place and the file came back anyway |
 
 ## Lessons
 
@@ -547,3 +573,42 @@ quarantine. The ratchet earned itself on its first run and has caught a miscount
 **Estimates of coverage and measured coverage disagree.** "~581 checks" (read off output), "599"
 (counted call sites) and 618 (what actually ran) were three different numbers for the same suite.
 Only the one a runner writes is worth keeping.
+
+### From EZ-1781, the grading-image pins system
+
+**A list is not tested by testing one element.** Every test of the image reporter set up a single
+image, so the reporter was thoroughly tested and *the length of its output never was*. #40 passed all
+of them. The test that would have caught it is the boring one — four in, four out — and it did not
+exist because each interesting case only needed one image.
+
+**A gate that cries wolf on the normal case is worse than no gate.** #38 reported a problem for the
+correct pin. The first thing anybody does with a check like that is stop reading its output, at which
+point it is worse than absent: it has consumed the attention a real failure needed.
+
+**Nine of eleven came from reading, not from running.** The two that needed a real host (#38, #40)
+needed it absolutely — no amount of review would have produced `systemctl show`. But the majority
+were visible in the diff, and the review that found them ran *after* the code was written and
+committed, which is later than this repo's own convention says. It was still worth it; it would have
+been worth more earlier.
+
+**Everything upstream can be correct and the answer still wrong.** #40 is the clearest case in this
+log: the registry, the workflow, the reconciler, `state.json` and the labels on disk were all right,
+and the page showed a quarter of the truth. Verify the thing a person reads, not the last thing the
+machinery did.
+
+**A leak that hides is worse than one that fails.** The cache leak passed on CI and failed on a laptop — the
+direction that looks like a local problem. Reversed, it would have been fixed the first time anybody
+ran the suite.
+
+**Read the log, not the exit code.** The reconciler is deliberately forgiving: a failed pull leaves
+the previous image alone, and because `docker image inspect <bare name>` still succeeds, the closing
+assertion passes. Degrading safely and reporting success are the same thing to a shell.
+
+**Check the claim in the comment.** I wrote that a missing build argument would be caught by the
+version guard, then tested it: numpy was installed first and failed with an opaque pip error about
+`numpy~=`, which says nothing about the missing argument. The comment was wrong for two of the four
+images at the time it was written.
+
+**Delete the file before asking whether something recreated it.** Twice while chasing the cache leak
+I concluded a fix had not worked, from a file the *previous* run had left. An existence check is only
+evidence if the starting state was known.

@@ -60,6 +60,16 @@ The commit hash beside it is stamped by the build (`GITHUB_SHA` in CI, `git rev-
 it needs no maintenance — and it is what distinguishes two builds of the same version, which is the
 usual question when a deploy is in doubt.
 
+**`VERSION` does not cover the grading images.** Since EZ-1781 `tiivad`, `silmused`, `pygrader` and
+`imgrec` carry their own library versions, pinned in `doc/aae/pins/<environment>.yml` and published
+to GHCR by CI independently of any release. A release neither includes them nor needs to wait for
+them, and bumping `VERSION` changes nothing about which grader is live.
+
+The one thing a release *should* do is look: the About page lists the installed version of every
+grading library beside the component versions, so "which graders is this release going out
+alongside" is one page rather than an investigation. `doc/aae/grading-images.md` has the rest,
+including how a production promotion works, which is still manual.
+
 ## Steps
 
 ### 1. Rename the current "- next" version (remove suffix + reset color)

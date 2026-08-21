@@ -32,23 +32,47 @@ and every count in here turned out to be wrong.
 Counted, not estimated — and this time with the commands, because hand-maintained numbers going
 stale is exactly what happened to the first version of this table.
 
-**As of 2026-08-19:**
+**As of 2026-08-21, at master `93dd214b`:**
 
 | | Size | Tests |
 | --- | --- | --- |
-| **core** | 118 `@RestController` classes (124 endpoints) | 35 test files, **189 tests, all running** |
-| **web** | 122 `.ts`/`.tsx` files | 14 unit files, 37 browser specs (36 in CI) |
+| **core** | 118 `@RestController` classes (124 endpoints) | 36 test files, **194 tests, all running** |
+| **web** | 122 `.ts`/`.tsx` files | 14 unit files (**191 tests**), 37 browser specs (36 in CI, **778 checks**) |
 | **tsl** | the TSL compiler | 3 test files, **81 tests** |
 | **tsl-common** | the shared TSL model | 1 test file, **30 tests** |
-| **aae** | the executor | 5 test files, **91 tests** |
+| **aae** | the executor | 6 test files, **113 tests** (91 without tiivad installed, when 22 skip) |
+| **bin** | `pins.py`, the grading-library pins parser | 1 test file, **74 tests** |
+| **executor_images** | the grading-image reconciler | 1 test file, **19 tests** |
 
 ```sh
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 118
-find core/src/test/kotlin -name '*.kt' | wc -l                   # 35
+find core/src/test/kotlin -name '*.kt' | wc -l                   # 36
 find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 122
 ls web/tests/browser/*.spec.mjs | wc -l                          # 37
 ls web/tests/unit/*.test.mjs | wc -l                             # 14
+
+./gradlew :core:test                                             # 194
+cd web && npm run test:unit                                      # 191
+cd web && npx playwright test                                     # 778 checks / 36 specs
+python -m pytest aae/tests -q                                     # 113
+python -m pytest bin/tests -q                                     # 74
+python -m pytest ansible/roles/executor_images/tests -q           # 19
 ```
+
+**Always write down the commit these were measured at.** Two of these suites did not exist a day
+before this line was written, and a reader who measures a different commit and finds smaller numbers
+has no way to tell whether the table is stale or wrong — that exact confusion happened once, and was
+resolved only by noticing the two readings were of different trees. Both were correct.
+
+**The last two suites are Python and live outside `aae/`.** They test tooling rather than the
+application — the parser that decides which grading library version an environment runs, and the
+reconciler that puts an image live on a host — and most of what they assert is refusal: a pull request
+that may not merge itself, an image that must not become live. CI runs them in the `Executor (Python)`
+job, which is why that job's name now understates it.
+
+**aae has two numbers.** 22 of its tests exercise the real `tiivad` package and skip when it is
+absent, so a bare `pytest aae/tests` reports 91 and a full run reports 113. CI installs tiivad at
+the pinned version first, so CI always sees 113; a laptop usually sees 91 and is not broken.
 
 The endpoint figure has no command, on purpose: it comes from `EndpointInventory`, which reads
 Spring's resolved handler patterns. Grepping `@(Get|Post|…)Mapping` gives 123, which is a different

@@ -177,6 +177,26 @@ Per image, per tick:
 A digest that fails either gate is **quarantined**. Without that it would be retried every tick —
 grading broken for a minute in every five, indefinitely.
 
+Quarantine is the one state that needs a person, because the host will not leave it on its own. What
+it looks like, and how to get out of it:
+
+```sh
+ssh easycoredev 'sudo journalctl -u easy-grading-sync -n 60 --no-pager'
+#   silmused: i7f3a9c1d2b4e failed its gate before and is quarantined; still on i90585262628a.
+#   Clear it with --unquarantine silmused to try again.
+
+ssh easycoredev 'sudo cat /srv/easy/aae/images/state.json'    # quarantine: [...] per image
+
+# Once the cause is fixed — usually a new version published over the bad one:
+ssh easycoredev 'sudo /usr/local/bin/easy-grading-sync --config /etc/easy/grading-sync.json \
+  --unquarantine silmused'
+```
+
+Clearing it does not retry anything by itself; the next tick does. And note what the host is doing
+meanwhile: still grading, on the last version that passed both gates. A quarantined image is a
+deferred upgrade, not an outage — which is why nothing pages anybody about it, and why it needs
+looking for rather than waiting for.
+
 Direction is pull, so nothing in GitHub holds a credential for the host and there is no inbound access.
 The trust anchor is that CI moves a channel tag only after the image, and everything it builds on,
 passed. It runs as root with no service account, because `docker` group membership is equivalent to
