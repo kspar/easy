@@ -45,21 +45,32 @@ That is worth knowing beyond the fixture: it is the shape of every false alarm t
 produce. If a whole class of exercises flags, suspect the comparison's model of what production
 stores before suspecting the converter.
 
-### The one real finding: maths with braces is misfiled
+### Two classifier bugs the fixture found, both fixed
 
-`math_delimiters_only` strips math delimiters and whitespace, but **not pandoc's LaTeX brace
-normalisation**. Asciidoctor emits `\(x^2 + y^2\)`; pandoc emits `$ x^{2} + y^{2} $`. The formula
-is identical and only the notation changed, but the classifier compares `x^2+y^2` against
-`x^{2}+y^{2}`, so the exercise is labelled "text differs after round-trip" rather than "math
-delimiters only".
+`math_delimiters_only` decides whether a flagged exercise is filed as "maths, delimiters only" or as
+"text differs after round-trip". That is not cosmetic: `build_payload.py --include ok,math` **writes**
+the maths bucket and holds the other, so a misfiled formula is an exercise waiting for review it does
+not need. Both bugs made it answer False when it should have answered True, and
+`tests/test_dry_run.py` now pins all of it — 17 cases, over half of them negative, because a
+classifier that answered True more often would pass every positive case and start writing exercises
+whose text really did change.
 
-It matters because of the decision below: maths **is** written, and a re-braced maths exercise
-would instead be held for hand review it does not need. The 2026-08-01 run classified 48 as
-delimiters-only, so the common shape is caught — but "maths, plus one other difference" is already
-3 of the 20 held exercises, which is what this would look like.
+**1. AsciiMath delimiters were never matched.** `MATH_DELIM` matched `\(`, `\)`, `\[`, `\]` and a
+bare `$` — but Asciidoctor renders `stem:`, which is its **default** stem notation, as `\$x\$` with
+the dollar escaped. Stripping only the bare `$` left the backslash behind, so the production side
+read `\x^2\` and could not equal anything pandoc produced. Every AsciiMath exercise was therefore
+filed as changed text. `latexmath:` emits `\(x\)` and is the case the function was originally
+written against, which is why this survived two dry runs.
 
-**So before hand-reviewing the flagged list on production, check how much of it differs only by
-`^{n}` / `_{n}` bracing.** Widening the classifier is a smaller job than reviewing them.
+**2. pandoc's brace normalisation was not undone.** Asciidoctor writes `x^2`; pandoc writes
+`x^{2}`. Identical LaTeX, different string. Now collapsed on both sides — narrowly, only a brace
+group directly after `^` or `_`, so a brace in prose is untouched.
+
+Together these explain why maths kept turning up in the held pile: "maths, plus one other
+difference" is 3 of the 20 exercises held on dev, and the 2026-08-01 run's 36 unexplained
+differences are the population to re-examine. **Expect the maths bucket to grow and the held pile to
+shrink when this is next run against real data** — that is the fix working, and it means more
+exercises get written, so it is worth a look at the numbers rather than a shrug.
 
 ## Running a dry run
 

@@ -226,9 +226,9 @@ jobs:
       # alternative to testing that here is finding out on the host that grades real submissions.
       #
       # `working-directory: .` because this job otherwise runs in aae/, and neither of these is aae's.
-      - name: Pins and the grading-image reconciler
+      - name: Helper scripts — pins, the grading-image reconciler, the adoc-to-md classifier
         working-directory: .
-        run: python -m pytest bin/tests ansible/roles/executor_images/tests -q
+        run: python -m pytest bin/tests ansible/roles/executor_images/tests doc/core/adoc-to-md/tests -q
       # tiivad is the grader that consumes the TSL compiler's output, and doc/aae/pins/dev.yml is
       # the source of truth for which version dev's executor runs — so the version is read from
       # there rather than pinned a second time here. A test asserts the installed version matches

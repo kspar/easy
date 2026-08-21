@@ -114,6 +114,8 @@ PYEOF
     "$(PYTHONDONTWRITEBYTECODE=1 "$PY_BIN" -m pytest bin/tests -q --no-header -p no:warnings 2>&1 | plain | tail -1)"
   [ -d ansible/roles/executor_images/tests ] && count "ansible (grading-image reconciler)" \
     "$(PYTHONDONTWRITEBYTECODE=1 "$PY_BIN" -m pytest ansible/roles/executor_images/tests -q --no-header -p no:warnings 2>&1 | plain | tail -1)"
+  [ -d doc/core/adoc-to-md/tests ] && count "adoc->md (dry-run classifier)" \
+    "$(PYTHONDONTWRITEBYTECODE=1 "$PY_BIN" -m pytest doc/core/adoc-to-md/tests -q --no-header -p no:warnings 2>&1 | plain | tail -1)"
 else
   count "python suites" "skipped — no aae/.venv (see DEVELOPMENT.md)"
 fi

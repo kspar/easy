@@ -304,7 +304,19 @@ def visible_text(html: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-MATH_DELIM = re.compile(r"(\\\(|\\\)|\\\[|\\\]|\$)")
+# `\$` first, and it has to be: Asciidoctor renders `stem:` — its DEFAULT stem notation, AsciiMath —
+# as `\$x\$`, escaping the dollar so the browser's MathJax sees it. Matching only a bare `$` strips
+# the dollar and leaves the backslash behind, so the production side reads `\x^2\` and can never
+# equal anything pandoc produces. Every AsciiMath exercise was therefore filed as changed text rather
+# than as maths. `latexmath:` emits `\(x\)` and was the case this was originally written against.
+MATH_DELIM = re.compile(r"(\\\$|\\\(|\\\)|\\\[|\\\]|\$)")
+
+# pandoc writes a superscript or subscript argument in explicit braces — `x^2` becomes `x^{2}` —
+# which is the same LaTeX and a different string. Collapsed on BOTH sides before comparing, exactly
+# as the caption and admonition labels are, so that a formula which survived intact is not reported
+# as changed text. Narrow on purpose: only a brace group directly after ^ or _, so a brace in prose
+# is untouched.
+MATH_BRACE = re.compile(r"([_^])\{([^{}]+)\}")
 
 
 def math_delimiters_only(before: str, after: str) -> bool:
@@ -316,6 +328,12 @@ def math_delimiters_only(before: str, after: str) -> bool:
     """
     def strip(s: str) -> str:
         s = MATH_DELIM.sub("", s)
+        # Innermost first, repeatedly, so `x^{2^{3}}` collapses all the way rather than once.
+        while True:
+            collapsed = MATH_BRACE.sub(r"\1\2", s)
+            if collapsed == s:
+                break
+            s = collapsed
         s = re.sub(r"\s+", " ", s)
         # Removing a delimiter can leave the space that sat around it, so `…16$.` becomes
         # `16 .`. Only affects which label a flagged exercise gets, never whether it flags.
