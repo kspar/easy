@@ -266,7 +266,17 @@ What they found on their first runs, none of which any existing test would have 
   way; both had the role check in one place instead of two.
 - **Four nullability drifts.** `exercise.dir_id` had kept `.nullable()` in Kotlin for four years
   after a v2 changeset made it `NOT NULL` — so every read handed out a `Long?` that could never be
-  null. The other three are the dangerous direction and are EZ-1771.
+  null. The other three were the dangerous direction — the database permitting a null that Kotlin
+  promised was impossible — and were closed by EZ-1771 in changesets `210826-1` and `210826-2`.
+  `knownNullabilityDrift` is now **empty**, and the entries had to go in the same commit as the
+  changesets because an entry that no longer disagrees fails the test.
+
+  Answering it needed a measurement rather than a judgement: `article_version.title` had no nulls at
+  all, while the two `*_course_access.created_at` columns had 32 and 40, so they needed a backfill
+  and a changeset that only added the constraint would have stopped core from starting. And because
+  `:core:test` runs Liquibase against an empty database, the migration was verified by a
+  `BEGIN … ROLLBACK` dry run against dev's anonymised copy — see `doc/testing-log.md`, "a migration
+  that only runs against an empty database has not been tested".
 
 The lesson for whoever writes the next guard: the first version of `DtoWireNamesTest` collected
 every data class *declared* in a controller and reported 40 findings that were nothing of the sort —
@@ -394,6 +404,20 @@ The mechanism is cheap: restore a dump into a scratch database, run Liquibase, a
 resulting schema and data. It becomes considerably more valuable once dev exists and there is
 an anonymised production copy to run it against (`doc/core/anonymise-db/`), because the
 interesting migration failures are all about real data rather than clean schemas.
+
+**Still true, and EZ-1771 is the second demonstration.** `:core:test` runs Liquibase against a fresh
+empty database, so `210826-2`'s backfill matched nothing and its three `addNotNullConstraint`s passed
+vacuously — green, and worth nothing, since the only interesting question about that changeset is what
+it does when a null is actually present. What closed the gap was a one-minute `BEGIN … ROLLBACK` dry
+run against dev: 32 and 40 nulls before, exactly 32 and 40 rows updated, 0 after, all three
+constraints applied, rolled back with dev unchanged. A missed row means the constraint fails, and
+because migrations run inside the Spring context, **core does not start** — on whichever environment
+has that row, which by definition is the one nobody tested against.
+
+So the shape of the eventual test is now known from having done it twice by hand, which is the
+argument for building it. Until then: for any data-rewriting changeset, run the dry run **before**
+writing the changeset, because it is also how you discover whether your backfill source is populated
+for the rows that need it.
 
 ### Performance tests — none, and mostly fine
 

@@ -338,4 +338,64 @@
                                  constraintName="fk_stored_file_owner" onUpdate="CASCADE"/>
     </changeSet>
 
+    <changeSet id="210826-1" author="kspar">
+        <comment>
+            EZ-1771. article_version.title is nullable in the schema and non-null in Exposed. The
+            table was created without the constraint in v3 (EZ-1573) and core has always written a
+            title, so this is an omission in the original createTable rather than a decision.
+
+            No backfill: measured on dev, which is an anonymised copy of production — 2 rows, 0 null.
+        </comment>
+
+        <addNotNullConstraint tableName="article_version" columnName="title" columnDataType="text"/>
+    </changeSet>
+
+    <changeSet id="210826-2" author="kspar">
+        <comment>
+            EZ-1771, the other two. Both created_at columns are nullable in the schema and non-null in
+            Exposed, and unlike the title above, **nulls exist**: measured on dev, 32 rows in
+            student_course_access and 40 in teacher_course_access. So this needs a backfill, and a
+            changeset that only added the constraint would fail on the first null — which means core
+            would not start, because migrations run inside the Spring context.
+
+            Why the nulls are there and why they stop here: both tables predate this changelog (they
+            were *renamed* into their current names in initial.xml, from student_course), so
+            created_at never had a changeset asserting anything. All four code paths that write these
+            rows set it explicitly — AddTeachersToCourse:96, JoinCourseByInvite:56,
+            JoinMoodleLinkedCourseByInvite:47, moodle_students:252 — so nothing ongoing produces one.
+
+            The backfill uses the course's own created_at rather than a literal, which costs one join
+            and is strictly better data: an access row cannot predate its course, so this is a true
+            lower bound rather than an invented date, and it displays plausibly where the value is
+            shown as a join date (ReadParticipantsOnCourse, courses.kt). Verified available for every
+            null row before writing this: every one of them has both.
+
+            What this gives up, said out loud: after this, "we do not know when this access was
+            created" is no longer representable. That is the right trade here only because the reads
+            already cannot tell the difference — both DTOs declare createdAt as DateTime?, and
+            Exposed hands back a null from a non-nullable column unchecked, so today's behaviour is
+            correct by accident rather than by design. Making the data match the declaration removes
+            the accident; the alternative, making Exposed nullable to match the data, was considered
+            and rejected because a join date that is genuinely absent for 72 old rows is not worth
+            propagating a nullable type through every reader.
+        </comment>
+
+        <sql>
+            UPDATE student_course_access a
+            SET created_at = c.created_at
+            FROM course c
+            WHERE c.id = a.course_id AND a.created_at IS NULL;
+
+            UPDATE teacher_course_access a
+            SET created_at = c.created_at
+            FROM course c
+            WHERE c.id = a.course_id AND a.created_at IS NULL;
+        </sql>
+
+        <addNotNullConstraint tableName="student_course_access" columnName="created_at"
+                              columnDataType="timestamp without time zone"/>
+        <addNotNullConstraint tableName="teacher_course_access" columnName="created_at"
+                              columnDataType="timestamp without time zone"/>
+    </changeSet>
+
 </databaseChangeLog>

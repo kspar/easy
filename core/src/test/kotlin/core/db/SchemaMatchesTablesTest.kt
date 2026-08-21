@@ -31,29 +31,23 @@ class SchemaMatchesTablesTest {
     private data class DbColumn(val nullable: Boolean, val dataType: String)
 
     /**
-     * Nullability disagreements that predate this test, each with why it is not fixed here.
-     *
-     * All three are the dangerous direction — the schema permits null and Kotlin promises it will
-     * not be — so a null row makes a read throw somewhere unrelated to where the row was written.
-     * None is fixed in the same commit as this test, because each needs a changeset that rewrites
-     * production rows, and that is a different review from adding a guard. Tracked as **EZ-1771**.
+     * Nullability disagreements not fixed yet, each with why not.
      *
      * This map can only shrink: an entry that no longer disagrees fails the test below, so fixing
      * one forces deleting its line rather than leaving a stale exemption behind. An entry with a
      * blank reason is rejected — an exception nobody has to justify is just a hole.
+     *
+     * **It is empty, and that is what the mechanism is for.** The three it opened with — EZ-1771,
+     * `article_version.title` and both `*_course_access.created_at` — were closed by changesets
+     * `210826-1` and `210826-2`, and the entries had to go in the same commit because leaving them
+     * would have failed this test. Which is the point: the exemption list could not outlive the
+     * exemption.
+     *
+     * What answering it required was a measurement, not a judgement. The title column had no nulls at
+     * all; the two `created_at` columns had 32 and 40, so they needed a backfill, and a changeset
+     * that only added the constraint would have stopped core from starting.
      */
-    private val knownNullabilityDrift = mapOf<String, String>(
-        "article_version.title" to
-                "Created without NOT NULL in v3 (EZ-1573); core always writes a title, so nothing " +
-                "is expected to be null, but nothing enforces it either. Cheapest of the three to " +
-                "fix: the table is weeks old and small.",
-        "student_course_access.created_at" to
-                "Long-lived table. The column is nullable in the schema and non-null in Kotlin; " +
-                "whether any production row is actually null is unknown and has to be checked " +
-                "before a NOT NULL constraint can be added, since the changeset would fail on one.",
-        "teacher_course_access.created_at" to
-                "Same as student_course_access.created_at, and should be fixed in the same changeset.",
-    )
+    private val knownNullabilityDrift = mapOf<String, String>()
 
     private fun liveSchema(): Map<String, Map<String, DbColumn>> = transaction {
         val out = mutableMapOf<String, MutableMap<String, DbColumn>>()

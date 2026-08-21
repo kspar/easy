@@ -371,6 +371,43 @@ Also worth writing down: for the endpoint count there *is* no honest one-liner, 
 grep gives 123 against the inventory's 124. When a number has no command, say where it comes from
 instead of leaving a bare figure that looks measured.
 
+### A migration that only runs against an empty database has not been tested
+
+EZ-1771 added `NOT NULL` to three columns. `:core:test` runs Liquibase against a fresh
+Testcontainers database with no rows, so the backfill matched nothing and all three constraints
+succeeded trivially. Green, and worth nothing: the only interesting question about
+`addNotNullConstraint` is what it does when a null is actually there.
+
+The answer came from a dry run against dev's anonymised copy of production, inside a transaction that
+rolls back:
+
+```
+before            32 student nulls, 40 teacher nulls
+UPDATE 32 / UPDATE 40
+after backfill     0 / 0
+ALTER TABLE ×3     ok
+ROLLBACK
+after rollback    32 / 40   (unchanged, as intended)
+```
+
+(Row totals deliberately left out of the committed files — this repo is public, and the null counts
+are what the reasoning needs.)
+
+That is the whole test, and it takes a minute. Two things it establishes that no unit test could:
+the backfill's join covers **every** null row (32 updated of 32 that exist, not 31), and the
+constraint the migration would then add actually holds. A missed row means `addNotNullConstraint`
+fails, and because migrations run inside the Spring context, **core does not start** — on whichever
+environment has the row, which by definition is the one nobody tested against.
+
+Generalising: for a data-rewriting changeset, the test that matters runs against data. Write the
+`BEGIN … ROLLBACK` dry run before writing the changeset, not after, because it is also how you find
+out whether your backfill source is populated for the rows that need it.
+
+**And the guard for the other direction already existed.** Deleting the two changesets and re-running
+`SchemaMatchesTablesTest` names all three columns — because `knownNullabilityDrift` is now empty, so
+there is nothing left to excuse them. That is the shape worth copying: the exemption list could not
+outlive the exemption, since an entry that no longer disagrees fails the test.
+
 ### A gate can have an invariant nobody wrote down
 
 The check-count ratchet is one number per spec **file**, and `spec.mjs` compares it in each test's
