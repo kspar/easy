@@ -79,6 +79,31 @@ It exits non-zero on a problem, prints every finding rather than stopping at the
 anything it could *not* check as absent rather than counting it as a pass — a green report on a host
 where nothing is installed would otherwise be the most dangerous output it could produce.
 
+### The inventory is whatever your checkout says
+
+A run applies the values in *your* working tree, so two checkouts of this repo are two different
+answers to "what is dev configured with" — and the roles here are declarative, which means the older
+checkout does not lose the race, it wins it. Whatever it holds is asserted over whatever was there.
+
+That is not hypothetical. On 2026-08-21 the dev IdP's hostname was changed and applied from a
+worktree; thirteen minutes later a run from a checkout that predated the push put the old hostname
+back, and core spent the next few minutes answering 401 to every request because it was fetching
+JWKS from a name whose certificate had just been retired. Nothing warned anybody: the second run was
+correct about its own inventory and reported success.
+
+So **pull before you run**, and if more than one person or session is working on a host, say so
+first. Two habits make it cheap to catch:
+
+- `./run.sh site.yml --check --diff --limit <host>` before an apply. A change you did not expect,
+  in a role you did not touch, is somebody else's work about to be reverted — or yours, already.
+- After applying config, look again a few minutes later rather than only at the moment the run
+  finishes. `roles/core_config` writes with `backup: true`, so the host keeps a dated record of
+  every version and who won:
+
+  ```sh
+  ssh <host> 'ls -lat --time-style=full-iso /srv/easy/conf/'   # application.yaml.<pid>.<date>~
+  ```
+
 ### Environments
 
 `roles/hardening/defaults/main.yml` holds the **strict** values — the answer for the host that

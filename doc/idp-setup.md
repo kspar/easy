@@ -518,8 +518,13 @@ Three things break in three different ways if this is done piecemeal, so the ord
    SSH_TARGET=easycoredev ./deploy/deploy-dev.sh latest
    ```
 
-   The autodeploy timer would also do it on the next release, which is not soon enough to leave
-   logins broken.
+   Any release placement does it, which is a more useful way to think about it than "a deploy":
+   `easy-autodeploy.py` copies `conf/config.json` into every release it installs, rollbacks included,
+   because that file belongs to the environment and not to the release. Two consequences. The
+   autodeploy timer will *not* do this for you while `dev-releases` sits still — it only acts when the
+   branch moves — so waiting is not a plan. And it does not matter that the timer then reverts the
+   release you just placed (it will, see `deploy/README.md`): the config.json it copies in is the
+   environment's either way, so the new IdP URL survives being rolled back onto an older build.
 
 Then check it, rather than assuming: a token from the new IdP should be accepted by core, and a
 tampered copy of that same token should not — otherwise "accepted" only tells you verification is

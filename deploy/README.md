@@ -82,13 +82,20 @@ deploy/deploy-dev.sh 1a2b3c4       # a specific commit, full or short sha
 deploy/deploy-dev.sh 1a2b3c4 --dry-run
 ```
 
-**A manual deploy is not sticky.** The timer compares against `current-sha` on every tick, so if
-you hand-deploy something older than the tip of `dev-releases`, the next tick puts the newer one
-back. To pin the host, stop the timer first:
+**A manual deploy is not sticky, whatever you deploy.** The timer asks what `dev-releases` points at
+and compares it to `current-sha` — a plain equality check, with no notion of which commit is newer.
+So *any* hand-deployed commit that is not the tip of that branch is replaced within a tick, including
+one straight off master: `deploy/deploy-dev.sh latest` was undone about a minute later on 2026-08-21,
+which reads as the deploy having silently failed. To pin the host, stop the timer first:
 
 ```sh
 ssh easycoredev 'sudo systemctl stop easy-autodeploy.timer'
 ```
+
+**Expect a screenful of `rm: cannot remove …: Permission denied` while it prunes**, and ignore it —
+the deploy itself is fine. Releases the timer created are owned by `easy-autodeploy` with no group
+write, so the invoking user cannot delete them and the prune loop's exit status is not checked. That
+is EZ-1784; until it is fixed, `KEEP_RELEASES` is only enforceable for releases a human placed.
 
 The two implementations are separate on purpose — one pushes from a laptop, one pulls on the host —
 but they write the same on-host layout, and that layout is a contract between them. Change both
