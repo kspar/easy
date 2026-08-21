@@ -23,6 +23,8 @@ production:
   hosts:
     your-core-alias:
       ansible_user: your-login
+      # A named person's address, so it lives here rather than in the committed group_vars.
+      easy_core_mail_sys_to: someone@example.org
     your-idp-alias:
       ansible_user: your-login
     your-executor-alias:
@@ -34,3 +36,24 @@ production:
     hardening_ssh_users:
       - your-login
       - the-break-glass-account
+
+# Which host runs what. The service roles target these groups, so the same site.yml covers an
+# environment that co-locates everything and one that does not.
+core:
+  hosts:
+    your-core-alias:
+
+idp:
+  hosts:
+    your-idp-alias:
+
+executor:
+  hosts:
+    your-executor-alias:
+  vars:
+    # The executor is its own host here, so it cannot bind loopback and its database is elsewhere.
+    # Both of those are defaults the role only gets to keep on a single-VM environment.
+    executor_bind_address: 10.0.0.0
+    executor_port: 5111
+    executor_core_host: your-core-alias
+    executor_registered_name: prod-executor

@@ -1,5 +1,10 @@
 # The database rows core looks up to find this executor.
 #
+# Every task here runs on `executor_core_host`, not on the executor: these are rows in CORE's
+# database, and on production that is a different machine. It defaults to this host, so on a
+# single-VM environment the delegation is a no-op and reads as noise — which is the price of the
+# role working at all where the two are split.
+#
 # Core finds an executor by joining exercise -> container_image -> executor_container_image, so an
 # executor with no image rows is invisible no matter how healthy it is. These are environment data,
 # not schema, which is why they are here and not in a Liquibase changeset.
@@ -43,6 +48,7 @@
       psql -d {{ executor_db }} -v ON_ERROR_STOP=1 -c
       "INSERT INTO container_image (id) VALUES ('{{ item }}') ON CONFLICT DO NOTHING;"
   become_user: postgres
+  delegate_to: "{{ executor_core_host }}"
   register: image_rows
   notify: Restart core so it sees the executor rows
   changed_when: "'INSERT 0 1' in image_rows.stdout"
@@ -58,6 +64,7 @@
        SELECT '{{ executor_registered_name }}', '{{ executor_base_url }}', {{ executor_db_max_load }}, false
        WHERE NOT EXISTS (SELECT 1 FROM executor WHERE base_url = '{{ executor_base_url }}');"
   become_user: postgres
+  delegate_to: "{{ executor_core_host }}"
   register: executor_row
   notify: Restart core so it sees the executor rows
   changed_when: "'INSERT 0 1' in executor_row.stdout"
@@ -71,6 +78,7 @@
        AND NOT EXISTS (SELECT 1 FROM executor_container_image x
                        WHERE x.executor_id = e.id AND x.container_image_id = '{{ item }}');"
   become_user: postgres
+  delegate_to: "{{ executor_core_host }}"
   register: link_rows
   notify: Restart core so it sees the executor rows
   changed_when: "'INSERT 0 1' in link_rows.stdout"
@@ -93,6 +101,7 @@
       "UPDATE automatic_exercise SET container_image_id = '{{ executor_repoint_mock_to }}'
        WHERE container_image_id = 'mock';"
   become_user: postgres
+  delegate_to: "{{ executor_core_host }}"
   register: repointed
   notify: Restart core so it sees the executor rows
   changed_when: not repointed.stdout.startswith('UPDATE 0')
@@ -107,6 +116,7 @@
        DELETE FROM container_image WHERE id = 'mock'
          AND NOT EXISTS (SELECT 1 FROM automatic_exercise WHERE container_image_id = 'mock');"
   become_user: postgres
+  delegate_to: "{{ executor_core_host }}"
   register: mock_removed
   notify: Restart core so it sees the executor rows
   changed_when: "'DELETE 0' not in mock_removed.stdout"

@@ -145,3 +145,12 @@ hardening_apt_upgrade_delay_minutes: 30
 # purpose of having a dev environment, and it is the only way the two hosts stay comparable
 # enough for that discovery to mean anything.
 hardening_unattended_all_updates: false
+
+# Ports that are open only to named sources, as opposed to `hardening_open_tcp_ports` above, which
+# is open to the world. Each entry wants `port`, `from_ip` and `comment`; `proto` defaults to tcp.
+#
+# Empty by default, which is the honest answer for a host where everything but the web ports binds
+# loopback. It exists because production is not that host: its monitoring agents answer on public
+# addresses and its executor is a separate machine that core has to reach across the network, so
+# "open to the world" and "closed" are not the only two options there.
+hardening_scoped_tcp_rules: []

@@ -186,10 +186,12 @@
     </changeSet>
 
     <changeSet id="testdata-courses" author="kspar" context="testdata">
-        <!-- EZ-1777: the seeded inline comments' `type` was rewritten from 'comment'/'suggestion' to
-             the InlineCommentType enum's own spelling. Accept the older checksum, because every
-             database that already ran this is past it and 210826-3 in v4.xml normalises the rows it
-             inserted. Without this, editing an applied changeset stops core from starting. -->
+        <!-- EZ-1777: the seeded inline comments no longer set `type`, because the column is gone —
+             210826-4 in v4.xml drops it, and it runs before this, so an insert still naming the
+             column would fail on a fresh database. Accept the older checksum: every database that
+             already ran this is past it, and editing an applied changeset without this stops core
+             from starting. (Two edits in one commit, in fact: the values were first rewritten to
+             the enum's spelling, then removed with the column.) -->
         <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT count(*) FROM course WHERE id = 9001</sqlCheck>
@@ -508,100 +510,97 @@
             <!-- CE 9002 / Sum of Two Numbers, sub 9002, by dev-teacher -->
             INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
                                                  created_at, line_start, line_end, code,
-                                                 text_md, text_html, type, suggested_code)
+                                                 text_md, text_html, suggested_code)
             VALUES (9001, 9002, 9002, 'dev-teacher',
                     now() - interval '2 days', 3, 3,
                     'print(a + b)',
                     'This line is correct for the basic case, but think about what happens when `a` and `b` are both 0.',
                     '&lt;p&gt;This line is correct for the basic case, but think about what happens when &lt;code&gt;a&lt;/code&gt; and &lt;code&gt;b&lt;/code&gt; are both 0.&lt;/p&gt;',
-                    'COMMENT', null);
+                    null);
 
             <!-- CE 9002 / Sum of Two Numbers, sub 9003, by kspar -->
             INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
                                                  created_at, line_start, line_end, code,
-                                                 text_md, text_html, type, suggested_code)
+                                                 text_md, text_html, suggested_code)
             VALUES (9002, 9002, 9003, 'kspar',
                     now() - interval '12 hours', 3, 3,
                     'print(a + b + 1)',
                     'The `+ 1` here is the bug — you''re adding an extra 1 to every result. Remove it and the edge cases should pass.',
                     '&lt;p&gt;The &lt;code&gt;+ 1&lt;/code&gt; here is the bug — you''re adding an extra 1 to every result. Remove it and the edge cases should pass.&lt;/p&gt;',
-                    'SUGGESTION', 'print(a + b)');
+                    'print(a + b)');
 
             <!-- CE 9006 / FizzBuzz, sub 9006, by dev-teacher: 2 inline comments far apart -->
             INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
                                                  created_at, line_start, line_end, code,
-                                                 text_md, text_html, type, suggested_code)
+                                                 text_md, text_html, suggested_code)
             VALUES (9003, 9006, 9006, 'dev-teacher',
                     now() - interval '9 days', 1, 1,
                     'import sys',
                     'You import `sys` but never use it. Remove unused imports.',
                     '&lt;p&gt;You import &lt;code&gt;sys&lt;/code&gt; but never use it. Remove unused imports.&lt;/p&gt;',
-                    'COMMENT', null);
+                    null);
 
             INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
                                                  created_at, line_start, line_end, code,
-                                                 text_md, text_html, type, suggested_code)
+                                                 text_md, text_html, suggested_code)
             VALUES (9004, 9006, 9006, 'dev-teacher',
                     now() - interval '9 days', 18, 20,
                     E'def main():\n    n = 100\n    fizzbuzz(n)',
                     'The exercise says to read the range from a file, but you''ve hardcoded `n = 100`. Use `open()` to read `limits.txt` instead.',
                     '&lt;p&gt;The exercise says to read the range from a file, but you''ve hardcoded &lt;code&gt;n = 100&lt;/code&gt;. Use &lt;code&gt;open()&lt;/code&gt; to read &lt;code&gt;limits.txt&lt;/code&gt; instead.&lt;/p&gt;',
-                    'SUGGESTION',
                     E'def main():\n    with open("limits.txt") as f:\n        start, end = int(f.readline()), int(f.readline())\n    fizzbuzz_range(start, end)');
 
             <!-- CE 9005 / Debug Challenge, sub 9005, by dev-teacher -->
             INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
                                                  created_at, line_start, line_end, code,
-                                                 text_md, text_html, type, suggested_code)
+                                                 text_md, text_html, suggested_code)
             VALUES (9005, 9005, 9005, 'dev-teacher',
                     now() - interval '1 hour', 2, 4,
                     E'    result = 1\n    for i in range(1, n + 1):\n        result *= i',
                     'Nice catch — changing `result = 0` to `result = 1` was exactly the fix. The multiplication identity is 1, not 0.',
                     '&lt;p&gt;Nice catch — changing &lt;code&gt;result = 0&lt;/code&gt; to &lt;code&gt;result = 1&lt;/code&gt; was exactly the fix. The multiplication identity is 1, not 0.&lt;/p&gt;',
-                    'COMMENT', null);
+                    null);
 
             INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
                                                  created_at, line_start, line_end, code,
-                                                 text_md, text_html, type, suggested_code)
+                                                 text_md, text_html, suggested_code)
             VALUES (9006, 9005, 9005, 'dev-teacher',
                     now() - interval '1 hour', 1, 1,
                     'def factorial(n):',
                     'Consider adding a guard for negative inputs — currently the function silently returns 1 for `factorial(-3)`.',
                     '&lt;p&gt;Consider adding a guard for negative inputs — currently the function silently returns 1 for &lt;code&gt;factorial(-3)&lt;/code&gt;.&lt;/p&gt;',
-                    'SUGGESTION',
                     E'def factorial(n):\n    if n &lt; 0:\n        raise ValueError("n must be non-negative")');
 
             <!-- CE 9001 / Hello World, sub 9001, by dev-teacher -->
             INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
                                                  created_at, line_start, line_end, code,
-                                                 text_md, text_html, type, suggested_code)
+                                                 text_md, text_html, suggested_code)
             VALUES (9007, 9001, 9001, 'dev-teacher',
                     now() - interval '4 days', 1, 1,
                     'print("Hello, World!")',
                     'Clean and correct — well done!',
                     '&lt;p&gt;Clean and correct — well done!&lt;/p&gt;',
-                    'COMMENT', null);
+                    null);
 
             <!-- CE 9003 / Essay, sub 9004, by dev-teacher -->
             INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
                                                  created_at, line_start, line_end, code,
-                                                 text_md, text_html, type, suggested_code)
+                                                 text_md, text_html, suggested_code)
             VALUES (9008, 9003, 9004, 'dev-teacher',
                     now() - interval '1 day 8 hours', 1, 1,
                     'Merge sort is my favorite sorting algorithm because of its elegant divide-and-conquer approach.',
                     'Strong opening! Consider also mentioning that it was invented by **John von Neumann** in 1945.',
                     '&lt;p&gt;Strong opening! Consider also mentioning that it was invented by &lt;strong&gt;John von Neumann&lt;/strong&gt; in 1945.&lt;/p&gt;',
-                    'COMMENT', null);
+                    null);
 
             INSERT INTO teacher_inline_comment (id, course_exercise_id, submission_id, teacher_id,
                                                  created_at, line_start, line_end, code,
-                                                 text_md, text_html, type, suggested_code)
+                                                 text_md, text_html, suggested_code)
             VALUES (9009, 9003, 9004, 'dev-teacher',
                     now() - interval '1 day 8 hours', 7, 9,
                     E'I find it interesting because it demonstrates how breaking a problem into smaller\nsubproblems can lead to efficient solutions. It is also a stable sort, which means\nequal elements keep their original order.',
                     'Good point about stability. You could expand this into a concrete example:',
                     '&lt;p&gt;Good point about stability. You could expand this into a concrete example:&lt;/p&gt;',
-                    'SUGGESTION',
                     E'I find it interesting because it demonstrates how breaking a problem into smaller\nsubproblems can lead to efficient solutions. It is also a stable sort, which means\nequal elements keep their original order. For example, when sorting students by\ngrade, students with the same grade remain in their original alphabetical order.');
         </sql>
     </changeSet>

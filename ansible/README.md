@@ -254,7 +254,7 @@ deliberately, for now; if a third vhost appears, that is the moment to reconside
 onto three hosts (core, IdP, executor) what dev keeps on one, so a role that assumes postgres or
 the executor is on `127.0.0.1` is already wrong for production. Those addresses want to be variables
 from the first role that touches them; retrofitting them later is the expensive version. `site.yml`
-already has a play per group, and wants `serial: 1` before anything targets more than one host.
+already has a play per group, and the hardening play runs `serial: 1` for exactly this reason.
 
 Four things learned building the existing roles, each of which cost a debugging round:
 

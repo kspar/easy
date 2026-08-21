@@ -40,7 +40,7 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import { useTheme } from '@mui/material/styles'
 import { languageFromFilename } from './editorLanguage.ts'
 import { useMarkdownPreview } from '../../api/exercises.ts'
-import type { InlineCommentResp, InlineCommentType } from '../../api/types.ts'
+import type { InlineCommentResp } from '../../api/types.ts'
 import ConfirmDialog from '../participants/ConfirmDialog.tsx'
 // Shared with the exercise text editor, which shows a superset of these buttons. Keeping one
 // implementation is what stops the two editors formatting the same document differently.
@@ -57,7 +57,6 @@ export interface NewCommentData {
   line_end: number
   code: string
   text_md: string
-  type: InlineCommentType
   suggested_code?: string
   notify_student?: boolean
 }
@@ -328,7 +327,9 @@ export default function AnnotatedCodeEditor({
       line_end: d.lineEnd,
       code,
       text_md: textMd,
-      type: d.suggestedCode ? 'SUGGESTION' : 'COMMENT',
+      // This used to also send `type: d.suggestedCode ? 'suggestion' : 'comment'`, which is why
+      // EZ-1777 ended in deleting the field rather than validating it: the line below already says
+      // it, and two statements of one fact can disagree.
       ...(d.suggestedCode ? { suggested_code: d.suggestedCode } : {}),
       notify_student: notifyStudent,
     }

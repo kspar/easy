@@ -11,13 +11,17 @@
 # is no default inventory and no inventory contains two environments, so "all" can only ever mean the
 # one that was named. See ansible.cfg.
 #
-# When those service roles arrive they will want plays per group (core, idp, executor) instead, since
-# production separates onto three hosts what dev keeps on one. Hardening is the case that really
-# does apply to every host, so it stays here — and add `serial: 1` before this targets more than one
-# host at a time, so an sshd mistake locks out one box rather than all of them at once.
+# The service roles below target groups (core, idp, executor) for that reason: production separates
+# onto three hosts what dev keeps on one. Hardening is the case that really does apply to every
+# host, so it stays here, one host at a time.
 - name: Baseline hardening
   hosts: all
   become: true
+  # One host at a time, and this is the reason the whole play exists in this shape: an sshd change
+  # that locks the connecting account out should do it to one box, leaving the other two reachable
+  # to fix it from. Dev has one host in this play and pays nothing for the flag; production has
+  # three and would otherwise lose all of them in parallel.
+  serial: 1
   roles:
     - hardening
 
@@ -49,6 +53,24 @@
     #
     # In production the executor is its own host, which is why this is a separate role rather than
     # more tasks in `executor`: it has to be installable there on its own.
+    - executor_images
+
+# For an environment where the executor is its own machine. Dev is not one — its host is in `core`
+# and not in `executor`, so the two roles below run there from the play above and this play matches
+# nothing.
+#
+# The duplication is deliberate, and the alternative is worse: moving dev's host into an `executor`
+# group would mean editing a gitignored `hosts.yml` that every checkout has its own copy of, so a
+# machine that had not made the same edit would quietly stop applying these two roles and report
+# success. No host is in both groups, so nothing runs twice; if one ever is, both roles are
+# idempotent.
+#
+# `executor` before `executor_images`, and not interchangeable — see the note in the Core play.
+- name: Executor, where it is a host of its own
+  hosts: executor
+  become: true
+  roles:
+    - executor
     - executor_images
 
 # The IdP is already its own host in dev, which is how production is laid out too — so unlike the

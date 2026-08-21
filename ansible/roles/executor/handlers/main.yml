@@ -9,7 +9,12 @@
 # API. So a running core keeps scheduling against an executor whose row this role deleted — a
 # NoSuchElementException from getExecutorMaxLoad every few seconds — and never notices the one it
 # inserted. Changing these rows behind core's back therefore means restarting it.
+#
+# Delegated for the same reason the tasks that notify it are: core is not necessarily on this host,
+# and a handler does NOT inherit the delegation of whatever notified it — without this line a
+# production run would restart the executor's own non-existent easy-core and report success.
 - name: Restart core so it sees the executor rows
   ansible.builtin.systemd_service:
     name: "{{ executor_core_service | default('easy-core') }}"
     state: restarted
+  delegate_to: "{{ executor_core_host }}"

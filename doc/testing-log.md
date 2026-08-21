@@ -36,7 +36,7 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 23 | `<ul>`s whose direct children were `role="button"`, so assistive technology loses the item count or does not announce a list at all — the whole sidebar nav | `AppLayout.tsx` | axe, first run | fixed, EZ-1776 |
 | 24 | A link nested inside the sort button in every exercise column header: focus order, what is announced and what activation does are all browser-dependent. They were *already* two separate click targets — only the DOM nesting was wrong | `GradeTablePage.tsx` | axe, first run | fixed, EZ-1776 |
 | 25 | **MUI leaves `IconButton`, `TableSortLabel` and outlined `Chip` with no visual change at all when tabbed to** — computed background, outline and box-shadow byte-identical focused and unfocused. Their only feedback is the ripple, a click effect that plays once and fades, so a keyboard user who tabs and pauses has nothing on screen | `theme.ts` | the focus-ring rule, after three corrections to it | fixed, EZ-1776 |
-| 26 | Inline comment `type` is unvalidated free text in core (`text` column, no `@Pattern`, no enum, stored verbatim from the request) while the client declares it `'comment' \| 'suggestion'`. Inert today — web writes the field and never reads it back, branching on `suggested_code` instead — so it is a trap for the first reader rather than a live break | `TeacherInlineCommentCrud.kt`, `types.ts` | the `types.ts` contract check, its only surviving finding | fixed, EZ-1777 |
+| 26 | Inline comment `type` is unvalidated free text in core (`text` column, no `@Pattern`, no enum, stored verbatim from the request) while the client declares it `'comment' \| 'suggestion'`. Inert today — web writes the field and never reads it back, branching on `suggested_code` instead — so it is a trap for the first reader rather than a live break | `TeacherInlineCommentCrud.kt`, `types.ts` | the `types.ts` contract check, its only surviving finding | fixed, EZ-1777 — the field and its column are **gone**, not validated |
 | 27 | `AccessChecksBuilder.testFalse()` — a `@Deprecated("For debugging only")` helper that **refuses all access**, with no callers, living inside the access-control builder. One forgotten line from 403-ing an endpoint. Deleted with the `or` combinator | `access_control_dsl.kt` | the coverage gate naming it as an uncovered line | EZ-1773 |
 | 28 | Unlinking a course from Moodle sets `moodle_short_name = null` and deletes nothing else, so every outstanding Moodle invitation stays live — and `join()` matches on invite id with **no predicate on the course still being linked**, so it still enrols. A teacher who unlinks to stop Moodle enrolment has not stopped it | `LinkCourseMoodle.kt`, `JoinMoodleLinkedCourseByInvite.kt` | asking how the client's `moodle_pending_students` partition is reachable at all | EZ-1780 |
 | 29 | `ConfirmDialog` wraps its message in a bare `<Typography>` (`<p>`), and the group-deletion confirmation passes a `<ul>` of affected students inside `<Box>`. Invalid nesting: React logs it, the browser closes the paragraph early, nothing fails | `ConfirmDialog.tsx` | a console error in the output of a *passing* spec | fixed, EZ-1766 |
@@ -337,11 +337,50 @@ the issue id, and fails the day the finding stops firing.
 Same shape as `noDataAssertion(id, reason)` and the a11y baseline: **"we looked and decided this is
 fine" must be representable, and must not be spelled the same way as "nobody looked."**
 
-The waiver is gone now — EZ-1777 was fixed on 2026-08-21, `type` is a Kotlin enum on both requests
-and the response, and the mechanism worked as designed: deleting the entry was not optional, because
-a waiver that stops firing fails the test.
+The waiver is gone now — EZ-1777 was fixed on 2026-08-21, and the mechanism worked as designed:
+deleting the entry was not optional, because a waiver that stops firing fails the test.
+
+### The check says two sides disagree; it cannot say the field should exist
+
+**This is the most useful thing EZ-1777 produced, and it only became visible after the fix was
+already committed.**
+
+The finding was: core takes inline-comment `type` as unvalidated free text, the client declares
+`'comment' | 'suggestion'`. Every reading of that sentence points at validation, and validation is
+what shipped — a Kotlin enum, one spelling from column to TypeScript union, a normalising changeset,
+a test that junk is refused. Correct, and beside the point. The field was computed by the client as
+`suggestedCode ? 'suggestion' : 'comment'` on every save, and **no reader anywhere consulted it**. So
+`type` was a second copy of `suggested_code IS NOT NULL`, and what the enum bought was that the two
+copies now always agreed — the redundancy made consistent rather than removed. It is gone in the next
+commit, column and all.
+
+A contract check compares two declarations. That is genuinely valuable and it is *all* it does: it
+cannot see that one of the two things it is comparing has no reason to exist. So when it fires, the
+first question is not "which side is wrong?" but **"what reads this?"** — and if the answer is
+nothing, the disagreement is a symptom and validating it entrenches the cause. The tell here was
+available in the issue's own text, which noted the field was never read, and was written down as
+option 3 and passed over. Cheap to ask, and it inverts the work: seven files of careful validation
+became four files of deletion.
+
+Two further notes worth keeping:
+
+- **Deleting a wire field is normally the dangerous direction in this repo.**
+  `FAIL_ON_UNKNOWN_PROPERTIES` is off, so a client still sending a removed field gets 200 and a
+  silently incomplete write — which is exactly why `legacy_content_fields.kt` exists to name the
+  removed `*_adoc` fields in a 400. That treatment is deliberately not applied to `type`: those
+  fields *were* the content, so ignoring them produced an empty exercise, while ignoring `type` loses
+  nothing. **The question is whether the ignored field held information, not whether it was
+  removed** — and dropping this one is therefore gentler on an in-flight old client than the enum was,
+  which is the opposite of the usual ordering.
+- The enum's own KDoc justified keeping the column with "a suggestion whose code is cleared should
+  still read as a suggestion". Unreachable — the client re-derives on every save. A rationale that
+  describes a state the product cannot enter is worse than no rationale, because the next reader
+  writes a branch for it.
 
 ### Closing a two-sided disagreement means picking a vocabulary, and the fixtures are data too
+
+*Kept as written, because the reasoning was sound and the conclusion was still discarded an hour
+later — see the section above. Everything below describes the enum fix, which lived for one commit.*
 
 Fixing EZ-1777 read like a three-file change: an enum in `Enums.kt`, the column through
 `enumerationByName`, the DTOs. It was seven, and the four extra ones are the interesting part.

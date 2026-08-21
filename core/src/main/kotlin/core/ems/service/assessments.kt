@@ -41,7 +41,9 @@ data class InlineCommentResp(
     @get:JsonProperty("code") val code: String,
     @get:JsonProperty("text_md") val textMd: String,
     @get:JsonProperty("text_html") val textHtml: String,
-    @get:JsonProperty("type") val type: InlineCommentType,
+    // No `type`: it said 'comment' or 'suggestion' and meant exactly `suggested_code != null`.
+    // Dropped in EZ-1777 along with the column. A client that still sends it on a write is
+    // unaffected — FAIL_ON_UNKNOWN_PROPERTIES is off and the field carried nothing.
     @get:JsonProperty("suggested_code") val suggestedCode: String?,
 )
 

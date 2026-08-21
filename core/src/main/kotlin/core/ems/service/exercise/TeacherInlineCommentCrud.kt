@@ -2,7 +2,6 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
-import core.db.InlineCommentType
 import core.db.Submission
 import core.db.TeacherInlineComment
 import core.ems.service.*
@@ -39,19 +38,27 @@ class TeacherInlineCommentCrudController(val markdownService: MarkdownService, v
     private val log = KotlinLogging.logger {}
 
     /*
-     * `type` is an enum rather than a `String` since EZ-1777, on both requests below and on
-     * InlineCommentResp. It was free text stored verbatim and echoed back, so a teacher could POST
-     * anything and core would serve it, while the client declared a two-value union. Jackson now
-     * answers 400 naming the accepted values — see the handler for MismatchedInputException in
-     * exception_handlers.kt, which passes Jackson's own message through — and the column holds one
-     * of two spellings, uppercase, like every other enum on this API.
+     * There is no `type` on these, and that is EZ-1777's actual conclusion.
+     *
+     * It was a `required = true` String, unvalidated, stored verbatim and echoed back, so a teacher
+     * could POST `"banana"` and core would serve it. Making it an enum fixed that and was still the
+     * wrong fix: `AnnotatedCodeEditor.tsx` computed it as `suggestedCode ? 'suggestion' : 'comment'`
+     * on every save, and no reader anywhere consulted it. A discriminator that is a pure function of
+     * another field is not one. `suggested_code` says the same thing and cannot disagree with itself.
+     *
+     * Deleting a request field is normally the dangerous direction here — `FAIL_ON_UNKNOWN_PROPERTIES`
+     * is off, so a client still sending it gets 200 and whatever the field would have carried is
+     * silently gone, which is why `legacy_content_fields.kt` exists to name the removed `*_adoc`
+     * fields in a 400. That treatment is deliberately *not* applied to `type`: those fields were the
+     * content, so losing them produced an empty exercise, while ignoring `type` loses nothing at all.
+     * The test to apply before reaching for the reject-list is whether the ignored field held
+     * information, not whether it was removed.
      */
     data class CreateReq(
         @param:JsonProperty("line_start", required = true) val lineStart: Int,
         @param:JsonProperty("line_end", required = true) val lineEnd: Int,
         @param:JsonProperty("code", required = true) val code: String,
         @param:JsonProperty("text_md", required = true) @field:NotBlank @field:Size(max = 300000) val textMd: String,
-        @param:JsonProperty("type", required = true) val type: InlineCommentType,
         @param:JsonProperty("suggested_code", required = false) val suggestedCode: String? = null,
         @param:JsonProperty("notify_student", required = false) val notifyStudent: Boolean = false,
     )
@@ -61,7 +68,6 @@ class TeacherInlineCommentCrudController(val markdownService: MarkdownService, v
         @param:JsonProperty("line_end", required = true) val lineEnd: Int,
         @param:JsonProperty("code", required = true) val code: String,
         @param:JsonProperty("text_md", required = true) @field:NotBlank @field:Size(max = 300000) val textMd: String,
-        @param:JsonProperty("type", required = true) val type: InlineCommentType,
         @param:JsonProperty("suggested_code", required = false) val suggestedCode: String? = null,
         @param:JsonProperty("notify_student", required = false) val notifyStudent: Boolean = false,
     )
@@ -87,6 +93,8 @@ class TeacherInlineCommentCrudController(val markdownService: MarkdownService, v
             caller, submissionIdString, courseExerciseIdString, courseId,
         )
 
+        val suggested = req.suggestedCode.normaliseSuggestion()
+
         val result = transaction {
             val time = DateTime.now()
             val textHtml = markdownService.mdToHtml(req.textMd)
@@ -101,8 +109,7 @@ class TeacherInlineCommentCrudController(val markdownService: MarkdownService, v
                 it[code] = req.code
                 it[textMd] = req.textMd
                 it[TeacherInlineComment.textHtml] = textHtml
-                it[type] = req.type
-                it[suggestedCode] = req.suggestedCode
+                it[suggestedCode] = suggested
             }
 
             val subNumber = Submission.select(Submission.number)
@@ -121,8 +128,7 @@ class TeacherInlineCommentCrudController(val markdownService: MarkdownService, v
                 code = req.code,
                 textMd = req.textMd,
                 textHtml = textHtml,
-                type = req.type,
-                suggestedCode = req.suggestedCode,
+                suggestedCode = suggested,
             )
         }
 
@@ -152,6 +158,7 @@ class TeacherInlineCommentCrudController(val markdownService: MarkdownService, v
             caller, submissionIdString, courseExerciseIdString, courseId,
         )
         val commentId = commentIdString.idToLongOrInvalidReq()
+        val suggested = req.suggestedCode.normaliseSuggestion()
 
         val result = transaction {
             val time = DateTime.now()
@@ -168,8 +175,7 @@ class TeacherInlineCommentCrudController(val markdownService: MarkdownService, v
                 it[code] = req.code
                 it[textMd] = req.textMd
                 it[TeacherInlineComment.textHtml] = textHtml
-                it[type] = req.type
-                it[suggestedCode] = req.suggestedCode
+                it[suggestedCode] = suggested
             }
 
             if (updated == 0) {
@@ -196,8 +202,7 @@ class TeacherInlineCommentCrudController(val markdownService: MarkdownService, v
                 code = req.code,
                 textMd = req.textMd,
                 textHtml = textHtml,
-                type = req.type,
-                suggestedCode = req.suggestedCode,
+                suggestedCode = suggested,
             )
         }
 
@@ -281,6 +286,25 @@ class StudentInlineCommentController {
     }
 }
 
+/**
+ * `""` means "no suggestion", the same as absent.
+ *
+ * With `type` gone (EZ-1777), `suggested_code IS NOT NULL` *is* the definition of a suggestion — the
+ * changeset comment, `TeacherInlineComment`'s KDoc and `types.ts` all state it that way. An empty
+ * string would be a third state underneath that claim: stored, so non-null, so a suggestion by the
+ * stated rule, while every render site in the app tests the string for truthiness and draws a plain
+ * comment. Two answers about one row, which is the exact thing dropping the column was for.
+ *
+ * `ifEmpty`, deliberately, not `ifBlank`. The client's rule is JS truthiness — `d.suggestedCode ?` on
+ * write, `comment.suggested_code &&` on read — under which `""` is absent and `" "` is present. This
+ * matches it exactly. Trimming would be defensible in isolation and would introduce a *new*
+ * disagreement at whitespace-only, which is how the field got into this state to begin with.
+ *
+ * `210826-3`'s backfill already made this distinction (`suggested_code <> ''`); nothing on the write
+ * path did until the review of `210826-4` asked why not.
+ */
+private fun String?.normaliseSuggestion(): String? = this?.ifEmpty { null }
+
 private fun selectInlineComments(courseExId: Long, studentId: String): List<InlineCommentResp> = transaction {
     // Join with Submission to get submission_number and filter by student
     (TeacherInlineComment innerJoin Submission)
@@ -312,7 +336,6 @@ private fun selectInlineComments(courseExId: Long, studentId: String): List<Inli
                 code = it[TeacherInlineComment.code],
                 textMd = it[TeacherInlineComment.textMd],
                 textHtml = it[TeacherInlineComment.textHtml],
-                type = it[TeacherInlineComment.type],
                 suggestedCode = it[TeacherInlineComment.suggestedCode],
             )
         }

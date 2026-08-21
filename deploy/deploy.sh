@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
 #
-# Deploy a CI-built Lahendus release to the dev host.
+# Deploy a CI-built Lahendus release to an environment.
 #
-#   deploy/deploy-dev.sh latest              # newest green CI run on master
-#   deploy/deploy-dev.sh 1a2b3c4             # a specific commit, full or short sha
-#   deploy/deploy-dev.sh 1a2b3c4 --dry-run   # resolve and download, touch nothing remote
+#   deploy/deploy.sh dev latest               # newest green CI run on that env's branch
+#   deploy/deploy.sh dev 1a2b3c4              # a specific commit, full or short sha
+#   deploy/deploy.sh dev 1a2b3c4 --dry-run    # resolve and download, touch nothing remote
+#   deploy/deploy.sh prod 1a2b3c4             # prompts, dumps the database, then deploys
 #
-# Needs gh (authenticated), jq, and SSH to the dev host. Deliberately no JDK and no Node: the
-# artifacts come from the CI run that gated the commit, so what dev exercises is byte-for-byte
-# what can later go to production. SSH access is therefore the real deploy permission.
-# See doc/dev-environment.md §8.
+# The environment is the first argument and there is no default, for the same reason `ansible/` has
+# no default inventory: an omitted environment should be a usage error at the command line, not a
+# deploy to whichever one happened to be hardcoded. Everything environment-specific lives in
+# deploy/<env>/<env>.env beside this script.
+#
+# Needs gh (authenticated), jq, and SSH to the host. Deliberately no JDK and no Node: the artifacts
+# come from the CI run that gated the commit, so what dev exercises is byte-for-byte what goes to
+# production. SSH access is therefore the real deploy permission.
+# See doc/dev-environment.md §8 for dev and doc/production-update.md for production.
 #
 # Rollback is this same command with an older sha. Releases stay on the host, so rolling back to
 # one still in $REMOTE_ROOT/releases needs neither a download nor a surviving CI run — which
@@ -19,11 +25,34 @@
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly ENV_NAME="dev"
+
+die() { echo "error: $*" >&2; exit 1; }
+step() { echo; echo "==> $*"; }
+
+usage() {
+    sed -n '3,9p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    exit "${1:-1}"
+}
+
+
+# The environment comes first and is consumed before the option loop, so `deploy.sh --dry-run dev x`
+# is a usage error rather than a deploy of an environment called `--dry-run`.
+[ $# -ge 1 ] || usage 1
+case "${1:-}" in -h|--help) usage 0 ;; -*) die "the first argument is the environment, got '$1'" ;; esac
+readonly ENV_NAME="$1"; shift
 readonly ENV_DIR="$SCRIPT_DIR/$ENV_NAME"
 
+[ -d "$ENV_DIR" ] || die "no such environment '$ENV_NAME' — expected $ENV_DIR ($(cd "$SCRIPT_DIR" && ls -d */ 2>/dev/null | tr -d / | paste -sd' ' -))"
+[ -f "$ENV_DIR/$ENV_NAME.env" ] || die "missing $ENV_DIR/$ENV_NAME.env"
+
 # shellcheck source=dev/dev.env
-source "$ENV_DIR/dev.env"
+source "$ENV_DIR/$ENV_NAME.env"
+
+# Defaults for the settings only some environments set, so an env file that predates them still
+# works and the safe value is the one you get by saying nothing.
+: "${PRE_RESTART_DUMP:=false}"
+: "${REQUIRE_CONFIRM:=false}"
+: "${DUMP_SERVICE:=easy-db-backup.service}"
 
 : "${GH_REPO:=kspar/easy}"
 export GH_REPO
@@ -31,28 +60,29 @@ export GH_REPO
 readonly WORKFLOW="CI"
 readonly HEALTH_TIMEOUT_S=120
 
-die() { echo "error: $*" >&2; exit 1; }
-step() { echo; echo "==> $*"; }
-
-usage() {
-    sed -n '3,7p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
-    exit "${1:-1}"
-}
-
 # --- arguments -------------------------------------------------------------------------------
 
 REF=""
 DRY_RUN=false
+ASSUME_YES=false
 while [ $# -gt 0 ]; do
     case "$1" in
         -h|--help) usage 0 ;;
         --dry-run) DRY_RUN=true ;;
+        --yes|-y) ASSUME_YES=true ;;
         -*) die "unknown option: $1" ;;
         *) [ -z "$REF" ] || die "expected one sha, got '$REF' and '$1'"; REF="$1" ;;
     esac
     shift
 done
 [ -n "$REF" ] || usage 1
+
+# `latest` resolves to whatever the branch points at now, which is fine for an environment that
+# redeploys several times a day and wrong for one that is deployed deliberately. An environment
+# asking for confirmation is saying its deploys are named, so it does not get to guess.
+if [ "$REQUIRE_CONFIRM" = true ] && [ "$REF" = "latest" ]; then
+    die "'$ENV_NAME' wants an explicit sha, not 'latest' — name the commit you mean"
+fi
 
 # --- preflight -------------------------------------------------------------------------------
 
@@ -68,10 +98,9 @@ gh auth status >/dev/null 2>&1 || die "gh is not authenticated — run 'gh auth 
 # A dry run resolves and downloads and stops there, so it must work with no host at all — that is
 # what makes it useful before the dev VM exists.
 if [ "$DRY_RUN" = false ]; then
-    # The dev VM is not chosen yet (the three old dev instances are still being triaged), so
-    # this ships with a placeholder rather than a wrong hostname that looks right.
+    # Env files ship with a placeholder rather than a wrong hostname that looks right.
     case "$SSH_TARGET" in
-        ""|*TODO*) die "SSH_TARGET is still a placeholder — set it in $ENV_DIR/dev.env" ;;
+        ""|*TODO*) die "SSH_TARGET is still a placeholder — set it in $ENV_DIR/$ENV_NAME.env" ;;
     esac
 
     ssh -o BatchMode=yes -o ConnectTimeout=10 "$SSH_TARGET" true \
@@ -158,6 +187,28 @@ if [ "$DRY_RUN" = true ]; then
     exit 0
 fi
 
+# --- confirm -----------------------------------------------------------------------------------
+
+# For environments where a deploy is an event rather than a habit. Everything above this line is
+# read-only, so this is the last point at which stopping costs nothing.
+if [ "$REQUIRE_CONFIRM" = true ] && [ "$ASSUME_YES" = false ]; then
+    step "Confirm"
+    cat <<CONFIRM
+  environment  $ENV_NAME
+  commit       $SHA ($RUN_BRANCH)
+  run          $RUN_URL
+  target       $SSH_TARGET
+  service      $CORE_SERVICE
+$([ "$PRE_RESTART_DUMP" = true ] && echo "  database     dumped via $DUMP_SERVICE before the restart")
+
+  Liquibase applies every pending changeset when core starts, and a rollback of the jar does NOT
+  roll the schema back.
+CONFIRM
+    printf '  Type the environment name to continue: '
+    read -r reply
+    [ "$reply" = "$ENV_NAME" ] || die "not confirmed (got '$reply'), nothing was changed"
+fi
+
 # --- upload --------------------------------------------------------------------------------
 
 if [ "$NEED_UPLOAD" = true ]; then
@@ -177,9 +228,9 @@ scp -q "$ENV_DIR/config.json" "$SSH_TARGET:$REMOTE_RELEASE/config.json"
 step "Installing and restarting $CORE_SERVICE"
 
 ssh "$SSH_TARGET" bash -s -- \
-    "$SHA" "$REMOTE_ROOT" "$CORE_SERVICE" "$KEEP_RELEASES" <<'REMOTE'
+    "$SHA" "$REMOTE_ROOT" "$CORE_SERVICE" "$KEEP_RELEASES" "$PRE_RESTART_DUMP" "$DUMP_SERVICE" <<'REMOTE'
 set -euo pipefail
-sha="$1"; root="$2"; service="$3"; keep="$4"
+sha="$1"; root="$2"; service="$3"; keep="$4"; dump="$5"; dump_service="$6"
 rel="$root/releases/$sha"
 
 # Core reads this through --spring.config.location and dies on an unresolved @Value placeholder,
@@ -219,6 +270,17 @@ ln -sfn "$rel/web" "$root/web/.current.new"
 mv -Tf "$root/web/.current.new" "$root/web/current"
 ln -sfn "$rel/core.jar" "$root/core/.current.new"
 mv -Tf "$root/core/.current.new" "$root/core/current.jar"
+
+# The restore point, taken as late as possible: after every check that can fail has passed, and
+# before the restart that runs the migrations. Reusing the nightly backup unit rather than a
+# pg_dump of its own means one dump implementation, one retention policy, one place where the
+# "did it actually finish" check lives — and one exact sudoers line instead of a grant for pg_dump
+# with arguments. It is a oneshot, so this blocks until the dump is written and verified, which on
+# a large database is minutes rather than seconds.
+if [ "$dump" = true ]; then
+    echo "  dumping the database via $dump_service before restarting"
+    sudo systemctl start "$dump_service"
+fi
 
 sudo systemctl restart "$service"
 date -Iseconds > "$rel/DEPLOYED"

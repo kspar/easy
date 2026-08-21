@@ -22,6 +22,14 @@ import tools.jackson.module.kotlin.jacksonObjectMapper
 fun JsonNode.list(name: String): List<JsonNode> = get(name)?.toList().orEmpty()
 
 /**
+ * A nullable string field of a node, `null` for JSON null as well as for absent.
+ *
+ * The node-level twin of `HttpApi.Response.nullableField`, for reading fields off the elements of an
+ * array. Same reason: `NullNode.asString()` is `""`.
+ */
+fun JsonNode.nullableText(name: String): String? = get(name)?.takeUnless { it.isNull }?.asString()
+
+/**
  * Calling the API the way a client does, for tests that are about an endpoint's *behaviour* rather
  * than about who may reach it.
  *
@@ -80,6 +88,18 @@ class HttpApi(private val mockMvc: MockMvc) {
          * This cost a green assertion in `ArticleApiTest` on its first run.
          */
         fun field(name: String): String? = jsonOrNull?.get(name)?.asString()
+
+        /**
+         * The field, or `null` when it is **JSON null or absent** — which [field] cannot tell apart
+         * from an empty string.
+         *
+         * `NullNode.asString()` returns `""`, not null, so `assertNull(field("suggested_code"))`
+         * fails with "expected: <null> but was: <>" on a field core serialised as `null`, and worse,
+         * `assertEquals("", field(x))` *passes* on a null. Use this wherever a nullable field's
+         * nullness is the assertion. Cost a run in `InlineCommentApiTest`.
+         */
+        fun nullableField(name: String): String? =
+            jsonOrNull?.get(name)?.takeUnless { it.isNull }?.asString()
 
         /**
          * The elements of a JSON array field, e.g. `elements("articles")`.

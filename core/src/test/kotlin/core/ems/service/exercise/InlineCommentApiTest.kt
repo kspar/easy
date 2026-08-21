@@ -6,11 +6,13 @@ import core.testing.Fixtures
 import core.testing.HttpApi
 import core.testing.IntegrationTest
 import core.testing.TestClock
+import core.testing.nullableText
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,25 +20,28 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.web.servlet.MockMvc
 
 /**
- * Inline comments, and specifically that `type` is a closed set on both sides of the wire.
+ * Inline comments, and specifically that `suggested_code` is the only thing that distinguishes a
+ * suggestion from a comment.
  *
- * **This is EZ-1777.** The field was a bare `String` on the request, in the column and on the
- * response, stored verbatim and echoed back, while `web/src/api/types.ts` declared
- * `'comment' | 'suggestion'` — so the client's type was a promise core did not keep, and a teacher
- * could `POST` `type: "banana"` and have core serve it back forever.
+ * **This is EZ-1777, after it changed its mind.** There was a `type` field — `'comment'` or
+ * `'suggestion'` — on the request, in the column and on the response. Core took it as an
+ * unvalidated `String`, stored it verbatim and echoed it back, while `web/src/api/types.ts`
+ * declared a closed union, so a teacher could `POST` `"banana"` and have core serve it forever. The
+ * first fix made it a Kotlin enum. The right fix, one commit later, was to delete it: the editor
+ * computed it as `suggestedCode ? 'suggestion' : 'comment'` on every save and no reader anywhere
+ * consulted it, so the field was a second statement of `suggested_code IS NOT NULL` that could
+ * disagree with the first.
  *
- * It was found by the `api-types-contract` check rather than by anything failing, and it was inert:
- * the UI writes the field and never reads it, branching on `suggested_code` instead. That is worth
- * remembering when reading these tests, because it is the reason they are about the *boundary*
- * rather than about rendering. Nothing renders `type` today. The bug was that the first person to
- * write `switch (c.type)` would have inherited a hole invisible in the type system.
+ * What that leaves worth testing is the distinction itself, which is now single-sourced, plus two
+ * properties of having removed a wire field:
  *
- * The two negative tests are the substance. The first is the obvious one — junk is refused. The
- * second is the one that would have been easy to leave out: the **old lowercase spelling** is also
- * refused. Every value the previous client ever sent was `comment` or `suggestion`, so an
- * implementation that accepted those case-insensitively would look maximally compatible and would
- * leave the column with two spellings of the same thing, which is the state changeset `210826-3`
- * exists to end.
+ * - a client still sending `type` is **unaffected**, because `FAIL_ON_UNKNOWN_PROPERTIES` is off and
+ *   the field carried no information. That is the opposite call from `legacy_content_fields.kt`,
+ *   which rejects removed `*_adoc` fields precisely because ignoring *those* silently produced an
+ *   empty exercise. The distinguishing question is whether the ignored field held anything;
+ * - clearing a suggestion's body turns it back into a comment. This is the case an earlier version
+ *   of the note on `InlineCommentType` claimed the enum was protecting, wrongly — it is reachable,
+ *   and it is reachable through `suggested_code` alone.
  */
 @IntegrationTest
 class InlineCommentApiTest(@Autowired mockMvc: MockMvc) {
@@ -65,44 +70,51 @@ class InlineCommentApiTest(@Autowired mockMvc: MockMvc) {
         }
     }
 
-    private fun createBody(type: Any?, suggestedCode: String? = null) = api.body(
+    /** [extra] is for fields the DTO does not declare — see the `type` test below. */
+    private fun body(suggestedCode: String? = null, extra: Map<String, Any?> = emptyMap()) = api.body(
         buildMap<String, Any?> {
             put("line_start", 3)
             put("line_end", 3)
             put("code", "print(a + b)")
             put("text_md", "Think about `a` and `b` both being 0.")
-            put("type", type)
             if (suggestedCode != null) put("suggested_code", suggestedCode)
+            putAll(extra)
         }
     )
 
-    private fun post(type: Any?, suggestedCode: String? = null) = api.post(
+    private fun post(suggestedCode: String? = null, extra: Map<String, Any?> = emptyMap()) = api.post(
         "/v2/teacher/courses/$courseId/exercises/$courseExId/submissions/$submissionId/inline-comments",
-        createBody(type, suggestedCode),
+        body(suggestedCode, extra),
         Auth.asTeacher(teacher),
     )
 
-    // `orderBy` because the assertions below compare against an ordered list, and `selectAll()`
-    // promises no order at all — a plan change would flip two rows and read as a defect.
-    private fun storedTypes(): List<String> = transaction {
+    private fun put(commentId: String, suggestedCode: String? = null) = api.put(
+        "/v2/teacher/courses/$courseId/exercises/$courseExId/submissions/$submissionId/inline-comments/$commentId",
+        body(suggestedCode),
+        Auth.asTeacher(teacher),
+    )
+
+    // `orderBy` because the assertions compare against an ordered list, and `selectAll()` promises
+    // no order at all — a plan change would flip two rows and read as a defect.
+    private fun storedSuggestions(): List<String?> = transaction {
         TeacherInlineComment.selectAll()
             .orderBy(TeacherInlineComment.id, SortOrder.ASC)
-            .map { it[TeacherInlineComment.type].name }
+            .map { it[TeacherInlineComment.suggestedCode] }
     }
 
     @Test
-    fun `a comment keeps its type through the teacher's read and the student's`() {
-        val comment = post("COMMENT")
+    fun `a comment and a suggestion survive the teacher's read and the student's`() {
+        val comment = post()
         assertEquals(201, comment.status) { comment.body }
-        assertEquals("COMMENT", comment.field("type"))
+        assertNull(comment.nullableField("suggested_code"))
 
-        val suggestion = post("SUGGESTION", suggestedCode = "print(a + b + 1)")
+        val suggestion = post(suggestedCode = "print(a + b + 1)")
         assertEquals(201, suggestion.status) { suggestion.body }
-        assertEquals("SUGGESTION", suggestion.field("type"))
+        assertEquals("print(a + b + 1)", suggestion.nullableField("suggested_code"))
 
         // Both reads go through selectInlineComments, so this is one code path seen from two roles —
-        // but a student read that 500s on the column is the failure this fix could plausibly have
-        // introduced, and it would be invisible from the teacher side.
+        // but a student read that fails on the column is invisible from the teacher side, and this
+        // is a column the previous commit changed the type of.
         val asTeacher = api.get(
             "/v2/teacher/courses/$courseId/exercises/$courseExId/students/$student/inline-comments",
             Auth.asTeacher(teacher),
@@ -114,32 +126,95 @@ class InlineCommentApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(200, asTeacher.status) { asTeacher.body }
         assertEquals(200, asStudent.status) { asStudent.body }
 
-        // Asserting on the *order* is only legitimate because `selectInlineComments` now breaks the
+        // Asserting on the *order* is only legitimate because `selectInlineComments` breaks the
         // `created_at` tie with the id. Before that, two POSTs landing in the same millisecond
-        // decided whether this test passed — EZ-1763's shape again, found by reviewing this fix.
-        val expected = listOf("COMMENT", "SUGGESTION")
-        assertEquals(expected, asTeacher.elements("inline_comments").map { it.get("type").asString() })
-        assertEquals(expected, asStudent.elements("inline_comments").map { it.get("type").asString() })
-        assertEquals(expected, storedTypes())
+        // decided whether this test passed — EZ-1763's shape again, found by reviewing this work.
+        val expected = listOf(null, "print(a + b + 1)")
+        assertEquals(expected, asTeacher.elements("inline_comments").map { it.nullableText("suggested_code") })
+        assertEquals(expected, asStudent.elements("inline_comments").map { it.nullableText("suggested_code") })
+        assertEquals(expected, storedSuggestions())
     }
 
     @Test
-    fun `an update can turn a comment into a suggestion`() {
-        val created = post("COMMENT")
+    fun `the response carries no type field at all`() {
+        val created = post(suggestedCode = "print(a + b)")
+
+        // The status assertions are not ceremony. Without them both checks below pass over a dead
+        // endpoint: a 400 leaves an error body with no `type` in it, and a 403 on the read leaves an
+        // empty element list that satisfies `all {}` vacuously. Caught in review, and it is the
+        // failure family this log has a whole section about — write the positive case in.
+        assertEquals(201, created.status) { created.body }
+        assertNull(created.jsonOrNull?.get("type")) { "`type` is back on the response: ${created.body}" }
+
+        val read = api.get(
+            "/v2/student/courses/$courseId/exercises/$courseExId/inline-comments",
+            Auth.asStudent(student),
+        )
+        assertEquals(200, read.status) { read.body }
+
+        val comments = read.elements("inline_comments")
+        assertEquals(1, comments.size) { "Nothing to check `type`'s absence on: ${read.body}" }
+        assertTrue(comments.all { it.get("type") == null }) { "`type` is back on the read path: ${read.body}" }
+    }
+
+    @Test
+    fun `an update adds a suggestion body, and clearing it makes the comment plain again`() {
+        val created = post()
         val commentId = created.field("id")
         assertNotNull(commentId) { "Could not create the comment: ${created.body}" }
 
-        val updated = api.put(
-            "/v2/teacher/courses/$courseId/exercises/$courseExId/submissions/$submissionId/inline-comments/$commentId",
-            createBody("SUGGESTION", suggestedCode = "print(a + b)"),
-            Auth.asTeacher(teacher),
-        )
-
-        assertEquals(200, updated.status) { updated.body }
-        assertEquals("SUGGESTION", updated.field("type"))
+        val withSuggestion = put(commentId!!, suggestedCode = "print(a + b)")
+        assertEquals(200, withSuggestion.status) { withSuggestion.body }
+        assertEquals("print(a + b)", withSuggestion.nullableField("suggested_code"))
         // The response is built from the request rather than re-read from the row, so asserting on
         // the response alone would pass even if the update wrote nothing.
-        assertEquals(listOf("SUGGESTION"), storedTypes())
+        assertEquals(listOf("print(a + b)"), storedSuggestions())
+
+        // Omitting the field is how the client says "no longer a suggestion" — it never sends an
+        // empty string. With `type` gone this is the whole of that transition, so it is the one
+        // update worth pinning.
+        val cleared = put(commentId)
+        assertEquals(200, cleared.status) { cleared.body }
+        assertNull(cleared.nullableField("suggested_code"))
+        assertEquals(listOf<String?>(null), storedSuggestions())
+    }
+
+    @Test
+    fun `an empty suggested_code is stored as no suggestion at all`() {
+        // The third state. `suggested_code IS NOT NULL` is now the definition of a suggestion, so an
+        // empty string stored as-is would be a suggestion by that rule and a plain comment to every
+        // render site in the app — one row with two answers, which is what removing `type` was for.
+        // The client cannot send it today; that is not a reason for the API to accept it.
+        val created = post(suggestedCode = "")
+        assertEquals(201, created.status) { created.body }
+        assertNull(created.nullableField("suggested_code")) { "An empty suggestion came back: ${created.body}" }
+        assertEquals(listOf<String?>(null), storedSuggestions())
+
+        // And on the way through an update, which is the path that would let a saved suggestion decay
+        // into the third state rather than back into a comment.
+        val updated = api.put(
+            "/v2/teacher/courses/$courseId/exercises/$courseExId/submissions/$submissionId/inline-comments/${created.field("id")}",
+            body(suggestedCode = ""),
+            Auth.asTeacher(teacher),
+        )
+        assertEquals(200, updated.status) { updated.body }
+        assertNull(updated.nullableField("suggested_code"))
+        assertEquals(listOf<String?>(null), storedSuggestions())
+    }
+
+    @Test
+    fun `a client still sending the removed type field is unaffected`() {
+        // `FAIL_ON_UNKNOWN_PROPERTIES` is off, so this is a 201 rather than a 400 — deliberately.
+        // `type` was derived from `suggested_code` on the client, so a request carrying both cannot
+        // lose anything by having one ignored, which is why it is not on the
+        // `rejectLegacyContentFields` list next door. If that ever stops being true, this test says
+        // so by turning red rather than by a teacher's suggestion quietly becoming a comment.
+        val resp = post(suggestedCode = "print(a + b)", extra = mapOf("type" to "suggestion"))
+
+        assertEquals(201, resp.status) { resp.body }
+        assertEquals("print(a + b)", resp.nullableField("suggested_code"))
+        assertNull(resp.jsonOrNull?.get("type"))
+        assertEquals(listOf("print(a + b)"), storedSuggestions())
     }
 
     /*
@@ -157,57 +232,4 @@ class InlineCommentApiTest(@Autowired mockMvc: MockMvc) {
      * whatever the plan produces, and a plan cannot be made to misbehave on demand from here. The
      * ordering is still worth making total — see the comment at the query.
      */
-
-    @Test
-    fun `a type outside the enum is refused, and nothing is stored`() {
-        val resp = post("banana")
-
-        assertEquals(400, resp.status) { resp.body }
-        assertEquals("INVALID_PARAMETER_VALUE", resp.errorCode)
-
-        // The accepted values have to reach the caller. Jackson's own message carries them, which is
-        // why the handler passes originalMessage through rather than replacing it with something
-        // tidier — asserting on the two names rather than on the wording, so a Jackson upgrade that
-        // rephrases the sentence does not fail this.
-        val msg = resp.jsonOrNull?.get("log_msg")?.asString().orEmpty()
-        assertTrue(msg.contains("COMMENT") && msg.contains("SUGGESTION")) {
-            "The 400 did not name the accepted values, so a client cannot tell what to send: $msg"
-        }
-
-        assertTrue(storedTypes().isEmpty()) { "A refused request still wrote a row: ${storedTypes()}" }
-    }
-
-    @Test
-    fun `the old lowercase spelling is refused rather than quietly accepted`() {
-        // `comment` and `suggestion` are exactly what every client sent before EZ-1777, so refusing
-        // them is a decision worth pinning rather than an accident.
-        //
-        // Note what the decision is *not* about: Jackson's ACCEPT_CASE_INSENSITIVE_ENUMS would map
-        // `comment` to COMMENT and Exposed would still write `COMMENT`, so leniency here could not
-        // have put two spellings in the column. The reasons are that the feature is a MapperFeature
-        // — global, so it would loosen all 32 enum-typed fields on this API to buy one field a
-        // migration window — and that the window it buys is a client this repo replaced in the same
-        // commit, on a version that has not shipped.
-        //
-        // The cost, said out loud: core and web are separate artifacts, so between the two deploys a
-        // teacher holding the previous bundle gets a 400 where a save used to work. On dev that is
-        // the minute between two autodeploys of the same commit; in production it is nothing at all,
-        // because teacher_inline_comment does not exist in the released schema.
-        listOf("comment", "suggestion", "Comment").forEach { spelling ->
-            val resp = post(spelling)
-            assertEquals(400, resp.status) { "'$spelling' was accepted: ${resp.body}" }
-        }
-        assertTrue(storedTypes().isEmpty()) { "One of the lowercase spellings wrote a row." }
-    }
-
-    @Test
-    fun `a missing type is refused`() {
-        // `required = true` on the JsonProperty is not what enforces this — Jackson's Kotlin module
-        // refuses a null for a non-nullable constructor parameter, which is a different failure with
-        // a different message. Worth pinning either way: the field is the discriminator.
-        val resp = post(null)
-
-        assertEquals(400, resp.status) { resp.body }
-        assertTrue(storedTypes().isEmpty())
-    }
 }

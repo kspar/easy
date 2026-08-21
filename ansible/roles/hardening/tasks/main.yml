@@ -203,8 +203,24 @@
     - { direction: outgoing, policy: allow }
   notify: Reload ufw
 
-# Core (8080), postgres (5432) and the executor (5111) are not listed above on purpose: they bind
-# 127.0.0.1, so the firewall is their second line rather than their first.
+# Ports reachable only from a named source. Not the same thing as the list above and not a
+# convenience: the sources here are the whole grant, so a rule for an unauthenticated service is
+# doing the work no application-level check is doing for it.
+- name: Allow the scoped ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port | string }}"
+    proto: "{{ item.proto | default('tcp') }}"
+    from_ip: "{{ item.from_ip }}"
+    comment: "{{ item.comment }}"
+  loop: "{{ hardening_scoped_tcp_rules }}"
+  loop_control:
+    label: "{{ item.port }} from {{ item.from_ip }}"
+
+# Core (8080) and postgres (5432) are not listed above on purpose: they bind 127.0.0.1, so the
+# firewall is their second line rather than their first. The executor is only that on a host that
+# also runs core — where it is a separate machine it needs a scoped rule, because core reaches it
+# over the network and `callExecutor` sends no credentials.
 - name: Enable ufw
   community.general.ufw:
     state: enabled

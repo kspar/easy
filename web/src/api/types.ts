@@ -110,12 +110,6 @@ export interface TeacherActivityResp {
   teacher: TeacherResp
 }
 
-// Was `'comment' | 'suggestion'` until EZ-1777, which is the whole of that issue: core took the
-// field as free text and echoed it back, so this union was a promise core did not keep. It is
-// core's `InlineCommentType` enum now, hence the uppercase — the same spelling as every other enum
-// on this API, and the api-types-contract check compares the two value sets in both directions.
-export type InlineCommentType = 'COMMENT' | 'SUGGESTION'
-
 /** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/inline-comments -> inline_comments[] */
 /** @endpoint POST /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/inline-comments -> (root) */
 export interface InlineCommentResp {
@@ -130,7 +124,9 @@ export interface InlineCommentResp {
   code: string
   text_md: string
   text_html: string
-  type: InlineCommentType
+  // `suggested_code` is the discriminator: present means a suggestion, absent means a plain
+  // comment. There was a `type: 'comment' | 'suggestion'` here too, restating it — core accepted
+  // any string in that field, and EZ-1777 ended by removing it rather than validating it.
   suggested_code?: string
 }
 

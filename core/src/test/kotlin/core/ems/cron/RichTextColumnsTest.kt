@@ -116,7 +116,6 @@ class RichTextColumnsTest {
         AutogradeActivity.feedback to "grader output, never rendered",
         TeacherInlineComment.code to "solution code, never rendered",
         TeacherInlineComment.suggestedCode to "solution code, never rendered",
-        TeacherInlineComment.type to "enum stored as text",
         Exercise.anonymousAutoassessTemplate to "grading template, never rendered",
         AutoExercise.gradingScript to "grading script, never rendered",
         Asset.fileName to "grading asset name",

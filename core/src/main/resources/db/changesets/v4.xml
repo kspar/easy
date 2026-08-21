@@ -446,4 +446,29 @@
         </sql>
     </changeSet>
 
+    <changeSet id="210826-4" author="kspar">
+        <comment>
+            EZ-1777, and the answer 210826-3 above was one step short of. That changeset normalised
+            teacher_inline_comment.type into an enum's two spellings; this one deletes the column,
+            because the field was a pure function of another field in the same row.
+
+            `AnnotatedCodeEditor.tsx` computed it as `suggestedCode ? 'suggestion' : 'comment'` on
+            every save and nothing ever read it back — not core, not the app. So 'suggestion' meant
+            exactly `suggested_code IS NOT NULL`, restated in a second column that could disagree
+            with the first. Validating it made the two agree; dropping it makes disagreement
+            unrepresentable, which is the stronger of the two fixes and was option 3 on the issue.
+
+            210826-3 stays in the changelog even though it is now pointless. Deleting an applied
+            changeset does not un-apply it — it just means the changelog no longer describes what
+            environments actually ran, and ChangelogIntegrityTest fails on exactly that. A vestigial
+            changeset with a comment explaining itself is the cheaper outcome.
+
+            No data is lost that is not derivable: every row's `type` was `suggested_code`'s presence
+            spelled differently. Production has neither the column nor a row in this table — it does
+            not exist in the released schema — so this is a dev and laptop change only.
+        </comment>
+
+        <dropColumn tableName="teacher_inline_comment" columnName="type"/>
+    </changeSet>
+
 </databaseChangeLog>

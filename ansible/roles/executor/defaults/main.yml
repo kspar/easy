@@ -75,6 +75,16 @@ executor_dockerfile_src: "{{ playbook_dir }}/../doc/aae/dockerfiles"
 
 # The row core looks up to find this executor. Name is what shows up on the About page's version
 # list (EZ-1709), so it should say which host it is.
+# Where core and its database are. Defaults to this host, which is dev: one VM runs the executor,
+# core and postgres, so the rows this role writes are a local `psql` away and the core it restarts
+# afterwards is the one it is already logged in to.
+#
+# Production is the case this variable exists for — the executor is its own machine there, so both
+# of those are somebody else's host and the tasks that touch them are delegated to it. Naming an
+# inventory host here is the whole change; nothing else in the role cares.
+executor_core_host: "{{ inventory_hostname }}"
+executor_core_service: easy-core
+
 executor_registered_name: dev-executor
 executor_db_max_load: 10
 

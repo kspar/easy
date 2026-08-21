@@ -8,7 +8,6 @@ import type {
   ExerciseDetails,
   GroupResp,
   InlineCommentResp,
-  InlineCommentType,
   MoodlePropsResp,
   ParticipantsResp,
   SimilarityResp,
@@ -624,7 +623,6 @@ export function useCreateInlineComment(
       line_end: number
       code: string
       text_md: string
-      type: InlineCommentType
       suggested_code?: string
       notify_student?: boolean
     }) =>
@@ -654,7 +652,6 @@ export function useUpdateInlineComment(
       line_end: number
       code: string
       text_md: string
-      type: InlineCommentType
       suggested_code?: string
       notify_student?: boolean
     }) =>

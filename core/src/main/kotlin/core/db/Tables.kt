@@ -243,6 +243,15 @@ object TeacherActivity : LongIdTable("teacher_activity") {
     val feedbackHtml = text("feedback_html").nullable()
 }
 
+/**
+ * A teacher's comment on one line range of a submission.
+ *
+ * There was a `type` column here, `'comment'` or `'suggestion'`, dropped in changeset `210826-4`.
+ * [suggestedCode] is the discriminator and always was: the editor derived `type` from whether a
+ * suggestion body was present, on every save, and nothing ever read it back. See EZ-1777 — which
+ * first made it an enum, because a discriminator nothing validates is not one, and then established
+ * that it was not a discriminator at all.
+ */
 object TeacherInlineComment : LongIdTable("teacher_inline_comment") {
     val courseExercise = reference("course_exercise_id", CourseExercise)
     val submission = reference("submission_id", Submission)
@@ -254,7 +263,6 @@ object TeacherInlineComment : LongIdTable("teacher_inline_comment") {
     val code = text("code")
     val textMd = text("text_md")
     val textHtml = text("text_html")
-    val type = enumerationByName("type", 20, InlineCommentType::class)
     val suggestedCode = text("suggested_code").nullable()
 }
 
