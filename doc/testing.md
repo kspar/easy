@@ -32,7 +32,7 @@ and every count in here turned out to be wrong.
 Counted, not estimated — and this time with the commands, because hand-maintained numbers going
 stale is exactly what happened to the first version of this table.
 
-**As of 2026-08-21, at master `93dd214b`:**
+**As of 2026-08-21, at master `0c4028e6`:**
 
 | | Size | Tests |
 | --- | --- | --- |
@@ -40,11 +40,23 @@ stale is exactly what happened to the first version of this table.
 | **web** | 122 `.ts`/`.tsx` files | 14 unit files (**191 tests**), 37 browser specs (36 in CI, **778 checks**) |
 | **tsl** | the TSL compiler | 3 test files, **81 tests** |
 | **tsl-common** | the shared TSL model | 1 test file, **30 tests** |
-| **aae** | the executor | 6 test files, **113 tests** (91 without tiivad installed, when 22 skip) |
+| **aae** | the executor | 6 test files, **119 tests** (89 without tiivad installed, when 30 skip) |
 | **bin** | `pins.py`, the grading-library pins parser | 1 test file, **74 tests** |
 | **executor_images** | the grading-image reconciler | 1 test file, **19 tests** |
 
+**One command runs all of this:** `bin/testcounts` prints the sizes instantly, and
+`bin/testcounts --run` also runs every suite and reports what each one says. It exists because
+printing the commands below — which this document did, deliberately, for exactly this reason —
+**still went stale three times in two days**: printing a command still asks a human to run six
+of them, sum a seventh, and do it at the commit the reader is at. It is not a CI gate, because
+two of these figures are environment-dependent (see aae below) and a gate that fires on
+non-defects gets muted. The commands are kept here so the script is checkable rather than
+trusted.
+
 ```sh
+bin/testcounts --run
+
+# or, one at a time:
 grep -rl '@RestController' core/src/main/kotlin | wc -l          # 118
 find core/src/test/kotlin -name '*.kt' | wc -l                   # 36
 find web/src -name '*.ts' -o -name '*.tsx' | wc -l               # 122
@@ -54,7 +66,7 @@ ls web/tests/unit/*.test.mjs | wc -l                             # 14
 ./gradlew :core:test                                             # 194
 cd web && npm run test:unit                                      # 191
 cd web && npx playwright test                                     # 778 checks / 36 specs
-python -m pytest aae/tests -q                                     # 113
+python -m pytest aae/tests -q                                     # 119, or 89 without tiivad
 python -m pytest bin/tests -q                                     # 74
 python -m pytest ansible/roles/executor_images/tests -q           # 19
 ```
@@ -70,16 +82,28 @@ reconciler that puts an image live on a host — and most of what they assert is
 that may not merge itself, an image that must not become live. CI runs them in the `Executor (Python)`
 job, which is why that job's name now understates it.
 
-**aae has two numbers.** 22 of its tests exercise the real `tiivad` package and skip when it is
-absent, so a bare `pytest aae/tests` reports 91 and a full run reports 113. CI installs tiivad at
-the pinned version first, so CI always sees 113; a laptop usually sees 91 and is not broken.
+**aae has two numbers.** 30 of its tests exercise the real `tiivad` package and skip when it is
+absent, so a bare `pytest aae/tests` reports 89 and a full run reports 119. CI installs tiivad at
+the pinned version first, so CI always sees the larger figure; a laptop usually sees the smaller one
+and is not broken.
+
+Both halves of that split move as tests are added, and this sentence has already been wrong once —
+it said 22/91/113, measured a few commits earlier. `bin/testcounts --run` derives the split from
+which tests carry `@needs_tiivad` and prints it, so the numbers here are a snapshot and the script is
+the answer.
 
 The endpoint figure has no command, on purpose: it comes from `EndpointInventory`, which reads
 Spring's resolved handler patterns. Grepping `@(Get|Post|…)Mapping` gives 123, which is a different
 number — a mapping declaring two paths is one annotation and two endpoints. When these disagree,
 the inventory is right and the grep is a coincidence.
 
-189 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
+The endpoint figure is the one number with no command, on purpose: it comes from
+`EndpointInventory`, which reads Spring's resolved handler patterns. Grepping
+`@(Get|Post|…)Mapping` gives 123, which is a different number — a mapping declaring two paths is one
+annotation and two endpoints. When these disagree, the inventory is right and the grep is a
+coincidence.
+
+194 is what the runner reports, not a count of `@Test`. The two differ now that some tests are
 parameterised — `StorageServiceContractTest` is 9 annotations and 15 runs, over two backends — and
 counting annotations would have understated the suite while *looking* like a measurement. Read it
 off the last line of `./gradlew :core:test` instead. It takes about 28 seconds, measured over three
@@ -98,7 +122,7 @@ unit      191 tests across 14 files — the markdown commands (11,903 property c
           resolution, the grade table, api/client, i18n parity, localStorage, tslModel, the
           api/types.ts contract, the a11y gate's own arithmetic, the flake reporter's, and the
           suite's bookkeeping
-browser   767 checks across the 36 specs CI runs (a 37th needs a real core)
+browser   778 checks across the 36 specs CI runs (a 37th needs a real core)
 ```
 
 The browser number is now **measured rather than estimated** — it is the sum of
@@ -125,7 +149,7 @@ page in the app.
 
 ### The backend blocker is gone
 
-**All 189 core tests now run, in CI and on a laptop, with no setup** — 32 when this started, of which 25 ran. EZ-1715 landed on 2026-08-15,
+**All 194 core tests now run, in CI and on a laptop, with no setup** — 32 when this started, of which 25 ran. EZ-1715 landed on 2026-08-15,
 but not as written: Testcontainers rather than a postgres service container, because a service
 container fixes CI and leaves the laptop exactly as broken as it was — which is *why* the
 database-backed tests had stopped running in both places. `DEVELOPMENT.md` §5 has the mechanics.

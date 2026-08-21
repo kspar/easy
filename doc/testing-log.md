@@ -352,6 +352,39 @@ four lines of inline `node -e` and could not be unit-tested; moved to
 `web/tests/support/flake-report.mjs` it has nine tests, one of which is precisely the case it used to
 get wrong.
 
+### Printing the command was not enough
+
+`doc/testing.md`'s own opening argument is that hand-maintained counts go stale, and its fix was to
+print the shell command beside each figure. That fix **failed three times in two days.** Not because
+anyone ignored it: printing a command still asks a human to run six of them, sum a seventh, and do it
+at the same commit the reader will be at. The repo moved in between, every time.
+
+The instructive one is the third. A memory note recorded core 190, aae 113 and two test suites; I
+measured at `b3607bf8`, found core 189, aae 91 and neither suite present, and concluded the note was
+wrong. It was not — EZ-1781 landed those suites in `a28c4573`, ten commits ahead of where I was
+looking. **Both readings were correct at their own commit, and neither carried one**, which is what
+made them look like a contradiction instead of a sequence.
+
+So the rule is not "measure" — it was already "measure". It is:
+
+- **Record the commit beside the number.** A count without a revision is not a measurement, it is a
+  rumour. This applies to notes and commit messages as much as to documents.
+- **Make the measurement one command, not six.** `bin/testcounts` prints every figure, and
+  `--run` also runs each suite and reports what it says. The cost of refreshing the document is now
+  lower than the cost of arguing about whether it is current.
+
+It is deliberately **not** a gate. Two figures are environment-dependent — `aae` reports 119 with
+`tiivad` installed and fewer without, and the browser suite skips a spec that needs a real core — so
+equality would fail for reasons that are not defects. A gate that fires on non-defects gets muted,
+and then it is worse than the prose it replaced.
+
+Writing it also reproduced two traps this log already documents, which is its own small argument for
+tools over instructions. The JVM line came back **empty** because Gradle held `:tsl:test` UP-TO-DATE
+and printed no summary at all — the staleness trap from `bin/mutate.sh`, arriving by a different
+door, and silent in the reassuring direction. And two Python suites reported "No module named
+pytest" because the system interpreter is not the one CI uses. Both were visible only because the
+script prints every line rather than the one it expected.
+
 ### About hand-maintained numbers
 
 **Five times in this programme a count in `doc/testing.md` was wrong because I typed it instead of
