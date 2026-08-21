@@ -16,6 +16,51 @@ specific exercise is not — ask first.
 
 Only `out/summary.txt` is written to be shareable.
 
+## The fixture corpus, and what the 2026-08-21 rehearsal established
+
+`fixtures/` holds seven hand-written AsciiDoc cases, one per documented trap, and
+`build-corpus.py` turns them into an export JSONL that `dry_run.py` accepts. **It needs no database
+and no production content**, so the converter can be exercised at any commit by anyone:
+
+```sh
+cd fixtures && python3 build-corpus.py > corpus.jsonl && cd ..
+python3 dry_run.py --export fixtures/corpus.jsonl --out /tmp/rehearsal --core http://127.0.0.1:8099
+```
+
+Result at `6cde85c6` with the pinned images: **6 of 7 clean**, the bare-ampersand repair firing on
+the image case, both `[%collapsible]` blocks surviving as `<details>`, and the one nested inside a
+list item keeping its four-space indent so the list does not end early. Only the maths case flags.
+
+**`build-corpus.py` has to emulate the old renderer, and the first attempt at it was wrong in an
+instructive way.** Production's `text_html` came from core's `AdocService` (`adoc_service.kt` at
+`c4550ede`, the commit production still runs), which registers an Asciidoctor **postprocessor** —
+`EasyCodeProcessor` — that regexes the *rendered HTML*, turning `$run[X]` into
+`<span class="codehl run">X</span>`. Setting `-a run=…` does not reproduce that, because the
+attributes are the older `{run}`-reference mechanism. Render the fixtures without the postprocessor
+and the literal `$run[…]` lands in the HTML, the converter strips it exactly as it should, and the
+comparison reports a difference **that does not exist in production** — where the marker is a
+`codehl` span whose inner text `visible_text` already keeps. Note `in` maps to class `input`.
+
+That is worth knowing beyond the fixture: it is the shape of every false alarm this dry run can
+produce. If a whole class of exercises flags, suspect the comparison's model of what production
+stores before suspecting the converter.
+
+### The one real finding: maths with braces is misfiled
+
+`math_delimiters_only` strips math delimiters and whitespace, but **not pandoc's LaTeX brace
+normalisation**. Asciidoctor emits `\(x^2 + y^2\)`; pandoc emits `$ x^{2} + y^{2} $`. The formula
+is identical and only the notation changed, but the classifier compares `x^2+y^2` against
+`x^{2}+y^{2}`, so the exercise is labelled "text differs after round-trip" rather than "math
+delimiters only".
+
+It matters because of the decision below: maths **is** written, and a re-braced maths exercise
+would instead be held for hand review it does not need. The 2026-08-01 run classified 48 as
+delimiters-only, so the common shape is caught — but "maths, plus one other difference" is already
+3 of the 20 held exercises, which is what this would look like.
+
+**So before hand-reviewing the flagged list on production, check how much of it differs only by
+`^{n}` / `_{n}` bracing.** Widening the classifier is a smaller job than reviewing them.
+
 ## Running a dry run
 
 Nothing writes to any database. The dry run converts, re-renders and compares, then reports.
@@ -30,7 +75,7 @@ psql -h <host> -U <user> -d <db> -v out=/tmp/export.jsonl -f export.sql
 Markdown exactly as production will, since it uses core's own `MarkdownService`:
 
 ```sh
-java -jar core/build/libs/core-1.jar --server.port=8099 --server.address=127.0.0.1 \
+java -jar core/build/libs/core-4.0.jar --server.port=8099 --server.address=127.0.0.1 \
      --easy.core.auth-enabled=false --easy.core.cors.allowed-origins=
 ```
 

@@ -1,0 +1,10 @@
+Vaata näidet.
+
+.Näide faili `nimed.txt` sisust
+[%collapsible]
+====
+Mari
+Jüri
+====
+
+Edasi tavaline tekst.

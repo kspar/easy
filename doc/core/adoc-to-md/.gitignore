@@ -1,0 +1,15 @@
+# Everything this directory produces is production exercise text. The repo is public.
+#
+# Only the scripts, the SQL, this file, the README and `fixtures/` (synthetic, written by hand)
+# belong in git. `doc/core/tsl-migration/.gitignore` is the same rule for the same reason.
+#
+# The README tells you to export to /tmp, which is outside the repo — but "outside the repo" is a
+# habit and this is a rule, and the two failure modes are not symmetrical: forgetting the habit
+# publishes a thousand exercises.
+*.jsonl
+!fixtures/*.adoc
+out/
+work/
+flagged/
+payload.jsonl
+receipt.txt

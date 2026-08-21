@@ -1,0 +1,1 @@
+$run[Käivita see programm] ja vaata tulemust.

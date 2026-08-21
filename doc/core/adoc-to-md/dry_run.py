@@ -34,8 +34,17 @@ import urllib.error
 import urllib.request
 from collections import Counter
 
-ASCIIDOCTOR_IMAGE = "asciidoctor/docker-asciidoctor"
-PANDOC_IMAGE = "pandoc/core"
+# Pinned by digest, not by tag, and this is load-bearing rather than tidiness. The conversion is
+# only reproducible if the converter is: on 2026-08-11 the bare-ampersand repair fired on 18 docbook
+# files where the 2026-08-01 run against the same content had needed it on 97, because an unpinned
+# `latest` had started escaping more of them itself. Same inputs, same code, different answer — which
+# means a rehearsal proves nothing about the production run unless both use these exact bytes.
+#
+# Captured 2026-08-21: Asciidoctor 2.0.26, pandoc 3.10. To move them deliberately, pull the new tag,
+# read the digest out of `docker inspect --format '{{index .RepoDigests 0}}'`, put it here, and
+# re-run the dry run to see what the change does before it is anywhere near production.
+ASCIIDOCTOR_IMAGE = "asciidoctor/docker-asciidoctor@sha256:f90b2f0c1497bb0a4c4aa7d571de27becb8cdc2592b2b2aa851fcb8ac1e01f95"
+PANDOC_IMAGE = "pandoc/core@sha256:8d7467e8ee40b0365a344c3d41067d6d2349da52e9961e4229f331094806fb14"
 
 # Easy's own inline markup, consumed by the deleted EasyCodeProcessor. Highlighting only, and
 # nothing in web/ has styled it since the WUI was removed — so the text is kept, the marker

@@ -1,0 +1,3 @@
+Vaata joonist.
+
+image::https://courses.cs.ut.ee/file.php?action=download&upname=joonis.png[Joonis]

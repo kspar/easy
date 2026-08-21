@@ -1,0 +1,6 @@
+Kirjuta funktsioon `liida`, mis liidab kaks arvu.
+
+* esimene punkt
+* teine punkt
+
+Tulemus peab olema *täisarv*.

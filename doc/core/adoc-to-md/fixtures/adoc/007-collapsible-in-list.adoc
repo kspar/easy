@@ -1,0 +1,9 @@
+. Esimene samm
+. Teine samm
++
+.Vihje
+[%collapsible]
+====
+Kasuta tsüklit.
+====
+. Kolmas samm

@@ -112,6 +112,42 @@ makes the after number mean anything. Against the 2026-08-12 dev corpus:
 ./gradlew -q :tsl:compileSpecTree -PspecTree=doc/core/tsl-migration/migrated/exercises   # 721 OK, 0 failed
 ```
 
+### Expect a non-zero exit even when nothing failed
+
+**`failed: 0` and exit 1 are both correct, and the reason is one pre-existing broken exercise.**
+Re-rehearsed at `6cde85c6` on 2026-08-21 against the same dev corpus:
+
+| | before | after migration |
+|---|---|---|
+| compiled OK | 532 | **721** |
+| failed | 189 | **0** |
+| **not Python** | **1** | **1** |
+
+The task counts "compiled to non-Python" separately from "would not compile" and then throws on the
+sum, so the migrated tree reports `failed: 0` and still exits 1. Read all three rows, not the middle
+one.
+
+The exercise is **587**, and it is not the migration's doing. One of its `function_execution_test`
+arguments is a string holding an **unterminated Python list literal** — it opens `[`, never closes
+it, and ends on a trailing comma. Arguments are interpolated into the generated script raw and by
+design, so that `5` becomes an int and `[1, 2]` becomes a list; an unbalanced bracket therefore
+propagates straight into the emitted Python and invalidates the whole file.
+
+Three things follow, and the third is the one worth acting on:
+
+- **The migration neither causes nor fixes it.** `function_execution_test` is a kept type, so the
+  spec is identical either side — which is exactly why the count is 1 in both columns.
+- **It is live on production.** The spec is byte-identical (1835 chars) in the 2026-08-07 production
+  export and the dev one, so this is not an artefact of the anonymised copy.
+- **Every submission to 587 has been failing at grading time** with a Python syntax error for as long
+  as that argument has been stored. The compile gate did not create the problem, it is the first
+  thing that ever looked. Fixing it means correcting the stored argument, which is a content edit and
+  not part of this migration — so do not let it block the run, and do not "fix" it by hand on the
+  server.
+
+So on the day: expect `not Python: 1`, expect exit 1, and check that the named id is 587 and nothing
+else. A second id in that row is new and is worth stopping for.
+
 ## 6. Dry run
 
 ```sh
