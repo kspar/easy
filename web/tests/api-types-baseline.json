@@ -3,13 +3,7 @@
   "_waivers": "Every waiver needs a fingerprint (rule|interface|property), a note, and an issue id — a waiver without them is rejected at load, because 'we decided this is fine' and 'nobody looked' must not be the same state. A waiver that stops firing FAILS the test: delete it when the fix lands, rather than leaving a permission behind that silently re-permits the problem if it returns.",
   "_unannotated": "Interfaces in web/src/api that carry no @endpoint or @requestBody line, so nothing compares them to the wire. This list can only shrink: a new unannotated interface fails, and so does an entry that is now annotated, renamed or deleted.",
   "_limitation": "Only `interface` declarations are seen. Request bodies declared inline in a mutationFn signature are neither checked nor listed below — invisible rather than merely uncovered. ~40 mutating endpoints, one @requestBody annotation. EZ-1779.",
-  "waivers": [
-    {
-      "fingerprint": "ts-narrows-wire-string|InlineCommentResp|type",
-      "note": "core stores inline-comment `type` as unvalidated free text and echoes it back, so the client's 'comment' | 'suggestion' union is a promise core does not keep. Inert today: web writes the field and never reads it — the rendering branches on suggested_code. Waived rather than widened because the fix belongs in core.",
-      "issue": "EZ-1777"
-    }
-  ],
+  "waivers": [],
   "unannotated": [
     "anonymousExercise.ts:AnonymousExerciseDetails",
     "anonymousExercise.ts:AnonymousAutoassessResult",

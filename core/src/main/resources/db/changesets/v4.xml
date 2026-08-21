@@ -398,4 +398,52 @@
                               columnDataType="timestamp without time zone"/>
     </changeSet>
 
+    <changeSet id="210826-3" author="kspar">
+        <comment>
+            EZ-1777. teacher_inline_comment.type becomes the InlineCommentType enum in Exposed, so
+            the values have to be the enum's own spelling — uppercase, like grader_type and
+            auto_grade_status, which are the same shape: a text column read through
+            enumerationByName. The API sent and stored lowercase, because it was free text and the
+            client picked the spelling.
+
+            Not measured on dev, unlike 210826-1 and -2, and that is a deliberate difference rather
+            than a shortcut: those two were deciding *whether* a backfill was needed, and the answer
+            was in the data. Here the update is correct for every possible value, so a count would
+            not change a character of it. In production it will touch nothing at all —
+            teacher_inline_comment does not exist in the released schema, so on the v4.0 release the
+            createTable in 260225-2 and this run back to back against an empty table.
+
+            The third statement is the interesting one. Anything that is neither spelling is a value
+            no client ever sent and only the missing validation allowed, so there is nothing to
+            preserve — but it cannot stay, because a read would then fail on
+            InlineCommentType.valueOf. It is derived from suggested_code rather than defaulted to
+            COMMENT, because that is precisely the rule AnnotatedCodeEditor.tsx:331 uses to pick the
+            value in the first place, which makes it a reconstruction rather than a guess.
+
+            The first two are case-insensitive while the API is now strict — it refuses 'Comment' as
+            readily as 'banana'. That asymmetry is deliberate: what a client may send is a decision,
+            what is already in the column is a fact, and being forgiving about the fact costs
+            nothing here because `lower()` cannot map two distinct values onto one.
+
+            Dry-run against data rather than against the empty table :core:test builds, since a
+            migration only ever run against no rows has not been tested: 14 rows spanning both
+            spellings, mixed case, an empty string and a junk value came out 8 COMMENT / 6
+            SUGGESTION, nothing outside the enum, and every row carrying a suggestion body ending as
+            SUGGESTION. See doc/core/migration-dry-run.sql for the template.
+        </comment>
+
+        <sql>
+            UPDATE teacher_inline_comment SET type = 'COMMENT' WHERE lower(type) = 'comment';
+
+            UPDATE teacher_inline_comment SET type = 'SUGGESTION' WHERE lower(type) = 'suggestion';
+
+            UPDATE teacher_inline_comment
+            SET type = CASE
+                WHEN suggested_code IS NOT NULL AND suggested_code &lt;&gt; '' THEN 'SUGGESTION'
+                ELSE 'COMMENT'
+            END
+            WHERE type NOT IN ('COMMENT', 'SUGGESTION');
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>

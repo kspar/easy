@@ -397,10 +397,14 @@ ignores is normal, while one the app declares and core does not send is a live b
 rules states which direction it applies to, and severity follows from that rather than from how
 different the two sides look.
 
-Result: **one** finding, EZ-1777 — core stores inline-comment `type` as unvalidated free text and
-the client declares it as `'comment' | 'suggestion'`. Inert today, because nothing reads the field
-back, so it is a trap rather than a break. Waived in `web/tests/api-types-baseline.json`, which
-demands a note and an issue per waiver and fails when a waiver stops firing.
+Result: **one** finding, EZ-1777 — core stored inline-comment `type` as unvalidated free text while
+the client declared it as `'comment' | 'suggestion'`. Inert, because nothing reads the field back, so
+it was a trap rather than a break. **Fixed 2026-08-21**: `type` is core's `InlineCommentType` enum on
+both requests and the response, the wire values are `COMMENT`/`SUGGESTION` like every other enum on
+this API, and changeset `210826-3` normalises the rows written before that. The waiver in
+`web/tests/api-types-baseline.json` is gone, and had to be: that file fails when a waiver stops
+firing, so the exemption could not outlive the exemption. `waivers` is now empty, which is the
+mechanism working rather than a gap.
 
 **What it does not reach**: only `interface` declarations. Request bodies are mostly declared inline
 in a `mutationFn` signature, so of ~40 mutating endpoints exactly one carries a `@requestBody` line

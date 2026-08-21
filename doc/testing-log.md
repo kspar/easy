@@ -36,10 +36,11 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 23 | `<ul>`s whose direct children were `role="button"`, so assistive technology loses the item count or does not announce a list at all — the whole sidebar nav | `AppLayout.tsx` | axe, first run | fixed, EZ-1776 |
 | 24 | A link nested inside the sort button in every exercise column header: focus order, what is announced and what activation does are all browser-dependent. They were *already* two separate click targets — only the DOM nesting was wrong | `GradeTablePage.tsx` | axe, first run | fixed, EZ-1776 |
 | 25 | **MUI leaves `IconButton`, `TableSortLabel` and outlined `Chip` with no visual change at all when tabbed to** — computed background, outline and box-shadow byte-identical focused and unfocused. Their only feedback is the ripple, a click effect that plays once and fades, so a keyboard user who tabs and pauses has nothing on screen | `theme.ts` | the focus-ring rule, after three corrections to it | fixed, EZ-1776 |
-| 26 | Inline comment `type` is unvalidated free text in core (`text` column, no `@Pattern`, no enum, stored verbatim from the request) while the client declares it `'comment' \| 'suggestion'`. Inert today — web writes the field and never reads it back, branching on `suggested_code` instead — so it is a trap for the first reader rather than a live break | `TeacherInlineCommentCrud.kt`, `types.ts` | the `types.ts` contract check, its only surviving finding | EZ-1777 |
+| 26 | Inline comment `type` is unvalidated free text in core (`text` column, no `@Pattern`, no enum, stored verbatim from the request) while the client declares it `'comment' \| 'suggestion'`. Inert today — web writes the field and never reads it back, branching on `suggested_code` instead — so it is a trap for the first reader rather than a live break | `TeacherInlineCommentCrud.kt`, `types.ts` | the `types.ts` contract check, its only surviving finding | fixed, EZ-1777 |
 | 27 | `AccessChecksBuilder.testFalse()` — a `@Deprecated("For debugging only")` helper that **refuses all access**, with no callers, living inside the access-control builder. One forgotten line from 403-ing an endpoint. Deleted with the `or` combinator | `access_control_dsl.kt` | the coverage gate naming it as an uncovered line | EZ-1773 |
 | 28 | Unlinking a course from Moodle sets `moodle_short_name = null` and deletes nothing else, so every outstanding Moodle invitation stays live — and `join()` matches on invite id with **no predicate on the course still being linked**, so it still enrols. A teacher who unlinks to stop Moodle enrolment has not stopped it | `LinkCourseMoodle.kt`, `JoinMoodleLinkedCourseByInvite.kt` | asking how the client's `moodle_pending_students` partition is reachable at all | EZ-1780 |
 | 29 | `ConfirmDialog` wraps its message in a bare `<Typography>` (`<p>`), and the group-deletion confirmation passes a `<ul>` of affected students inside `<Box>`. Invalid nesting: React logs it, the browser closes the paragraph early, nothing fails | `ConfirmDialog.tsx` | a console error in the output of a *passing* spec | fixed, EZ-1766 |
+| 30 | `selectInlineComments` orders by `created_at` alone, which the controller stamps with `DateTime.now()` at millisecond resolution. Two inline comments saved in the same millisecond tie, and the order the client shows them in is then whatever the query plan produces. Third instance of the family that opened this table, and the cheapest — one tiebreaker | `TeacherInlineCommentCrud.kt` | reviewing the EZ-1777 fix, not by any failure | fixed, EZ-1777 |
 | 21 | One spec in the migration corpus compiles to a script with an unbalanced bracket — it would fail on the first submission. The tool that signed off the migration reported it as one of 721 successes | a live spec | `compileSpecTree` learning to parse its own output | EZ-1774 |
 
 Nothing new in production code came out of phase 7, which is itself worth recording: porting two
@@ -335,6 +336,77 @@ the issue id, and fails the day the finding stops firing.
 
 Same shape as `noDataAssertion(id, reason)` and the a11y baseline: **"we looked and decided this is
 fine" must be representable, and must not be spelled the same way as "nobody looked."**
+
+The waiver is gone now — EZ-1777 was fixed on 2026-08-21, `type` is a Kotlin enum on both requests
+and the response, and the mechanism worked as designed: deleting the entry was not optional, because
+a waiver that stops firing fails the test.
+
+### Closing a two-sided disagreement means picking a vocabulary, and the fixtures are data too
+
+Fixing EZ-1777 read like a three-file change: an enum in `Enums.kt`, the column through
+`enumerationByName`, the DTOs. It was seven, and the four extra ones are the interesting part.
+
+**The client's spelling was the wrong one.** Web sent `'comment'`/`'suggestion'`; every other enum on
+this API is on the wire in the Kotlin constant's own casing — `AUTO`, `COMPLETED`, `PRAWM`. So the
+vocabulary moved to the server's and `types.ts`, `exercises.ts` and `AnnotatedCodeEditor.tsx` moved
+with it in the same commit, with a test asserting the old spelling is now **refused** — an
+implementation that quietly accepted both would look identical from the outside.
+
+The first version of this paragraph justified that refusal by saying leniency would leave two
+spellings in the column, and **that was wrong**: `ACCEPT_CASE_INSENSITIVE_ENUMS` maps `comment` to
+`COMMENT` and Exposed writes the constant, so lenient input could not have reached the column at all.
+The review caught it. The real reasons are narrower and worth having straight — the feature is a
+global `MapperFeature`, so it would loosen every enum-typed field on the API to buy one field a
+migration window, and the window buys compatibility with a client replaced in the same commit on an
+unreleased version. **A decision defended by a wrong mechanism is worse than one defended by a thin
+reason, because nobody re-examines it.**
+
+**`testdata.xml` is data, and it had already run.** The seeded inline comments carried the lowercase
+values, so a fix that only touched code would have left every developer's database and dev itself
+serving rows core can no longer read. Editing those inserts is editing an *applied* changeset, which
+is the one failure this repo treats as worst — Liquibase then refuses to run and core does not start —
+so it needs `<validCheckSum>ANY</validCheckSum>` and a normalising `<sql>` changeset placed where it
+runs before the fixtures on a fresh database and after the existing rows on an old one. Neither of
+those is about inline comments. **A type-level fix to a stored value is a migration, and the
+migration's hardest question is usually where the old values live rather than what to do with them.**
+
+The one thing that did *not* need measuring was the row count, and it is worth saying why, because
+`210826-1` and `210826-2` a week earlier needed exactly that. Those two were deciding **whether** a
+backfill was required and the answer was in the data. This one rewrites every row it finds either
+way, so the count could not change a character of the changeset — and in production it will find
+nothing at all, the table being new in the unreleased v4.0.
+
+The **dry run** still mattered, for the reason two sections down: `:core:test` runs Liquibase against
+an empty table, so nothing there executes a single one of the three statements. Against 14 constructed
+rows — both spellings, mixed case, an empty string, a junk value, one already correct — it came out 8
+COMMENT / 6 SUGGESTION, nothing outside the enum, and every row carrying a suggestion body a
+SUGGESTION. Two things that only running it showed: `lower(type)` in the first statement quietly
+absorbs the mixed-case row, so the third never sees it; and the empty-string row with a suggestion
+body is reconstructed rather than defaulted, which is the whole argument for deriving from
+`suggested_code` instead of writing `ELSE 'COMMENT'`.
+
+**Another detector that could not fire — the family two sections up, arriving two days after the seven.**
+The review found the `created_at`-only ordering in `selectInlineComments` (defect 30), and the
+tiebreaker is a one-line fix. Pinning it was the problem. The test written for it inserted two rows
+sharing an instant, then UPDATEd the older one, on the theory that Postgres writes the new tuple later
+in the heap so a sequential scan would return them the wrong way round — and it **passed with the
+tiebreaker and without it**, carrying a comment that claimed the failing case had been checked. That
+section's own last instruction, "remove the fix and check the rule fires", is the only reason the
+comment is not in the repo.
+
+Deleted, and the absence is documented at the call site instead. The general point is not "test your
+tests" — it is that **a tie has no wrong answer you can demand.** Where the plan decides, a green test
+is evidence about this plan on this data on this Postgres, so the honest artefact is the fix plus a
+note saying nothing pins it. Compare EZ-1763, where the same defect class *was* testable: `DISTINCT
+ON` has to discard a row, so the wrong choice is observable, and a fixture with a deliberate tie flaked
+4 runs in 5. Here both rows come back either way and only their order differs.
+
+**And a smaller measured thing, in passing.** Rewriting that changeset's `<comment>` after it had been
+applied did *not* change its checksum — `ChangelogIntegrityTest` stayed green with the baseline
+untouched. Its own failure message said the opposite ("a comment … is still a new checksum"), so the
+message is now narrower and says which part was measured. Liquibase keeps `<comment>` in the changelog
+table's `COMMENTS` column rather than hashing it. A guard's advice is prose like any other and goes
+stale the same way; this one had been telling people to reach for `validCheckSum` they did not need.
 
 ### A fix can be present, correct, and still do nothing
 

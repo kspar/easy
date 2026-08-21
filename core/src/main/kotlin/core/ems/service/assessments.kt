@@ -41,7 +41,7 @@ data class InlineCommentResp(
     @get:JsonProperty("code") val code: String,
     @get:JsonProperty("text_md") val textMd: String,
     @get:JsonProperty("text_html") val textHtml: String,
-    @get:JsonProperty("type") val type: String,
+    @get:JsonProperty("type") val type: InlineCommentType,
     @get:JsonProperty("suggested_code") val suggestedCode: String?,
 )
 

@@ -210,7 +210,7 @@
       "teacher": { "kind": "object", "type": "core.ems.service.TeacherResp" },
       "text_html": { "kind": "string" },
       "text_md": { "kind": "string" },
-      "type": { "kind": "string" }
+      "type": { "kind": "enum", "values": ["COMMENT", "SUGGESTION"] }
     },
     "core.ems.service.LatestSubmissionResp": {
       "grade": { "kind": "object", "nullable": true, "type": "core.ems.service.GradeResp" },
@@ -841,7 +841,7 @@
       "notify_student": { "kind": "boolean" },
       "suggested_code": { "kind": "string", "nullable": true },
       "text_md": { "kind": "string" },
-      "type": { "kind": "string" }
+      "type": { "kind": "enum", "values": ["COMMENT", "SUGGESTION"] }
     },
     "core.ems.service.exercise.TeacherInlineCommentCrudController.InlineCommentsResp": {
       "inline_comments": { "kind": "array", "type": "core.ems.service.InlineCommentResp" }
@@ -853,7 +853,7 @@
       "notify_student": { "kind": "boolean" },
       "suggested_code": { "kind": "string", "nullable": true },
       "text_md": { "kind": "string" },
-      "type": { "kind": "string" }
+      "type": { "kind": "enum", "values": ["COMMENT", "SUGGESTION"] }
     },
     "core.ems.service.exercise.TeacherPostFeedbackController.Req": {
       "feedback_md": { "kind": "string", "nullable": true },

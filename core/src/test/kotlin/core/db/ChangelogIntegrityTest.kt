@@ -103,9 +103,13 @@ class ChangelogIntegrityTest {
                     "\n\nLiquibase refuses to run when an applied changeset's checksum has changed, and " +
                     "because migrations run inside the Spring context, that means core does not start " +
                     "on any environment that has already applied it — production included.\n\n" +
-                    "If the edit was cosmetic (a comment, whitespace, reformatting) it is still a new " +
-                    "checksum and still fatal. Revert it, or add a <validCheckSum> to that changeset " +
-                    "the way v4.xml's 260225-1 and 220226-1 do, and update " +
+                    "If the edit only looks cosmetic — reformatting, an indent, a reworded line of " +
+                    "SQL that runs the same — it is still a new checksum and still fatal. (A " +
+                    "<comment> element is the exception, measured: rewriting one leaves the checksum " +
+                    "alone, because Liquibase keeps it in the changelog table's COMMENTS column " +
+                    "rather than hashing it. Do not generalise that to anything inside the change " +
+                    "elements themselves.) Revert the edit, or add a <validCheckSum> to that " +
+                    "changeset the way v4.xml's 260225-1 and 220226-1 do, and update " +
                     "core/src/test/resources$baselineResource in the same commit."
         }
 

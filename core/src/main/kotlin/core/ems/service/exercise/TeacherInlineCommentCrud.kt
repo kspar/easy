@@ -2,6 +2,7 @@ package core.ems.service.exercise
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
+import core.db.InlineCommentType
 import core.db.Submission
 import core.db.TeacherInlineComment
 import core.ems.service.*
@@ -37,12 +38,20 @@ import org.springframework.web.bind.annotation.*
 class TeacherInlineCommentCrudController(val markdownService: MarkdownService, val mailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
+    /*
+     * `type` is an enum rather than a `String` since EZ-1777, on both requests below and on
+     * InlineCommentResp. It was free text stored verbatim and echoed back, so a teacher could POST
+     * anything and core would serve it, while the client declared a two-value union. Jackson now
+     * answers 400 naming the accepted values — see the handler for MismatchedInputException in
+     * exception_handlers.kt, which passes Jackson's own message through — and the column holds one
+     * of two spellings, uppercase, like every other enum on this API.
+     */
     data class CreateReq(
         @param:JsonProperty("line_start", required = true) val lineStart: Int,
         @param:JsonProperty("line_end", required = true) val lineEnd: Int,
         @param:JsonProperty("code", required = true) val code: String,
         @param:JsonProperty("text_md", required = true) @field:NotBlank @field:Size(max = 300000) val textMd: String,
-        @param:JsonProperty("type", required = true) val type: String,
+        @param:JsonProperty("type", required = true) val type: InlineCommentType,
         @param:JsonProperty("suggested_code", required = false) val suggestedCode: String? = null,
         @param:JsonProperty("notify_student", required = false) val notifyStudent: Boolean = false,
     )
@@ -52,7 +61,7 @@ class TeacherInlineCommentCrudController(val markdownService: MarkdownService, v
         @param:JsonProperty("line_end", required = true) val lineEnd: Int,
         @param:JsonProperty("code", required = true) val code: String,
         @param:JsonProperty("text_md", required = true) @field:NotBlank @field:Size(max = 300000) val textMd: String,
-        @param:JsonProperty("type", required = true) val type: String,
+        @param:JsonProperty("type", required = true) val type: InlineCommentType,
         @param:JsonProperty("suggested_code", required = false) val suggestedCode: String? = null,
         @param:JsonProperty("notify_student", required = false) val notifyStudent: Boolean = false,
     )
@@ -280,7 +289,16 @@ private fun selectInlineComments(courseExId: Long, studentId: String): List<Inli
             (TeacherInlineComment.courseExercise eq courseExId) and
                     (Submission.student eq studentId)
         }
-        .orderBy(TeacherInlineComment.createdAt, SortOrder.ASC)
+        // The id is a tiebreaker, not decoration. `created_at` is millisecond-resolution and the
+        // controller stamps it with `DateTime.now()`, so two comments saved in the same millisecond —
+        // a double-click on save, or the annotated editor's two writes for one edit — tie, and which
+        // one the client shows first is then whatever the query plan produces. Same defect class as
+        // EZ-1763, found by reviewing EZ-1777 rather than by anything failing: an ordering that is
+        // not total is not an ordering. Ascending on both, so the sequence is the writing order.
+        .orderBy(
+            TeacherInlineComment.createdAt to SortOrder.ASC,
+            TeacherInlineComment.id to SortOrder.ASC,
+        )
         .map {
             InlineCommentResp(
                 id = it[TeacherInlineComment.id].value.toString(),

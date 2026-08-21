@@ -254,7 +254,7 @@ object TeacherInlineComment : LongIdTable("teacher_inline_comment") {
     val code = text("code")
     val textMd = text("text_md")
     val textHtml = text("text_html")
-    val type = text("type")
+    val type = enumerationByName("type", 20, InlineCommentType::class)
     val suggestedCode = text("suggested_code").nullable()
 }
 
