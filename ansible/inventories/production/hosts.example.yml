@@ -57,3 +57,47 @@ executor:
     executor_port: 5111
     executor_core_host: your-core-alias
     executor_registered_name: prod-executor
+
+# --- group_vars for this inventory are NOT in git ------------------------------------------------
+#
+# `group_vars/` beside this file is gitignored in its entirety, which is different from every other
+# inventory here — dev's group_vars are committed, and deliberately so, because they are the worked
+# example of what an environment loosens and why.
+#
+# Production's are not, because production's are *values* rather than examples: the hostnames its
+# certificate is requested for, the Moodle endpoints it may write grades into, the address of the
+# monitoring server, the confidential Keycloak client core authenticates as, and — the item that
+# settles it — which port a service with no authentication of its own listens on and who is allowed
+# to reach it. None of that is a credential. All of it is a description of how to approach three
+# named internet-facing machines, and this repository is public. Same reasoning as
+# `doc/dev-hardening.md`, which is excluded for exactly this reason.
+#
+# So a fresh checkout can run `site.yml` against dev and not against production, and that is the
+# intended asymmetry. Ask kspar for the production group_vars; the roles they drive, and the
+# reasoning inside those roles, are all here.
+#
+# What belongs in them, since the files cannot show you:
+#
+#   group_vars/all/core.yml       every easy_core_* and easy_nginx_* value for this environment,
+#                                 which for production means transcribing what the host already
+#                                 runs rather than inventing a desired state
+#   group_vars/all/hardening.yml  the firewall: which ports face the world, and which face exactly
+#                                 one named source
+#   group_vars/all/smoke.yml      the public listeners this environment genuinely has, so that
+#                                 smoke.yml's "nothing else answers" check means something
+#   group_vars/<group>.yml        per-group overrides, e.g. the executor's own firewall rule
+#
+# Two values worth deciding rather than inheriting, whenever a production inventory is written:
+#
+# - `hardening_ssh_allow_from` — the role defaults to `any` because there is no strict value to
+#   guess and a wrong CIDR is a lockout. Production is the environment where the set of source
+#   networks is most likely to actually be known, so narrowing it there is the point at which that
+#   default stops being the honest answer.
+#
+# - `hardening_unattended_reboot` — off by default, which means a human has to notice
+#   `/var/run/reboot-required` and act on it. That is only the safer choice if it genuinely happens;
+#   an unpatched kernel with better manners is not more secure. Either commit to watching for it, or
+#   pick a window and turn it on with eyes open.
+#
+# And one that is not a decision: the role's defaults *are* the production answer. An environment
+# file that stays short is the point of having written them that way.

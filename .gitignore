@@ -62,6 +62,23 @@ doc/dev-hardening.md
 # a known quantity.
 ansible/inventories/*/hosts.yml
 
+# Production's group_vars, unlike dev's, which stay in the repo as the worked example of what an
+# environment loosens and why. Production's are values rather than examples: the names its
+# certificate covers, the Moodle endpoints it writes grades into, the monitoring server's address,
+# the confidential Keycloak client core authenticates as, and which port a service with no
+# authentication of its own listens on and who may reach it.
+#
+# None of it is a credential. All of it describes how to approach three named internet-facing
+# machines, and this repo is public — the same reason doc/dev-hardening.md is excluded above.
+# `inventories/production/hosts.example.yml` says what belongs in these files.
+ansible/inventories/production/group_vars/
+
+# The production update runbook: the three addresses, the accounts that can log in, OS and Keycloak
+# versions, disk headroom, and a full description of an unauthenticated service and its port. It is
+# the most useful single document an attacker could be handed about these hosts, and it exists to be
+# worked from rather than published. Ask kspar.
+doc/production-update.md
+
 # Playwright output, if a run is ever started from the repo root rather than web/. web/.gitignore
 # covers the normal case; this catches the stray one, which is otherwise a committed artifact
 # nobody notices.
