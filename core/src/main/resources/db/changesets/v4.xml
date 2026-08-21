@@ -471,4 +471,60 @@
         <dropColumn tableName="teacher_inline_comment" columnName="type"/>
     </changeSet>
 
+    <changeSet id="210826-5" author="kspar">
+        <comment>
+            EZ-1780. Pending Moodle invitations belonging to courses that are no longer linked.
+
+            Unlinking a course used to null `moodle_short_name` and delete nothing, so every course
+            ever unlinked still holds its `student_moodle_pending_access` rows and their pending group
+            assignments. `LinkCourseMoodle` deletes them from now on, and the join endpoint refuses an
+            invite whose course is not linked — which means that without this changeset those rows
+            become permanently un-honourable **and** stay visible: the participants page lists them as
+            students awaiting an invitation that can no longer be accepted. Deleting them is not
+            tidying; it is the difference between a fixed bug and a fixed bug with a residue.
+
+            Not measured, and unlike 210826-3 that is a gap rather than a non-question: this deletes
+            production rows and the count would tell a reader how much. `SELECT count(*) FROM
+            student_moodle_pending_access p JOIN course c ON c.id = p.course_id WHERE
+            c.moodle_short_name IS NULL;` is the query, runnable against the anonymised dev copy. The
+            reason it is not here is access, not judgement — and the answer cannot change what this
+            changeset has to do, because every row it matches is an invitation the application will
+            refuse from this release onwards.
+
+            Recoverable in the only sense that matters: re-linking the course and letting the students
+            sync run regenerates a pending access, with a new invite id, for everyone still in the
+            Moodle course. What cannot come back is an invitation to someone who has since left it.
+
+            Groups first, for the reason `LinkCourseMoodle` gives at more length — the foreign key that
+            would have forced the order was dropped in 201021-2, so the order is deliberate rather
+            than enforced.
+
+            The third statement cleans the *other* residue of the same bug, on courses that are still
+            linked and which the first two therefore do not touch. Before this release the join
+            deleted a student's pending access and left their pending group rows behind, so every
+            student who ever accepted a Moodle invitation left one row per group they were in.
+            `DeleteCourseGroup` counts those rows by group id with no join to the access row, so its
+            "this will affect N students" warning has been inflated by them — and on a linked course
+            with `sync_students` off, nothing ever rebuilds the table, so it stays inflated. Matching
+            on "no access row for this (course, moodle_username)" rather than on the course, because
+            the orphans are defined by what they no longer point at.
+        </comment>
+
+        <sql>
+            DELETE FROM student_moodle_pending_course_group_access g
+            USING course c
+            WHERE c.id = g.course_id AND c.moodle_short_name IS NULL;
+
+            DELETE FROM student_moodle_pending_access p
+            USING course c
+            WHERE c.id = p.course_id AND c.moodle_short_name IS NULL;
+
+            DELETE FROM student_moodle_pending_course_group_access g
+            WHERE NOT EXISTS (
+                SELECT 1 FROM student_moodle_pending_access p
+                WHERE p.course_id = g.course_id AND p.moodle_username = g.moodle_username
+            );
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>

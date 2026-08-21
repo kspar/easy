@@ -6,7 +6,9 @@ import core.db.Course
 import core.db.StudentMoodlePendingAccess
 import core.ems.service.singleOrInvalidRequest
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.upperCase
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -39,7 +41,12 @@ class GetMoodleLinkedCourseInfoByInvite {
         (StudentMoodlePendingAccess innerJoin Course)
             .select(Course.id, Course.title, Course.alias)
             .where {
-                (StudentMoodlePendingAccess.inviteId.upperCase() eq inviteId.uppercase())
+                (StudentMoodlePendingAccess.inviteId.upperCase() eq inviteId.uppercase()) and
+                        // Same predicate as the join next door, and it has to be here too: without
+                        // it the invite page names the course and offers a join button that the join
+                        // endpoint then refuses. The invite is either usable or it is not, and the
+                        // page that presents it should agree with the endpoint behind it (EZ-1780).
+                        Course.moodleShortName.isNotNull()
             }.map {
                 Resp(
                     it[Course.id].value.toString(),

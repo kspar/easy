@@ -533,6 +533,9 @@
     "linkMoodle": "Seo Moodle'iga",
     "unlinkMoodle": "Eemalda Moodle'i seos",
     "unlinkMoodleConfirm": "Eemalda selle kursuse seos Moodle'iga? Õpilaste ja hinnete sünkroniseerimine lõpetatakse.",
+    "repointMoodleConfirm": "Seo see kursus {{from}} asemel Moodle'i kursusega {{to}}? Edaspidi sünkroniseeritakse õpilased uuest Moodle'i kursusest.",
+    "unlinkMoodleInvitesDropped_one": "{{count}} veel liitumata õpilane kaotab oma kutselingi ja vajab uut.",
+    "unlinkMoodleInvitesDropped_other": "{{count}} veel liitumata õpilast kaotavad oma kutselingid ja vajavad uusi.",
     "moodleUnlinked": "Kursuse seos Moodle'iga eemaldatud",
     "moodleAdminNote": "Moodle'i seadete muutmiseks pöördu administraatori poole."
   },

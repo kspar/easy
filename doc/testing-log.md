@@ -38,7 +38,8 @@ Append to it. Do not tidy entries away once they are fixed — a fixed bug is st
 | 25 | **MUI leaves `IconButton`, `TableSortLabel` and outlined `Chip` with no visual change at all when tabbed to** — computed background, outline and box-shadow byte-identical focused and unfocused. Their only feedback is the ripple, a click effect that plays once and fades, so a keyboard user who tabs and pauses has nothing on screen | `theme.ts` | the focus-ring rule, after three corrections to it | fixed, EZ-1776 |
 | 26 | Inline comment `type` is unvalidated free text in core (`text` column, no `@Pattern`, no enum, stored verbatim from the request) while the client declares it `'comment' \| 'suggestion'`. Inert today — web writes the field and never reads it back, branching on `suggested_code` instead — so it is a trap for the first reader rather than a live break | `TeacherInlineCommentCrud.kt`, `types.ts` | the `types.ts` contract check, its only surviving finding | fixed, EZ-1777 — the field and its column are **gone**, not validated |
 | 27 | `AccessChecksBuilder.testFalse()` — a `@Deprecated("For debugging only")` helper that **refuses all access**, with no callers, living inside the access-control builder. One forgotten line from 403-ing an endpoint. Deleted with the `or` combinator | `access_control_dsl.kt` | the coverage gate naming it as an uncovered line | EZ-1773 |
-| 28 | Unlinking a course from Moodle sets `moodle_short_name = null` and deletes nothing else, so every outstanding Moodle invitation stays live — and `join()` matches on invite id with **no predicate on the course still being linked**, so it still enrols. A teacher who unlinks to stop Moodle enrolment has not stopped it | `LinkCourseMoodle.kt`, `JoinMoodleLinkedCourseByInvite.kt` | asking how the client's `moodle_pending_students` partition is reachable at all | EZ-1780 |
+| 28 | Unlinking a course from Moodle sets `moodle_short_name = null` and deletes nothing else, so every outstanding Moodle invitation stays live — and `join()` matches on invite id with **no predicate on the course still being linked**, so it still enrols. A teacher who unlinks to stop Moodle enrolment has not stopped it | `LinkCourseMoodle.kt`, `JoinMoodleLinkedCourseByInvite.kt` | asking how the client's `moodle_pending_students` partition is reachable at all | fixed, EZ-1780 |
+| 31 | The Moodle invite join deleted the pending **access** and left its pending **group** rows, so a student who had joined still counted as a pending member of their groups — `DeleteCourseGroup` includes them when warning how many people a group deletion affects. Invisible because the next Moodle sync clears every pending group row for the course and rewrites them, so it self-healed on a timer | `JoinMoodleLinkedCourseByInvite.kt` | writing the round-trip assertion for the EZ-1780 fix and finding the counts did not reach zero | fixed, EZ-1780 |
 | 29 | `ConfirmDialog` wraps its message in a bare `<Typography>` (`<p>`), and the group-deletion confirmation passes a `<ul>` of affected students inside `<Box>`. Invalid nesting: React logs it, the browser closes the paragraph early, nothing fails | `ConfirmDialog.tsx` | a console error in the output of a *passing* spec | fixed, EZ-1766 |
 | 30 | `selectInlineComments` orders by `created_at` alone, which the controller stamps with `DateTime.now()` at millisecond resolution. Two inline comments saved in the same millisecond tie, and the order the client shows them in is then whatever the query plan produces. Third instance of the family that opened this table, and the cheapest — one tiebreaker | `TeacherInlineCommentCrud.kt` | reviewing the EZ-1777 fix, not by any failure | fixed, EZ-1777 |
 | 21 | One spec in the migration corpus compiles to a script with an unbalanced bracket — it would fail on the first submission. The tool that signed off the migration reported it as one of 721 successes | a live spec | `compileSpecTree` learning to parse its own output | EZ-1774 |
@@ -596,6 +597,27 @@ Moodle enrolment has not stopped it.
 
 Worth generalising: when a code path looks unreachable, the interesting question is not "is it dead"
 but "what would have to be true for it to run" — the answer here was a bug two files away.
+
+**Fixed 2026-08-21, and the fix deleted the test's own premise.** Unlinking now drops the pending
+accesses and their group rows, the join and the invite-info lookup both require the course to still be
+linked, and changeset `210826-5` clears the rows earlier unlinks left behind — without which this
+fix's own predicate would have made them permanently un-honourable while they stayed on the page as
+students awaiting an invitation.
+
+So `participants-groups-membership.spec.mjs` lost the mixed active+pending selection it was written
+for, because that combination is no longer producible. It was rewritten to the reachable case rather
+than kept: `fakeApi` can always build an impossible payload, and what it cannot do is make the result
+mean anything. **A test pinning client behaviour in a state the server cannot reach is worse than no
+test, because it reads as coverage.** The check-count ratchet caught the reduction and refused it
+until the number came down with a reason attached, which is the mechanism working exactly as
+designed — the floor is a decision, not a measurement.
+
+Two smaller things fell out of it. Writing the round-trip assertion showed the join deleting the
+pending *access* and leaving its pending *group* rows behind (defect 31), self-healing on the next
+sync and wrong until then. And the first version of the unlink test asserted that a re-sync mints a
+fresh invite id, which is `generateMoodleInviteId`'s property, not the unlink's — it re-called the
+fixture, whose ids are derived from the username, so it failed. An assertion about the scaffolding
+wearing the costume of an assertion about the product.
 
 **`<p>` cannot contain a `<div>`, and the browser does not complain.** `ConfirmDialog` wraps its
 message in a bare `<Typography>`, which renders `<p>`; the group-deletion confirmation passes a `<ul>`

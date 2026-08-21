@@ -53,7 +53,13 @@ const participants = {
       created_at: '2026-07-01T09:00:00.000Z',
     },
   ],
-  students_moodle_pending: [],
+  // Two students who were invited from Moodle and have not joined. They are here for the unlink
+  // confirmation below, which has to say how many invitations it is about to destroy — unlinking
+  // deletes them since EZ-1780, where it used to leave them live and still able to enrol.
+  students_moodle_pending: [
+    { moodle_username: 'kati', email: 'kati@moodle.example.com', invite_id: 'M-KATI', groups: [] },
+    { moodle_username: 'juri', email: 'juri@moodle.example.com', invite_id: 'M-JURI', groups: [] },
+  ],
   moodle_linked: true,
 }
 
@@ -99,7 +105,9 @@ test('participants-moodle', async ({ launch, check }) => {
   await page.addInitScript(() => localStorage.setItem('activeRole', 'admin'))
 
   await page.goto(`${BASE_URL}/courses/${COURSE}/participants`)
-  await page.getByRole('tab', { name: 'Students (2)' }).waitFor()
+  // Four: two joined and two still holding a Moodle invitation. The tab counts both, which is right —
+  // a teacher asking "how many students" means the roster, not the subset that has logged in.
+  await page.getByRole('tab', { name: 'Students (4)' }).waitFor()
 
   // The Moodle panel is a tab, and it only exists when the course is linked — so its presence is
   // the first thing worth asserting rather than something to click past.
@@ -181,6 +189,15 @@ test('participants-moodle', async ({ launch, check }) => {
   check(
     'it confirms first, saying what stops',
     await waitUntil(async () => (await page.getByText(/syncing will stop/i).count()) > 0),
+  )
+  // The count, not just a warning. Unlinking deletes every outstanding Moodle invitation (EZ-1780 —
+  // before that they survived and still enrolled people), and a destructive action that does not say
+  // what it destroys is one a teacher cannot consent to. Two pending students in the fixture, so the
+  // plural form has to interpolate rather than say "students who have not joined".
+  check(
+    'and names how many invitations it will drop',
+    (await page.getByRole('dialog').getByText(/2 students who have not joined/i).count()) === 1,
+    (await page.getByRole('dialog').innerText()).replace(/\s+/g, ' '),
   )
   check('and nothing is sent before confirming', puts.length === 0, JSON.stringify(puts))
   await shot('04-unlink-confirm')

@@ -6,8 +6,14 @@
  * that the least visible thing about them, when it is the only thing that matters:
  *
  *   locked      moodle_linked: true   — group editing is Moodle's, the UI offers none
- *   membership  moodle_linked: false  — with pending rows the unlink left behind
+ *   membership  moodle_linked: false  — and, since EZ-1780, with no pending rows either
  *   groups      moodle_linked: true   — counting and deleting groups, which are not gated
+ *
+ * The membership case used to be `moodle_linked: false` **with** the pending rows an unlink left
+ * behind, which is how it reached a mixed active+pending selection. Unlinking deletes them now, so
+ * that combination no longer exists and the spec overrides `students_moodle_pending` to `[]` rather
+ * than relying on the shared value. The shared value stays populated because the other two specs are
+ * Moodle-linked, where pending students are exactly what you expect to see.
  *
  * **One `test()` per spec file.** Not a style preference: `spec.mjs` compares each test's check count
  * against a single number keyed by *file*, and `record-checks.mjs` keys its Map by file too — so a

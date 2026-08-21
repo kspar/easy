@@ -533,6 +533,9 @@
     "linkMoodle": "Link to Moodle",
     "unlinkMoodle": "Unlink from Moodle",
     "unlinkMoodleConfirm": "Unlink this course from Moodle? Student and grade syncing will stop.",
+    "repointMoodleConfirm": "Point this course at {{to}} instead of {{from}}? Students will be synced from the new Moodle course from now on.",
+    "unlinkMoodleInvitesDropped_one": "{{count}} student who has not joined yet will lose their invitation link and will need a new one.",
+    "unlinkMoodleInvitesDropped_other": "{{count}} students who have not joined yet will lose their invitation links and will need new ones.",
     "moodleUnlinked": "Course unlinked from Moodle",
     "moodleAdminNote": "Contact an administrator to change Moodle settings."
   },

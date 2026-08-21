@@ -7,6 +7,7 @@ import core.ems.service.singleOrInvalidRequest
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.upperCase
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -40,7 +41,19 @@ class JoinMoodleLinkedCourseByInvite {
         val (courseId, moodleUsername) = (StudentMoodlePendingAccess innerJoin Course)
             .select(Course.id, StudentMoodlePendingAccess.moodleUsername)
             .where {
-                StudentMoodlePendingAccess.inviteId.upperCase() eq inviteId.uppercase()
+                (StudentMoodlePendingAccess.inviteId.upperCase() eq inviteId.uppercase()) and
+                        // EZ-1780. Without this, an invite outlived the link: unlinking a course set
+                        // `moodle_short_name = null` and deleted nothing, so an outstanding invite
+                        // still enrolled its holder — with a `moodle_username` recorded and their
+                        // pending group assignments copied across — into a course with no Moodle link
+                        // at all. A teacher who unlinked to stop Moodle enrolment had not stopped it.
+                        //
+                        // Unlink now deletes the pending rows too (`LinkCourseMoodle`), so in a
+                        // consistent database this predicate matches nothing extra. It is here
+                        // because the two must both hold and only one of them is a cleanup: rows can
+                        // predate the fix, and `JoinCourseByInvite` carries the mirror check for the
+                        // same reason — a plain invite is refused on a Moodle-linked course.
+                        Course.moodleShortName.isNotNull()
             }.map { it[Course.id] to it[StudentMoodlePendingAccess.moodleUsername] }
             .singleOrInvalidRequest(false)
 
@@ -66,6 +79,18 @@ class JoinMoodleLinkedCourseByInvite {
         // Must match the lookup above, or the pending access outlives the join
         StudentMoodlePendingAccess.deleteWhere {
             StudentMoodlePendingAccess.inviteId.upperCase() eq inviteId.uppercase()
+        }
+
+        // And the group assignments with it, which the line above did not do. They were copied into
+        // real `student_course_group_access` rows a few lines up, so what is left is a pending
+        // assignment for somebody who is no longer pending: `DeleteCourseGroup` counts it when it
+        // warns how many people a group deletion affects, and the group-membership endpoints will
+        // happily operate on it. Self-healing, in that the next Moodle sync clears every pending
+        // group row for the course and rewrites them — which is why this was invisible, and why it
+        // is still worth doing rather than relying on a cron to tidy up after a request.
+        StudentMoodlePendingCourseGroup.deleteWhere {
+            (StudentMoodlePendingCourseGroup.course eq courseId) and
+                    (StudentMoodlePendingCourseGroup.moodleUsername eq moodleUsername)
         }
 
         log.debug { "$studentId joined Moodle linked course $courseId by invite $inviteId" }

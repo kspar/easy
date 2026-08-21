@@ -8,6 +8,7 @@ import core.db.AutoGradeStatus
 import core.db.ContainerImage
 import core.db.Course
 import core.db.CourseExercise
+import core.db.CourseGroup
 import core.db.Dir
 import core.db.DirAccessLevel
 import core.db.Executor
@@ -19,6 +20,8 @@ import core.db.Group
 import core.db.GroupDirAccess
 import core.db.SolutionFileType
 import core.db.StudentCourseAccess
+import core.db.StudentMoodlePendingAccess
+import core.db.StudentMoodlePendingCourseGroup
 import core.db.Submission
 import core.db.TeacherCourseAccess
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
@@ -92,6 +95,13 @@ object TestClock {
  * Everything here assumes it is called inside a `transaction { }`.
  */
 object Fixtures {
+
+    /**
+     * Never reset, unlike [TestClock]. Rows are truncated between tests, so a monotonic counter can
+     * only ever hand out something unused — resetting it would reintroduce the collision it exists
+     * to prevent, one test later.
+     */
+    private val inviteSeq = AtomicInteger(1)
 
     fun student(id: String, givenName: String = "Given", familyName: String = "Family"): String =
         account(id, givenName, familyName, isStudent = true)
@@ -288,17 +298,76 @@ object Fixtures {
         return executorId
     }
 
-    fun course(title: String, alias: String? = null): Long = Course.insertAndGetId {
+    /**
+     * A course. [moodleShortName] is what makes it Moodle-linked — every read that asks "is this
+     * course synced?" asks whether that column is null, including the two invite endpoints and the
+     * sync cron's own `WHERE`.
+     */
+    fun course(
+        title: String,
+        alias: String? = null,
+        moodleShortName: String? = null,
+        moodleSyncStudents: Boolean = false,
+        moodleSyncGrades: Boolean = false,
+    ): Long = Course.insertAndGetId {
         it[Course.title] = title
         it[Course.alias] = alias
         it[createdAt] = TestClock.next()
-        it[moodleSyncStudents] = false
-        it[moodleSyncGrades] = false
+        it[Course.moodleShortName] = moodleShortName
+        it[Course.moodleSyncStudents] = moodleSyncStudents
+        it[Course.moodleSyncGrades] = moodleSyncGrades
         it[moodleSyncStudentsInProgress] = false
         it[moodleSyncGradesInProgress] = false
         it[archived] = false
         it[color] = "#137EF9"
     }.value
+
+    /** A group on a course — not [group], which is a library-permissions group. Returns its id. */
+    fun courseGroup(courseId: Long, name: String): Long = CourseGroup.insertAndGetId {
+        it[CourseGroup.name] = name
+        it[course] = EntityID(courseId, Course)
+    }.value
+
+    /**
+     * A Moodle student who has been invited to a course and has not joined yet.
+     *
+     * This is the row an invite link resolves to, and the row EZ-1780 was about: unlinking the
+     * course used to leave it in place, invite id and all, still able to enrol its holder.
+     */
+    /**
+     * [inviteId] defaults to a **sequence**, not to something derived from the username.
+     *
+     * `invite_id` has no unique index and the primary key is `(course_id, moodle_username)`, so two
+     * pending rows may legally share an invite id — at which point the lookup finds two rows and
+     * `singleOrInvalidRequest` reports `ENTITY_WITH_ID_NOT_FOUND`, i.e. a test reads "this invite is
+     * dead" when the truth is "the fixture minted a duplicate". The first version derived it as
+     * `"M-" + username.take(10)`, which collides for `moodle-kati1` and `moodle-kati2`. Pass an
+     * explicit value when the id itself is what a test is about.
+     */
+    fun moodlePendingAccess(
+        courseId: Long,
+        moodleUsername: String,
+        inviteId: String = "M-INVITE${inviteSeq.getAndIncrement()}",
+        email: String = "$moodleUsername@example.test",
+    ): String {
+        StudentMoodlePendingAccess.insert {
+            it[course] = EntityID(courseId, Course)
+            it[StudentMoodlePendingAccess.moodleUsername] = moodleUsername
+            it[StudentMoodlePendingAccess.email] = email
+            it[createdAt] = TestClock.next()
+            it[StudentMoodlePendingAccess.inviteId] = inviteId
+        }
+        return inviteId
+    }
+
+    /** A group assignment waiting for its student to join, as the Moodle sync writes them. */
+    fun moodlePendingGroup(courseId: Long, moodleUsername: String, courseGroupId: Long) {
+        StudentMoodlePendingCourseGroup.insert {
+            it[course] = EntityID(courseId, Course)
+            it[StudentMoodlePendingCourseGroup.moodleUsername] = moodleUsername
+            it[courseGroup] = EntityID(courseGroupId, CourseGroup)
+        }
+    }
 
     /** Puts a library exercise on a course. Returns the course-exercise id. */
     fun courseExercise(

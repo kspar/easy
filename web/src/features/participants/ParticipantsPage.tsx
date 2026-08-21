@@ -1275,18 +1275,52 @@ export default function ParticipantsPage() {
                     onChange={(e) => setMoodleShortNameDraft(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        updateMoodleProps.mutate({
-                          moodle_props: {
-                            moodle_short_name: moodleShortNameDraft,
-                            sync_students: moodleProps.students_synced,
-                            sync_grades: moodleProps.grades_synced,
-                          },
-                        }, {
-                          onSuccess: () => {
-                            setEditingMoodleShortName(false)
-                            setSnackMsg(t('general.saved'))
-                          },
-                        })
+                        const save = () =>
+                          updateMoodleProps.mutate({
+                            moodle_props: {
+                              moodle_short_name: moodleShortNameDraft,
+                              sync_students: moodleProps.students_synced,
+                              sync_grades: moodleProps.grades_synced,
+                            },
+                          }, {
+                            onSuccess: () => {
+                              setConfirm(null)
+                              setEditingMoodleShortName(false)
+                              setSnackMsg(t('general.saved'))
+                            },
+                          })
+                        // Pointing the course at a *different* Moodle course drops its outstanding
+                        // invitations, exactly as unlinking does — they were minted for the course
+                        // being left behind and nothing records which one that was (EZ-1780). So it
+                        // asks first, and only when there is something to lose: correcting a typo on
+                        // a course with no pending students is still one keystroke.
+                        const repointing = moodleShortNameDraft !== moodleProps.moodle_short_name
+                        if (repointing && moodlePending.length > 0) {
+                          setConfirm({
+                            message: (
+                              <>
+                                {t('participants.repointMoodleConfirm', {
+                                  from: moodleProps.moodle_short_name,
+                                  to: moodleShortNameDraft,
+                                })}
+                                <Typography
+                                  component="span"
+                                  color="error"
+                                  sx={{ display: 'block', mt: 1 }}
+                                >
+                                  {t('participants.unlinkMoodleInvitesDropped', {
+                                    count: moodlePending.length,
+                                  })}
+                                </Typography>
+                              </>
+                            ),
+                            label: t('general.save'),
+                            color: 'warning',
+                            action: save,
+                          })
+                        } else {
+                          save()
+                        }
                       } else if (e.key === 'Escape') {
                         setEditingMoodleShortName(false)
                       }
@@ -1412,7 +1446,27 @@ export default function ParticipantsPage() {
                     color="error"
                     onClick={() => {
                       setConfirm({
-                        message: t('participants.unlinkMoodleConfirm'),
+                        // The count is not decoration. Unlinking deletes every outstanding Moodle
+                        // invitation for this course (EZ-1780) — before that fix it deleted nothing
+                        // and the invitations kept working, which was the bug. A destructive action
+                        // is only defensible if it says what it destroys, and the number is already
+                        // here in `moodlePending`, so there is nothing to fetch.
+                        message: (
+                          <>
+                            {t('participants.unlinkMoodleConfirm')}
+                            {moodlePending.length > 0 && (
+                              <Typography
+                                component="span"
+                                color="error"
+                                sx={{ display: 'block', mt: 1 }}
+                              >
+                                {t('participants.unlinkMoodleInvitesDropped', {
+                                  count: moodlePending.length,
+                                })}
+                              </Typography>
+                            )}
+                          </>
+                        ),
                         label: t('participants.unlinkMoodle'),
                         action: () => {
                           updateMoodleProps.mutate({ moodle_props: null }, {
