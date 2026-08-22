@@ -38,6 +38,7 @@ import type { LibraryExerciseDetail, LibraryExerciseUpdate } from '../../api/typ
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import useRecentExercises from '../../hooks/useRecentExercises.ts'
 import RelativeTime from '../../components/RelativeTime.tsx'
+import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import AddToCourseDialog from './AddToCourseDialog.tsx'
 import ShareDialog from './ShareDialog.tsx'
 import EmbedDialog from './EmbedDialog.tsx'
@@ -332,13 +333,13 @@ export default function ExercisePage() {
           <Typography variant="h5" gutterBottom>
             {shownTitle}
           </Typography>
-          <Box
+          <RenderedMarkdown
             sx={{
               '& img': { maxWidth: '100%' },
               '& pre': { overflowX: 'auto' },
               '& table': { display: 'block', overflowX: 'auto' },
             }}
-            dangerouslySetInnerHTML={{ __html: shownHtml }}
+            html={shownHtml}
           />
         </Paper>
 

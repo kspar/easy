@@ -22,6 +22,7 @@ import {
   LinkOutlined,
 } from '@mui/icons-material'
 import MarkdownEditor from '../../components/markdown/MarkdownEditor.tsx'
+import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import { useMarkdownPreview } from '../../api/exercises.ts'
 import { useAuth } from '../../auth/useAuth.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
@@ -199,13 +200,13 @@ export default function ArticlePage() {
               <Divider sx={{ mb: 2 }} />
             </>
           )}
-          <Box
+          <RenderedMarkdown
             sx={{
               '& img': { maxWidth: '100%' },
               '& pre': { overflowX: 'auto' },
               '& table': { display: 'block', overflowX: 'auto' },
             }}
-            dangerouslySetInnerHTML={{ __html: shownHtml }}
+            html={shownHtml}
           />
         </Paper>
 

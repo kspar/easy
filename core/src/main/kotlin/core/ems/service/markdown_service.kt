@@ -13,6 +13,9 @@ class MarkdownService {
     private val extensions = listOf(
         TablesExtension.create(),
         StrikethroughExtension.create(),
+        // `$x$` and `$$x$$`, typeset in the browser by KaTeX. Has to be a parser extension rather
+        // than a client-side scan of this output: see MathExtension (EZ-1732).
+        MathExtension.create(),
     )
     private val parser = Parser.builder().extensions(extensions).build()
     private val renderer = HtmlRenderer.builder().extensions(extensions).build()

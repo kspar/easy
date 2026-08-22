@@ -8,6 +8,7 @@ import {
   FormatListBulletedOutlined,
   FormatListNumberedOutlined,
   FormatQuoteOutlined,
+  FunctionsOutlined,
   HorizontalRuleOutlined,
   ImageOutlined,
   LinkOutlined,
@@ -23,6 +24,7 @@ import {
   insertCodeBlock,
   insertImage,
   insertLink,
+  insertMathBlock,
   insertRule,
   insertTable,
   setHeading,
@@ -57,6 +59,7 @@ export default function MarkdownToolbar({
   const { t } = useTranslation()
   const [headingAnchor, setHeadingAnchor] = useState<HTMLElement | null>(null)
   const [imageAnchor, setImageAnchor] = useState<HTMLElement | null>(null)
+  const [mathAnchor, setMathAnchor] = useState<HTMLElement | null>(null)
 
   const btnSx = {
     p: '5px',
@@ -206,6 +209,43 @@ export default function MarkdownToolbar({
           case 'rule':
             return button('rule', t('markdown.rule'), <HorizontalRuleOutlined sx={iconSx} />,
               run(insertRule))
+          case 'math':
+            // A menu rather than two buttons, for the same reason as the image one: both items are
+            // "insert a formula" and would fight over the sigma. The placeholder is real TeX
+            // (`x^2`) rather than a word, so the facing preview typesets something the moment the
+            // button is pressed — which is how a teacher finds out the feature exists at all.
+            return (
+              <span key="math">
+                {button('math', t('markdown.math'), <FunctionsOutlined sx={iconSx} />, (e) =>
+                  setMathAnchor(e.currentTarget),
+                )}
+                <Menu
+                  anchorEl={mathAnchor}
+                  open={Boolean(mathAnchor)}
+                  onClose={() => setMathAnchor(null)}
+                  // Same focus dance as the heading and image menus, for the same reason.
+                  disableRestoreFocus
+                  TransitionProps={{ onExited: () => view?.focus() }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      setMathAnchor(null)
+                      if (view) applyFormat(view, '$', '$', t('markdown.mathText'))
+                    }}
+                  >
+                    {t('markdown.mathInline')}
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setMathAnchor(null)
+                      if (view) insertMathBlock(view, t('markdown.mathText'))
+                    }}
+                  >
+                    {t('markdown.mathDisplay')}
+                  </MenuItem>
+                </Menu>
+              </span>
+            )
         }
       })}
     </Box>

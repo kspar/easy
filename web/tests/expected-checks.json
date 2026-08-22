@@ -26,6 +26,7 @@
   "library-exercise-ui.spec.mjs": 76,
   "library-page.spec.mjs": 11,
   "library-share-recent.spec.mjs": 12,
+  "markdown-math.spec.mjs": 20,
   "markdown-upload.spec.mjs": 15,
   "nav-bug-dashboard.spec.mjs": 15,
   "nav-cmd-click.spec.mjs": 10,

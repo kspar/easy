@@ -45,6 +45,7 @@ import ConfirmDialog from '../participants/ConfirmDialog.tsx'
 // Shared with the exercise text editor, which shows a superset of these buttons. Keeping one
 // implementation is what stops the two editors formatting the same document differently.
 import MarkdownToolbar from '../../components/markdown/MarkdownToolbar.tsx'
+import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.ts'
 import { useFileDropExtension } from '../../components/markdown/useFileDropExtension.ts'
 import { COMPACT_TOOLS } from '../../components/markdown/markdownTools.ts'
@@ -820,7 +821,7 @@ function CommentEditor({
 
       {/* Markdown preview */}
       {previewHtml && (
-        <Box
+        <RenderedMarkdown
           sx={{
             borderTop: 1,
             borderColor: 'divider',
@@ -830,7 +831,7 @@ function CommentEditor({
             '& p:last-of-type': { mb: 0 },
             fontSize: '0.85rem',
           }}
-          dangerouslySetInnerHTML={{ __html: previewHtml }}
+          html={previewHtml}
         />
       )}
 

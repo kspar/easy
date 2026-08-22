@@ -132,10 +132,16 @@ does not, so a structural comparison flags almost every list for no reason.
 Flagged exercises are not written — they are listed. A null `text_md` is a visible gap; a subtly
 mangled exercise is not.
 
-Math (`stem:` / `latexmath:`) flags by design. It has no Markdown representation, `MarkdownService`
-has no math extension, and there is no MathJax or KaTeX in `web/` any more — so those exercises
-already fail to render math in production. That is **EZ-1732 (Math in exercise text no longer renders: no MathJax or KaTeX in web/)** —
-not something this migration can fix.
+Math (`stem:` / `latexmath:`) flags by design: it has no *AsciiDoc-comparable* Markdown
+representation, so the round-trip comparison cannot verify it. That was
+**EZ-1732 (Math in exercise text no longer renders: no MathJax or KaTeX in web/)**, and it is not
+something this migration could fix.
+
+**EZ-1732 has since landed.** `MarkdownService` now has a math extension
+(`core/ems/service/markdown_math.kt`) and `web/` typesets with KaTeX, both keyed on `$…$` and
+`$$…$$` — which is exactly the form this migration wrote. So the 48 maths exercises render again as
+soon as their `text_html` is regenerated from the `text_md` already stored; the flagging behaviour
+described here is unchanged, because verification still cannot compare the two representations.
 
 ## Current state (2026-08-11): written on dev, not yet on production
 
@@ -308,7 +314,8 @@ Decisions taken:
 - **Auto-numbered captions** (`Figure 1.`, `Tabel 1.`) are not wanted, so they no longer count as a
   difference. Removed from both sides of the comparison, not just production.
 - **`codehl` highlighting** is dropped — nothing in `web/` has styled it since the WUI went.
-- **Maths** is EZ-1732's problem, not this one.
+- **Maths** is EZ-1732's problem, not this one. (EZ-1732 has since landed, and it reads the `$…$`
+  this migration wrote — see the note under "What flags".)
 
 ## The sequence, as run on dev
 

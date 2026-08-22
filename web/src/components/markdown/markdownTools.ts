@@ -16,6 +16,7 @@ export type MarkdownTool =
   | 'link'
   | 'image'
   | 'codeBlock'
+  | 'math'
   | 'table'
   | 'rule'
   | 'divider'
@@ -48,6 +49,7 @@ export const FULL_TOOLS: MarkdownTool[] = [
   'link',
   'image',
   'codeBlock',
+  'math',
   'table',
   'rule',
 ]

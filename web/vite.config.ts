@@ -106,6 +106,11 @@ export default defineConfig({
       '@codemirror/lang-html',
       '@codemirror/lang-css',
       '@codemirror/lang-sql',
+      // Same reasoning, same symptom (EZ-1732). `renderMath.ts` imports KaTeX only once a formula
+      // is actually on the page — it is ~280KB plus a megabyte of fonts, and most pages have no
+      // maths — so in dev the server meets it mid-session and answers the first request with a 504.
+      // The import rejects, the catch swallows it, and the formula silently stays as `$x^2$`.
+      'katex',
     ],
   },
   server: {

@@ -47,6 +47,7 @@ import { RobotIcon, TeacherFaceIcon } from '../../components/icons.tsx'
 import type { InlineCommentResp, TeacherActivityResp } from '../../api/types.ts'
 import ConfirmDialog from '../participants/ConfirmDialog.tsx'
 import ReadOnlyCodeSnippet from './ReadOnlyCodeSnippet.tsx'
+import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.ts'
 import { useFileDropExtension } from '../../components/markdown/useFileDropExtension.ts'
 
@@ -529,7 +530,7 @@ export default function ActivityFeed({
 
           {/* Markdown preview */}
           {previewHtml && (
-            <Box
+            <RenderedMarkdown
               sx={{
                 borderTop: 1,
                 borderColor: 'divider',
@@ -539,7 +540,7 @@ export default function ActivityFeed({
                 '& p:last-of-type': { mb: 0 },
                 fontSize: '0.85rem',
               }}
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
+              html={previewHtml}
             />
           )}
 
@@ -747,7 +748,7 @@ function EditCommentEditor({
 
       {/* Preview */}
       {previewHtml && (
-        <Box
+        <RenderedMarkdown
           sx={{
             borderTop: 1,
             borderColor: 'divider',
@@ -757,7 +758,7 @@ function EditCommentEditor({
             '& p:last-of-type': { mb: 0 },
             fontSize: '0.85rem',
           }}
-          dangerouslySetInnerHTML={{ __html: previewHtml }}
+          html={previewHtml}
         />
       )}
 
@@ -879,14 +880,14 @@ function TimelineEntryCard({
           />
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
-            <Box
+            <RenderedMarkdown
               sx={{
                 flex: 1,
                 '& p:first-of-type': { mt: 0 },
                 '& p:last-of-type': { mb: 0 },
                 fontSize: '0.85rem',
               }}
-              dangerouslySetInnerHTML={{ __html: activity.feedback_html }}
+              html={activity.feedback_html}
             />
             {isOwnTeacher && onEditActivity && onDeleteFeedback && (
               <Box sx={{ display: 'flex', gap: 0.25, flexShrink: 0 }}>
@@ -948,14 +949,14 @@ function TimelineEntryCard({
                     firstLineNumber={c.line_start}
                     maxHeight={80}
                   />
-                  <Box
+                  <RenderedMarkdown
                     sx={{
                       mt: 0.25,
                       '& p:first-of-type': { mt: 0 },
                       '& p:last-of-type': { mb: 0 },
                       fontSize: '0.8rem',
                     }}
-                    dangerouslySetInnerHTML={{ __html: c.text_html }}
+                    html={c.text_html}
                   />
                 </Box>
               ))}

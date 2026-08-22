@@ -343,6 +343,30 @@ export function insertRule(view: EditorView) {
   insertBlock(view, '---')
 }
 
+/**
+ * A displayed formula on its own lines, with the TeX selected for overtyping (EZ-1732).
+ *
+ * A fence rather than a single `$$x$$` line, because that is the form that survives editing: adding
+ * a second line to a formula is then just pressing Enter, where the one-liner has to be taken apart
+ * first. Both render identically.
+ *
+ * Fences the selection when there is one, exactly as [insertCodeBlock] does — every other action
+ * here acts on the selection, and appending a placeholder block *below* text the teacher had
+ * deliberately selected leaves them deleting their own words.
+ */
+export function insertMathBlock(view: EditorView, placeholder: string) {
+  const { from, to } = view.state.selection.main
+  const selected = view.state.sliceDoc(from, to)
+  if (selected) {
+    const line = view.state.doc.lineAt(from)
+    const lead = from === line.from ? '' : '\n'
+    view.dispatch({ changes: { from, to, insert: `${lead}$$\n${selected}\n$$` } })
+    view.focus()
+    return
+  }
+  insertBlock(view, `$$\n${placeholder}\n$$`, placeholder)
+}
+
 /** A 2x2 GFM table, header row included, with the first header cell selected. */
 export function insertTable(view: EditorView, header: string, cell: string) {
   const block = [

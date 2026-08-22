@@ -58,6 +58,7 @@ import ExerciseSettingsDialog from './ExerciseSettingsDialog.tsx'
 import EmbedDialog from '../library/EmbedDialog.tsx'
 import { exerciseLink, spaLinkProps } from '../library/links.ts'
 import { RobotIcon } from '../../components/icons.tsx'
+import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import AutogradeAnimation from './AutogradeAnimation.tsx'
 import SubmissionsList from './SubmissionsList.tsx'
 import StudentGradingView from './StudentGradingView.tsx'
@@ -445,13 +446,10 @@ function StudentExerciseView() {
   const leftPane = (
     <>
       {exercise.text_html && (
-        <Box dangerouslySetInnerHTML={{ __html: exercise.text_html }} />
+        <RenderedMarkdown html={exercise.text_html} />
       )}
       {exercise.instructions_html && (
-        <Box
-          sx={{ mt: 2 }}
-          dangerouslySetInnerHTML={{ __html: exercise.instructions_html }}
-        />
+        <RenderedMarkdown sx={{ mt: 2 }} html={exercise.instructions_html} />
       )}
     </>
   )
@@ -836,13 +834,10 @@ function TeacherExerciseView() {
   const leftPane = (
     <>
       {exercise.text_html && (
-        <Box dangerouslySetInnerHTML={{ __html: exercise.text_html }} />
+        <RenderedMarkdown html={exercise.text_html} />
       )}
       {exercise.instructions_html && (
-        <Box
-          sx={{ mt: 2 }}
-          dangerouslySetInnerHTML={{ __html: exercise.instructions_html }}
-        />
+        <RenderedMarkdown sx={{ mt: 2 }} html={exercise.instructions_html} />
       )}
     </>
   )

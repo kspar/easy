@@ -17,6 +17,7 @@ import {
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import RelativeTime from '../../components/RelativeTime.tsx'
+import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import ReadOnlyCodeSnippet from './ReadOnlyCodeSnippet.tsx'
 import { useTeacherActivities, useStudentInlineComments } from '../../api/exercises.ts'
 import type { InlineCommentResp, SubmissionResp, TeacherActivityResp } from '../../api/types.ts'
@@ -312,14 +313,14 @@ function InlineCommentCard({ comment }: { comment: InlineCommentResp }) {
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25 }}>
         {comment.teacher.given_name} {comment.teacher.family_name}
       </Typography>
-      <Box
+      <RenderedMarkdown
         sx={{
           '& p:first-of-type': { mt: 0 },
           '& p:last-of-type': { mb: 0 },
           fontSize: '0.85rem',
           fontFamily: 'inherit',
         }}
-        dangerouslySetInnerHTML={{ __html: comment.text_html }}
+        html={comment.text_html}
       />
       {comment.suggested_code && (
         <Box sx={{ mt: 1 }}>
@@ -513,13 +514,13 @@ export default function TeacherFeedback({
             )}
 
             {activity?.feedback_html && (
-              <Box
+              <RenderedMarkdown
                 sx={{
                   '& p:first-of-type': { mt: 0 },
                   '& p:last-of-type': { mb: 0 },
                   fontSize: '0.85rem',
                 }}
-                dangerouslySetInnerHTML={{ __html: activity.feedback_html }}
+                html={activity.feedback_html}
               />
             )}
 
@@ -605,14 +606,12 @@ function InlineCommentFlatList({
                   firstLineNumber={comment.line_start}
                 />
               </Box>
-              <Box
+              <RenderedMarkdown
                 sx={{
                   '& p:first-of-type': { mt: 0 },
                   '& p:last-of-type': { mb: 0 },
                 }}
-                dangerouslySetInnerHTML={{
-                  __html: comment.text_html,
-                }}
+                html={comment.text_html}
               />
               {comment.suggested_code && (
                 <Box sx={{ mt: 1 }}>

@@ -17,6 +17,7 @@ import config from '../../config.ts'
 import { createAppTheme } from '../../theme/theme.ts'
 import logoSvg from '../../assets/logo.svg'
 import CodeEditor from '../../components/CodeEditor.tsx'
+import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import { RobotIcon } from '../../components/icons.tsx'
 import AutoTestResults from '../course-exercise/AutoTestResults.tsx'
 import { useAnonymousAutoassess, useAnonymousExercise } from '../../api/anonymousExercise.ts'
@@ -131,14 +132,14 @@ export default function EmbedExercisePage() {
             )}
 
             {exercise.text_html && (
-              <Box
+              <RenderedMarkdown
                 sx={{
                   '& img': { maxWidth: '100%' },
                   '& pre': { overflowX: 'auto' },
                   '& table': { display: 'block', overflowX: 'auto' },
                   '& p:first-of-type': { mt: 0 },
                 }}
-                dangerouslySetInnerHTML={{ __html: exercise.text_html }}
+                html={exercise.text_html}
               />
             )}
 
