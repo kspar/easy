@@ -53,16 +53,62 @@ for arg in "$@"; do
   previous="$arg"
 done
 
+# Production is refused by default and stays that way. What follows is a deliberate, temporary
+# opt-in, added 2026-08-22 because production needed a firewall and `--ask-become-pass` cannot be
+# answered from a tool with no TTY — see the README. Three conditions, all required, because any one
+# of them alone would decay into a habit:
+#
+#   EASY_ALLOW_PRODUCTION=yes      typed each time, never exported in a shell profile
+#   EASY_INVENTORY / -i            naming production explicitly, as always
+#   a keychain item whose name says production, and which is NOT the dev one
+#
+# The last is the one that earns its place. Reusing `easy-staging-become` here would mean one stored
+# secret that unlocks root on both environments, so revoking dev's convenience would revoke
+# production's too and nobody would do it. Separate items mean
+# `security delete-generic-password -s easy-prod-become` revokes production alone, completely, with
+# no other change — which is what makes this grant temporary rather than permanent-by-accident.
+production=false
 for inventory in "${inventories[@]}"; do
   case "$inventory" in
-    *prod*)
-      echo "run.sh is dev-only, and inventory '$inventory' does not look like dev." >&2
-      echo "Production runs interactively, with a human present:" >&2
-      echo "  ansible-playbook -i inventories/production site.yml --check --diff --ask-become-pass" >&2
+    *prod*) production=true ;;
+  esac
+done
+
+if [ "$production" = true ]; then
+  if [ "${EASY_ALLOW_PRODUCTION:-}" != "yes" ]; then
+    cat >&2 <<EOF
+Refusing production: run.sh is dev-only unless you say otherwise, on purpose.
+
+Production normally runs interactively, with a human present:
+
+  ansible-playbook -i inventories/production site.yml --check --diff --ask-become-pass
+
+To use a stored password anyway — which lets anything running as you become root on
+production, and is a decision rather than a shortcut:
+
+  EASY_ALLOW_PRODUCTION=yes EASY_BECOME_KEYCHAIN_SERVICE=easy-prod-become \\
+    EASY_INVENTORY=inventories/production ./run.sh site.yml --diff
+EOF
+    exit 2
+  fi
+
+  case "$KEYCHAIN_SERVICE" in
+    easy-staging-become|*dev*)
+      echo "Refusing: '$KEYCHAIN_SERVICE' is dev's keychain item, and production does not share it." >&2
+      echo "Store a separate one and name it for production, so it can be revoked on its own:" >&2
+      echo "  security add-generic-password -a \"\$USER\" -s easy-prod-become -T /usr/bin/security -U -w" >&2
+      exit 2
+      ;;
+    *prod*) : ;;
+    *)
+      echo "Refusing: '$KEYCHAIN_SERVICE' does not name production, so it is probably not the item you meant." >&2
       exit 2
       ;;
   esac
-done
+
+  echo "!! PRODUCTION, with a stored sudo password. Revoke with:" >&2
+  echo "!!   security delete-generic-password -s $KEYCHAIN_SERVICE" >&2
+fi
 
 if ! security find-generic-password -s "$KEYCHAIN_SERVICE" -w >/dev/null 2>&1; then
   cat >&2 <<EOF
