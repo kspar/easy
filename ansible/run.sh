@@ -67,6 +67,28 @@ done
 # production's too and nobody would do it. Separate items mean
 # `security delete-generic-password -s easy-prod-become` revokes production alone, completely, with
 # no other change — which is what makes this grant temporary rather than permanent-by-accident.
+# A production opt-in against a non-production inventory is a contradiction, and in practice it means
+# the environment variables did not arrive the way they were meant to. Caught on 2026-08-22: an
+# unquoted `env $VARS ./run.sh` in zsh — which, unlike bash, does not word-split — passed the whole
+# string as one NAME=VALUE, so EASY_INVENTORY never got set and this silently fell back to dev.
+# Nothing ran, because --limit named a production host that dev's inventory does not contain. That
+# was luck rather than safety: a --limit matching a dev host would have applied happily.
+#
+# So the intent and the target have to agree. Refusing is the whole fix.
+if [ -n "${EASY_ALLOW_PRODUCTION:-}" ]; then
+  case "${inventories[*]}" in
+    *prod*) : ;;
+    *)
+      echo "Refusing: EASY_ALLOW_PRODUCTION is set but no inventory here names production." >&2
+      echo "  inventories: ${inventories[*]}" >&2
+      echo "Set EASY_INVENTORY=inventories/production, or unset EASY_ALLOW_PRODUCTION." >&2
+      echo "If you passed these as 'env \$VARS ./run.sh', note that zsh does not word-split:" >&2
+      echo "  put each assignment before the command instead." >&2
+      exit 2
+      ;;
+  esac
+fi
+
 production=false
 for inventory in "${inventories[@]}"; do
   case "$inventory" in
