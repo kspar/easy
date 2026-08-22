@@ -128,11 +128,39 @@
     - executor_pyvenv.content is defined
     - (executor_pyvenv.content | b64decode | regex_search('version\\s*=\\s*([0-9]+\\.[0-9]+)', '\\1') | first | default('')) != ansible_python_version.split('.')[0:2] | join('.')
 
+# `ansible.builtin.pip` cannot tell whether a requirements *file* is already satisfied without
+# running pip, so under --check it reports `changed` unconditionally — and notifies the restart
+# handler, which then reports changed too. On a fully converged host that made
+# `./run.sh site.yml --check --diff` show the executor as drifted on every single run. This repo
+# checks before it applies, so a check that always cries drift is not noise, it is the drift report
+# becoming unreadable: the two lines you must ignore sit next to the one you must not.
+#
+# `pip install --dry-run` resolves the requirements and installs nothing, so it is honest to run
+# during a check — hence `check_mode: false`, which is what makes the gate work in the mode it
+# exists for. Verified all three branches against the host rather than assumed: a satisfied
+# requirements.txt gives rc=0 and no "Would install", a genuinely absent package gives rc=0 *with*
+# "Would install", and a missing venv gives rc=2.
+- name: Find out whether the virtualenv already satisfies requirements.txt
+  ansible.builtin.command:
+    cmd: >-
+      {{ executor_venv }}/bin/python -m pip install --dry-run --disable-pip-version-check
+      --requirement {{ executor_root }}/requirements.txt
+  register: executor_pip_dryrun
+  changed_when: false
+  check_mode: false
+  failed_when: false
+
 - name: Create the virtualenv and install the executor's dependencies
   ansible.builtin.pip:
     requirements: "{{ executor_root }}/requirements.txt"
     virtualenv: "{{ executor_venv }}"
     virtualenv_command: python3 -m venv
+  # rc != 0 is the "cannot ask" branch and deliberately installs: no venv yet on a fresh host, the
+  # venv the task above just discarded, or a pip too broken to answer. Defaulting the rc to 1 keeps
+  # that true even if the command module fails before it sets one.
+  when: >-
+    executor_pip_dryrun.rc | default(1) != 0
+    or executor_pip_dryrun.stdout | default('') is search('Would install')
   notify: Restart the executor
 
 - name: Install gunicorn into the virtualenv
