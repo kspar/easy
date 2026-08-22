@@ -78,11 +78,26 @@
     - name: Refresh apt
       ansible.builtin.apt: {update_cache: true}
 
-    - name: Upgrade what those repos own, now that they resolve again
+    # One package per task, and only the ones this host actually has. Listing all four in a single
+    # apt call means the whole call fails where one is absent — docker-ce is not installed on the
+    # IdP — and `failed_when: false` then hides it, so the monitoring agent silently stays on its
+    # old build. Which is exactly the failure this playbook exists to prevent, so it is worth the
+    # extra loop.
+    - name: Which of these are installed here
+      ansible.builtin.shell:
+        cmd: |
+          for p in docker-ce docker-ce-cli containerd.io zabbix-agent2; do
+            dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "install ok installed" && echo "$p"
+          done
+        executable: /bin/bash
+      register: present
+      changed_when: false
+
+    - name: Upgrade them, now that their repos resolve again
       ansible.builtin.apt:
-        name: [docker-ce, docker-ce-cli, containerd.io, zabbix-agent2]
+        name: "{{ item }}"
         state: latest
-      failed_when: false
+      loop: "{{ present.stdout_lines }}"
 
     - name: What resolves from where now
       ansible.builtin.shell:
