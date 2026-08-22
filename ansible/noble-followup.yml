@@ -1,0 +1,101 @@
+---
+# What a 22.04 -> 24.04 upgrade leaves to do. Run it after `do-release-upgrade`, before calling the
+# host done.
+#
+# The upgrader disables every third-party apt source, which is right — a jammy suite on a noble host
+# is how you get a half-upgraded system. It does not know which of them matter, and here two do:
+# Docker is the runtime the executor grades with, and zabbix is the only monitoring left since
+# netdata was removed. Left disabled they keep running and stop receiving security updates, quietly.
+#
+# Written against what the upgrade actually did on 2026-08-22, not what it was expected to do:
+#
+#   * It renamed `foo.list` to `foo.list.distUpgrade` and ran `migrateToDeb822Sources()`. Docker and
+#     zabbix ended up with NO active source of either kind, so there is nothing to un-comment —
+#     these files are written fresh.
+#   * `zabbix-agent2-plugins` got a deb822 file with `Enabled: no`. It has no noble suite upstream
+#     and nothing on the host installs from it: every zabbix package resolves to the main 6.0 repo,
+#     which does carry both agent2 plugins. Removed rather than repaired.
+#   * Docker 29.7.2 survived as a jammy build now resolving from `/var/lib/dpkg/status` — installed,
+#     working, and updatable from nowhere. That is the state this fixes.
+#
+# Verified upstream before relying on it: download.docker.com and zabbix/6.0/ubuntu both publish a
+# noble suite; zabbix-agent2-plugins/1 does not.
+- name: Finish a noble upgrade
+  hosts: "{{ target | default('production') }}"
+  become: true
+
+  tasks:
+    - name: Refuse unless this host is actually noble
+      ansible.builtin.assert:
+        that: ansible_facts.distribution_version is version('24.04', '>=')
+        fail_msg: >-
+          {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }} is not noble.
+          Pointing apt at a noble suite from an older release pulls noble packages onto it, which is
+          the mess the upgrader was avoiding when it disabled these sources.
+        quiet: true
+
+    - name: Restore Docker's repository, on noble
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/docker.sources
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by Ansible (noble-followup.yml). Replaces docker.list, which the release upgrade
+          # renamed to .distUpgrade and left with no successor.
+          Types: deb
+          URIs: https://download.docker.com/linux/ubuntu
+          Suites: noble
+          Components: stable
+          Architectures: amd64
+          Signed-By: /etc/apt/keyrings/docker.gpg
+      when: "'executor' in group_names"
+
+    - name: Restore zabbix's repository, on noble
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/zabbix.sources
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by Ansible (noble-followup.yml). Zabbix 6.0 publishes a noble suite, so the major
+          # version does not need to move to get updates again.
+          Types: deb
+          URIs: https://repo.zabbix.com/zabbix/6.0/ubuntu
+          Suites: noble
+          Components: main
+          Signed-By: /usr/share/keyrings/zabbix.gpg
+
+    - name: Drop the sources that have no noble suite and nothing installed from them
+      ansible.builtin.file: {path: "/etc/apt/sources.list.d/{{ item }}", state: absent}
+      loop:
+        - zabbix-agent2-plugins.sources
+        - zabbix-agent2-plugins.list.distUpgrade
+        - zabbix-tools.list.distUpgrade
+        - docker.list.distUpgrade
+        - zabbix.list.distUpgrade
+
+    - name: Refresh apt
+      ansible.builtin.apt: {update_cache: true}
+
+    - name: Upgrade what those repos own, now that they resolve again
+      ansible.builtin.apt:
+        name: [docker-ce, docker-ce-cli, containerd.io, zabbix-agent2]
+        state: latest
+      failed_when: false
+
+    - name: What resolves from where now
+      ansible.builtin.shell:
+        cmd: |
+          for p in docker-ce zabbix-agent2; do
+            printf '  %s %s | from %s\n' "$p" \
+              "$(dpkg-query -W -f='${Version}' $p 2>/dev/null || echo 'not installed')" \
+              "$(apt-cache policy $p 2>/dev/null | grep -A1 '\*\*\*' | tail -1 | awk '{print $2" "$3}')"
+          done
+          echo "  docker: $(systemctl is-active docker 2>/dev/null) | zabbix: $(systemctl is-active zabbix-agent2)"
+          echo "  executor: $(systemctl is-active easy-executor 2>/dev/null)"
+        executable: /bin/bash
+      register: after
+      changed_when: false
+
+    - ansible.builtin.debug: {msg: "{{ after.stdout_lines }}"}
