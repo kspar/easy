@@ -14,13 +14,24 @@
 # Written to be re-runnable: every insert is conditional, so a second run reports almost nothing
 # changed.
 
-- name: Install Docker and the tools the image builds need
+# Docker is its own task because an environment may already have it from somewhere this role should
+# not fight. Production runs docker-ce 28.3.3 from Docker's own apt repository; installing
+# `docker.io` there would make apt remove docker-ce to resolve the conflict, taking the container
+# runtime down on the host whose entire job is running containers. Empty list, no opinion.
+- name: Install Docker
+  ansible.builtin.apt:
+    name: "{{ executor_docker_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: executor_docker_packages | length > 0
+
+- name: Install the tools the executor needs
   ansible.builtin.apt:
     name:
       # Ubuntu's own package rather than Docker's apt repository. One less third-party repo on a
       # host whose job is running other people's code, and the version difference does not matter
       # to `docker build` + `docker run`.
-      - docker.io
       - git
       - python3-venv
     state: present
@@ -93,6 +104,29 @@
   loop_control:
     label: "{{ item.name }}"
   notify: Restart the executor
+
+# A venv is NOT immune to the system Python moving, which is easy to assume and wrong. `python3 -m
+# venv` writes `version = 3.10.12` into pyvenv.cfg, puts packages in `lib/python3.10/site-packages`,
+# and symlinks `bin/python3` at `/usr/bin/python3`. After a release upgrade that symlink resolves to
+# 3.12, which does not read a 3.10 site-packages — so the venv is broken, and `pip` inside it is too,
+# which means the task below cannot repair what it cannot run.
+#
+# Detecting the mismatch and starting over is the whole fix, and it makes a re-run of this role the
+# recovery for a Python version change rather than something a human has to know to do by hand.
+- name: Find out which Python the existing virtualenv was built for
+  ansible.builtin.slurp:
+    src: "{{ executor_venv }}/pyvenv.cfg"
+  register: executor_pyvenv
+  failed_when: false
+  changed_when: false
+
+- name: Discard a virtualenv built for a Python that is no longer here
+  ansible.builtin.file:
+    path: "{{ executor_venv }}"
+    state: absent
+  when:
+    - executor_pyvenv.content is defined
+    - (executor_pyvenv.content | b64decode | regex_search('version\\s*=\\s*([0-9]+\\.[0-9]+)', '\\1') | first | default('')) != ansible_python_version.split('.')[0:2] | join('.')
 
 - name: Create the virtualenv and install the executor's dependencies
   ansible.builtin.pip:

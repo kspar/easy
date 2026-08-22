@@ -5,6 +5,13 @@
 # Everything here is an ordinary default. The one value worth thinking about per environment is
 # executor_workers — see below.
 
+# Ubuntu's own Docker, which is the right default for a host this role builds from nothing: one less
+# third-party repo on a machine whose job is running other people's code. Set to [] where Docker is
+# already installed and managed elsewhere — production has docker-ce from Docker's repo, and letting
+# apt resolve that conflict would remove it.
+executor_docker_packages:
+  - docker.io
+
 executor_user: easy-executor
 executor_group: easy-executor
 

@@ -1,0 +1,15 @@
+---
+# Just `roles/executor`, on the executor host, before its OS upgrade.
+#
+# site.yml cannot be used yet: its first play is baseline hardening, which asserts Ubuntu 24.04 and
+# correctly refuses 22.04. But the reason for onboarding this host now is precisely to make that
+# upgrade safe — the service has to stop depending on system Python before system Python moves. So
+# the one role that achieves it gets applied on its own, and the full convergence follows the OS.
+#
+# roles/executor_images is excluded by `executor_images_enabled: false` in the inventory, so nothing
+# here touches the grading images or core's database rows.
+- name: Onboard the production executor to a venv and a non-root service
+  hosts: easyexecprod
+  become: true
+  roles:
+    - executor
