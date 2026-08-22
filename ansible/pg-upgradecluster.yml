@@ -1,12 +1,10 @@
 ---
 # Migrate a PostgreSQL cluster to the major version noble ships, after a release upgrade.
 #
-#   ./run.sh pg-upgradecluster.yml -e target=easyidpprod  -e pg_db=keycloak -e pg_app_service=keycloak
-#   ./run.sh pg-upgradecluster.yml -e target=easycoreprod -e pg_db=easyems  -e pg_app_service=easy-core
+#   ./run.sh pg-upgradecluster.yml -e target=<host> -e pg_db=<database> -e pg_app_service=<unit>
 #
-# Rehearsed on the IdP on 2026-08-22: 32 MB, twenty seconds, and Keycloak 15.1.1 back up in ten,
-# serving logins against 16. Core's easyems is 2.9 GB, so expect minutes rather than seconds — the
-# shape is identical and nothing here depends on the size.
+# Time scales with the database and nothing else: a few seconds for tens of megabytes, a few
+# minutes for a few gigabytes. Nothing here is size-dependent in any other way.
 #
 # `do-release-upgrade` leaves two clusters behind: the live old one still on 5432, and an empty new
 # one the new postgresql package's postinst created on the next free port. pg_upgradecluster needs its

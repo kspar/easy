@@ -112,32 +112,27 @@ makes the after number mean anything. Against the 2026-08-12 dev corpus:
 ./gradlew -q :tsl:compileSpecTree -PspecTree=doc/core/tsl-migration/migrated/exercises   # 721 OK, 0 failed
 ```
 
-### The compile gate should now exit 0
+### `failed: 0` and a non-zero exit are not contradictory
 
-Re-rehearsed at `6cde85c6` on 2026-08-21 against the 2026-08-12 dev corpus:
+The task counts three things and throws on the sum of two of them:
 
-| | before | after migration |
-|---|---|---|
-| compiled OK | 532 | **721** |
-| failed | 189 | **0** |
-| not Python | 1 | 1 |
+| | |
+|---|---|
+| compiled OK | the spec compiled and produced Python |
+| failed | the spec did not compile |
+| **not Python** | it compiled, and the result is not valid Python |
 
-That last row was **exercise 587**, and it was not the migration's doing. One of its
-`function_execution_test` arguments held an unterminated Python list literal — it opened a bracket,
-never closed it, and ended on a trailing comma. Arguments are interpolated into the generated script
-raw and by design, so that `5` becomes an int and `[1, 2]` becomes a list; an unbalanced bracket
-therefore propagated into the emitted Python and invalidated the whole file. Its grading script had
-never been valid Python, so every submission to it failed at grading time. `function_execution_test`
-is a kept type, which is why the count was 1 in both columns.
+So a tree can report `failed: 0` and still exit non-zero because of the third row. **Read all three.**
 
-**587 was deleted from dev and production on 2026-08-22**, so that row should now read 0 and the task
-should exit 0.
+The third row is not something a migration causes. It means a spec's stored content produces invalid
+Python when interpolated — most often an argument holding an unbalanced bracket, because arguments are
+emitted raw and by design so that `5` is an int and `[1, 2]` is a list. Such an exercise has never
+graded: every submission to it fails with a syntax error, and this gate is simply the first thing
+that looked.
 
-Which makes this the useful instruction: the task counts "compiled to non-Python" separately from
-"would not compile" and then throws on the sum, so `failed: 0` and a non-zero exit are not
-contradictory. Read all three rows. **A non-zero exit now means something new** — either a spec
-`migrate.py` produced that the compiler rejects, or another exercise whose stored arguments do not
-form valid Python. Both are worth stopping for.
+Treat a non-zero exit as a stop **only after checking which row caused it**. A `failed` count is the
+migration's problem; a `not Python` count is a content defect that predates it and wants fixing at
+the source, not by hand-editing a spec on the server.
 
 ## 6. Dry run
 

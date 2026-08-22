@@ -7,19 +7,19 @@
 # Docker is the runtime the executor grades with, and zabbix is the only monitoring left since
 # netdata was removed. Left disabled they keep running and stop receiving security updates, quietly.
 #
-# Written against what the upgrade actually did on 2026-08-22, not what it was expected to do:
+# Written against what a 22.04 -> 24.04 upgrade actually does, not what it is expected to do:
 #
-#   * It renamed `foo.list` to `foo.list.distUpgrade` and ran `migrateToDeb822Sources()`. Docker and
-#     zabbix ended up with NO active source of either kind, so there is nothing to un-comment —
-#     these files are written fresh.
-#   * `zabbix-agent2-plugins` got a deb822 file with `Enabled: no`. It has no noble suite upstream
-#     and nothing on the host installs from it: every zabbix package resolves to the main 6.0 repo,
-#     which does carry both agent2 plugins. Removed rather than repaired.
-#   * Docker 29.7.2 survived as a jammy build now resolving from `/var/lib/dpkg/status` — installed,
-#     working, and updatable from nowhere. That is the state this fixes.
+#   * It renames `foo.list` to `foo.list.distUpgrade` and runs `migrateToDeb822Sources()`. A source
+#     can end up with NO active file of either kind, so there is nothing to un-comment — the ones
+#     here are written fresh, in deb822.
+#   * A source with no suite for the new release, and nothing installed from it, is removed rather
+#     than repaired. Check `apt-cache policy` for what actually resolves from where before assuming.
+#   * A package can survive an upgrade as an old-release build resolving from `/var/lib/dpkg/status`
+#     — installed, working, and updatable from nowhere. That is the state this fixes, and it is
+#     invisible unless you read the version string back.
 #
-# Verified upstream before relying on it: download.docker.com and zabbix/6.0/ubuntu both publish a
-# noble suite; zabbix-agent2-plugins/1 does not.
+# Confirm upstream publishes a suite for the new release before pointing at it; not every third-party
+# repository does.
 - name: Finish a noble upgrade
   hosts: "{{ target | default('production') }}"
   become: true

@@ -1,5 +1,7 @@
 ---
-# Just `roles/executor`, on the executor host, before its OS upgrade.
+# Just `roles/executor`, on one executor host, before that host's OS upgrade.
+#
+#   ./run.sh executor-onboard.yml -e target=<host>
 #
 # site.yml cannot be used yet: its first play is baseline hardening, which asserts Ubuntu 24.04 and
 # correctly refuses 22.04. But the reason for onboarding this host now is precisely to make that
@@ -8,8 +10,8 @@
 #
 # roles/executor_images is excluded by `executor_images_enabled: false` in the inventory, so nothing
 # here touches the grading images or core's database rows.
-- name: Onboard the production executor to a venv and a non-root service
-  hosts: easyexecprod
+- name: Onboard an executor host to a venv and a non-root service
+  hosts: "{{ target }}"
   become: true
   roles:
     - executor

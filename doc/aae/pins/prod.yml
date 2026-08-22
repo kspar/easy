@@ -30,24 +30,15 @@
 # that in now costs one file; retrofitting it later would mean redoing the guard, the allowlist and
 # the channel naming.
 
-## Measured 2026-08-22 — and the values below are still not corrected
+## It has now been measured, and the result is not in this repository
 ##
-## Somebody finally looked. What production's executor actually has, read off the host:
+## The commands above were run. Several of the values below were wrong, all describing something
+## newer than what is deployed, and one entry names an image that does not exist under that name at
+## all. The findings are deliberately not recorded here: they are the state of a live host, and this
+## repository is public.
 ##
-##   tiivad     image `tiivad` does not exist; only `tiivad:tsl-compose` and `tiivad:tsl-spec`,
-##              both the same image id, built 2026-03-17. No pip metadata readable under the
-##              bare name, so the tiivad version below is still unverified.
-##   silmused   1.7.4      (this file says 1.7.11)   psycopg2 2.9.9  (matches)
-##   pygrader   numpy 1.23.5                          (this file says 1.23.4)
-##   imgrec     pillow 12.1.1, requests 2.32.5        (this file says 12.3.0 / 2.34.2)
-##
-## So four of the six measurable values here were wrong, all in the same direction: this file
-## describes something newer than what is deployed. Left uncorrected on purpose — "correct the file
-## to match" and "move production to these versions" are different decisions and this is not the
-## change that should quietly pick one. The measurement is the part that was missing.
-##
-## Images are from 2026-03-17 and 2026-04-20, and are hand-built on the host: there is no digest to
-## roll back to, which is the whole argument for `roles/executor_images`.
+## They are in the local-only production runbook. Ask kspar. Correcting this file to match, or moving
+## production to the versions in it, remain two different decisions — the measurement does not pick one.
 
 schema: "1"
 environment: "prod"

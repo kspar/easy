@@ -15,9 +15,9 @@
 # changed.
 
 # Docker is its own task because an environment may already have it from somewhere this role should
-# not fight. Production runs docker-ce 28.3.3 from Docker's own apt repository; installing
-# `docker.io` there would make apt remove docker-ce to resolve the conflict, taking the container
-# runtime down on the host whose entire job is running containers. Empty list, no opinion.
+# not fight. Where `docker-ce` from Docker's own apt repository is already installed, adding
+# `docker.io` makes apt remove it to resolve the conflict — taking the container runtime down on the
+# host whose entire job is running containers. Set the list empty there; no opinion.
 - name: Install Docker
   ansible.builtin.apt:
     name: "{{ executor_docker_packages }}"
