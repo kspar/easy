@@ -154,3 +154,12 @@ hardening_unattended_all_updates: false
 # addresses and its executor is a separate machine that core has to reach across the network, so
 # "open to the world" and "closed" are not the only two options there.
 hardening_scoped_tcp_rules: []
+
+# Packages this host must not have. Empty by default — the role installs what a host needs and does
+# not have opinions about what somebody else installed.
+#
+# It exists because "closed" and "not listening at all" are different states, and for a service
+# nobody uses the second is the honest one: a firewall rule around an unused public web UI preserves
+# it, and preserving it was never the goal. Purged rather than masked, so a release upgrade cannot
+# quietly bring the unit back.
+hardening_absent_packages: []

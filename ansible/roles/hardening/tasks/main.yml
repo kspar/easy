@@ -177,6 +177,9 @@
 # the top of this file refuses 22.04, correctly, and would otherwise have held the firewall hostage
 # to a release upgrade. `--tags firewall` skips the assert along with everything else, which is
 # exactly what is wanted when the firewall is the emergency and the OS is the project.
+#
+# The tag covers the whole exposure subset rather than literally only ufw: closing a port by removing
+# whatever is listening on it belongs to the same job as filtering it.
 
 - name: Install ufw
   ansible.builtin.apt:
@@ -236,6 +239,16 @@
 - name: Enable ufw
   community.general.ufw:
     state: enabled
+  tags: firewall
+
+# Tagged with the firewall, because it is the same job: this closes ports rather than filtering them.
+- name: Remove packages this host should not have
+  ansible.builtin.apt:
+    name: "{{ hardening_absent_packages }}"
+    state: absent
+    purge: true
+    autoremove: true
+  when: hardening_absent_packages | length > 0
   tags: firewall
 
 # --- sshd ------------------------------------------------------------------------------------
