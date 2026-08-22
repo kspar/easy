@@ -13,7 +13,14 @@ Type=exec
 User={{ easy_core_user }}
 Group={{ easy_core_group }}
 
-# Not cosmetic: logback writes a rolling log file at a path relative to the working directory.
+# Say where the log goes, rather than implying it. logback's LOG_PATH used to be a hardcoded
+# relative path, which made WorkingDirectory below the thing that decided where core's log file
+# landed — true, load-bearing, and invisible to anyone reading either file on its own. It now reads
+# ${EASY_LOG_PATH:-easy.log}, so this line is the answer and the default only covers a dev run.
+Environment=EASY_LOG_PATH={{ easy_core_log_dir }}/{{ easy_core_log_file }}
+
+# Kept anyway. Nothing depends on it now, but a JVM writes hs_err_pid*.log and heap dumps into the
+# working directory when it dies, and ProtectSystem=strict means this is the one place it can.
 WorkingDirectory={{ easy_core_log_dir }}
 
 ExecStart={{ easy_core_java }} {{ easy_core_java_opts }} -jar {{ easy_core_jar }} \

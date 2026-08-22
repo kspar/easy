@@ -1,5 +1,13 @@
 <configuration>
-    <property name="LOG_PATH" value="easy.log"/>
+    <!-- Where the rolling file goes. Overridable, because the value that used to be hardcoded here
+         is *relative*, and a relative path is resolved against the working directory of whoever
+         started the jar. Under systemd that is fine — roles/core_service sets WorkingDirectory to
+         /var/log/easy precisely to make this land somewhere sensible — but it made the unit's
+         WorkingDirectory load-bearing for a reason nobody reading the unit would guess, and a jar
+         started by hand wrote its log into whatever directory you happened to be standing in.
+         The unit now sets EASY_LOG_PATH explicitly and the default stays as it was for dev. -->
+    <property name="LOG_PATH" value="${EASY_LOG_PATH:-easy.log}"/>
+
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} : %msg%n</pattern>
@@ -9,19 +17,45 @@
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}</file>
         <append>true</append>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- rollover, last element (e.g MM) determines interval. Rollover every month -->
-            <fileNamePattern>${LOG_PATH}.%d{yyyy-MM}.gz</fileNamePattern>
 
-            <!-- keep 6 months worth of history -->
-            <maxHistory>6</maxHistory>
+        <!-- Size *and* time, not time alone. The previous policy rolled monthly and kept six
+             archives, which bounds the number of files and says nothing about their size: the
+             active file grew without a ceiling for up to 31 days, and `maxHistory` only prunes when
+             a rollover happens, so the one moment the retention rule was enforced was once a month.
+             A busy month, or a loop logging at debug, filled the disk between two enforcement
+             points and the smoke check's disk-percent alarm was the only thing watching.
+
+             So: roll on the day or at 100MB, whichever comes first, and cap the whole set. -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- %i is not optional with this policy — it is the within-period counter for the
+                 size-triggered rolls, and logback refuses to start without it. -->
+            <fileNamePattern>${LOG_PATH}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+
+            <maxFileSize>100MB</maxFileSize>
+
+            <!-- Days, because the period above is a day. 180 keeps the six months the previous
+                 config intended and EZ-1550 asked for; it is a bound on age, and totalSizeCap is
+                 the bound on bytes. On a quiet host age expires first, on a busy one size does,
+                 and neither can run away while the other holds. -->
+            <maxHistory>180</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+
+            <!-- Without this, retention is only ever applied at a rollover. A host that has been
+                 down, or one whose traffic stopped, keeps everything it had until the next write
+                 rolls the file — which is exactly the host you are logging into because the disk
+                 is full. Prune at startup too. -->
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
+
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} : %msg%n</pattern>
         </encoder>
     </appender>
 
 
+    <!-- Deliberately left at debug pending EZ-1367: which of core's messages belong in a production
+         log is a per-call-site decision, and quietly flipping this to info here would hide messages
+         somebody is relying on rather than answer the question. -->
     <logger name="core" level="debug"/>
 
     <root level="info">
