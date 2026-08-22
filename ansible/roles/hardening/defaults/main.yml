@@ -163,3 +163,13 @@ hardening_scoped_tcp_rules: []
 # it, and preserving it was never the goal. Purged rather than masked, so a release upgrade cannot
 # quietly bring the unit back.
 hardening_absent_packages: []
+
+# How much disk the systemd journal may use. Unset, journald takes 10% of the filesystem — which on
+# a 28 GB root is 2.8 GB of logs nobody reads, and it is claimed silently over months so it never
+# looks like the reason a disk filled up. 500M is generous for these hosts: the default namespace was
+# using well under that once the noise was gone.
+#
+# SystemKeepFree is the other half. It stops the journal being the thing that finishes off a disk
+# something else is already filling.
+hardening_journal_max_use: 500M
+hardening_journal_keep_free: 2G

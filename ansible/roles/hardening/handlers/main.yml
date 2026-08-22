@@ -38,3 +38,11 @@
   when:
     - not ansible_check_mode
     - hardening_unattended_reboot | bool
+
+# journald re-reads its config and vacuums to the new cap on the next rotation; restarting makes that
+# now rather than eventually. Logging is uninterrupted from the caller's point of view — the socket
+# stays, so messages queue rather than being lost.
+- name: Restart journald
+  ansible.builtin.systemd_service:
+    name: systemd-journald
+    state: restarted

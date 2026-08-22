@@ -251,6 +251,37 @@
   when: hardening_absent_packages | length > 0
   tags: firewall
 
+# --- journal retention -----------------------------------------------------------------------------
+# Tagged separately: this is disk hygiene rather than access control, and it is the one thing here
+# worth being able to apply to a host that is running out of space right now.
+
+# `copy` does not create parents, and Ubuntu ships journald.conf without a drop-in directory.
+- name: Make sure journald has a drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: journal
+
+- name: Cap the journal
+  ansible.builtin.copy:
+    dest: /etc/systemd/journald.conf.d/10-easy-retention.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible (roles/hardening) — local edits are overwritten.
+      #
+      # Without these journald uses 10% of the filesystem, which it claims slowly enough that a full
+      # disk never looks like its fault.
+      [Journal]
+      SystemMaxUse={{ hardening_journal_max_use }}
+      SystemKeepFree={{ hardening_journal_keep_free }}
+  notify: Restart journald
+  tags: journal
+
 # --- sshd ------------------------------------------------------------------------------------
 
 - name: Harden sshd
