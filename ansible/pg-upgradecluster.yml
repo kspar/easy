@@ -1,0 +1,83 @@
+---
+# Migrate a PostgreSQL cluster to the major version noble ships, after a release upgrade.
+#
+#   ./run.sh pg-upgradecluster.yml -e target=easyidpprod  -e pg_db=keycloak -e pg_app_service=keycloak
+#   ./run.sh pg-upgradecluster.yml -e target=easycoreprod -e pg_db=easyems  -e pg_app_service=easy-core
+#
+# Rehearsed on the IdP on 2026-08-22: 32 MB, twenty seconds, and Keycloak 15.1.1 back up in ten,
+# serving logins against 16. Core's easyems is 2.9 GB, so expect minutes rather than seconds — the
+# shape is identical and nothing here depends on the size.
+#
+# `do-release-upgrade` leaves two clusters behind: the live old one still on 5432, and an empty new
+# one the new postgresql package's postinst created on the next free port. pg_upgradecluster needs its
+# target version free, so the empty one is dropped first — it has never held data.
+#
+# Deliberately NOT --link. That makes the old cluster unusable, and trading the rollback for speed is
+# a poor deal at any size. The old cluster is left on disk, stopped and moved to another port, so
+# going back is starting it and pointing the application at that port.
+- name: Migrate a cluster to the new major version
+  hosts: "{{ target }}"
+  become: true
+
+  vars:
+    pg_old: 14
+    pg_new: 16
+
+  tasks:
+    - name: Refuse without the two things that have no safe default
+      ansible.builtin.assert:
+        that: [pg_db is defined, pg_app_service is defined]
+        fail_msg: "pass -e pg_db=<database> -e pg_app_service=<systemd unit that talks to it>"
+        quiet: true
+
+    - name: A dump taken now, whatever else exists
+      become_user: postgres
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+          d=/var/tmp/pre-pg{{ pg_new }}
+          mkdir -p "$d"
+          pg_dump -p 5432 --format=custom --compress=9 --no-owner --no-privileges \
+            --file="$d/{{ pg_db }}.dump" {{ pg_db }}
+          pg_restore --list "$d/{{ pg_db }}.dump" > /dev/null
+          pg_dumpall -p 5432 --globals-only --file="$d/globals.sql"
+          echo "  dumped $(du -h "$d/{{ pg_db }}.dump" | cut -f1), table of contents verified"
+        executable: /bin/bash
+      register: dump
+      changed_when: true
+
+    - name: Stop the application, so nothing writes during the switch
+      ansible.builtin.systemd_service:
+        name: "{{ pg_app_service }}"
+        state: stopped
+
+    - name: Drop the empty new cluster the release upgrade created
+      ansible.builtin.command: "pg_dropcluster {{ pg_new }} main --stop"
+      failed_when: false
+      changed_when: true
+
+    - name: Upgrade
+      ansible.builtin.command: "pg_upgradecluster {{ pg_old }} main"
+      register: up
+      changed_when: true
+
+    - name: Where things landed — the new cluster must have taken 5432
+      ansible.builtin.command: pg_lsclusters
+      register: ls
+      changed_when: false
+
+    - name: Fail if the application's port is not being served by the new cluster
+      ansible.builtin.assert:
+        that: ls.stdout is search('^' ~ pg_new ~ '\s+main\s+5432\s+online', multiline=True)
+        fail_msg: >-
+          {{ pg_new }}/main is not online on 5432, so the application would connect to nothing.
+          Clusters:\n{{ ls.stdout }}
+        quiet: true
+
+    - name: Start the application again
+      ansible.builtin.systemd_service:
+        name: "{{ pg_app_service }}"
+        state: started
+
+    - ansible.builtin.debug:
+        msg: "{{ dump.stdout_lines + ls.stdout_lines + ['old cluster kept on disk; drop with: pg_dropcluster ' ~ pg_old ~ ' main'] }}"
