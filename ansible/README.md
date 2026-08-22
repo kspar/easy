@@ -137,6 +137,13 @@ cannot — a piped shell, an editor's run pane, a tool that captures output — 
 `GetPassWarning: Can not control echo on the terminal` and your sudo password is typed in the clear
 into whatever is recording that session.
 
+**Claude Code is one of those places, and its `!` prefix is not an exception.** Tried against
+production on 2026-08-22: the warning appears, nothing is read, and the play dies at Gathering Facts
+with `Missing sudo password`. Harmless that time because the prompt got no input — but the same
+attempt with a password typed at it would have put that password into the conversation transcript in
+plaintext, which is a rotation, not an inconvenience. Production applies are run from a real
+terminal, by a person. There is no clever way around this and looking for one is the mistake.
+
 ### Without the prompt
 
 For runs that have no human at a terminal, `./run.sh` reads the sudo password from the macOS login
