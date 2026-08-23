@@ -175,13 +175,17 @@ easy:
     #
     # `project-id` and `visibility-group-id` are YouTrack's own opaque ids, not `EZ` and not
     # `EZ Team` — the REST API does not accept the names. doc/bug-reporting.md has the two curls that
-    # find them. The token lives in secrets.yaml, never here.
+    # find them. The real token lives in secrets.yaml and roles/core_config puts it into the deployed
+    # config; the placeholder below is here for the file's other job, as the thing a developer copies
+    # to application.yaml, where no Ansible run will fill it in. Same reasoning as `client-secret`
+    # and `wstoken`, which that role also injects and which are also placeholders here.
     #
     # Every issue this files is restricted to the group named by `visibility-group-id`, always. That
     # is not configurable, and doc/bug-reporting.md says why.
     youtrack:
       enabled: false
       base-url: "https://easy.youtrack.cloud"
+      token: "<token>"
       project-id: "<project-id>"
       visibility-group-id: "<group-id>"
       # The `Type` value stamped on a filed issue, as a bundle element id rather than its label.
