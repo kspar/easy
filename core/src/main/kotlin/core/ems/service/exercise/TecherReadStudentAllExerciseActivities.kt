@@ -3,6 +3,7 @@ package core.ems.service.exercise
 import core.conf.security.EasyUser
 import core.ems.service.ActivityResp
 import core.ems.service.access_control.assertAccess
+import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
 import core.ems.service.selectStudentAllExerciseActivities
@@ -33,6 +34,16 @@ class TecherReadStudentAllExerciseActivities {
         val courseExId = courseExerciseIdString.idToLongOrInvalidReq()
 
         caller.assertAccess { teacherOnCourse(courseId) }
+        // `teacherOnCourse` checks the caller against `courseId`, and this checks `courseId` against
+        // the exercise the caller actually asked for. Without the second check the first one is
+        // decorative: `selectStudentAllExerciseActivities` filters on `courseExId` and `studentId`
+        // only, so a course the caller does teach would authorise a course exercise on a course they
+        // do not. Both ids come from the path and nothing else ties them together.
+        //
+        // No `RequireStudentVisible`: a teacher may read activities on an exercise that is still
+        // hidden from students. That is the one difference from the student-side twin of this
+        // endpoint, `StudentReadAllExerciseTeacherActivities`, which is otherwise the same two lines.
+        assertCourseExerciseIsOnCourse(courseExId, courseId)
 
         return selectStudentAllExerciseActivities(courseExId, studentId)
     }
