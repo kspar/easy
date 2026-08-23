@@ -81,7 +81,7 @@ finishes or it goes back to `todo`.
 |---|---|---|---|---|
 | T1 | Entry & first run | **in progress** 2026-08-23 `278d1ee1` | X-015, X-016 | The empty-`tsl.json` lead is **confirmed by execution**: `{"tsl_spec":"","format":"JSON"}` is sent unprompted and Save is disabled. **Remaining before `done`:** what the 12-item preset menu teaches a teacher who has never seen TSL (and its labels disagreeing with the type `Select`'s — "Run the program" vs "Program execution test"), EZ-1734's hardcoded container dropdown, and the read-only view of an existing TSL exercise as a non-owner. **For T6:** the builder gets ~700px of a 1440px viewport because the left half is a static preview card that does not collapse |
 | T2 | The test forms | todo | — | |
-| T3 | Model vs compiler | todo | — | **Unblocked: :8080 works with header auth, recipe in the Baseline.** Two leads already in hand — the compiler emits its own Estonian default test name into the generated script while the UI derives its own from `testDefaultName`, so one string has two sources; and `emptySpec()` hardcodes `requiredFiles: ['lahendus.py']` rather than reading `solution_file_name` (see X-015) |
+| T3 | Model vs compiler | **in progress** 2026-08-23 `9dbe8dd1` | X-019, X-020; R-007 | The reverse direction is done — nine specs against the real compiler establish that six capabilities work and are unreachable from any form (X-019), and that duplicate ids compile (X-020). R-007 is the near-miss worth reading. **Remaining before `done`:** the forward direction beyond what `library-exercise-tsl-live.spec.mjs` already covers — fields the UI *emits* that the compiler ignores (`definitionCheckValue`, `class_instance_test.className`, the forced `containsWhatArg: 'import'`), and the validation tiivad performs at grading time that neither side surfaces. Leads in hand — the compiler emits its own Estonian default test name into the generated script while the UI derives its own from `testDefaultName`, so one string has two sources; and `emptySpec()` hardcodes `requiredFiles: ['lahendus.py']` rather than reading `solution_file_name` (see X-015) |
 | T4 | The feedback loop | **in progress** 2026-08-23 `a8626fa4` | X-018 | The error-message half is done and confirmed against the real compiler: what reaches the teacher is kotlinx's developer diagnostic, verbatim. **Remaining before `done`:** whether a teacher can tell a *working* test set from a broken one before a student meets it — the `Generated scripts` tab as the only preview, the Testimine round trip (see X-016), and the two always-passing shapes nothing warns about. Note the compiler reports `backend_version: "?.?.?"`, which the UI shows in its synthetic `meta.txt` |
 | T5 | State, persistence, escape | **in progress** 2026-08-23 `108bdd1f` | X-017 | The router-navigation guard is **confirmed critical, with a control**: the breadcrumb destroys the draft silently while Cancel on the same state asks first. **Remaining before `done`:** the other three leads — switching a test's type discarding the whole body with no confirm, the absence of any model-level undo after deleting a test or check, and the stale `tslValid` flag leaving Save disabled after the container is switched away from TSL. The driver reaches all three but crashed on step 3; note also that `{dirs: [], exercises: []}` is **not** `LibraryDirResp`'s shape and crashes `ExerciseLibraryPage.tsx:106` — look the response up before re-running |
 | T6 | TSL under pressure | todo | — | Do after S1–S3 so the theme baseline exists |
@@ -749,6 +749,68 @@ Template:
 - Register: not previously filed. EZ-1536 ("Make TSL generated code readable") is about the generated
   Python, not the error text
 
+### X-019 The grader supports six working features no teacher can reach, including case-insensitive output matching
+- Unit: T3
+- Surface: the TSL builder's forms, versus what `tsl-common`'s model accepts
+- Norm: an endpoint or capability no UI reaches is a candidate missing action (source 4)
+- Class: journey + design
+- Severity: medium
+- Reach: every auto-graded exercise; `ignoreCase` and `EQUALS` in particular are wanted by anyone
+  checking program output at all
+- Verdict: CONFIRMED
+- What happens: each of the following was compiled against the real compiler and **works** — it is
+  accepted, and the value reaches the generated Python. None of them can be produced by any form; the
+  only way to set them is to hand-edit the JSON in the TSL tab, which means knowing they exist.
+
+  | capability | what it does | reachable |
+  |---|---|---|
+  | `ignoreCase: true` | case-insensitive output matching | no form writes it |
+  | `dataCategory: 'EQUALS'` | exact-equality instead of "contains" | dropdown offers 3 of the 4 values |
+  | `outputCategory` | which output to check — `LAST_OUTPUT`, `OUTPUT_NUMBER_0…9`, `ALL_OUTPUT`, `ALL_IO` | **13 values, 0 reachable** |
+  | `nothingElse` on execution checks | "…and nothing else" | exposed on *static* tests only |
+  | `beforeMessage` | the line shown before a check runs | UI always writes `''` |
+  | `passedNext` / `failedNext` | branch to another test on pass/fail | no UI at all |
+
+  The first two are the ones that matter. A teacher who wants "the output must contain `yes`, in any
+  case" cannot express it, and the workaround is to list every capitalisation in `expectedValue`.
+  `outputCategory` matters for the very common shape of a program that prints a prompt and then an
+  answer: today every check sees `ALL_IO`, so a prompt containing the expected string passes a test the
+  student's answer failed.
+- Instead: not all six. `ignoreCase` is a checkbox next to the existing "The values must be in the same
+  order" one, and `EQUALS` is a fourth entry in a dropdown that already has three — both are cheap and
+  both remove a real workaround. `nothingElse` on execution checks is worth adding for symmetry, since
+  the same concept is already a checkbox one tab away and its absence here reads as an oversight
+  rather than a decision. `outputCategory` deserves a form only once someone decides what to call it
+  in a teacher's words. `passedNext`/`failedNext` is a whole branching feature and omitting it looks
+  deliberate — leave it, but write down that it was a choice.
+- Evidence: `tests/audit/t3-model-vs-compiler.mjs`, report `tests/audit/reports/t3-model-vs-compiler.json`,
+  nine specs against the real compiler at `9dbe8dd1`. Each case checks both that the spec compiled and
+  that the value left a trace in the generated Python — see R-007 for why the second half matters
+- Register: not previously filed. EZ-1695 ("TSL editor (visual + YAML)") is still open and may be
+  where the deliberate-subset decision was recorded; check it before treating any of these as
+  oversights
+
+### X-020 Two tests with the same id compile without complaint
+- Unit: T3
+- Surface: `POST /v2/tsl/compile`, and therefore the TSL tab
+- Norm: the compiler's own `validateParseTree()`, which exists to reject exactly this and says
+  *"Test ID-s must be unique within the exercise!"* (source 1)
+- Class: correctness
+- Severity: low for the UI, and the reason it is in this log at all is reach
+- Verdict: CONFIRMED
+- What happens: a spec containing two tests with `id: 111` compiles cleanly and emits both into the
+  generated script. `validateParseTree()` is only called from `DemoApplication.main()`, never from
+  `compileTSL`, so the check that exists never runs on the path the application uses. The visual editor
+  cannot produce a duplicate (`nextId()` is random over 48 bits) but the JSON tab can, and
+  `doc/core/tsl-migration/README.md` records that **174 of 721** production specs already have them.
+- Instead: this is a core decision, not a web one — either call the validation from `compileTSL`, or
+  delete it and record that ids are not required to be unique. What the *UI* could do meanwhile is
+  surface duplicate ids in the TSL tab as a warning, since it already parses the spec there and 174
+  live exercises say the situation occurs.
+- Evidence: `tests/audit/t3-model-vs-compiler.mjs` at `9dbe8dd1`
+- Register: not previously filed. Belongs with the review programme's F1 findings on the compiler
+  rather than with the web ones; noted here because T3 is where it surfaced
+
 ---
 
 ## Refuted
@@ -803,6 +865,16 @@ scale, not a contradiction: small interactive things are less round than the pan
 sub-claims also died: the numbers 8 and 12 inside `styleOverrides` are raw CSS, not `sx` multiples, so
 they mean 8px and 12px as written; and the only oddity measured was a single `9px` Box, which is not
 worth a line. Radius is one of the more coherent things about this theme.
+
+`R-007` — **`ignoreCase` and `nothingElse` are accepted by the compiler and silently ignored.** They
+are not: both reach the generated Python and work. The first run of `t3-model-vs-compiler.mjs` traced
+for `ignore_case=True` and found nothing, because check-level flags are emitted as Python **dict
+entries** (`'ignore_case':True`) while test-level ones are keyword arguments (`passed_next=222`). Two
+findings were one edit away from being wrong in the worst direction — reporting a working feature as
+broken. The baseline case is what made it dangerous: it traced `standard_output_checks`, a function
+name that is always present, so the detector looked healthy while being unable to see a value. **A
+positive control has to exercise the same mechanism the real cases do**, which is the lesson
+`doc/testing-log.md` keeps re-teaching and this programme has now paid for twice.
 
 ---
 

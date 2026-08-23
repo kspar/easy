@@ -1,0 +1,68 @@
+{
+  "core": "http://localhost:8080",
+  "results": [
+    {
+      "name": "baseline — exactly what the UI produces",
+      "reachableFromUi": true,
+      "compiled": true,
+      "traceFound": true,
+      "feedback": null
+    },
+    {
+      "name": "outputCategory: LAST_OUTPUT (13 enum values, 0 reachable from any form)",
+      "reachableFromUi": false,
+      "compiled": true,
+      "traceFound": true,
+      "feedback": null
+    },
+    {
+      "name": "outputCategory: OUTPUT_NUMBER_3",
+      "reachableFromUi": false,
+      "compiled": true,
+      "traceFound": true,
+      "feedback": null
+    },
+    {
+      "name": "ignoreCase: true (no form anywhere writes it)",
+      "reachableFromUi": false,
+      "compiled": true,
+      "traceFound": true,
+      "feedback": null
+    },
+    {
+      "name": "dataCategory: EQUALS (the dropdown offers 3 of 4)",
+      "reachableFromUi": false,
+      "compiled": true,
+      "traceFound": true,
+      "feedback": null
+    },
+    {
+      "name": "nothingElse on an execution check (exposed only on static tests)",
+      "reachableFromUi": false,
+      "compiled": true,
+      "traceFound": true,
+      "feedback": null
+    },
+    {
+      "name": "passedNext / failedNext — a branching-flow feature with no UI at all",
+      "reachableFromUi": false,
+      "compiled": true,
+      "traceFound": true,
+      "feedback": null
+    },
+    {
+      "name": "duplicate test ids — validateParseTree() is not called from compileTSL",
+      "reachableFromUi": "not via the visual editor; 174 of 721 production specs have them",
+      "compiled": true,
+      "traceFound": true,
+      "feedback": null
+    },
+    {
+      "name": "beforeMessage with real text (the UI always writes empty string)",
+      "reachableFromUi": false,
+      "compiled": true,
+      "traceFound": true,
+      "feedback": null
+    }
+  ]
+}
