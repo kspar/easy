@@ -79,7 +79,7 @@ finishes or it goes back to `todo`.
 
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
-| T1 | Entry & first run | todo | — | The empty-`tsl.json` lead: settle by execution, not by reading |
+| T1 | Entry & first run | **in progress** 2026-08-23 `278d1ee1` | X-015, X-016 | The empty-`tsl.json` lead is **confirmed by execution**: `{"tsl_spec":"","format":"JSON"}` is sent unprompted and Save is disabled. **Remaining before `done`:** what the 12-item preset menu teaches a teacher who has never seen TSL (and its labels disagreeing with the type `Select`'s — "Run the program" vs "Program execution test"), EZ-1734's hardcoded container dropdown, and the read-only view of an existing TSL exercise as a non-owner. **For T6:** the builder gets ~700px of a 1440px viewport because the left half is a static preview card that does not collapse |
 | T2 | The test forms | todo | — | |
 | T3 | Model vs compiler | todo | — | `UNCERTAIN` until the :8080 relay is authorised |
 | T4 | The feedback loop | todo | — | Needs the :8080 relay. The unit the request is really about |
@@ -91,7 +91,7 @@ finishes or it goes back to `todo`.
 
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
-| S1 | The theme as a system | **in progress** 2026-08-23 `1bfdaf9d` | X-012, X-013 | Colour half done, with the arithmetic in `tests/audit/reports/s1-token-contrast.json`: the palette's mode-invariance is a structural defect, not a bad value (X-012), and `text.secondary` fails only on `background.default` (X-013). **Remaining before `done`:** the non-colour half — `shape.borderRadius: 12` contradicted by six component overrides, the 25-entry `shadows` array whose last 16 are duplicates and all of which are black-alpha in both modes, `MuiCard`'s hover treatment applied to non-interactive cards, the six dead palette entries from R-001, and whether the 17 component overrides match how the components are actually used. Original note follows. **From J1:** X-004 already measured the three contrast decisions with real ratios (`#fff` on `#16a34a` = 3.29:1, `#16a34a` on `#f5f5f5` = 3.02:1, `#757575` on `#f5f5f5` = 4.22:1 at 12px). S1 owns the token-level fix and should check whether `GREEN[700]` as `primary.main` breaks anything else. Also settle the derived `#989898` at 2.64:1, which is not a theme value |
+| S1 | The theme as a system | **done `278d1ee1`** (2026-08-23) | X-012, X-013, X-014; R-006 | 4 candidates, 3 kept, 1 refuted. The colour half is the substance: the palette's mode-invariance is a **structural** defect rather than a bad value (X-012), and `text.secondary` fails AA only on `background.default`, which is why 177 sites survived it (X-013). The non-colour half is mostly good news — the radius vocabulary measured coherent (R-006) and the real finding is dead weight rather than incoherence (X-014). Arithmetic in `tests/audit/reports/s1-token-contrast.json`. Original note follows. **From J1:** X-004 already measured the three contrast decisions with real ratios (`#fff` on `#16a34a` = 3.29:1, `#16a34a` on `#f5f5f5` = 3.02:1, `#757575` on `#f5f5f5` = 4.22:1 at 12px). S1 owns the token-level fix and should check whether `GREEN[700]` as `primary.main` breaks anything else. Also settle the derived `#989898` at 2.64:1, which is not a theme value |
 | S2 | Dark mode, everywhere | todo | — | |
 | S3 | Phone | todo | — | Do after S4 |
 | S4 | Laptop — the reference | todo | — | **Do first in this track after S1**: establishes the reference the others diff against |
@@ -581,6 +581,94 @@ Template:
 - Evidence: `tests/audit/s1-token-contrast.mjs` at `1bfdaf9d`; failure instances from C5's sweep
 - Register: not previously filed
 
+### X-014 A third of the theme is dead surface area, and it is the part a newcomer would reach for first
+- Unit: S1
+- Surface: `web/src/theme/theme.ts`
+- Norm: the app's own majority — the tokens that *are* used are used consistently, so the unused ones
+  are the anomaly (source 2)
+- Class: design
+- Severity: low on its own; the reason to fix it is that each dead entry is a trap for the next person
+- Reach: `theme.ts` is the file every future styling decision starts from
+- Verdict: CONFIRMED
+- What happens: three groups of declarations that look authoritative and do nothing.
+  - **The `shadows` scale.** All 25 entries are hand-written, the last 16 are byte-identical copies of
+    index 8, and the whole array needs an inline conditional-type cast at `theme.ts:80-85` to typecheck.
+    Measured on `/courses` in both themes: **two** elements in the entire page have a `box-shadow`, and
+    both are a course-colour inset bar, not a theme elevation. Nothing renders one, because `MuiCard`
+    defaults to `variant: 'outlined'`, 83 places pass `variant="outlined"` explicitly, and `elevation`
+    appears 7 times in the whole of `src/`. A bespoke elevation scale that nothing elevates.
+  - **Six dead palette entries** — the whole `secondary` triplet and the four `*.light` tints — with
+    zero uses in `src/`, all mode-blind, all near-white or grey. See R-001.
+  - **`MuiCard`'s default hover treatment**, which animates a border and a shadow on every Card
+    including the ones that are not interactive.
+- Instead: delete the shadow scale and let MUI's default stand until something actually needs
+  elevation; delete the six dead palette entries or give them mode-aware values as part of X-012;
+  move the Card hover to a variant or an `sx` at the interactive call sites. None of this changes a
+  pixel of what currently renders, which is the point — it removes the parts that would mislead the
+  next person into thinking there is a system where there is only a leftover.
+- Evidence: `tests/audit/s1-measure-shape.mjs` at `278d1ee1`, both themes; use counts by grep at the
+  same sha
+- Register: not previously filed
+
+### X-015 Choosing TSL greets the teacher with a compiler error they did not cause, and blocks Save
+- Unit: T1
+- Surface: `/library/exercise/:id` → Automaatkontroll tab, editing (teacher), light, 1440×900, et
+- Norm: platform — an empty state is not an error state (source 5); and the app's own behaviour two
+  inches lower down the same panel, which renders a correct empty state (source 2)
+- Class: journey
+- Severity: high
+- Reach: every teacher who ever sets up TSL auto-assessment, on their first contact with it
+- Verdict: CONFIRMED
+- What happens: a teacher opens a freshly created exercise — `CreateExerciseDialog` always makes a
+  `TEACHER`-graded one — clicks Muuda, picks **TSL** from Automaatkontrolli tüüp, and immediately gets
+  a **red error alert** where the compiler's rejection goes. `changeType()` seeds `gradingScript`,
+  `assets: [{generated_0.py: ''}]`, `maxTimeSec: 7` and `maxMemMb: 30`, but **no `tsl.json`** — so
+  `useTslSpec` compiles the empty string. Measured request body: `{"tsl_spec":"","format":"JSON"}`,
+  one call, sent unprompted. **Salvesta is `disabled: true`.**
+  The absurdity is what sits underneath it: the panel already renders the correct empty state,
+  *"Teste veel pole."*, and an enabled **+ Lisa test** button. So the screen simultaneously says "you
+  have no tests yet, add one" and "the spec is broken", and disables the only button that would let
+  the teacher keep their choice. Nothing is wrong except that nothing has been written yet.
+- Instead: seed a valid empty spec in `changeType()`. `emptySpec()` already exists in `tslModel.ts` and
+  produces `{language, validateFiles, requiredFiles, tslVersion, tests: []}`, which compiles cleanly —
+  so the first render becomes the empty state that is already there, with Save available. One detail
+  worth getting right in the same edit: `emptySpec()` hardcodes `requiredFiles: ['lahendus.py']` while
+  the panel has the real `solution_file_name` two fields above it, and those two silently disagreeing
+  is a T3 finding in waiting — seed it from the actual value.
+- Evidence: `tests/audit/t1-tsl-first-run.mjs` at `278d1ee1`; shot `t1-04-just-chose-tsl.png`.
+  Supporting context: the TSL entry in `autoEvalTypes.ts` is the **only** container with no
+  `helpTextKey`, while pygrader's links out to GitHub — so the deepest feature in the app offers no
+  explanation at the one moment a teacher has just chosen it and does not yet know what a "test" is
+  here
+- **What is stubbed and what is not:** the empty spec being sent, the single compile call, the disabled
+  Save, the empty state and the Add-test button are all measured. The *text* in the alert is this
+  driver's placeholder — the real message is kotlinx's and is not something to invent. That is the
+  half needing the `:8080` relay, and it decides only how bad the message reads, not whether it appears
+- Register: not previously filed. Adjacent to EZ-1734, which is the same shape one field up: the
+  container dropdown is hardcoded, so an unavailable container also fails late rather than early
+
+### X-016 A teacher cannot try a TSL test set until they have saved it
+- Unit: T1 (T4 owns the wider feedback-loop question)
+- Surface: `/library/exercise/:id` (teacher), editing
+- Norm: design judgement, argued (source 6) — authoring and verifying a test set is one task
+- Class: journey
+- Severity: medium
+- Reach: every TSL authoring session
+- Verdict: CONFIRMED
+- What happens: the Testimine tab — the only place in the application where a teacher can run their
+  own tests — is rendered only when `exercise.grader_type === 'AUTO'` **as last saved**. Measured on a
+  freshly TSL-configured exercise, the tab strip is exactly `["Ülesanne","Automaatkontroll"]`: no
+  Testimine. So the sequence forced on a teacher is write the tests, save them to the library, then go
+  and look for a tab that has appeared, and run against the saved version. Combined with X-015 the
+  first-run path is: choose TSL, get an error, add a test to clear it, save, and only then discover
+  whether any of it works.
+- Instead: T4 will take the general form of this. The narrow fix is to gate the tab on the *edited*
+  grader type rather than the saved one, and to keep the existing "testing runs against the saved
+  version" warning that already exists for the editing case — the warning shows the intent was
+  understood; the gate just uses the wrong value
+- Evidence: `tests/audit/t1-tsl-first-run.mjs` at `278d1ee1`, tab strip enumerated after choosing TSL
+- Register: not previously filed; EZ-1755 and EZ-1756 are about the tab's contents, not its existence
+
 ---
 
 ## Refuted
@@ -625,6 +713,16 @@ page called `.trim()` on an absent field). Pages are entitled to trust a non-nul
 crash revealed about the boundary that caught it — filed as X-009. Two of the six original routes
 survive as X-011, and the difference between them is exactly the control: `/landing` has no `main` while
 rendering perfectly.
+
+`R-006` — **`shape.borderRadius: 12` is contradicted by six component overrides, so the radius
+vocabulary is incoherent.** This was a planning lead and it does not survive measurement. The observed
+vocabulary on a real page is **8px on controls** (Button, Chip, ListItemButton), **12px on surfaces**
+(outlined Paper and Card), **6px on Tooltip** and **50% on avatars and icon buttons** — which is a
+scale, not a contradiction: small interactive things are less round than the panels they sit in. It is
+*undocumented*, which is a real cost and belongs to **D2**'s guide rather than to a findings list. Two
+sub-claims also died: the numbers 8 and 12 inside `styleOverrides` are raw CSS, not `sx` multiples, so
+they mean 8px and 12px as written; and the only oddity measured was a single `9px` Box, which is not
+worth a line. Radius is one of the more coherent things about this theme.
 
 ---
 
