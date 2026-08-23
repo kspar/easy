@@ -35,7 +35,7 @@ Filled in by the first session, before any unit is audited.
 | Driver harness proven | **yes** — `web/tests/audit/prove-instrument.mjs`. Rendered `/about` in dark and read the three `bgcolor: 'white'` sponsor plates off the PNG against a `rgb(18,18,18)` page |
 | a11y sweep proven able to fire | **yes** — `j1-measure.mjs` injects a nameless `<button>` and an `alt`-less `<img>` after scanning, and the second scan reports `button-name` and `image-alt`. Needed: the first version of that driver read `scan().found` / `.contrastFindings`, which do not exist — the real shape is `{ gate, contrast }` — so it printed 0 findings and would have recorded "the student exercise page is accessible" as a fact |
 | `easy-kc-theme` cloned | **yes** — `$CLAUDE_JOB_DIR/tmp/easy-kc-theme` (shallow), for S9 |
-| `:8080` compile relay authorised | **kspar has approved it in principle and asked to be told when it is needed.** Ask before the first relay in T3/T4 |
+| `:8080` compile relay | **authorised and working**, verified 2026-08-23. A core is running there with `easy.core.auth-enabled: false`, so **header auth is all that is needed** — no dev token. The recipe, since it cost a few minutes to find: without headers every path returns **401**, *including* `/v2/unauth/versions`, which reads like the endpoint is down; adding the `oidc_claim_*` headers turns that into a 404, and the 401→404 flip is how you tell "the filter rejected me" from "wrong path". Compiles are read-only, so this touches nothing:<br>`curl -X POST -H 'Content-Type: application/json' -H 'oidc_claim_preferred_username: kspar' -H 'oidc_claim_email: kspar@ut.ee' -H 'oidc_claim_given_name: Test' -H 'oidc_claim_family_name: Teacher' -H 'oidc_claim_easy_role: teacher' -d '{"tsl_spec":"…","format":"JSON"}' http://localhost:8080/v2/tsl/compile` |
 
 ### An operational note for every session
 
@@ -81,8 +81,8 @@ finishes or it goes back to `todo`.
 |---|---|---|---|---|
 | T1 | Entry & first run | **in progress** 2026-08-23 `278d1ee1` | X-015, X-016 | The empty-`tsl.json` lead is **confirmed by execution**: `{"tsl_spec":"","format":"JSON"}` is sent unprompted and Save is disabled. **Remaining before `done`:** what the 12-item preset menu teaches a teacher who has never seen TSL (and its labels disagreeing with the type `Select`'s — "Run the program" vs "Program execution test"), EZ-1734's hardcoded container dropdown, and the read-only view of an existing TSL exercise as a non-owner. **For T6:** the builder gets ~700px of a 1440px viewport because the left half is a static preview card that does not collapse |
 | T2 | The test forms | todo | — | |
-| T3 | Model vs compiler | todo | — | `UNCERTAIN` until the :8080 relay is authorised |
-| T4 | The feedback loop | todo | — | Needs the :8080 relay. The unit the request is really about |
+| T3 | Model vs compiler | todo | — | **Unblocked: :8080 works with header auth, recipe in the Baseline.** Two leads already in hand — the compiler emits its own Estonian default test name into the generated script while the UI derives its own from `testDefaultName`, so one string has two sources; and `emptySpec()` hardcodes `requiredFiles: ['lahendus.py']` rather than reading `solution_file_name` (see X-015) |
+| T4 | The feedback loop | **in progress** 2026-08-23 `a8626fa4` | X-018 | The error-message half is done and confirmed against the real compiler: what reaches the teacher is kotlinx's developer diagnostic, verbatim. **Remaining before `done`:** whether a teacher can tell a *working* test set from a broken one before a student meets it — the `Generated scripts` tab as the only preview, the Testimine round trip (see X-016), and the two always-passing shapes nothing warns about. Note the compiler reports `backend_version: "?.?.?"`, which the UI shows in its synthetic `meta.txt` |
 | T5 | State, persistence, escape | **in progress** 2026-08-23 `108bdd1f` | X-017 | The router-navigation guard is **confirmed critical, with a control**: the breadcrumb destroys the draft silently while Cancel on the same state asks first. **Remaining before `done`:** the other three leads — switching a test's type discarding the whole body with no confirm, the absence of any model-level undo after deleting a test or check, and the stale `tslValid` flag leaving Save disabled after the container is switched away from TSL. The driver reaches all three but crashed on step 3; note also that `{dirs: [], exercises: []}` is **not** `LibraryDirResp`'s shape and crashes `ExerciseLibraryPage.tsx:106` — look the response up before re-running |
 | T6 | TSL under pressure | todo | — | Do after S1–S3 so the theme baseline exists |
 | T7 | The other end | todo | — | Read review F-019 first |
@@ -640,10 +640,20 @@ Template:
   `helpTextKey`, while pygrader's links out to GitHub — so the deepest feature in the app offers no
   explanation at the one moment a teacher has just chosen it and does not yet know what a "test" is
   here
-- **What is stubbed and what is not:** the empty spec being sent, the single compile call, the disabled
-  Save, the empty state and the Add-test button are all measured. The *text* in the alert is this
-  driver's placeholder — the real message is kotlinx's and is not something to invent. That is the
-  half needing the `:8080` relay, and it decides only how bad the message reads, not whether it appears
+- **Settled against the real compiler** (`:8080`, authorised, header auth — see the Baseline). The
+  placeholder is gone; this is what a teacher actually reads, verbatim, for choosing a dropdown option:
+
+  ```
+  Expected start of the object '{', but had 'EOF' instead at path: $
+  JSON input:
+  ```
+
+  A kotlinx parser diagnostic, in English, in an app that defaults to Estonian, ending in an empty
+  "JSON input:" because there is no input. It is worse than the placeholder guessed.
+- **And the proposed fix is verified, not merely proposed.** `emptySpec()`'s exact output —
+  `{"language":"python3","validateFiles":true,"requiredFiles":["lahendus.py"],"tslVersion":"1.0","tests":[]}`
+  — compiled against the real compiler returns `feedback: null` and a valid
+  `generated_0.py`. So seeding it removes the error rather than moving it
 - Register: not previously filed. Adjacent to EZ-1734, which is the same shape one field up: the
   container dropdown is hardcoded, so an unavailable container also fails late rather than early
 
@@ -696,6 +706,48 @@ Template:
 - Register: not previously filed. **This is X-001's twin**: same defect class, teacher instead of
   student, and a longer piece of work to lose. Whatever fixes one should be checked against the other,
   and EZ-1758's addendum should mention that the pattern is not student-specific
+
+### X-018 The TSL editor's error messages are a Kotlin library's developer diagnostics, shown to teachers verbatim
+- Unit: T4
+- Surface: `/library/exercise/:id` → Automaatkontroll → the alert above the Testid/TSL/Generated tabs
+- Norm: errors say what happened and how to fix it, in the interface's voice (source 5, and the
+  `frontend-design` writing guidance the V track cites); Estonian is the app's default language
+- Class: copy + journey
+- Severity: high
+- Reach: every compile failure in the TSL builder, which is every intermediate state of a spec being
+  hand-edited in the TSL tab
+- Verdict: CONFIRMED
+- What happens: `CompileTSL.controller` catches every exception and returns `e.message` as `feedback`,
+  and `TslEditor` renders that string verbatim in a red `Alert`. `api/tsl.ts` even documents the
+  intent — *"the text is meant to be shown verbatim"*. What the teacher gets is therefore kotlinx's
+  own diagnostics. Measured against the real compiler, an unknown key produces:
+
+  ```
+  Unexpected JSON token at offset 106: Encountered an unknown key 'somethingTheUiInvented' at path: $
+  Use 'ignoreUnknownKeys = true' in 'Json {}' builder or '@JsonIgnoreUnknownKeys' annotation to
+  ignore unknown keys.
+  JSON input: {"language":"python3","validateFiles":true,…
+  ```
+
+  So a teacher who mistypes a field name is told, in English, to set `ignoreUnknownKeys = true` in a
+  `Json {}` builder — advice addressed to whoever wrote the compiler, actionable by nobody who will
+  ever read it — followed by their whole document echoed back. There is no indication of *which test*
+  or which field, which is the one thing the message could usefully have said. An empty spec produces
+  the same class of thing (see X-015).
+- Instead: three tiers, cheapest first. (1) Keep the raw text but put it behind a "Details" disclosure
+  under one written sentence — "There is a problem in the spec on the TSL tab" — so the useful signal
+  is not competing with a Kotlin stack idiom. (2) Map the two or three kotlinx shapes that actually
+  occur (unknown key, missing field, bad discriminator) to a sentence naming the key and the test,
+  which is available in the message already and is the only part a teacher can act on. (3) Set
+  `ignoreUnknownKeys = true` on the *read* path if the round-tripping of unknown keys the UI already
+  does deliberately is meant to survive — that is a core decision, not a web one, and it is worth
+  asking whether the strictness is buying anything here. Tier 1 alone removes most of the damage.
+- Evidence: three specs compiled against the real core at `a8626fa4` via header auth; responses
+  recorded above and in the commit message. Adjacent: the compiler also emits its *own* Estonian
+  default test name (`'Programmi käivituse test'`) into the generated script while the UI derives its
+  own display name from `testDefaultName` — two sources for one string, which is a **T3** lead
+- Register: not previously filed. EZ-1536 ("Make TSL generated code readable") is about the generated
+  Python, not the error text
 
 ---
 
