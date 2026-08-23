@@ -43,13 +43,14 @@ private val HUMAN_TIME: DateTimeFormatter = DateTimeFormat.forPattern("dd.MM.yyy
  * correct either way — `created_at` is a timestamp without a zone and the same JVM writes and reads
  * it, so the offset it comes back with is the offset it went in with — but a production host running
  * UTC would render 16:56 for a report filed at 19:56, and every reader would have to know which zone
- * they were looking at. Naming the zone in the output settles that.
+ * they were looking at. Saying `(Eesti)` in the output settles that: the country rather than the
+ * `Europe/Tallinn` identifier, because the label is for the person triaging and not for a machine.
  *
  * A top-level `internal` function so the conversion is testable without a Spring context, for the
  * same reason `buildIssueBody` is: a wrong timezone or a transposed date pattern produces a
  * plausible-looking string, which is the kind of wrong that never gets noticed.
  */
-internal fun humanTime(at: DateTime): String = "${at.withZone(TALLINN).toString(HUMAN_TIME)} Tallinn"
+internal fun humanTime(at: DateTime): String = "${at.withZone(TALLINN).toString(HUMAN_TIME)} (Eesti)"
 
 /**
  * Turns stored bug reports into YouTrack issues, and remembers what happened.

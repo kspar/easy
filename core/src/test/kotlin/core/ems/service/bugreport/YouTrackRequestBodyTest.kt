@@ -96,10 +96,10 @@ class YouTrackRequestBodyTest {
     // --- the timestamp -----------------------------------------------------------------------------
 
     @Test
-    fun `the human timestamp is Estonian day-first, in Tallinn time, and says so`() {
-        // Summer: Tallinn is EEST, UTC+3.
+    fun `the human timestamp is Estonian day-first, in Estonian time, and says so`() {
+        // Summer: Estonia is on EEST, UTC+3.
         assertEquals(
-            "23.08.2026 19:56:23 Tallinn",
+            "23.08.2026 19:56:23 (Eesti)",
             humanTime(DateTime.parse("2026-08-23T16:56:23.508Z")),
         )
     }
@@ -109,7 +109,7 @@ class YouTrackRequestBodyTest {
         // Winter: EET, UTC+2. A hardcoded +3 would put this an hour out — which is exactly the kind
         // of wrong that looks perfectly reasonable in an issue description.
         assertEquals(
-            "15.01.2026 12:00:00 Tallinn",
+            "15.01.2026 12:00:00 (Eesti)",
             humanTime(DateTime.parse("2026-01-15T10:00:00Z")),
         )
     }
@@ -124,7 +124,7 @@ class YouTrackRequestBodyTest {
             "2026-08-23T12:56:23-04:00",
         ).map { humanTime(DateTime.parse(it)) }.distinct()
 
-        assertEquals(listOf("23.08.2026 19:56:23 Tallinn"), rendered)
+        assertEquals(listOf("23.08.2026 19:56:23 (Eesti)"), rendered)
     }
 
     @Test
