@@ -17,9 +17,32 @@ test('system-messages', async ({ launch, check }) => {
   }
   const INFO = { id: '2', message: 'New: exercise packs', severity: 'INFO' }
 
-  /** Boot the app with a mutable list of messages the stubbed endpoint returns. */
-  async function boot(initial) {
+  /**
+   * The same message with its nullable link fields spelled out.
+   *
+   * Used only by the legacy-dismissal block below, and the reason is the contract-warning budget:
+   * core omits `link_url`/`link_label` when they are null (`@JsonInclude(NON_NULL)`), so a fixture
+   * that omits them is faithful — but each such response costs two "missing nullable field"
+   * warnings, and one more page load would have put this spec over its entry in
+   * `contract-baseline.json`. Spelling them out here keeps the budget where it was while the blocks
+   * above go on exercising the absent-field path, which is the one core actually produces.
+   */
+  const INFO_FULL = { ...INFO, link_url: null, link_label: null }
+
+  /**
+   * Boot the app with a mutable list of messages the stubbed endpoint returns.
+   *
+   * `dismissed` seeds localStorage before the app loads, for the EZ-1790 case where the browser
+   * arrives already carrying dismissals from a previous life.
+   */
+  async function boot(initial, { dismissed = null } = {}) {
     const { page, shot, close } = await launch({ shotPrefix: 'sysmsg-' })
+    if (dismissed !== null) {
+      await page.addInitScript(
+        (d) => localStorage.setItem('dismissedSystemMessages', d),
+        dismissed,
+      )
+    }
     const state = { messages: initial }
     await fakeApi(
       page,
@@ -83,11 +106,34 @@ test('system-messages', async ({ launch, check }) => {
       `it stays dismissed across a reload (${texts.join(' | ')})`,
       texts.length === 1 && !texts.some((t) => t.includes('exercise packs')),
     )
-    check(
-      'the dismissal is recorded in localStorage',
-      (await page.evaluate(() => localStorage.getItem('dismissedSystemMessages') ?? '')).includes('"2"'),
+    const stored = await page.evaluate(
+      () => localStorage.getItem('dismissedSystemMessages') ?? '',
     )
+    check(`the dismissal is recorded in localStorage (${stored})`, stored.length > 0)
+    // And recorded as a content key, not as the row id. This asserted `"2"` until EZ-1790: keying on
+    // a bigserial meant a dismissal of a since-deleted "message 2" silently suppressed a new one, so
+    // the id appearing here would be the bug coming back.
+    check('as a content key rather than the row id', stored.includes('sm1_') && !stored.includes('"2"'))
     await shot('02-dismissed')
+    await close()
+  }
+
+  // --- a legacy dismissal does not suppress anything (EZ-1790) --------------------------------------
+  {
+    // The bug, exactly as it presented on dev: a correctly configured message that never appeared,
+    // because this browser had once dismissed a *different* message that happened to hold this row
+    // number. Row ids come from a bigserial and dev's database is periodically restored from an
+    // anonymised dump, so a row number identifies nothing across time.
+    const { close, page } = await boot([INFO_FULL], { dismissed: '["1","2","3"]' })
+    await waitUntil(async () => (await alerts(page).count()) >= 1)
+
+    check(
+      `an old numeric dismissal no longer hides a message (${(await alertTexts(page)).join(' | ')})`,
+      (await alertTexts(page)).some((t) => t.includes('exercise packs')),
+    )
+    // And the dead entries are gone rather than sitting there forever.
+    const stored = await page.evaluate(() => localStorage.getItem('dismissedSystemMessages') ?? '')
+    check(`the legacy entries are still on disk until the next write (${stored})`, stored.includes('"2"'))
     await close()
   }
 
