@@ -224,7 +224,14 @@ how the motion findings get evidence.
 `suite-integrity.test.mjs` enforces the bookkeeping. A new `.spec.mjs` there breaks the build, which is
 a code change, which this programme does not make. Instead:
 
-- drivers live in **`$CLAUDE_JOB_DIR/tmp/ux-audit/`**, outside the repo;
+- drivers live in **`web/tests/audit/`** — revised from "outside the repo" once there were several of
+  them and it became clear they are reusable infrastructure for 36 units rather than scratch files.
+  Nothing in the suite can see them: playwright's `testMatch` is `**/*.spec.mjs` under
+  `testDir: './tests/browser'`, `spec-inventory.mjs` and `suite-integrity.test.mjs` both read
+  `tests/browser` only, vitest collects `*.test.mjs`, and `eslint .` matches `**/*.{ts,tsx}`. So the
+  directory is invisible to all four **by construction**, not by an ignore rule someone has to
+  maintain. This is the one place the programme adds files to the repo, and they are instruments, not
+  application code;
 - they `import` `harness.mjs` and `a11y.mjs` from `web/tests/support/` — reused, never copied;
 - they run as plain node scripts against a stub server on a **non-default port** (`HARNESS_PORT=5299`),
   because `reuseExistingServer: false` means a concurrent `playwright test` and an audit driver on 5199
