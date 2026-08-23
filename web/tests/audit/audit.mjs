@@ -51,6 +51,17 @@ export const SHOTS = process.env.AUDIT_SHOTS ?? join(HERE, '../screenshots/audit
 mkdirSync(SHOTS, { recursive: true })
 
 /**
+ * Machine-readable sweep output, **tracked** — unlike SHOTS.
+ *
+ * A finding in the log cites the report that produced it, and `tests/screenshots/` is gitignored, so
+ * a citation pointing there rots the moment the checkout is fresh. These files are small, they are
+ * the evidence for a decision someone will revisit, and a diff between two runs is exactly how a
+ * later session tells "we fixed it" from "we stopped looking".
+ */
+export const REPORTS = join(HERE, 'reports')
+mkdirSync(REPORTS, { recursive: true })
+
+/**
  * The viewports the plan fixes, so findings from different sessions are comparable.
  * `stress` is a stress case and deliberately not in the default set.
  */

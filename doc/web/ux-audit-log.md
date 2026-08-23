@@ -32,7 +32,7 @@ Filled in by the first session, before any unit is audited.
 | `npm run test:unit` | **exit 0** — 15 files, 203 tests, 0 failed |
 | `npm run test:browser` | **exit 0** — 39 passed, 1 skipped (`library-exercise-tsl-live`, which skips itself unless `HARNESS_LIVE=1`), 5.3 min |
 | Pre-existing failures | **none** |
-| Driver harness proven | **yes** — `$CLAUDE_JOB_DIR/tmp/ux-audit/`, `prove-instrument.mjs`. Rendered `/about` in dark and read the three `bgcolor: 'white'` sponsor plates off the PNG against a `rgb(18,18,18)` page |
+| Driver harness proven | **yes** — `web/tests/audit/prove-instrument.mjs`. Rendered `/about` in dark and read the three `bgcolor: 'white'` sponsor plates off the PNG against a `rgb(18,18,18)` page |
 | a11y sweep proven able to fire | **yes** — `j1-measure.mjs` injects a nameless `<button>` and an `alt`-less `<img>` after scanning, and the second scan reports `button-name` and `image-alt`. Needed: the first version of that driver read `scan().found` / `.contrastFindings`, which do not exist — the real shape is `{ gate, contrast }` — so it printed 0 findings and would have recorded "the student exercise page is accessible" as a fact |
 | `easy-kc-theme` cloned | **yes** — `$CLAUDE_JOB_DIR/tmp/easy-kc-theme` (shallow), for S9 |
 | `:8080` compile relay authorised | **kspar has approved it in principle and asked to be told when it is needed.** Ask before the first relay in T3/T4 |
@@ -40,12 +40,19 @@ Filled in by the first session, before any unit is audited.
 ### An operational note for every session
 
 Unlike `doc/review-log.md`, this file is tracked, so there is no copy-out-of-the-worktree ritual: edit
-it where it lives and commit. What *is* gitignored is `web/tests/screenshots/`, so any screenshot a
-finding depends on gets copied into the job dir and its path recorded — a finding whose evidence has
-evaporated is downgraded to `UNCERTAIN` by the next session.
+it where it lives and commit.
 
-Audit drivers live in `$CLAUDE_JOB_DIR/tmp/ux-audit/`, **never** in `web/tests/browser/`, which is
-ratcheted three ways and would fail the build. Run the stub server on `HARNESS_PORT=5299`.
+Audit drivers live in **`web/tests/audit/`** — tracked, and invisible to all four gates by
+construction (playwright's `testMatch` and `testDir`, `spec-inventory.mjs`, `suite-integrity.test.mjs`
+and `eslint .` each miss it for a different reason; the reasoning is in `audit.mjs`'s header). Run the
+stub server on **5299**, never the suite's 5199. Two kinds of output:
+
+- **`web/tests/audit/reports/*.json` — tracked.** A finding cites the report that produced it, and a
+  citation into a gitignored directory rots on a fresh checkout. A diff between two runs is also how a
+  later session tells "we fixed it" from "we stopped looking".
+- **`web/tests/screenshots/audit/*.png` — gitignored.** Screenshots a finding leans on get copied
+  somewhere durable and their path recorded; a finding whose evidence has evaporated is downgraded to
+  `UNCERTAIN` by the next session.
 
 ---
 
@@ -114,7 +121,7 @@ and a reach estimate — a design finding without all three stays `UNCERTAIN`.
 | C2 | Loading, empty and error states | todo | — | |
 | C3 | Destructive actions and confirmation | todo | — | |
 | C4 | Feedback after a mutation | todo | — | Cross-reference review F-035 |
-| C5 | Keyboard, focus and a11y coverage | todo | — | **From J1: this is the highest-yield unit in the programme and it should probably be promoted.** The very first non-wired route scanned produced **two gate-level violations** (X-002, X-003) and **ten contrast findings** (X-004). The `a11y` fixture is wired to 2 of 40 specs, so ~20 routes have never been scanned once. Two mechanics to inherit: `scan()` returns `{ gate, contrast }` — not `{ found, contrastFindings }`, which silently reads as "clean" — and always run the canary from `j1-measure.mjs` before believing a zero |
+| C5 | Keyboard, focus and a11y coverage | **in progress** 2026-08-23 `79248877` | X-003 (extended), X-004 (extended), X-009, X-010, X-011 | **Promoted and run: the axe sweep is done** — 23 surfaces × 2 themes = 46 scans, `tests/audit/c5-a11y-sweep.mjs`, report at `web/tests/audit/reports/c5-a11y-sweep.json`. **6 distinct gate-level violations, 29 distinct contrast.** Canary fired on the run. **Remaining before `done`:** tab order through the shell and the three biggest dialogs by hand, the `TransitionProps.onEntered` focus-trap convention across the 19 dialogs (review E5 found it broken in 4 of 12), Escape-to-close and Enter-to-submit, and a re-scan of the 15 routes marked `thin` in the JSON with realistic data — those were scanned in their empty state, so a table cell's contrast could not have been seen. Original note follows. **From J1: this is the highest-yield unit in the programme and it should probably be promoted.** The very first non-wired route scanned produced **two gate-level violations** (X-002, X-003) and **ten contrast findings** (X-004). The `a11y` fixture is wired to 2 of 40 specs, so ~20 routes have never been scanned once. Two mechanics to inherit: `scan()` returns `{ gate, contrast }` — not `{ found, contrastFindings }`, which silently reads as "clean" — and always run the canary from `j1-measure.mjs` before believing a zero |
 
 ### Track D — Documentation (2 units)
 
@@ -308,6 +315,15 @@ Template:
   `.MuiIconButton-root[href$="exercises"]`, "Element is in tab order and does not have accessible
   text". Also a **gate-level** violation
 - Register: not previously filed
+- **Sweep update (C5, `79248877`):** this is a pattern, not one button. Across 23 surfaces × both
+  themes, `link-name` fires on **5 routes** under two fingerprints — the back arrow on
+  `exercise-student` and `exercise-teacher`, and a second unnamed icon-link on
+  `exercise-list-student`, `exercise-list-teacher` and `similarity` — and `button-name` fires on
+  `account` for an icon *button* with no inner text. Six routes, one decision: icon-only controls are
+  being shipped without accessible names. All six are gate-level, all six appear in both themes.
+  Fixing the shared pattern (an `aria-label` wherever an `IconButton` has no text child) closes all of
+  them; EZ-1759's icon audit should inherit this, since a control that needs an accessible name
+  usually needs a tooltip too and that is the same edit
 
 ### X-004 One palette decision puts ten contrast failures on the student's main page, including the primary button
 - Unit: J1 (the decision belongs to S1/V1; filed here because this is where it was measured)
@@ -337,6 +353,23 @@ Template:
   token rather than the sites. Each is one line in `theme.ts`
 - Register: not previously filed. EZ-1414 (dark theme) was closed during this session as the feature
   request it was, explicitly not as a statement that the palette is good — this is that debt
+- **Sweep update (C5, `79248877`):** measured across 23 surfaces × both themes — **29 distinct
+  contrast fingerprints**, and they collapse to a handful of decisions. By route-instances:
+  | ratio | foreground on background | instances | what it is |
+  |---|---|---|---|
+  | **4.22:1** | `#757575` on `#f5f5f5` | **49** | `text.secondary` at 12px and below. The single widest defect in the app |
+  | 2.52:1 | `#515451` on `#0a0f0a` | 19 | `LandingPage`'s private dark palette |
+  | **3.29:1** | `#ffffff` on `#16a34a` | 18 | `primary.contrastText` on `primary.main` — contained buttons and primary chips |
+  | 2.57:1 | `#505350` on `#050905` | 17 | `LandingPage` again |
+  | **3.29:1** | `#16a34a` on `#ffffff` | 15 | brand green as text/links on paper, incl. selected tabs |
+  | 3.91:1 | `#e0e0e0` on `#6d6d6d` | 8 | **dark mode only** — `pre` and `code` blocks |
+  | 3.02:1 | `#16a34a` on `#f5f5f5` | 7 | brand green as text on the app background |
+  | 2.67:1 | `#9e9e9e` on `#ffffff` | 1 | a derived grey, not a theme value |
+  Three observations that change the fix. The worst offender by reach is not the brand colour but
+  **`text.secondary`**, and it is the most-used token in the app. **`LandingPage` contributes 36
+  instances from a palette that is not the theme's at all**, so it needs its own pass (V2), not a
+  token change. And the `pre`/`code` pair is the only decision that is **dark-specific**, which makes
+  it the one place S2 rather than S1 owns
 
 ### X-005 The student's sidebar exercise list is keyed on the wrong element
 - Unit: J1
@@ -426,6 +459,71 @@ Template:
   the specific instance on the most-used page, and the fixed height means it is not only a
   large-screen problem
 
+### X-009 A render error anywhere in a route shows a developer's error page, not the CrashScreen the app ships
+- Unit: C5 (found), C2 (owns the pattern)
+- Surface: any route, both themes; observed on `/library/exercise/:id`, `/about` (admin),
+  `/courses/:c/participants`, `/library/dir/root`
+- Norm: the app's own design — `CrashScreen.tsx` (57 lines) exists, is translated, and offers a
+  one-click bug report (source 2)
+- Class: journey
+- Severity: high
+- Reach: every route in the application
+- Verdict: CONFIRMED
+- What happens: when a component throws during render, the user gets React Router's **default** error
+  boundary: the heading "Unexpected Application Error!", the raw exception message
+  (`TypeError: Cannot read properties of undefined (reading 'version')`) and, in a dev build, a stack
+  trace. Untranslated, in an app whose default language is Estonian. **The whole shell disappears** —
+  measured `sidebar present: false` — so there is no nav, no way back, and no route to the bug-report
+  dialog. The app's own `CrashScreen` never renders: measured `app CrashScreen: false`,
+  `router default boundary: true`.
+- Not the obvious cause: `App.tsx:28` deliberately mounts `ErrorBoundary` *outside* `RouterProvider`,
+  with a comment saying it is there "so a throw in the router or a layout is caught at all". That
+  reasoning is sound and the placement is not the defect. The defect is that **`routes.tsx` defines no
+  `errorElement` anywhere** (`grep -c errorElement web/src/routes/routes.tsx` → 0), so React Router
+  catches route render errors first and handles them with its own default. The app's boundary only
+  ever sees throws that escape the router entirely.
+- Instead: an `errorElement` on the layout route rendering `CrashScreen`, which keeps the deliberate
+  outer boundary as the last resort it was written to be. One route-config line, and `CrashScreen`
+  already exists
+- Evidence: `c5-verify-main-landmark.mjs` at `79248877`, with two controls — `/courses` as teacher
+  renders normally (`main` 1, sidebar true, no boundary) and `/landing` renders normally outside the
+  shell. Shots `c5-mainlandmark-*.png`. Note the crashes themselves were caused by this unit's own
+  thin fixtures and are **not** the finding; see R-005
+- Register: not previously filed
+
+### X-010 The student's exercise list is a `<ul>` with `<a>` elements as direct children
+- Unit: C5
+- Surface: `/courses/:c/exercises` (student), both themes
+- Norm: WCAG 2.1 AA, axe `list` (source 5)
+- Class: a11y
+- Severity: medium
+- Reach: one list, on a route every student passes through to reach any exercise
+- Verdict: CONFIRMED
+- What happens: axe reports `list` on `main > ul` — "List element has direct children that are not
+  allowed: a". A `<ul>` may only contain `<li>` (plus script/template), so assistive technology is
+  given a list whose items are not items; the count and position announcements are unreliable.
+- Evidence: `c5-a11y-sweep.mjs` at `79248877`, gate-level, both themes. Exactly the class
+  `doc/web/browser-testing.md` warns about — invalid HTML that only announces itself to a checker
+- Register: not previously filed
+
+### X-011 The landing page and the embed page have no `main` landmark
+- Unit: C5
+- Surface: `/landing` and `/embed/exercises/:id`, both themes
+- Norm: `a11y.mjs`'s own `checkMainLandmark`, which the project wrote because "without it there is
+  nothing to skip to" (source 1)
+- Class: a11y
+- Severity: medium for `/landing`, low for `/embed`
+- Reach: two routes, but `/landing` is the first page an unauthenticated visitor sees
+- Verdict: CONFIRMED
+- What happens: both render outside `AppLayout`, which is the only place in the app that provides
+  `<Container component="main">`. So the two routes that do not use the shell have no landmark, and a
+  screen-reader user on the marketing page has nothing to skip the navbar with. For `/embed` the case
+  is weaker — it is an iframe fragment by design — but it costs one prop either way.
+- Evidence: `c5-a11y-sweep.mjs` and `c5-verify-main-landmark.mjs` at `79248877`; `/landing` measured
+  `main elements: 0` with no error boundary and the page rendering correctly, which is what separates
+  it from the four refuted routes in R-005
+- Register: not previously filed
+
 ---
 
 ## Refuted
@@ -458,6 +556,18 @@ non-nullable in both halves of the contract — `val core: ComponentResp` at
 `core/ems/service/versions.kt:106` and `core: ComponentVersion` at `web/src/api/versions.ts:66`. The
 crash was an invalid fixture written from memory during this programme's own setup, which makes it the
 sixth such fixture after the five EZ-1766 found. Read the contract before asserting a shape.
+
+`R-005` — **`main` landmark missing on `/courses/:c/participants`, `/library/dir/root`,
+`/library/exercise/:id` and `/about` (admin).** The C5 sweep reported it on all four and it is wrong on
+all four: those pages **crashed**, so there was no page to have a landmark. `AppLayout` does provide
+`<Container component="main">` and the control proves it — `/courses` as teacher measures `main: 1`.
+The crashes were caused by this unit's own `superset()` fallback handing pages a shape the contract
+says they will never receive (`versions: []` leaves `core` undefined; something on the library exercise
+page called `.trim()` on an absent field). Pages are entitled to trust a non-nullable contract, so
+"these pages crash on malformed data" is **not** a finding either. What *is* a finding is what the
+crash revealed about the boundary that caught it — filed as X-009. Two of the six original routes
+survive as X-011, and the difference between them is exactly the control: `/landing` has no `main` while
+rendering perfectly.
 
 ---
 

@@ -18,7 +18,7 @@
  */
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { withBrowser, fakeApi, a11y, canary, SHOTS, VIEWPORTS, BASE_URL, waitUntil } from './audit.mjs'
+import { withBrowser, fakeApi, a11y, canary, REPORTS, VIEWPORTS, BASE_URL, waitUntil } from './audit.mjs'
 import {
   COURSE_ID,
   CE_ID,
@@ -230,7 +230,7 @@ const report = {
     routes: [...e.routes],
   })),
 }
-const reportPath = join(SHOTS, 'c5-a11y-sweep.json')
+const reportPath = join(REPORTS, 'c5-a11y-sweep.json')
 writeFileSync(reportPath, JSON.stringify(report, null, 2))
 console.log(`\nreport written to ${reportPath}`)
 console.log(`\nCANARY: ${JSON.stringify(canaryProof)}`)

@@ -1,0 +1,885 @@
+{
+  "sha": "79248877",
+  "canary": {
+    "fires": true,
+    "caught": [
+      "button-name",
+      "image-alt"
+    ]
+  },
+  "perSurface": [
+    {
+      "surface": "landing",
+      "theme": "light",
+      "gate": 1,
+      "contrast": 6,
+      "thin": true
+    },
+    {
+      "surface": "landing",
+      "theme": "dark",
+      "gate": 1,
+      "contrast": 6,
+      "thin": true
+    },
+    {
+      "surface": "not-found",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 7,
+      "thin": true
+    },
+    {
+      "surface": "not-found",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 1,
+      "thin": true
+    },
+    {
+      "surface": "courses-student",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 7,
+      "thin": false
+    },
+    {
+      "surface": "courses-student",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 1,
+      "thin": false
+    },
+    {
+      "surface": "courses-teacher",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 7,
+      "thin": false
+    },
+    {
+      "surface": "courses-teacher",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 1,
+      "thin": false
+    },
+    {
+      "surface": "courses-admin",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 9,
+      "thin": false
+    },
+    {
+      "surface": "courses-admin",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 1,
+      "thin": false
+    },
+    {
+      "surface": "exercise-list-student",
+      "theme": "light",
+      "gate": 2,
+      "contrast": 8,
+      "thin": false
+    },
+    {
+      "surface": "exercise-list-student",
+      "theme": "dark",
+      "gate": 2,
+      "contrast": 1,
+      "thin": false
+    },
+    {
+      "surface": "exercise-student",
+      "theme": "light",
+      "gate": 2,
+      "contrast": 11,
+      "thin": false
+    },
+    {
+      "surface": "exercise-student",
+      "theme": "dark",
+      "gate": 2,
+      "contrast": 2,
+      "thin": false
+    },
+    {
+      "surface": "exercise-list-teacher",
+      "theme": "light",
+      "gate": 1,
+      "contrast": 9,
+      "thin": true
+    },
+    {
+      "surface": "exercise-list-teacher",
+      "theme": "dark",
+      "gate": 1,
+      "contrast": 1,
+      "thin": true
+    },
+    {
+      "surface": "exercise-teacher",
+      "theme": "light",
+      "gate": 1,
+      "contrast": 10,
+      "thin": true
+    },
+    {
+      "surface": "exercise-teacher",
+      "theme": "dark",
+      "gate": 1,
+      "contrast": 1,
+      "thin": true
+    },
+    {
+      "surface": "participants",
+      "theme": "light",
+      "gate": 1,
+      "contrast": 0,
+      "thin": true
+    },
+    {
+      "surface": "participants",
+      "theme": "dark",
+      "gate": 1,
+      "contrast": 3,
+      "thin": true
+    },
+    {
+      "surface": "grades",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 8,
+      "thin": true
+    },
+    {
+      "surface": "grades",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 1,
+      "thin": true
+    },
+    {
+      "surface": "similarity",
+      "theme": "light",
+      "gate": 1,
+      "contrast": 8,
+      "thin": true
+    },
+    {
+      "surface": "similarity",
+      "theme": "dark",
+      "gate": 1,
+      "contrast": 1,
+      "thin": true
+    },
+    {
+      "surface": "library-dir",
+      "theme": "light",
+      "gate": 1,
+      "contrast": 0,
+      "thin": true
+    },
+    {
+      "surface": "library-dir",
+      "theme": "dark",
+      "gate": 1,
+      "contrast": 3,
+      "thin": true
+    },
+    {
+      "surface": "library-exercise",
+      "theme": "light",
+      "gate": 1,
+      "contrast": 0,
+      "thin": true
+    },
+    {
+      "surface": "library-exercise",
+      "theme": "dark",
+      "gate": 1,
+      "contrast": 3,
+      "thin": true
+    },
+    {
+      "surface": "join-by-link",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 8,
+      "thin": true
+    },
+    {
+      "surface": "join-by-link",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 2,
+      "thin": true
+    },
+    {
+      "surface": "join-by-moodle-link",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 8,
+      "thin": true
+    },
+    {
+      "surface": "join-by-moodle-link",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 2,
+      "thin": true
+    },
+    {
+      "surface": "articles-admin",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 9,
+      "thin": true
+    },
+    {
+      "surface": "articles-admin",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 2,
+      "thin": true
+    },
+    {
+      "surface": "article-public",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 7,
+      "thin": true
+    },
+    {
+      "surface": "article-public",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 1,
+      "thin": true
+    },
+    {
+      "surface": "about-teacher",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 12,
+      "thin": false
+    },
+    {
+      "surface": "about-teacher",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 1,
+      "thin": false
+    },
+    {
+      "surface": "about-admin",
+      "theme": "light",
+      "gate": 1,
+      "contrast": 0,
+      "thin": false
+    },
+    {
+      "surface": "about-admin",
+      "theme": "dark",
+      "gate": 1,
+      "contrast": 3,
+      "thin": false
+    },
+    {
+      "surface": "account",
+      "theme": "light",
+      "gate": 1,
+      "contrast": 11,
+      "thin": true
+    },
+    {
+      "surface": "account",
+      "theme": "dark",
+      "gate": 1,
+      "contrast": 1,
+      "thin": true
+    },
+    {
+      "surface": "admin-messages",
+      "theme": "light",
+      "gate": 0,
+      "contrast": 9,
+      "thin": true
+    },
+    {
+      "surface": "admin-messages",
+      "theme": "dark",
+      "gate": 0,
+      "contrast": 2,
+      "thin": true
+    },
+    {
+      "surface": "embed",
+      "theme": "light",
+      "gate": 1,
+      "contrast": 2,
+      "thin": true
+    },
+    {
+      "surface": "embed",
+      "theme": "dark",
+      "gate": 1,
+      "contrast": 2,
+      "thin": true
+    }
+  ],
+  "findings": [
+    {
+      "kind": "gate",
+      "rule": "main-landmark-missing",
+      "selector": "body",
+      "summary": "found 0",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "landing",
+        "participants",
+        "library-dir",
+        "library-exercise",
+        "about-admin",
+        "embed"
+      ]
+    },
+    {
+      "kind": "gate",
+      "rule": "link-name",
+      "selector": ".MuiButtonBase-root-MuiIconButton-root",
+      "summary": "Fix all of the following:   Element is in tab order and does not have accessible text",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "exercise-list-student",
+        "exercise-list-teacher",
+        "similarity"
+      ]
+    },
+    {
+      "kind": "gate",
+      "rule": "link-name",
+      "selector": ".MuiButtonBase-root-MuiIconButton-root.MuiIconButton-root[href$=\"exercises\"]",
+      "summary": "Fix all of the following:   Element is in tab order and does not have accessible text",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "exercise-student",
+        "exercise-teacher"
+      ]
+    },
+    {
+      "kind": "gate",
+      "rule": "list",
+      "selector": "main > ul",
+      "summary": "Fix all of the following:   List element has direct children that are not allowed: a",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "exercise-list-student"
+      ]
+    },
+    {
+      "kind": "gate",
+      "rule": "aria-input-field-name",
+      "selector": ".cm-content",
+      "summary": "Fix any of the following:   aria-label attribute does not exist or is empty",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "exercise-student"
+      ]
+    },
+    {
+      "kind": "gate",
+      "rule": "button-name",
+      "selector": ".MuiButtonBase-root-MuiIconButton-root",
+      "summary": "Fix any of the following:   Element does not have inner text that is visible to screen readers",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "account"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiTypography-root",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 2.52 (foreground color: #515451, background color: #0a0f0a, font size: 8.4pt (11.2px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "landing",
+        "not-found",
+        "courses-student",
+        "courses-teacher",
+        "courses-admin",
+        "exercise-list-student",
+        "exercise-student",
+        "exercise-list-teacher",
+        "exercise-teacher",
+        "grades",
+        "similarity",
+        "join-by-link",
+        "join-by-moodle-link",
+        "articles-admin",
+        "article-public",
+        "about-teacher",
+        "account",
+        "admin-messages",
+        "embed"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "a[href$=\"landing\"]",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 4.22 (foreground color: #757575, background color: #f5f5f5, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "not-found",
+        "courses-student",
+        "courses-teacher",
+        "courses-admin",
+        "exercise-list-student",
+        "exercise-student",
+        "exercise-list-teacher",
+        "exercise-teacher",
+        "grades",
+        "similarity",
+        "join-by-link",
+        "join-by-moodle-link",
+        "articles-admin",
+        "article-public",
+        "about-teacher",
+        "account",
+        "admin-messages"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "a[href$=\"tos\"]",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 4.22 (foreground color: #757575, background color: #f5f5f5, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "not-found",
+        "courses-student",
+        "courses-teacher",
+        "courses-admin",
+        "exercise-list-student",
+        "exercise-student",
+        "exercise-list-teacher",
+        "exercise-teacher",
+        "grades",
+        "similarity",
+        "join-by-link",
+        "join-by-moodle-link",
+        "articles-admin",
+        "article-public",
+        "about-teacher",
+        "account",
+        "admin-messages"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "a[href$=\"about\"]",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 2.57 (foreground color: #505350, background color: #050905, font size: 9.6pt (12.8px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "landing",
+        "not-found",
+        "courses-student",
+        "courses-teacher",
+        "exercise-list-student",
+        "exercise-student",
+        "exercise-list-teacher",
+        "exercise-teacher",
+        "grades",
+        "similarity",
+        "join-by-link",
+        "join-by-moodle-link",
+        "article-public",
+        "about-teacher",
+        "account"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiChip-label",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #ffffff, background color: #16a34a, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "not-found",
+        "courses-student",
+        "courses-teacher",
+        "courses-admin",
+        "exercise-list-student",
+        "exercise-student",
+        "exercise-list-teacher",
+        "grades",
+        "similarity",
+        "join-by-link",
+        "join-by-moodle-link",
+        "articles-admin",
+        "article-public",
+        "about-teacher",
+        "admin-messages"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiTypography-body1",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.02 (foreground color: #16a34a, background color: #f5f5f5, font size: 16.2pt (21.6px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "courses-student",
+        "courses-teacher",
+        "courses-admin",
+        "exercise-student",
+        "similarity",
+        "article-public",
+        "account"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiButton-root",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #16a34a, background color: #ffffff, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "courses-admin",
+        "exercise-student",
+        "exercise-teacher",
+        "join-by-link",
+        "join-by-moodle-link",
+        "articles-admin",
+        "admin-messages"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 4.22 (foreground color: #757575, background color: #f5f5f5, font size: 8.2pt (10.88px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "exercise-list-student",
+        "exercise-student",
+        "exercise-list-teacher",
+        "exercise-teacher",
+        "grades",
+        "similarity"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "pre",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.91 (foreground color: #e0e0e0, background color: #6d6d6d, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "dark"
+      ],
+      "routes": [
+        "participants",
+        "library-dir",
+        "library-exercise",
+        "about-admin"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "code:nth-child(n)",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.91 (foreground color: #e0e0e0, background color: #6d6d6d, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "dark"
+      ],
+      "routes": [
+        "participants",
+        "library-dir",
+        "library-exercise",
+        "about-admin"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiListSubheader-root",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 4.22 (foreground color: #757575, background color: #f5f5f5, font size: 8.2pt (10.88px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "courses-admin",
+        "articles-admin",
+        "admin-messages"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiTypography-root.MuiTypography-caption[href$=\"about\"]",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 4.22 (foreground color: #757575, background color: #f5f5f5, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "courses-admin",
+        "articles-admin",
+        "admin-messages"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiChip-colorPrimary > .MuiChip-label.MuiChip-labelSmall.MuiChip-label",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #ffffff, background color: #16a34a, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "exercise-teacher",
+        "account"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiButton-contained",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #ffffff, background color: #16a34a, font size: 11.4pt (15.2px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "landing"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "[href$=\"easy\"][target=\"_blank\"]",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 2.57 (foreground color: #505350, background color: #050905, font size: 9.6pt (12.8px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "landing"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "[href$=\"6FBC8Z8pBP\"][target=\"_blank\"]",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 2.57 (foreground color: #505350, background color: #050905, font size: 9.6pt (12.8px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "landing"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "> .MuiTypography-root",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 4.22 (foreground color: #757575, background color: #f5f5f5, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "courses-student"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiBox-root > .MuiTypography-root.MuiTypography-caption",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 4.22 (foreground color: #757575, background color: #f5f5f5, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "exercise-student"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".Mui-selected.MuiTab-root.MuiTab-textColorPrimary",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #16a34a, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "exercise-teacher"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "a[href$=\"cs.ut.ee\"]",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #16a34a, background color: #ffffff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "about-teacher"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "a[href$=\"easy\"]",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #16a34a, background color: #ffffff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "about-teacher"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "a[href$=\"6FBC8Z8pBP\"]",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #16a34a, background color: #ffffff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "about-teacher"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiBox-root:nth-child(n) >",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 2.67 (foreground color: #9e9e9e, background color: #ffffff, font size: 9.6pt (12.8px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "about-teacher"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "> .MuiTypography-root.MuiTypography-caption",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 4.22 (foreground color: #757575, background color: #f5f5f5, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "account"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiButton-text",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #16a34a, background color: #ffffff, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "account"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiButton-outlined[target=\"_blank\"][rel=\"noopener\"]",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #16a34a, background color: #ffffff, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "account"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiBox-root:nth-child(n) > .MuiBox-root > .MuiButton-outlined.MuiButton-outlinedPrimary.MuiButton-outlinedSizeSmall",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #16a34a, background color: #ffffff, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "account"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": ".MuiPaper-outlined.MuiPaper-rounded.MuiPaper-root:nth-child(n) > .MuiBox-root > .MuiBox-root > .MuiButton-outlined.MuiButton-outlinedPrimary.MuiButton-outlinedSizeSmall",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 3.29 (foreground color: #16a34a, background color: #ffffff, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light"
+      ],
+      "routes": [
+        "account"
+      ]
+    },
+    {
+      "kind": "contrast",
+      "rule": "color-contrast",
+      "selector": "a",
+      "summary": "Fix any of the following:   Element has insufficient color contrast of 2.15 (foreground color: #68c389, background color: #ffffff, font size: 10.2pt (13.6px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "routes": [
+        "embed"
+      ]
+    }
+  ]
+}
