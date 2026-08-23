@@ -14,6 +14,7 @@ import core.ems.service.upsertGroupDirAccess
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
@@ -52,11 +53,21 @@ class CreateExercise(private val markdownService: MarkdownService) {
         @param:JsonProperty("container_image", required = false) @field:Size(max = 2000) val containerImage: String?,
         @param:JsonProperty("max_time_sec", required = false) val maxTime: Int?,
         @param:JsonProperty("max_mem_mb", required = false) val maxMem: Int?,
-        @param:JsonProperty("assets", required = false) val assets: List<ReqAsset>?,
+        // `@field:Valid` is what makes the constraints on ReqAsset run at all. `@Valid` on the
+        // controller parameter validates this class's own fields and stops there — it does not
+        // descend into a collection — so without this the `@Size` that has been on `file_name` all
+        // along was never once evaluated. A constraint that cannot fire looks exactly like one that
+        // passes.
+        @param:JsonProperty("assets", required = false) @field:Valid val assets: List<ReqAsset>?,
     )
 
     data class ReqAsset(
-        @param:JsonProperty("file_name", required = true) @field:Size(max = 100) val fileName: String,
+        // See ASSET_FILE_NAME_PATTERN: the name is joined onto a directory by the executor, so a
+        // path in it writes outside the submission directory.
+        @param:JsonProperty("file_name", required = true)
+        @field:Size(max = 100)
+        @field:Pattern(regexp = ASSET_FILE_NAME_PATTERN, message = ASSET_FILE_NAME_MESSAGE)
+        val fileName: String,
         @param:JsonProperty("file_content", required = true) @field:Size(max = 300000) val fileContent: String
     )
 

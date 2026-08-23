@@ -115,6 +115,47 @@ def test_an_asset_may_overwrite_the_submission_filename(captured, logger):
     assert captured["files"]["student-submission/submission.py"] == SUBMISSION
 
 
+@pytest.mark.parametrize("name", [
+    # One level up is the sharpest of these and the least obvious: `student-submission/`'s parent is
+    # the Docker build context, so `../Dockerfile` replaces the Dockerfile that is then built —
+    # arbitrary FROM and arbitrary RUN on the machine that grades student code.
+    "../Dockerfile",
+    "../evaluate.sh",
+    "../../escaped.txt",
+    # `os.path.join` discards everything before an absolute component, so this ignores the base
+    # directory entirely rather than walking out of it.
+    "/tmp/escaped.txt",
+    # Not a separator on POSIX, so `os.path.basename` alone would let it through.
+    "..\\..\\escaped.txt",
+    "sub/dir.txt",
+    "..",
+    ".",
+    "",
+])
+def test_an_asset_cannot_be_written_outside_the_submission_directory(captured, logger, name):
+    with pytest.raises(containers.AssetNameError):
+        run(logger, assets=[(name, "payload")])
+
+    # And it failed before Docker was reached, rather than after building an image from a build
+    # context the asset had already rewritten.
+    assert "dir" not in captured
+
+
+def test_a_rejected_asset_name_is_reported_rather_than_skipped(captured, logger):
+    """
+    The alternative designs are worse in a way that is hard to see later.
+
+    Skipping the asset, or silently renaming it to its basename, both grade the submission against
+    tests that are not the exercise's tests and return a grade as though nothing had happened. A
+    broken exercise then reads as a wrong answer, on the student's transcript. Failing loudly means
+    somebody fixes the exercise.
+    """
+    with pytest.raises(containers.AssetNameError) as excinfo:
+        run(logger, assets=[("input.txt", "fine"), ("../Dockerfile", "FROM evil")])
+
+    assert "../Dockerfile" in str(excinfo.value)
+
+
 def test_non_ascii_survives_the_round_trip_to_disk(captured, logger):
     # Every open() here passes encoding='utf-8' explicitly. Without it the encoding is the host's
     # locale, so an executor on a machine with a non-UTF-8 default would mangle exactly the

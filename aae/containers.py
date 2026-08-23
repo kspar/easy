@@ -79,6 +79,42 @@ RUNNING_STATUS = 'running'
 EXITED_STATUS = 'exited'
 
 
+class AssetNameError(ValueError):
+    """An exercise asset whose file name is not a file name."""
+
+
+def _checked_asset_name(file_name):
+    """
+    An asset name has to be a plain file name, and this is where that is enforced.
+
+    Assets are written into the submission directory with `os.path.join`, which does exactly what it
+    is asked and nothing more: `..` walks up, and an **absolute path discards the base entirely**.
+    Neither is theoretical, and the interesting target is one level up rather than the file system at
+    large. `student-submission/`'s parent is the Docker build context — the directory `Dockerfile`
+    and `evaluate.sh` live in — and the asset loop runs *after* the Dockerfile is written. So an asset
+    named `../Dockerfile` replaces the Dockerfile that `images.build(path=source_dir)` then builds,
+    which is an arbitrary `FROM` and arbitrary `RUN` on the host that grades student code.
+
+    The rule is "a plain file name" rather than "resolves inside the directory", and the difference
+    matters twice. A name containing a separator cannot work today anyway — the subdirectory does not
+    exist, so `open` raises — so nothing legitimate is being taken away, and a containment check
+    phrased on the resolved path would quietly start permitting subdirectories the moment anyone added
+    an `os.makedirs`. The stricter rule also needs no path resolution to read.
+
+    What is deliberately still allowed is an asset **overwriting** `submission.py` or `lahendus.py`.
+    That is a documented feature — an exercise can supply the file the student's submission would
+    otherwise be — and `test_an_asset_may_overwrite_the_submission_filename` pins it. Collision inside
+    the directory is intended; leaving the directory is not.
+
+    Raises rather than skipping or sanitising. A skipped asset grades the submission against
+    incomplete tests and reports a grade as if nothing happened, and a silently renamed one does the
+    same; both turn a broken exercise into wrong marks. Failing means the teacher finds out.
+    """
+    if file_name != os.path.basename(file_name) or file_name in ('', '.', '..') or '\\' in file_name:
+        raise AssetNameError('Asset file name must be a plain file name, got {!r}'.format(file_name))
+    return file_name
+
+
 def grade_submission(submission, grading_script, assets, base_image_name, max_run_time_sec, max_mem_MB, logger,
                      request_id):
     """
@@ -118,7 +154,7 @@ def grade_submission(submission, grading_script, assets, base_image_name, max_ru
             submission_file.write(submission)
 
         for asset in assets:
-            with open(os.path.join(student_dir, 'student-submission', asset[0]), mode='w',
+            with open(os.path.join(student_dir, 'student-submission', _checked_asset_name(asset[0])), mode='w',
                       encoding='utf-8') as asset_file:
                 asset_file.write(asset[1])
 
