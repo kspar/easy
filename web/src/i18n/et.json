@@ -933,5 +933,21 @@
         "expired": "Lõppenud"
       }
     }
+  },
+  "bugReport": {
+    "title": "Teata veast",
+    "intro": "Kirjelda, mis juhtus. Mida täpsemalt oskad öelda, mida sa parasjagu tegid, seda suurem on lootus viga parandada.",
+    "whatWentWrong": "Mis läks valesti?",
+    "includeActivity": "Lisa minu hiljutine tegevus",
+    "seeWhatIsSent": "Vaata täpselt, mida saadetakse",
+    "nothingRecorded": "Sellel vahekaardil ei ole veel midagi salvestatud.",
+    "send": "Saada",
+    "thanks": "Aitäh! Sinu teade on saadetud.",
+    "tooMany": "Oled viimase tunni jooksul saatnud mitu teadet. Palun proovi veidi hiljem uuesti.",
+    "crashTitle": "See leht lõpetas töötamise",
+    "crashBody": "Midagi läks lehe joonistamise ajal katki. Kiireim viis see ära parandada on meile sellest teada anda — sinu hiljutine tegevus on juba kaasa lisatud.",
+    "reportThis": "Teata sellest",
+    "reloadPage": "Laadi leht uuesti",
+    "crashPrefill": "Leht lõpetas töötamise veateatega: {{message}}"
   }
 }

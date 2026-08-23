@@ -933,5 +933,21 @@
         "expired": "Finished"
       }
     }
+  },
+  "bugReport": {
+    "title": "Report a bug",
+    "intro": "Tell us what happened. The more precisely you can say what you were doing, the better the chance of fixing it.",
+    "whatWentWrong": "What went wrong?",
+    "includeActivity": "Include my recent activity",
+    "seeWhatIsSent": "See exactly what will be sent",
+    "nothingRecorded": "Nothing has been recorded in this tab yet.",
+    "send": "Send",
+    "thanks": "Thank you — your report has been sent.",
+    "tooMany": "You have sent several reports in the last hour. Please try again a little later.",
+    "crashTitle": "This page stopped working",
+    "crashBody": "Something in the page failed while it was being drawn. Telling us about it is the fastest way to get it fixed — your recent activity is already attached.",
+    "reportThis": "Report this",
+    "reloadPage": "Reload the page",
+    "crashPrefill": "The page stopped working with the error: {{message}}"
   }
 }

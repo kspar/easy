@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Outlet,
   useNavigate,
@@ -33,6 +33,7 @@ import {
   useMediaQuery,
   useTheme,
   ListSubheader,
+  Snackbar,
 } from '@mui/material'
 import {
   AccountCircleOutlined,
@@ -55,12 +56,15 @@ import {
   AdminPanelSettingsOutlined,
   OpenInNewOutlined,
   CampaignOutlined,
+  BugReportOutlined,
 } from '@mui/icons-material'
 import { useThemeMode } from '../theme/useThemeMode.ts'
 import { useCourseExercises } from '../api/exercises.ts'
 import { useCourse } from '../api/courses.ts'
 import type { StudentExerciseStatus } from '../api/types.ts'
 import EditCourseDialog from '../features/course-settings/EditCourseDialog.tsx'
+import BugReportDialog from '../features/bug-report/BugReportDialog.tsx'
+import { record } from '../features/bug-report/breadcrumbs.ts'
 import useRecentExercises from '../hooks/useRecentExercises.ts'
 import logoSvg from '../assets/logo.svg'
 import SystemMessageBanner from '../components/SystemMessageBanner.tsx'
@@ -93,6 +97,17 @@ export default function AppLayout() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
+  // Where the reporter has been, for a bug report's activity log (EZ-1786). Here because every
+  // authenticated route renders through this layout, so one effect covers all of them.
+  //
+  // The search string is included and the hash is not: a filter or a tab selection is frequently
+  // the difference between a page that works and one that does not, whereas the hash is a scroll
+  // position. `search` can carry an exercise or group id, which is the same class of identifier the
+  // path already carries.
+  useEffect(() => {
+    record('route', `${location.pathname}${location.search}`)
+  }, [location.pathname, location.search])
+
   // Extract courseId from route if inside a course
   const courseMatch = location.pathname.match(/^\/courses\/(\d+)/)
   const courseId = courseMatch ? courseMatch[1] : undefined
@@ -115,6 +130,8 @@ export default function AppLayout() {
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [bugReportOpen, setBugReportOpen] = useState(false)
+  const [snackbar, setSnackbar] = useState<string | null>(null)
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null)
 
   const toggleDrawer = () => setDrawerOpen((prev) => !prev)
@@ -765,6 +782,24 @@ export default function AppLayout() {
                     </ListItemIcon>
                     <ListItemText>{t('nav.accountSettings')}</ListItemText>
                   </MenuItem>
+                  {/*
+                    For everyone, not gated on a role: the person who cannot use the page is the one
+                    with something to say, and most of them are students. In the account menu rather
+                    than as a floating button because that is where every other global action in this
+                    app lives, and a permanent button in the corner of every page is a lot of chrome
+                    to spend on something used once a month.
+                  */}
+                  <MenuItem
+                    onClick={() => {
+                      setProfileAnchor(null)
+                      setBugReportOpen(true)
+                    }}
+                  >
+                    <ListItemIcon>
+                      <BugReportOutlined fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>{t('bugReport.title')}</ListItemText>
+                  </MenuItem>
                   {activeRole === 'admin' && (
                     // An internal route, so a RouterLink rather than an anchor — but still a real
                     // href, so ctrl/cmd-click opens it in a tab like any other link.
@@ -879,6 +914,26 @@ export default function AppLayout() {
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
+      {/*
+        Mounted only while open, so each opening starts from a fresh snapshot of the activity buffer
+        and an empty box. See the note on `diagnostics` in BugReportDialog.
+      */}
+      {bugReportOpen && (
+        <BugReportDialog
+          open
+          onClose={() => setBugReportOpen(false)}
+          onSuccess={setSnackbar}
+          pageUrl={`${location.pathname}${location.search}`}
+        />
+      )}
+
+      <Snackbar
+        open={snackbar !== null}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(null)}
+        message={snackbar ?? ''}
+      />
     </Box>
   )
 }

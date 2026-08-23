@@ -6,6 +6,7 @@ import { et, enGB } from 'date-fns/locale'
 import { ThemeProvider } from './theme/ThemeContext.tsx'
 import { AuthProvider } from './auth/AuthContext.tsx'
 import { QueryProvider } from './api/QueryProvider.tsx'
+import ErrorBoundary from './components/ErrorBoundary.tsx'
 import router from './routes/routes.tsx'
 
 import './i18n/i18n.ts'
@@ -22,7 +23,14 @@ export default function App() {
       <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={dateFnsLocale}>
         <AuthProvider>
           <QueryProvider>
-            <RouterProvider router={router} />
+            {/*
+              Inside QueryProvider so the crash screen can post a report through the ordinary
+              mutation, outside RouterProvider so a throw in the router or a layout is caught at all.
+              See components/ErrorBoundary.tsx.
+            */}
+            <ErrorBoundary>
+              <RouterProvider router={router} />
+            </ErrorBoundary>
           </QueryProvider>
         </AuthProvider>
       </LocalizationProvider>

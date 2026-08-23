@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { loadConfig, ConfigError } from './config.ts'
 import { applyEnvironmentBadge } from './environment.ts'
+import { installBreadcrumbs } from './features/bug-report/breadcrumbs.ts'
 
 /**
  * Shown instead of the app when /config.json is missing or malformed. Deliberately plain DOM:
@@ -28,6 +29,11 @@ function renderConfigError(root: HTMLElement, message: string) {
 }
 
 const root = document.getElementById('root')!
+
+// First, before anything else can throw. Config loading and the app's own module evaluation are
+// both inside the window this covers, and a failure in either is precisely the kind that leaves a
+// blank page with nothing to report (EZ-1786).
+installBreadcrumbs()
 
 try {
   // Must complete before the app is imported: AuthContext.tsx builds its Keycloak instance at

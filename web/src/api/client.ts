@@ -1,4 +1,5 @@
 import config from '../config.ts'
+import { record } from '../features/bug-report/breadcrumbs.ts'
 
 export interface ApiError {
   id: string
@@ -70,6 +71,15 @@ export async function apiFetch<T>(
     } catch {
       // no parseable error body
     }
+
+    // The one place every core call fails, so the one place worth recording them (EZ-1786).
+    //
+    // `errorBody.id` is the reason this is here rather than just logging a status. Core mints that
+    // UUID in its exception handler and writes the *same* value to its log line, to this response
+    // and to the admin email — so a bug report carrying these ids gives whoever picks it up an exact
+    // grep key into the backend log, instead of a timestamp and a username to search around.
+    record('api', `${method} ${path} -> ${response.status}${errorBody?.id ? ` id=${errorBody.id}` : ''}`)
+
     throw new ApiResponseError(response.status, errorBody)
   }
 
