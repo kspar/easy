@@ -192,6 +192,9 @@ easy:
       ## wrong does not make an issue public; it makes YouTrack reject the request, which is the
       ## failure direction to prefer.
       visibility-group-id: "{{ easy_core_youtrack_visibility_group_id }}"
+      ## The `Type` value stamped on a filed issue, as a bundle element id and not its label. Blank
+      ## leaves the field alone and the project default applies.
+      issue-type-id: "{{ easy_core_youtrack_issue_type_id }}"
       ## Catches outages and restarts. The first attempt happens as the report arrives, so this only
       ## ever picks up what that could not deliver.
       retry-cron: "{{ easy_core_youtrack_retry_cron }}"

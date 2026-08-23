@@ -184,6 +184,10 @@ easy:
       base-url: "https://easy.youtrack.cloud"
       project-id: "<project-id>"
       visibility-group-id: "<group-id>"
+      # The `Type` value stamped on a filed issue, as a bundle element id rather than its label.
+      # Blank leaves the field alone and the project default applies — which is also the escape
+      # hatch if this id is ever wrong, since blanking it restores filing without a code change.
+      issue-type-id: "<type-bundle-element-id>"
       # Retries reports that could not be filed the first time. Hourly is plenty: the first attempt
       # happens immediately and this only catches outages and restarts.
       retry-cron: "0 20 * * * *"

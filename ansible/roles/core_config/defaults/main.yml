@@ -112,7 +112,20 @@ easy_core_youtrack_enabled: false
 easy_core_youtrack_base_url: "https://easy.youtrack.cloud"
 easy_core_youtrack_project_id: ""
 easy_core_youtrack_visibility_group_id: ""
-easy_core_youtrack_retry_cron: "{{ easy_core_never_cron }}"
+easy_core_youtrack_issue_type_id: ""
+
+# Hourly, and NOT pinned to the never-date like the other crons in this file.
+#
+# The first version of this copied `easy_core_never_cron` from the Moodle and Keycloak jobs above,
+# which was wrong: those crons do things (delete accounts, push grades) that an unconfigured
+# environment must not do by accident, whereas this one retries deliveries that already failed. Left
+# pinned, an environment that enabled forwarding without also overriding the cron would never retry
+# anything — the sweep exists precisely for the outage-and-restart case, and it would have been dead
+# on arrival.
+#
+# Safe to leave running everywhere: retryFailed() returns immediately when forwarding is disabled, so
+# the cost on an environment not using this is one no-op call an hour.
+easy_core_youtrack_retry_cron: "0 20 * * * *"
 
 # --- mail -------------------------------------------------------------------------------------------
 # Off by default. An environment that should send mail says so; one that has not been configured

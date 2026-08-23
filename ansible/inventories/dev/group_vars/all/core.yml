@@ -84,9 +84,13 @@ easy_core_moodle_grades_url: http://127.0.0.1:9/moodle-disabled-on-dev
 # says who filed it, not which environment they were on.
 #
 # So dev exercises everything up to the HTTP call: the dialog, the endpoint, the row, the DISABLED
-# state, the admin mail. The one untested step against a real tracker is the step that has to be
-# tested against the real tracker anyway, because the thing worth checking is that a filed issue is
-# invisible to a logged-out reader — and only production's own token and group can answer that.
+# state, the admin mail.
+#
+# Reconsidered once EZ gained a dedicated `User-submitted issue` type (EZ-1786), which does weaken
+# this: dev's noise would at least arrive pre-labelled and filterable. Still off, because filterable
+# noise is noise somebody has to filter, and a filed issue records who reported it and not which
+# environment they were on — so a dev report and a real one are indistinguishable once the type is
+# shared. Turn it on temporarily to smoke-test a token, then turn it off again.
 #
 # easy_core_youtrack_enabled: false   <- inherited from the role, on purpose
 

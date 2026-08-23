@@ -9,6 +9,66 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import java.time.Duration
 
+/** The project field a filed issue's type goes in. Stable, and readable in the project schema. */
+internal const val TYPE_FIELD_NAME = "Type"
+
+/**
+ * The create-issue request body.
+ *
+ * A top-level function rather than a method on the service, so that it can be tested without a
+ * Spring context and without a live YouTrack — which, until it was pulled out here, was the only
+ * thing that ever exercised it. See `YouTrackRequestBodyTest`.
+ *
+ * Untyped maps on purpose. `$type` is a discriminator YouTrack requires, and Kotlin classes carrying
+ * a property called `$type` cost more in annotations than the four nested maps they would replace.
+ *
+ * ### Verified against the real API on 2026-08-23
+ *
+ * This exact shape was posted to EZ and read back: `Type` came out as `User-submitted issue`, and the
+ * issue returned **404 to an unauthenticated reader** while an unrestricted issue in the same project
+ * returned 200 to the same caller. That control is the half that matters — a 404 on its own would
+ * equally well mean a malformed request or an instance with guest access turned off.
+ */
+internal fun buildIssueBody(
+    projectId: String,
+    summary: String,
+    description: String,
+    visibilityGroupId: String,
+    issueTypeId: String,
+): Map<String, Any> {
+    val body = mutableMapOf<String, Any>(
+        "project" to mapOf("id" to projectId),
+        "summary" to summary,
+        "description" to description,
+
+        // Unconditional, and not a parameter. The text box a report comes from is unbounded, and
+        // this instance has guest access — there is no caller-supplied condition under which
+        // publishing one of these is correct, so there is nothing to pass in. `permittedGroups`
+        // takes a group id; EZ Team happens to be a ProjectTeam rather than a plain UserGroup, and
+        // YouTrack accepts it here either way.
+        "visibility" to mapOf(
+            "\$type" to "LimitedVisibility",
+            "permittedGroups" to listOf(mapOf("id" to visibilityGroupId)),
+        ),
+    )
+
+    // Omitted entirely when unset, rather than sent as null — a null value on a custom field means
+    // "clear it", which is a different request from "do not mention it".
+    if (issueTypeId.isNotBlank()) {
+        body["customFields"] = listOf(
+            mapOf(
+                // Type is a single-value enum field, so this is the payload type and the value is a
+                // bundle element referenced by id.
+                "\$type" to "SingleEnumIssueCustomField",
+                "name" to TYPE_FIELD_NAME,
+                "value" to mapOf("id" to issueTypeId),
+            ),
+        )
+    }
+
+    return body
+}
+
 /**
  * Creates YouTrack issues from bug reports.
  *
@@ -18,13 +78,21 @@ import java.time.Duration
  * Two things about YouTrack's REST API are worth knowing before editing this:
  *
  * **It wants internal ids, not the names people use.** `EZ` is a *short name*; the API needs the
- * project's opaque id, and the same goes for the group in `visibility`. Resolving either at runtime
- * means `GET /api/admin/…`, which is low-level admin read scope this token has no reason to hold, so
- * both ids are configuration. `doc/bug-reporting.md` records the two `curl`s that find them.
+ * project's opaque id, and the same goes for the group in `visibility` and the `Type` value. Keeping
+ * them as configuration means no lookup call, no admin-read scope on this token, and no startup
+ * dependency on the tracker being reachable. `doc/bug-reporting.md` §5.1 records how to find them.
  *
- * **Custom fields are deliberately not set.** Filing these as `Type: Bug` needs the per-field
- * `$type` discriminator and a bundle lookup, which is a lot of moving parts for a field triage sets
- * in one click. The project default applies instead.
+ * A trap worth recording, because it cost a wrong conclusion: **`EZ Team` is a `ProjectTeam`, not a
+ * plain `UserGroup`**, so `GET /api/admin/groups/{id}` answers 404 for it and it looks like the id is
+ * wrong. `GET /api/groups` lists it, and `GET /api/admin/projects/{id}?fields=team(id,name)` names it
+ * directly. It works perfectly well in `permittedGroups`.
+ *
+ * **One custom field is set: `Type`.** An earlier version of this set none, on the grounds that a
+ * bundle lookup was a lot of moving parts for a field triage sets in one click. EZ then gained a
+ * dedicated `User-submitted issue` type, and being handed the element id removes the lookup that was
+ * the whole objection — so reports from the wild are now a filterable class rather than
+ * indistinguishable from a triaged bug. Nothing else is set: `State`, `Assignee` and `Subsystem` are
+ * triage's to decide, and a reporter cannot know which subsystem broke.
  */
 @Service
 class YouTrackService {
@@ -44,6 +112,16 @@ class YouTrackService {
 
     @Value("\${easy.core.youtrack.visibility-group-id}")
     private lateinit var visibilityGroupId: String
+
+    /**
+     * The `Type` value to stamp on a filed issue — a bundle element id, not the label.
+     *
+     * Blank means "leave the field alone and let the project default apply", which is both the
+     * out-of-the-box behaviour and the escape hatch: if this id is ever wrong, blanking it gets
+     * issue filing working again without a code change.
+     */
+    @Value("\${easy.core.youtrack.issue-type-id}")
+    private lateinit var issueTypeId: String
 
     /**
      * Whether a report should even be queued for forwarding.
@@ -82,18 +160,7 @@ class YouTrackService {
      * which making one of these public is correct, so there is nothing to pass in.
      */
     fun createIssue(summary: String, description: String): String {
-        // Untyped bodies on purpose. `$type` is a Jackson discriminator YouTrack requires on the
-        // visibility object, and expressing that as annotated Kotlin classes costs more than the
-        // three nested maps it would replace.
-        val body = mapOf(
-            "project" to mapOf("id" to projectId),
-            "summary" to summary,
-            "description" to description,
-            "visibility" to mapOf(
-                "\$type" to "LimitedVisibility",
-                "permittedGroups" to listOf(mapOf("id" to visibilityGroupId)),
-            ),
-        )
+        val body = buildIssueBody(projectId, summary, description, visibilityGroupId, issueTypeId)
 
         val headers = HttpHeaders().apply {
             setBearerAuth(token)

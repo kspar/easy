@@ -59,6 +59,14 @@ The ordering inside the handler is the design, not an accident of writing it:
 So a YouTrack outage delays a delivery; it never loses a report. And the admin email means nobody has
 to be watching the tracker for a report to be noticed.
 
+**One caveat on that last sentence, because it is the safety net everything else leans on.** The email
+goes through `SendMailService.sendSystemNotification`, which returns quietly — logging at `info` —
+when `easy.core.mail.sys.enabled` is false or `easy.core.mail.sys.to` is unset. On an environment
+without system mail configured *and* with forwarding off, a report lands in the table and nothing
+announces it. The row is still there and `/v2/account/export` still returns it, so nothing is lost,
+but "somebody finds out" becomes "somebody runs a query". An environment that wants this feature
+should have one of the two delivery paths actually working.
+
 Files: `core/ems/service/bugreport/CommonCreateBugReport.kt` (endpoint),
 `BugReportForwardService.kt` (state machine), `YouTrackService.kt` (HTTP),
 `web/src/features/bug-report/` (dialog and activity buffer),
@@ -174,10 +182,15 @@ easy:
     youtrack:
       enabled: true
       base-url: "https://easy.youtrack.cloud"
-      project-id: "<internal id>"
-      visibility-group-id: "<internal id>"
+      project-id: "0-0"                 # EZ
+      visibility-group-id: "542-0"      # EZ Team
+      issue-type-id: "81-29"            # Type = User-submitted issue
       retry-cron: "0 20 * * * *"
 ```
+
+Those three ids are EZ's real ones, confirmed against the API on 2026-08-23. They are recorded here
+because they are neither secret nor guessable, and because the alternative is every operator
+rediscovering §5.1.
 
 **The token goes in `secrets.yaml` and nowhere else.** `core_config` greps the config file it writes
 for any key matching `password|secret|token` and fails the play if one appears; ansible creates the
@@ -188,20 +201,43 @@ A blank id, or a token still on its `CHANGEME` placeholder, is treated as **not 
 logs a warning naming what is missing and stores the report without forwarding. A half-configured
 integration must not turn a bug report into a 500 — the report is the thing worth keeping.
 
-### 5.1 The two ids, and how to find them
+### 5.1 The three ids, and how to find them
 
-The REST API does not accept `EZ` or `EZ Team`. It wants internal ids, and resolving them at runtime
-would need admin-read scope this token has no reason to hold, so they are configuration:
+The REST API does not accept `EZ`, `EZ Team` or `User-submitted issue`. It wants internal ids, and
+keeping them as configuration means no lookup call, no admin-read scope on the token, and no startup
+dependency on the tracker being reachable.
 
 ```sh
-# project-id
+# project-id  →  0-0
 curl -s -H "Authorization: Bearer $TOKEN" \
   'https://easy.youtrack.cloud/api/admin/projects?fields=id,shortName' | jq '.[] | select(.shortName=="EZ")'
 
-# visibility-group-id
+# visibility-group-id  →  542-0
+# NOTE: /api/groups, NOT /api/admin/groups. See the trap below.
 curl -s -H "Authorization: Bearer $TOKEN" \
-  'https://easy.youtrack.cloud/api/admin/groups?fields=id,name' | jq '.[] | select(.name=="EZ Team")'
+  'https://easy.youtrack.cloud/api/groups?fields=id,name' | jq '.[] | select(.name=="EZ Team")'
+
+# issue-type-id  →  81-29
+curl -s -H "Authorization: Bearer $TOKEN" \
+  'https://easy.youtrack.cloud/api/admin/customFieldSettings/bundles/enum?fields=id,name,values(id,name)' \
+  | jq '.[].values[]? | select(.name=="User-submitted issue")'
 ```
+
+Or from a browser: YouTrack accepts an admin's existing session cookie on GET, so pasting any of
+those URLs (without the `jq`) into a logged-in tab returns the JSON directly — no token, no shell.
+
+**The trap.** `EZ Team` is a **`ProjectTeam`**, not a plain `UserGroup`. So
+`GET /api/admin/groups/542-0` answers **404**, which reads exactly like a wrong id and cost one wrong
+conclusion on 2026-08-23. Two paths that do find it:
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" 'https://easy.youtrack.cloud/api/groups?fields=id,name'
+curl -s -H "Authorization: Bearer $TOKEN" \
+  'https://easy.youtrack.cloud/api/admin/projects/0-0?fields=team(id,name)'
+```
+
+A `ProjectTeam` works perfectly well in `permittedGroups` — it is a `UserGroup` subtype. The 404 is
+about which admin collection it belongs to, nothing more.
 
 ### 5.2 Every issue is restricted, and that is not configurable
 
@@ -229,15 +265,55 @@ Two rejected alternatives, so nobody has to re-derive them:
 Getting `visibility-group-id` wrong does not make an issue public — YouTrack rejects the request. That
 is the right direction for this to fail in.
 
-**Verify it the only way that counts:** file one report, then open the issue **while logged out** (or
-as `guest`) and confirm it is not visible. A restricted issue that is actually public is the one
-failure mode here that cannot be walked back.
+**Verified against the real tracker on 2026-08-23**, and this is the only way that counts. A test
+issue was posted to EZ with the exact body §5.3 shows, then read twice with no `Authorization`
+header:
 
-### 5.3 Custom fields are not set
+| Request, unauthenticated | Result |
+| --- | --- |
+| The restricted test issue | **404** |
+| EZ-1786, an ordinary unrestricted issue in the same project | **200** |
 
-Filing these as `Type: Bug` needs the per-field `$type` discriminator and a bundle lookup — a lot of
-moving parts for a field triage sets in one click. The project default applies. Worth revisiting if
-the volume ever makes hand-triage tedious.
+The second row is the half that makes the first meaningful. A 404 on its own would equally well mean
+a malformed request, a wrong id, or an instance with guest access switched off — the 200 proves guest
+really can read EZ, so the 404 is the restriction doing its job. The test issue was deleted
+afterwards.
+
+Repeat both rows, in that order, whenever the group id or the visibility payload changes. A restricted
+issue that is actually public is the one failure here that cannot be walked back, and
+`YouTrackRequestBodyTest` guards the payload but cannot tell you what YouTrack did with it.
+
+### 5.3 One custom field is set: `Type`
+
+Filed issues get `Type: User-submitted issue` (bundle element `81-29`):
+
+```json
+"customFields": [
+  { "$type": "SingleEnumIssueCustomField", "name": "Type", "value": { "id": "81-29" } }
+]
+```
+
+The first version of this set no custom fields at all, reasoning that a bundle lookup was a lot of
+moving parts for a field triage sets in one click. Two things changed it: EZ gained a type dedicated
+to these, so reports from the wild became a filterable class rather than something indistinguishable
+from a triaged bug; and having the element id to hand removes the lookup that was the entire
+objection.
+
+Referenced **by id, not by label** — `User-submitted issue` is what a human reads, `81-29` is what
+survives someone renaming the value.
+
+**A blank `issue-type-id` omits `customFields` entirely** and the project default applies. That is the
+escape hatch: if the id is ever wrong, blanking the key restores issue filing with no code change.
+Note that omitting is not the same request as sending null, which would mean *clear this field*.
+
+Nothing else is set. `State`, `Assignee` and `Subsystem` are triage's to decide, and a reporter cannot
+know which subsystem broke.
+
+If YouTrack rejects the field the whole POST 400s, the row goes to `FAILED` with the message in
+`yt_error`, and the sweep retries five times before giving up. That is deliberate: the admin email has
+already gone out, so a wrong id costs issue filing but never a report, and parsing YouTrack's error
+text to retry without the field would be guessing at a string format to paper over a config mistake
+somebody should fix.
 
 ### 5.4 Forward state, and what the sweep retries
 
@@ -293,12 +369,20 @@ real tracker anyway (§5.2).
 | Suite | Covers |
 | --- | --- |
 | `core/.../bugreport/BugReportApiTest.kt` | Storage, roles, blank message, null-vs-empty diagnostics, the `DISABLED` path, and the rate limit — including that an absent config row means ten and not unlimited |
+| `core/.../bugreport/YouTrackRequestBodyTest.kt` | The request body, with no Spring context and no live tracker: visibility always restricted to the configured group, the `Type` field's shape, and that a blank type id omits the field rather than nulling it |
 | `web/tests/unit/breadcrumbs.test.mjs` | The three caps, eviction order, redaction, surviving a reload, and a throwing storage losing breadcrumbs and nothing else |
 | `web/tests/browser/bug-report.spec.mjs` | The dialog, the pre-checked box, **shown text equals sent text**, declined sends no key, and the rate limit reading as a wait |
 
 The browser spec stubs a 400 carrying a known error id and asserts that id appears in the posted
 payload. That positive case is load-bearing: an activity log that is always empty looks exactly like
 one that is working and had nothing to say.
+
+`YouTrackRequestBodyTest` was checked the same way, by mutation rather than by trusting a green run:
+changing the payload to `UnlimitedVisibility` fails `every issue is restricted to the configured
+group`. Worth knowing that it does, because that assertion guards the one failure in this feature that
+is silent and in the wrong direction — a wrong project id or field name gets a 400 somebody reads,
+whereas a widened visibility creates the issue, looks like success, and publishes a student's
+submission.
 
 No wall clock in any of it. The rate-limit test fills the cap inside one test rather than moving time,
 which `NoWallClockInFixturesTest` would refuse anyway.

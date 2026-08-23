@@ -185,6 +185,9 @@ easy:
       token: "test-token"
       project-id: "0-0"
       visibility-group-id: "0-0"
+      # Deliberately blank, so the "no type field is sent" branch is what the context exercises.
+      # YouTrackRequestBodyTest covers both branches directly and needs no context at all.
+      issue-type-id: ""
       retry-cron: "0 0 5 31 2 ?"
 
   web:
