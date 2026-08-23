@@ -91,6 +91,9 @@ wherever the artifact goes, which is what makes it a usable build stamp.
   CORS allowlist has to contain the web origin in that case — see `SecurityConf.kt`.
 - `keycloak.*` — passed straight to keycloak-js.
 - `idpAdminUrl` — optional; where an admin goes to administer the IdP. No value, no menu item.
+- `bugReportDashboardUrl` — optional; a YouTrack dashboard of the bug reports users have filed from
+  the app (EZ-1786). Admin-only sidebar link. No value, no menu item. A whole URL rather than a
+  dashboard id, because the tracker answers on two hostnames and an id is meaningless without one.
 - `environment` — optional; **absent means production** (EZ-1733). See below.
 
 ### Marking a non-production environment

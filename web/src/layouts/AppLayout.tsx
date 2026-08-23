@@ -417,6 +417,38 @@ export default function AppLayout() {
           </ListItem>
         )}
 
+        {/*
+        Admin-only: where the bug reports users file from the app end up (EZ-1786).
+
+        Gated on the config value as well as the role, exactly like the IdP admin item in the account
+        menu — an environment with no dashboard configured shows nothing rather than a link to
+        someone else's tracker. Production and dev do not necessarily point at the same one.
+
+        In the sidebar rather than the account menu because it is a place you go to work, next to
+        Articles, and not a setting. It leaves the app, hence target=_blank and the trailing icon
+        that says so before the click rather than after.
+        */}
+        {activeRole === 'admin' && config.bugReportDashboardUrl && (
+          <ListItem disablePadding>
+            <ListItemButton
+              component="a"
+              href={config.bugReportDashboardUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={closeDrawerOnMobile}
+            >
+              <ListItemIcon>
+                <BugReportOutlined color="action" />
+              </ListItemIcon>
+              <ListItemText
+                primary={t('nav.bugReportDashboard')}
+                primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+              />
+              <OpenInNewOutlined fontSize="small" sx={{ opacity: 0.5 }} />
+            </ListItemButton>
+          </ListItem>
+        )}
+
       </List>
 
         {/* Recently viewed exercises on library pages */}

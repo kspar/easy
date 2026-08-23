@@ -5,6 +5,7 @@
     "realm": "master",
     "clientId": "lahendus.ut.ee"
   },
+  "bugReportDashboardUrl": "https://easy.myjetbrains.com/youtrack/dashboard?id=540-8",
   "environment": {
     "label": "LOCAL",
     "colour": "#5c6bc0"

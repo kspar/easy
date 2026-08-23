@@ -249,6 +249,17 @@ validates against another. `doc/idp-setup.md` §5.1 is the order to change it in
 `idpAdminUrl` points the SPA's admin link at `/idp-admin/`, the gate page in front of the Keycloak
 console, on the same host.
 
+`bugReportDashboardUrl` is the YouTrack dashboard of user-filed bug reports (EZ-1786), shown as an
+admin-only sidebar link. Not environment-specific — there is one EZ project, so dev and production
+point at the same dashboard — but still per-environment config rather than a build constant, because
+an environment that should not advertise the tracker simply omits the key.
+
+**Changing either of these needs the `core_autodeploy` role re-run, not just a promote.** The role
+copies `deploy/<env>/config.json` to `/srv/easy/conf/config.json`, and the autodeploy script copies
+*that* into each new dist as it installs it. So a config change lands on the next install: update the
+host's copy first, then promote, or the promote ships the previous config and the change appears an
+install later than expected.
+
 `emsRoot` is an absolute cross-origin URL — web and API are separate names on dev — so it also
 requires `easy_core_cors_allowed_origins` on the host to contain `https://dev.lahendus.ut.ee`. It
 does; the failure mode if it ever stops is a browser CORS error with nothing in the server log.

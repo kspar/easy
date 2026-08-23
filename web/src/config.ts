@@ -33,6 +33,16 @@ export interface RuntimeConfig {
    */
   idpAdminUrl?: string
   /**
+   * A YouTrack dashboard of the bug reports users have filed from the app (EZ-1786). Optional —
+   * no value, no menu item, same as [idpAdminUrl].
+   *
+   * A whole URL rather than a dashboard id joined onto a base, because it is the operator who knows
+   * which dashboard exists and on which host: the tracker is reachable at two hostnames, and a
+   * dashboard id is meaningless without the one it lives on. One value that can be pasted from the
+   * browser's address bar is harder to get wrong than two that have to agree.
+   */
+  bugReportDashboardUrl?: string
+  /**
    * Which deployment this is (EZ-1733), shown as a banner, a tab title prefix, a tinted favicon
    * and a line in the embed footer.
    *
@@ -83,6 +93,7 @@ const config = {
   // undefined rather than '' so the menu item's condition is a plain truthiness check and an
   // environment that omits the key behaves identically to one that sets it empty.
   idpAdminUrl: undefined as string | undefined,
+  bugReportDashboardUrl: undefined as string | undefined,
 
   // Same reasoning, and the one place where "unset" is the *normal* production value rather than
   // a degraded one. See RuntimeConfig.environment.
@@ -152,6 +163,12 @@ function validate(raw: unknown): RuntimeConfig {
     // without it should boot normally rather than show the configuration-error page.
     idpAdminUrl:
       typeof o.idpAdminUrl === 'string' && o.idpAdminUrl !== '' ? o.idpAdminUrl : undefined,
+    // Optional for the same reason, and left out of `missing` for the same reason: an environment
+    // with no dashboard should show no menu item, not the configuration-error page.
+    bugReportDashboardUrl:
+      typeof o.bugReportDashboardUrl === 'string' && o.bugReportDashboardUrl !== ''
+        ? o.bugReportDashboardUrl
+        : undefined,
     environment: validateEnvironment(o.environment),
   }
 }
@@ -200,10 +217,13 @@ export async function loadConfig(): Promise<void> {
       clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID ?? runtime.keycloak.clientId,
     }
     config.idpAdminUrl = import.meta.env.VITE_IDP_ADMIN_URL ?? runtime.idpAdminUrl
+    config.bugReportDashboardUrl =
+      import.meta.env.VITE_BUG_REPORT_DASHBOARD_URL ?? runtime.bugReportDashboardUrl
   } else {
     config.emsRoot = runtime.emsRoot
     config.keycloak = runtime.keycloak
     config.idpAdminUrl = runtime.idpAdminUrl
+    config.bugReportDashboardUrl = runtime.bugReportDashboardUrl
   }
 }
 
