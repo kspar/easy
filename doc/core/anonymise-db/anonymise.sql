@@ -203,6 +203,13 @@ DELETE FROM course_invite_link;
 -- Client-side error reports: free-text messages tied to a user id, no testing value.
 DELETE FROM log_report;
 
+-- Bug reports filed from the app, and the worst of the two to keep. Free text a person wrote about
+-- their own work, plus a `diagnostics` column holding their console output and the pages they
+-- visited — and pseudonymising the account it points at does not anonymise any of it, for the reason
+-- doc/dev-environment.md §3.3 gives about teacher feedback. Deleted rather than kept, which also
+-- means a dev core can never re-file someone's production bug report into the tracker.
+DELETE FROM bug_report;
+
 COMMIT;
 
 -- ---------------------------------------------------------------------------

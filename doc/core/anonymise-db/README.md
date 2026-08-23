@@ -83,6 +83,7 @@ If your dev database genuinely has another name, prefer renaming it. The escape 
 | `course.moodle_short_name` and the four `moodle_sync_*` flags | Cleared on every course. **Not a privacy measure** — see below |
 | `course_invite_link` | Deleted. Live tokens; a tester can make a new invite in one click |
 | `log_report` | Deleted. Client error reports, free text tied to a user id |
+| `bug_report` | Deleted. Reports people filed by hand, plus the `diagnostics` column of their own console output and visited pages. Pseudonymising the account does not anonymise what they wrote |
 
 #### Name uniqueness
 

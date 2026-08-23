@@ -37,6 +37,7 @@ class ExportPersonalData {
         val jsons = listOfNotNull(
             JsonFile("account.json", selectAccountJSON(caller.id)),
             JsonFile("log_reports.json", selectLogReportsJSON(caller.id)),
+            JsonFile("bug_reports.json", selectBugReportsJSON(caller.id)),
             if (caller.isStudent()) JsonFile("submissions.json", selectSubmissionsJSON(caller.id)) else null,
             if (caller.isStudent()) JsonFile("drafts.json", selectSubmissionsDraftJSON(caller.id)) else null
         )
@@ -78,6 +79,55 @@ class ExportPersonalData {
         }
     }
 
+
+    /**
+     * Bug reports this person filed.
+     *
+     * Includes the diagnostics blob, which is the whole reason it has to be here: that column holds
+     * their own console output and the pages they visited, gathered from their browser. Something we
+     * collected about them, on their machine, is exactly what a subject access request is for.
+     *
+     * `yt_issue_id` is included too. It is not personal data on its own, but it is the answer to
+     * "what did you do about it?", and withholding that while handing over the complaint would be a
+     * strange reading of the same request.
+     */
+    private fun selectBugReportsJSON(userId: String): String {
+        data class BugReportDataJSON(
+            @get:JsonProperty("id") val id: Long,
+            @get:JsonProperty("created_at") @get:JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
+            @get:JsonProperty("message") val message: String,
+            @get:JsonProperty("diagnostics") val diagnostics: String?,
+            @get:JsonProperty("page_url") val pageUrl: String?,
+            @get:JsonProperty("web_version") val webVersion: String?,
+            @get:JsonProperty("user_agent") val userAgent: String?,
+            @get:JsonProperty("issue_id") val issueId: String?
+        )
+
+        return transaction {
+            jacksonObjectMapper().writeValueAsString(
+                BugReport.select(
+                    BugReport.id,
+                    BugReport.createdAt,
+                    BugReport.message,
+                    BugReport.diagnostics,
+                    BugReport.pageUrl,
+                    BugReport.webVersion,
+                    BugReport.userAgent,
+                    BugReport.ytIssueId
+                ).where { BugReport.userId eq userId }.map {
+                    BugReportDataJSON(
+                        it[BugReport.id].value,
+                        it[BugReport.createdAt],
+                        it[BugReport.message],
+                        it[BugReport.diagnostics],
+                        it[BugReport.pageUrl],
+                        it[BugReport.webVersion],
+                        it[BugReport.userAgent],
+                        it[BugReport.ytIssueId],
+                    )
+                })
+        }
+    }
 
     private fun selectLogReportsJSON(userId: String): String {
         data class LogReportDataJSON(

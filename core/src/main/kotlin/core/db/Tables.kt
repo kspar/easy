@@ -385,6 +385,26 @@ object LogReport : LongIdTable("log_report") {
     val clientId = text("client_id")
 }
 
+// A bug report deliberately filed by a signed-in user, as opposed to LogReport above, which is the
+// client noticing something on its own. See changeset 230826-1 for why they are not the same table.
+object BugReport : LongIdTable("bug_report") {
+    val userId = reference("user_id", Account)
+    val createdAt = datetime("created_at")
+    val message = text("message")
+
+    // Null means the reporter declined to attach their recent activity, which is not the same as
+    // having none. A report with no console output reads very differently once you know which.
+    val diagnostics = text("diagnostics").nullable()
+    val pageUrl = text("page_url").nullable()
+    val webVersion = text("web_version").nullable()
+    val userAgent = text("user_agent").nullable()
+
+    val ytIssueId = text("yt_issue_id").nullable()
+    val ytState = enumerationByName("yt_state", 20, BugReportForwardState::class)
+    val ytAttempts = integer("yt_attempts")
+    val ytError = text("yt_error").nullable()
+}
+
 object Article : LongIdTable("article") {
     val owner = reference("owner_id", Account)
     val createdAt = datetime("created_at")

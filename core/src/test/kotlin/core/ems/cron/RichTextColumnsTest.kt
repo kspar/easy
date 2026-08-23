@@ -3,6 +3,7 @@ package core.ems.cron
 import core.db.Account
 import core.db.Asset
 import core.db.AnonymousSubmission
+import core.db.BugReport
 import core.db.AutoExercise
 import core.db.AutogradeActivity
 import core.db.ContainerImage
@@ -129,6 +130,20 @@ class RichTextColumnsTest {
         LogReport.logMessage to "client diagnostics",
         LogReport.logLevel to "enum stored as text",
         LogReport.clientId to "generated identifier",
+
+        // Bug reports. `message` is the one worth pausing on: it is free text a person typed, which
+        // is the usual reason a column gets scanned. It is excluded because the dialog is a plain
+        // `TextField` — there is no editor, no paste-an-image affordance, and nothing renders the
+        // stored text as Markdown or HTML on our side. A `/v2/resource/...` string in one is
+        // therefore something the reporter typed *about* a file, not a reference keeping it alive,
+        // and a file whose only mention anywhere is a bug report is genuinely orphaned.
+        BugReport.message to "free text typed into a plain field, never rendered",
+        BugReport.diagnostics to "client-gathered console and route log, never rendered",
+        BugReport.pageUrl to "the reporter's own location, not content",
+        BugReport.webVersion to "version string",
+        BugReport.userAgent to "browser-supplied identifier",
+        BugReport.ytIssueId to "external identifier",
+        BugReport.ytError to "exception message from the forwarder",
 
         // The sweep's own table. A file cannot reference a file.
         StoredFile.id to "the storage key itself",

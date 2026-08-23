@@ -169,6 +169,25 @@ easy:
       client-secret: "<client-secret>"
       ignore-missing-keycloak-users: false
 
+    # Filing bug reports submitted in the app as YouTrack issues. Off by default: a report is stored
+    # in `bug_report` and emailed to the sys address whatever this says, so leaving it off loses
+    # nothing except the automatic issue.
+    #
+    # `project-id` and `visibility-group-id` are YouTrack's own opaque ids, not `EZ` and not
+    # `EZ Team` — the REST API does not accept the names. doc/bug-reporting.md has the two curls that
+    # find them. The token lives in secrets.yaml, never here.
+    #
+    # Every issue this files is restricted to the group named by `visibility-group-id`, always. That
+    # is not configurable, and doc/bug-reporting.md says why.
+    youtrack:
+      enabled: false
+      base-url: "https://easy.youtrack.cloud"
+      project-id: "<project-id>"
+      visibility-group-id: "<group-id>"
+      # Retries reports that could not be filed the first time. Hourly is plenty: the first attempt
+      # happens immediately and this only catches outages and restarts.
+      retry-cron: "0 20 * * * *"
+
 
   # Public base URL of the web UI, used to build links in outgoing emails.
   web:

@@ -527,4 +527,77 @@
         </sql>
     </changeSet>
 
+    <changeSet id="230826-1" author="kspar">
+        <comment>
+            EZ-1786. Bug reports filed from the app by any signed-in user.
+
+            A separate table rather than more columns on `log_report`, and the distinction is worth
+            stating because the two look alike from a distance. `log_report` is machinery talking:
+            the client noticed something and said so, and nobody promised to read it. A row here is a
+            person deliberately asking for help, which means it needs an outcome — an issue id, or a
+            record of why there isn't one — and those are the columns `log_report` has no business
+            growing. Conflating them would also put automated client noise into the same table that
+            `/v2/account/export` hands to the user who asked what we hold about them.
+
+            `diagnostics` is nullable because the consent checkbox is real: the dialog offers to
+            attach the last half hour of the reporter's own activity, and unticking it has to mean
+            something. Null is "declined", not "empty" — an important difference when reading a
+            report that says the page went blank and shows no console output to go with it.
+
+            The `yt_*` columns are the forwarding state machine, and it lives here rather than in
+            memory because the interesting case is the one where YouTrack is unreachable. The row is
+            written and committed before the call is attempted; `PENDING` means nobody has tried yet,
+            `FAILED` plus `yt_error` is what the retry sweep looks for, and `DISABLED` records that
+            forwarding was switched off at the time rather than that it went wrong. Without the
+            distinction a re-enabled integration cannot tell a backlog from a graveyard.
+
+            No index on `user_id`. The endpoint counts a caller's recent rows to rate-limit them, so
+            there is a query that would use one, but it runs once per submitted bug report against a
+            table that grows by a handful of rows a day — the sequential scan is cheaper than the
+            write amplification for years yet. Worth revisiting if this ever becomes the automatic
+            client error sink, which is exactly what `log_report` already is and this deliberately
+            is not.
+        </comment>
+
+        <createTable tableName="bug_report">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="text">
+                <constraints references="account(username)" foreignKeyName="fk_account_bug_report"
+                             nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="diagnostics" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="page_url" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="web_version" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="user_agent" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="yt_issue_id" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="yt_state" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="yt_attempts" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="yt_error" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
 </databaseChangeLog>

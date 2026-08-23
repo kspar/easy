@@ -50,6 +50,16 @@ enum class SolutionFileType {
     TEXT_UPLOAD,
 }
 
+// Length in Table object is 20. How far a bug report has got towards becoming a YouTrack issue.
+// DISABLED is not a failure: it says forwarding was switched off when the report arrived, which is
+// what lets a later re-enable tell a backlog worth retrying from rows nobody ever intended to send.
+enum class BugReportForwardState {
+    PENDING,
+    SENT,
+    FAILED,
+    DISABLED
+}
+
 // There was an InlineCommentType { COMMENT, SUGGESTION } here for the length of one commit. EZ-1777
 // made the inline-comment `type` field an enum because core accepted any string in it; the answer to
 // "what should this validate?" turned out to be that the field carried nothing `suggested_code` did

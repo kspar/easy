@@ -173,5 +173,19 @@ easy:
       client-secret: "test-secret"
       ignore-missing-keycloak-users: true
 
+    # Off, so no test can file a real issue in a real tracker. The ids and the token are present but
+    # meaningless: `enabled: false` is checked before any of them, and the point of setting them at
+    # all is that the context starts and BugReportApiTest can assert the DISABLED path.
+    #
+    # Loopback port 1 for the same reason the Moodle block uses it — a request that somehow escapes
+    # the flag fails to connect rather than reaching something.
+    youtrack:
+      enabled: false
+      base-url: "http://localhost:1/youtrack"
+      token: "test-token"
+      project-id: "0-0"
+      visibility-group-id: "0-0"
+      retry-cron: "0 0 5 31 2 ?"
+
   web:
     base-url: "https://easy.example"

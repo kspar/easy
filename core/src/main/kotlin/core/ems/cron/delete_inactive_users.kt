@@ -118,6 +118,10 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
 
             // Delete, where order of deletion is not important and no migration is needed
             LogReport.deleteWhere { LogReport.userId inList accountsToDelete }
+            // Their bug reports go with them. The YouTrack issues these produced do not — those are
+            // ours, they are already restricted to the team, and an issue that loses its reporter is
+            // still a bug worth fixing.
+            BugReport.deleteWhere { BugReport.userId inList accountsToDelete }
             SubmissionDraft.deleteWhere { SubmissionDraft.student inList accountsToDelete }
             FeedbackSnippet.deleteWhere { FeedbackSnippet.teacher inList accountsToDelete }
             AutogradeActivity.deleteWhere { AutogradeActivity.student inList accountsToDelete }
