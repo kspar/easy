@@ -75,6 +75,7 @@ why the test suite refuses to touch a real database.
 | [doc/dev-environment.md](doc/dev-environment.md) | How dev is built, and why |
 | [doc/idp-setup.md](doc/idp-setup.md) | Standing up the Keycloak dev IdP from nothing: the machine, the realm, and pointing core at it |
 | [doc/java-25-migration.md](doc/java-25-migration.md) | Idioms that changed with Spring Boot 4 and Jackson 3 |
+| [doc/bug-reporting.md](doc/bug-reporting.md) | How a bug report gets from the app to a YouTrack issue, and what it carries |
 | [doc/core/](doc/core/) | Data migrations, database anonymisation, API testing — each with a runbook |
 | [web/README.md](web/README.md) | Frontend build and runtime configuration |
 | [ansible/README.md](ansible/README.md) | Provisioning and maintenance |
@@ -93,7 +94,8 @@ why the test suite refuses to touch a real database.
 Come talk to us on Discord first — the invite is on the
 [Lahendus about page](https://lahendus.ut.ee/about).
 
-Issues live in [YouTrack](https://easy.myjetbrains.com/youtrack).
+Issues live in [YouTrack](https://easy.youtrack.cloud). Since v4.0 you can also report one from
+inside the app — the account menu has "Report a bug", which files it for you.
 
 **Maintaining one of the grading libraries?** Updating `tiivad`, `silmused` or the other graders needs
 a GitHub account and nothing else — see
