@@ -27,7 +27,9 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
     private val log = KotlinLogging.logger {}
 
     // Chosen by fair dice roll, guaranteed to be random - do not change
-    private val defaultUser = "58060066-c4f9-4054-88be-c8492bb8e487"
+    // `internal` so DeleteInactiveUsersTest can assert that content changed hands to this account
+    // rather than restating the literal and quietly disagreeing with it later.
+    internal val defaultUser = "58060066-c4f9-4054-88be-c8492bb8e487"
 
     @Value("\${easy.core.keycloak.base-url}")
     private lateinit var keycloakBaseUrl: String
@@ -54,7 +56,40 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
 
     @Scheduled(cron = "\${easy.core.keycloak.cron}")
     fun cron() {
-        val deletedAccounts = transaction {
+        val deletedAccounts = try {
+            deleteInactiveAccountsFromDb()
+        } catch (e: Exception) {
+            // The database stage is a single transaction covering the whole batch, so any failure in
+            // it deletes nothing — not the account that caused it, and not the others. Without this
+            // catch that outcome is a stack trace in a nightly job, while the notification below only
+            // ever reports Keycloak problems, so a retention policy that had stopped running entirely
+            // would look exactly like one with nothing to do. Two non-cascading foreign keys put it
+            // in that state once already.
+            log.error(e) { "Deleting inactive users from the database failed; nothing was deleted" }
+            sendMailService.sendSystemNotification(
+                """
+                    Deleting inactive users failed and the whole batch was rolled back. No account was
+                    removed from the database, and none was removed from Keycloak.
+
+                    ${e.message}
+                """.trimIndent()
+            )
+            return
+        }
+
+        deleteFromKeycloak(deletedAccounts)
+    }
+
+    /**
+     * The database half, separated from the Keycloak half so that it can be tested.
+     *
+     * Not because the split is elegant — the two halves are one operation and the Keycloak one still
+     * has to follow — but because everything that can go wrong here goes wrong as a rolled-back
+     * transaction, and reproducing that needs a real schema and no Keycloak. See
+     * `DeleteInactiveUsersTest`.
+     */
+    internal fun deleteInactiveAccountsFromDb(): List<String> {
+        return transaction {
             val twoYearsAgo = DateTime.now().minusYears(2)
             val fiveYearsAgo = DateTime.now().minusYears(5)
 
@@ -136,6 +171,25 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
             }
 
 
+            // Inline comments are the same kind of artefact as TeacherActivity above — a teacher's
+            // feedback on one submission — so they follow the same two rules: they go when the
+            // student goes, and they change hands when only their author does.
+            //
+            // This block has to exist and has to be here. `teacher_inline_comment` has three foreign
+            // keys and **none of them cascades** (changesets/v4.xml), so `submission_id` blocks the
+            // `Submission.deleteWhere` immediately below and `teacher_id` blocks the
+            // `Account.deleteWhere` at the end. The table arrived in v4, after this cron was written,
+            // and the whole cron is one transaction — so the omission did not lose inline comments,
+            // it stopped the retention policy running at all.
+            TeacherInlineComment.deleteWhere {
+                TeacherInlineComment.submission inSubQuery
+                        Submission.select(Submission.id)
+                            .where { Submission.student inList accountsToDelete }
+            }
+            TeacherInlineComment.update({ TeacherInlineComment.teacher inList accountsToDelete }) {
+                it[TeacherInlineComment.teacher] = defaultUser
+            }
+
             // As now automatic and teacher feedback for submission is removed, delete submission
             Submission.deleteWhere { Submission.student inList accountsToDelete }
             TeacherSubmission.deleteWhere { TeacherSubmission.teacher inList accountsToDelete }
@@ -149,7 +203,13 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
 
             AccountGroup.deleteWhere { AccountGroup.account inList accountsToDelete }
             Group.deleteWhere { Group.name inList accountsToDelete and Group.isImplicit }
-            // Presume that group_dir_access cascades
+            // The directory grants held by that group go with it, and this is not a presumption:
+            // `fk_group_exercise_dir_access_group` was dropped and re-added `onDelete="CASCADE"` in
+            // changeset `160525-1`. Worth citing rather than assuming, because the grant is not rare —
+            // `CreateExercise` and `CreateDir` both give the author's implicit group `PRAWM`, so
+            // anyone who has ever made a library exercise has one, and if it did not cascade this one
+            // line would roll back the whole batch every night. `AccountGroup` above is a different
+            // table: it clears who is *in* the group, not what the group can reach.
 
             // Finally, delete account:
             Account.deleteWhere {
@@ -158,8 +218,9 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
 
             accountsToDelete
         }
+    }
 
-        // Delete from Keycloak
+    private fun deleteFromKeycloak(deletedAccounts: List<String>) {
         val token = getAccessToken()
 
         val failedUsers = mutableListOf<Pair<String, String>>()
