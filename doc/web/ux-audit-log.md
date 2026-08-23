@@ -83,7 +83,7 @@ finishes or it goes back to `todo`.
 | T2 | The test forms | todo | — | |
 | T3 | Model vs compiler | todo | — | `UNCERTAIN` until the :8080 relay is authorised |
 | T4 | The feedback loop | todo | — | Needs the :8080 relay. The unit the request is really about |
-| T5 | State, persistence, escape | todo | — | Four candidate criticals; the router-navigation guard is the first |
+| T5 | State, persistence, escape | **in progress** 2026-08-23 `108bdd1f` | X-017 | The router-navigation guard is **confirmed critical, with a control**: the breadcrumb destroys the draft silently while Cancel on the same state asks first. **Remaining before `done`:** the other three leads — switching a test's type discarding the whole body with no confirm, the absence of any model-level undo after deleting a test or check, and the stale `tslValid` flag leaving Save disabled after the container is switched away from TSL. The driver reaches all three but crashed on step 3; note also that `{dirs: [], exercises: []}` is **not** `LibraryDirResp`'s shape and crashes `ExerciseLibraryPage.tsx:106` — look the response up before re-running |
 | T6 | TSL under pressure | todo | — | Do after S1–S3 so the theme baseline exists |
 | T7 | The other end | todo | — | Read review F-019 first |
 
@@ -668,6 +668,34 @@ Template:
   understood; the gate just uses the wrong value
 - Evidence: `tests/audit/t1-tsl-first-run.mjs` at `278d1ee1`, tab strip enumerated after choosing TSL
 - Register: not previously filed; EZ-1755 and EZ-1756 are about the tab's contents, not its existence
+
+### X-017 A breadcrumb click destroys a half-built TSL test set, while Cancel on the same state asks first
+- Unit: T5
+- Surface: `/library/exercise/:id` → Automaatkontroll, editing (teacher), light, 1440×900, et
+- Norm: the app's **own** behaviour on the identical state — `Cancel` guards it and `beforeunload`
+  guards it, so this is asymmetric duplication rather than an omission (source 2); plus the platform
+  rule that destructive navigation is confirmed (source 5)
+- Class: journey
+- Severity: **critical** — unsaved work discarded without warning
+- Reach: every TSL authoring session, and every other editing surface reached by the same router
+- Verdict: CONFIRMED
+- What happens: a teacher edits a TSL spec, then clicks **Ülesandekogu** in the breadcrumb — the most
+  natural way out of the page. The URL changes to `/library/dir/root`, no confirmation appears, no
+  in-page warning appears, and `editedDraft` is dropped. The same is true of any sidebar item or the
+  kebab's course links, because they are all React Router navigations and the guard is not on them.
+- The control is what makes this a finding rather than a guess. On the *same* edited state, clicking
+  **Tühista** produces a native confirm reading *"Sul on salvestamata muudatusi. Kas viskan need
+  ära?"*. So the application knows the state is dirty, knows the sentence to say, says it on one exit,
+  and stays silent on the other three. A `beforeunload` handler covers closing the tab, which means the
+  only unguarded exits are the in-app ones a teacher actually uses.
+- Instead: React Router's `useBlocker` on the editing state, reusing the same string that already
+  exists (`library.unsavedChangesConfirm`). One hook, at the level of `ExercisePage`'s `dirty` flag,
+  and it closes the whole class rather than the breadcrumb specifically.
+- Evidence: `tests/audit/t5-tsl-state-escape.mjs` at `108bdd1f`, steps [1] and [2] — the second is the
+  control and it fired. Shot `t5-01-after-breadcrumb-navigation.png`
+- Register: not previously filed. **This is X-001's twin**: same defect class, teacher instead of
+  student, and a longer piece of work to lose. Whatever fixes one should be checked against the other,
+  and EZ-1758's addendum should mention that the pattern is not student-specific
 
 ---
 
