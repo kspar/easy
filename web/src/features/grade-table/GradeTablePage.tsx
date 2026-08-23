@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type MouseEvent } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   Typography,
   CircularProgress,
@@ -26,7 +26,7 @@ import {
   FileDownloadOutlined,
   FaceOutlined,
 } from '@mui/icons-material'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useTeacherCourseExercises, useCourseGroups } from '../../api/exercises.ts'
 import { spaLinkProps } from '../../components/spaLink.ts'
@@ -164,9 +164,10 @@ export default function GradeTablePage() {
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <IconButton
-          onClick={() => navigate(`/courses/${courseId}/exercises`)}
+          component={RouterLink}
+          to={`/courses/${courseId}/exercises`}
           size="small"
-          // Icon-only, so without this a screen reader announces it as "button" and nothing else.
+          // Icon-only, so without this a screen reader announces it as "link" and nothing else.
           // It is the only way back from this page.
           aria-label={t('general.back')}
         >
@@ -314,12 +315,10 @@ export default function GradeTablePage() {
                           <Typography
                             variant="caption"
                             component="a"
+                            // The spread already supplies `onClick`; a second one here overrode it
+                            // with an identical hand-rolled copy, so this site only looked like it
+                            // followed spaLinkProps. Editing the helper would not have reached it.
                             {...spaLinkProps(`/courses/${courseId}/exercises/${ex.course_exercise_id}`, navigate)}
-                            onClick={(e: MouseEvent) => {
-                              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
-                              e.preventDefault()
-                              navigate(`/courses/${courseId}/exercises/${ex.course_exercise_id}`)
-                            }}
                             sx={{
                               display: 'inline-block',
                               maxWidth: 100,

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, type MouseEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { spaLinkProps } from '../../components/spaLink.ts'
 import {
   Box,
   Typography,
@@ -58,18 +59,6 @@ function dirLink(id: string, name: string): string {
 
 function exerciseLink(id: string, title: string): string {
   return `/library/exercise/${id}/${slugify(title)}`
-}
-
-function spaLinkProps(href: string, navigate: (to: string) => void, stopPropagation = false) {
-  return {
-    href,
-    onClick: (e: MouseEvent) => {
-      if (stopPropagation) e.stopPropagation()
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
-      e.preventDefault()
-      navigate(href)
-    },
-  }
 }
 
 function hasAccess(level: DirAccessLevel, required: DirAccessLevel): boolean {

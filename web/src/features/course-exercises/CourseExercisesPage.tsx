@@ -41,7 +41,7 @@ import RobotPlaceholder from '../../components/RobotPlaceholder.tsx'
 import ExerciseProgressBar from '../../components/ExerciseProgressBar.tsx'
 import { RobotIcon, TeacherFaceIcon } from '../../components/icons.tsx'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link as RouterLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format, isPast, differenceInHours, type Locale } from 'date-fns'
 import { et, enGB } from 'date-fns/locale'
@@ -148,7 +148,6 @@ export default function CourseExercisesPage() {
 
 function StudentExercises() {
   const { courseId } = useParams<{ courseId: string }>()
-  const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const { data: exercises, isLoading, error } = useCourseExercises(courseId!)
   const dateFnsLocale = i18n.language === 'et' ? et : enGB
@@ -175,9 +174,7 @@ function StudentExercises() {
                 key={ex.id}
                 exercise={ex}
                 dateFnsLocale={dateFnsLocale}
-                onClick={() =>
-                  navigate(`/courses/${courseId}/exercises/${ex.id}`)
-                }
+                href={`/courses/${courseId}/exercises/${ex.id}`}
               />
             ))}
         </List>
@@ -901,12 +898,11 @@ function FilterBar({ children }: { children?: React.ReactNode }) {
 }
 
 function Header({ actions }: { actions?: React.ReactNode }) {
-  const navigate = useNavigate()
   const { t } = useTranslation()
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-      <IconButton onClick={() => navigate('/courses')} size="small">
+      <IconButton component={RouterLink} to="/courses" size="small">
         <ArrowBackOutlined />
       </IconButton>
       <Typography variant="h5">{t('exercises.title')}</Typography>
@@ -923,11 +919,17 @@ function Header({ actions }: { actions?: React.ReactNode }) {
 function StudentExerciseRow({
   exercise,
   dateFnsLocale,
-  onClick,
+  href,
 }: {
   exercise: CourseExercise
   dateFnsLocale: Locale
-  onClick: () => void
+  /**
+   * Where the row goes, rather than an `onClick` that goes there.
+   *
+   * A student's exercise list is the most-clicked list in the app and had no `href` at all, so
+   * "open the next exercise in a second tab" was impossible. See `components/spaLink.ts`.
+   */
+  href: string
 }) {
   const { t } = useTranslation()
   const deadline = exercise.deadline ? new Date(exercise.deadline) : null
@@ -935,7 +937,11 @@ function StudentExerciseRow({
   const isApproaching = deadline ? !isPastDeadline && differenceInHours(deadline, new Date()) < 24 : false
 
   return (
-    <ListItemButton onClick={onClick} sx={{ borderRadius: 1, mb: 0.5 }}>
+    <ListItemButton
+      component={RouterLink}
+      to={href}
+      sx={{ borderRadius: 1, mb: 0.5 }}
+    >
       <ListItemIcon sx={{ minWidth: 40 }}>
         {statusIcon(exercise.status)}
       </ListItemIcon>

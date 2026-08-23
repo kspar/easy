@@ -27,6 +27,7 @@
   "library-page.spec.mjs": 11,
   "library-share-recent.spec.mjs": 12,
   "markdown-upload.spec.mjs": 15,
+  "nav-cmd-click.spec.mjs": 10,
   "nav-idp-admin.spec.mjs": 8,
   "participants-groups-membership.spec.mjs": 12,
   "participants-groups-moodle-locked.spec.mjs": 5,

@@ -28,7 +28,7 @@ import {
   CodeOutlined,
   SettingsOutlined,
 } from '@mui/icons-material'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format, type Locale } from 'date-fns'
 import { et, enGB } from 'date-fns/locale'
@@ -350,7 +350,6 @@ function StudentExerciseView() {
     courseId: string
     courseExerciseId: string
   }>()
-  const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const dateFnsLocale = i18n.language === 'et' ? et : enGB
 
@@ -516,7 +515,8 @@ function StudentExerciseView() {
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
         <IconButton
-          onClick={() => navigate(`/courses/${courseId}/exercises`)}
+          component={RouterLink}
+          to={`/courses/${courseId}/exercises`}
           size="small"
         >
           <ArrowBackOutlined />
@@ -859,7 +859,8 @@ function TeacherExerciseView() {
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
         <IconButton
-          onClick={() => navigate(`/courses/${courseId}/exercises`)}
+          component={RouterLink}
+          to={`/courses/${courseId}/exercises`}
           size="small"
         >
           <ArrowBackOutlined />

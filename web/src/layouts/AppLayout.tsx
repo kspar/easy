@@ -65,6 +65,7 @@ import type { StudentExerciseStatus } from '../api/types.ts'
 import EditCourseDialog from '../features/course-settings/EditCourseDialog.tsx'
 import BugReportDialog from '../features/bug-report/BugReportDialog.tsx'
 import { record } from '../features/bug-report/breadcrumbs.ts'
+import { spaLinkProps } from '../components/spaLink.ts'
 import useRecentExercises from '../hooks/useRecentExercises.ts'
 import logoSvg from '../assets/logo.svg'
 import SystemMessageBanner from '../components/SystemMessageBanner.tsx'
@@ -232,8 +233,18 @@ export default function AppLayout() {
 
   const isActive = (path: string) => location.pathname.startsWith(path)
 
-  const navTo = (path: string) => {
-    navigate(path)
+  /**
+   * Everything the sidebar still needs on a click, now that navigation is the browser's job.
+   *
+   * This replaced a `navTo` that called `navigate()`, which is why nothing in this sidebar could be
+   * opened in a new tab — no `href` means no ctrl/cmd-click, no middle-click, no "copy link
+   * address", and nothing announced as a link. Every item below is a real `RouterLink` instead; see
+   * `components/spaLink.ts` for the longer version of why.
+   *
+   * Closing the drawer on a modifier-click is harmless: the new tab opens, this one's drawer shuts,
+   * and on the touch devices the drawer actually exists for there are no modifier keys anyway.
+   */
+  const closeDrawerOnMobile = () => {
     if (isMobile) setDrawerOpen(false)
   }
 
@@ -343,8 +354,10 @@ export default function AppLayout() {
       <List disablePadding>
         <ListItem disablePadding>
           <ListItemButton
+            component={RouterLink}
+            to="/courses"
             selected={location.pathname === '/courses'}
-            onClick={() => navTo('/courses')}
+            onClick={closeDrawerOnMobile}
           >
             <ListItemIcon>
               <SchoolOutlined color={location.pathname === '/courses' ? 'primary' : 'action'} />
@@ -359,8 +372,10 @@ export default function AppLayout() {
         {isTeacherOrAdmin && (
           <ListItem disablePadding>
             <ListItemButton
+              component={RouterLink}
+              to="/library/dir/root"
               selected={isActive('/library')}
-              onClick={() => navTo('/library/dir/root')}
+              onClick={closeDrawerOnMobile}
             >
               <ListItemIcon>
                 <LibraryBooksOutlined
@@ -377,8 +392,12 @@ export default function AppLayout() {
 
         {/*
         Admin-only: articles are authored by admins and read by everyone from a direct link, so
-        nobody else needs the index. A real anchor rather than the onClick+navTo its neighbours
-        use, so ctrl-click opens a tab — see the links rule in CLAUDE.md.
+        nobody else needs the index.
+
+        This was the only item here that was a real anchor, and its comment used to point at "the
+        onClick+navTo its neighbours use" as the thing it was avoiding. The neighbours are all
+        RouterLinks now, so there is nothing left to contrast with — see the links rule in CLAUDE.md
+        and `components/spaLink.ts`.
         */}
         {activeRole === 'admin' && (
           <ListItem disablePadding>
@@ -423,16 +442,17 @@ export default function AppLayout() {
               const href = exerciseLink(ex.id, ex.title)
               return (
                 <ListItem disablePadding>
+                  {/*
+                    Was the one item in this sidebar that got it right, with `component="a"` and its
+                    own copy of the modifier check. A RouterLink does the same thing without the
+                    hand-rolled guard — react-router leaves modifier clicks to the browser itself.
+                  */}
                   <ListItemButton
                     key={ex.id}
-                    component="a"
-                    href={href}
+                    component={RouterLink}
+                    to={href}
                     selected={location.pathname.startsWith(`/library/exercise/${ex.id}`)}
-                    onClick={(e: React.MouseEvent) => {
-                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
-                      e.preventDefault()
-                      navTo(href)
-                    }}
+                    onClick={closeDrawerOnMobile}
                     sx={{ py: 0.5, minHeight: 36, pl: 3 }}
                   >
                     <ListItemText
@@ -455,32 +475,46 @@ export default function AppLayout() {
           <List disablePadding>
             <ListSubheader
               disableSticky
-              onClick={() => navTo(`/courses/${studentCourseId}/exercises`)}
               sx={{
                 fontSize: '0.68rem',
                 fontWeight: 600,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                color: 'text.secondary',
                 lineHeight: '32px',
                 mt: 1,
                 px: 2.5,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                '&:hover': { color: 'text.primary' },
               }}
               title={courseTitle}
             >
-              {courseTitle ?? t('exercises.title')}
+              {/*
+                An anchor *inside* the subheader rather than a subheader that is itself an anchor: a
+                `<ul>` may only contain `<li>`, and `component={RouterLink}` here would put an `<a>`
+                directly in the list. So the link is the text, which is what a reader clicks anyway.
+              */}
+              <Box
+                component="a"
+                {...spaLinkProps(`/courses/${studentCourseId}/exercises`, navigate)}
+                sx={{
+                  display: 'block',
+                  color: 'text.secondary',
+                  textDecoration: 'none',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  '&:hover': { color: 'text.primary' },
+                }}
+              >
+                {courseTitle ?? t('exercises.title')}
+              </Box>
             </ListSubheader>
             {exercises.map((ex) => (
               <ListItem disablePadding>
                 <ListItemButton
                   key={ex.id}
+                  component={RouterLink}
+                  to={`/courses/${studentCourseId}/exercises/${ex.id}`}
                   selected={activeExerciseId === ex.id}
-                  onClick={() => navTo(`/courses/${studentCourseId}/exercises/${ex.id}`)}
+                  onClick={closeDrawerOnMobile}
                   sx={{ py: 0.5, minHeight: 36, pl: 3 }}
                 >
                   <ListItemIcon sx={{ minWidth: 28 }}>
@@ -505,30 +539,40 @@ export default function AppLayout() {
           <List disablePadding>
             <ListSubheader
               disableSticky
-              onClick={() => navTo(`/courses/${courseId}/exercises`)}
               sx={{
                 fontSize: '0.68rem',
                 fontWeight: 600,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                color: 'text.secondary',
                 lineHeight: '32px',
                 mt: 1,
                 px: 2.5,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                '&:hover': { color: 'text.primary' },
               }}
               title={courseTitle}
             >
-              {courseTitle ?? t('exercises.title')}
+              {/* See the student subheader above for why the anchor is inside rather than around. */}
+              <Box
+                component="a"
+                {...spaLinkProps(`/courses/${courseId}/exercises`, navigate)}
+                sx={{
+                  display: 'block',
+                  color: 'text.secondary',
+                  textDecoration: 'none',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  '&:hover': { color: 'text.primary' },
+                }}
+              >
+                {courseTitle ?? t('exercises.title')}
+              </Box>
             </ListSubheader>
             <ListItem disablePadding>
               <ListItemButton
+                component={RouterLink}
+                to={`/courses/${courseId}/exercises`}
                 selected={isActive(`/courses/${courseId}/exercises`)}
-                onClick={() => navTo(`/courses/${courseId}/exercises`)}
+                onClick={closeDrawerOnMobile}
                 sx={{ py: 0.5, minHeight: 36, pl: 3 }}
               >
                 <ListItemIcon sx={{ minWidth: 28 }}>
@@ -539,8 +583,10 @@ export default function AppLayout() {
             </ListItem>
             <ListItem disablePadding>
               <ListItemButton
+                component={RouterLink}
+                to={`/courses/${courseId}/grades`}
                 selected={isActive(`/courses/${courseId}/grades`)}
-                onClick={() => navTo(`/courses/${courseId}/grades`)}
+                onClick={closeDrawerOnMobile}
                 sx={{ py: 0.5, minHeight: 36, pl: 3 }}
               >
                 <ListItemIcon sx={{ minWidth: 28 }}>
@@ -551,8 +597,10 @@ export default function AppLayout() {
             </ListItem>
             <ListItem disablePadding>
               <ListItemButton
+                component={RouterLink}
+                to={`/courses/${courseId}/participants`}
                 selected={isActive(`/courses/${courseId}/participants`)}
-                onClick={() => navTo(`/courses/${courseId}/participants`)}
+                onClick={closeDrawerOnMobile}
                 sx={{ py: 0.5, minHeight: 36, pl: 3 }}
               >
                 <ListItemIcon sx={{ minWidth: 28 }}>
@@ -563,8 +611,10 @@ export default function AppLayout() {
             </ListItem>
             <ListItem disablePadding>
               <ListItemButton
+                component={RouterLink}
+                to={`/courses/${courseId}/similarity`}
                 selected={isActive(`/courses/${courseId}/similarity`)}
-                onClick={() => navTo(`/courses/${courseId}/similarity`)}
+                onClick={closeDrawerOnMobile}
                 sx={{ py: 0.5, minHeight: 36, pl: 3 }}
               >
                 <ListItemIcon sx={{ minWidth: 28 }}>
@@ -771,11 +821,14 @@ export default function AppLayout() {
                     </Typography>
                   </Box>
                   <Divider />
+                  {/*
+                    A RouterLink, like the admin item below it — which had the comment about
+                    ctrl/cmd-click while this one, directly above it, navigated programmatically.
+                  */}
                   <MenuItem
-                    onClick={() => {
-                      setProfileAnchor(null)
-                      navigate('/account')
-                    }}
+                    component={RouterLink}
+                    to="/account"
+                    onClick={() => setProfileAnchor(null)}
                   >
                     <ListItemIcon>
                       <AccountCircleOutlined fontSize="small" />

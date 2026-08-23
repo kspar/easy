@@ -24,7 +24,7 @@ import {
   ExpandMoreOutlined,
   OpenInNewOutlined,
 } from '@mui/icons-material'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams, Link as RouterLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { enGB } from 'date-fns/locale'
@@ -37,18 +37,7 @@ import {
   useTeacherSubmissionSummaries,
 } from '../../api/exercises.ts'
 import SimilarityDiff from './SimilarityDiff.tsx'
-
-/** Ctrl/cmd-click has to keep working, so links are anchors that only intercept plain clicks. */
-function spaLinkProps(href: string, navigate: (to: string) => void) {
-  return {
-    href,
-    onClick: (e: React.MouseEvent) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
-      e.preventDefault()
-      navigate(href)
-    },
-  } as const
-}
+import { spaLinkProps } from '../../components/spaLink.ts'
 
 /**
  * Above this many submissions, say out loud how many comparisons that is.
@@ -138,7 +127,11 @@ export default function SimilarityPage() {
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <IconButton onClick={() => navigate(`/courses/${courseId}/exercises`)} size="small">
+        <IconButton
+          component={RouterLink}
+          to={`/courses/${courseId}/exercises`}
+          size="small"
+        >
           <ArrowBackOutlined />
         </IconButton>
         <Typography variant="h5">{t('similarity.title')}</Typography>

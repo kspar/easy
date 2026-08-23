@@ -42,7 +42,7 @@ import {
   ArrowDropDownOutlined,
   SyncOutlined,
 } from '@mui/icons-material'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, Link as RouterLink } from 'react-router-dom'
 import { useTranslation, Trans } from 'react-i18next'
 import { format, isPast } from 'date-fns'
 import { et, enGB } from 'date-fns/locale'
@@ -114,7 +114,6 @@ export default function ParticipantsPage() {
   const { activeRole } = useAuth()
   const isAdmin = activeRole === 'admin'
   const { courseId } = useParams<{ courseId: string }>()
-  const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const [tab, setTab] = useState(0)
   const { data, isLoading, error } = useParticipants(courseId!)
@@ -853,7 +852,8 @@ export default function ParticipantsPage() {
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <IconButton
-          onClick={() => navigate(`/courses/${courseId}/exercises`)}
+          component={RouterLink}
+          to={`/courses/${courseId}/exercises`}
           size="small"
         >
           <ArrowBackOutlined />
