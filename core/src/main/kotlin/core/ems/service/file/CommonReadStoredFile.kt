@@ -93,6 +93,12 @@ class ReadStoredFileController(private val storageService: StorageService) {
         }
         response.contentType = file.mimeType
         response.setHeader("Content-Length", file.sizeBytes.toString())
+        // Set here rather than left to nginx. This location is proxied from the *web* origin, and
+        // whether a vhost's `add_header` reaches a proxied response depends on whether that block
+        // declares any headers of its own — so the guarantee that a browser will not re-sniff a
+        // response into something executable belongs on the response that needs it, next to the
+        // Content-Type it is protecting.
+        response.setHeader("X-Content-Type-Options", "nosniff")
         // Same policy the S3 backend bakes into the object at upload time, applied here at read time
         // because this backend has no object metadata to bake it into.
         response.setHeader("Content-Disposition", contentDispositionFor(file.mimeType, file.filename))

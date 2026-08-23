@@ -208,6 +208,51 @@ class FileApiTest(@Autowired mockMvc: MockMvc, @Autowired private val storageSer
         assertTrue(disposition(html, "x.html").startsWith("attachment")) { disposition(html, "x.html") }
     }
 
+    /**
+     * XHTML is the case that showed the deny list was the wrong shape.
+     *
+     * It was not in the two-element `MUST_DOWNLOAD` set, browsers render it natively, and `<script>`
+     * inside it runs. Nothing about the file has to lie: Tika detects `application/xhtml+xml` from
+     * the namespace and from the literal `<html xmlns=`, so the extension is irrelevant. And the
+     * old comment's reason for tolerating a rendered upload — "different origin, no cookies, no
+     * session" — is true of the S3 backend and false of the local one, which streams through core and
+     * therefore through the web origin. `local` is the default and what production runs.
+     */
+    @Test
+    fun `xhtml is forced to download, whatever it is called`() {
+        val xhtml = """<html xmlns="http://www.w3.org/1999/xhtml"><script>alert(1)</script></html>"""
+        val key = upload("notes.txt", xhtml.toByteArray()).field("id")!!
+
+        assertTrue(disposition(key, "notes.txt").startsWith("attachment")) { disposition(key, "notes.txt") }
+    }
+
+    @Test
+    fun `an unrecognised type downloads, because the policy is now an allow list`() {
+        // The direction that matters. Under the old deny list anything not named in it rendered, so
+        // every type nobody had thought about — including the next one a browser learns to execute —
+        // defaulted to inline. Now the default is download and the exceptions are enumerated.
+        val key = upload("thing.bin", byteArrayOf(0x00, 0x01, 0x02, 0x03, 0x04)).field("id")!!
+
+        assertTrue(disposition(key, "thing.bin").startsWith("attachment")) { disposition(key, "thing.bin") }
+    }
+
+    @Test
+    fun `pdf still previews, because that is worth something and it has no DOM`() {
+        val key = upload("notes.pdf", "%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n".toByteArray()).field("id")!!
+
+        assertTrue(disposition(key, "notes.pdf").startsWith("inline")) { disposition(key, "notes.pdf") }
+    }
+
+    @Test
+    fun `the response says not to sniff it`() {
+        // On the response rather than left to the vhost: this location is proxied from the web origin,
+        // and whether nginx's `add_header` reaches a proxied response depends on the block it lands
+        // in. The header that stops a browser re-deciding what a file is belongs next to the
+        // Content-Type it protects.
+        val key = uploadedKey()
+        assertEquals("nosniff", api.get("/v2/resource/$key/pixel.png", api.anonymous()).header("X-Content-Type-Options"))
+    }
+
     @Test
     fun `the disposition carries the sanitised filename, not the key`() {
         val key = upload(filename = "my diagram.png").field("id")!!

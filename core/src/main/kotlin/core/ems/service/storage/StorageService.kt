@@ -96,28 +96,60 @@ fun assertValidStorageKey(key: String) =
 
 
 /**
- * Types that must never render in a browser, only download.
+ * Types a stored file may render in a browser as. Everything else downloads.
  *
- * Objects are public and served from the object store's own origin, so an uploaded HTML file is a
- * working page on a domain that is not ours to vouch for. It cannot touch the application — different
- * origin, no cookies, no session — but it is a hosted page reachable by anyone with the URL, which is
- * a phishing primitive we gain nothing from offering.
+ * **This used to be the other way round** — a two-element deny list, `text/html` and
+ * `image/svg+xml`, with everything else served `inline`. Its reasoning was that an uploaded page
+ * "cannot touch the application — different origin, no cookies, no session", and that is true of the
+ * S3 backend, which redirects to a bucket URL. It is **false of the local backend**, which streams
+ * through core: `roles/nginx` proxies `/v2/resource/` from the *web* origin in every environment, on
+ * purpose, so a page served that way is same-origin with the SPA. `local` is the Spring default and
+ * what production runs.
  *
- * SVG is the same class for a less obvious reason: perfectly safe inside `<img>`, which is the way
- * anyone actually uses it, and scriptable when navigated to directly. `attachment` keeps the first
- * working while making the second a download, so SVG diagrams stay usable.
+ * And a deny list is the wrong shape for the question regardless. "Which types can a browser be
+ * talked into executing script from" has no stable answer: `application/xhtml+xml` was missing and
+ * renders natively with working `<script>`, and the next entry is whatever a browser starts rendering
+ * next year. An allow list is wrong in the direction that shows up as a download instead of a
+ * preview, which somebody reports.
  *
- * Sniffed by Tika from the content, so renaming a file does not get around this.
+ * What is on it and why:
+ *
+ *  - **images, except SVG.** This is what the feature is for — `markdownForUpload` embeds an upload
+ *    as an image if and only if its type starts `image/`, and links to it otherwise, so images are
+ *    the only type the client ever renders on purpose. SVG is excluded for the reason the old comment
+ *    gave and got right: safe inside `<img>`, scriptable when navigated to, and `Content-Disposition`
+ *    does not affect `<img>`, so an SVG diagram keeps working while a link to it downloads.
+ *  - **PDF, audio and video**, which have no DOM and are the types where a browser preview is worth
+ *    something. A PDF can carry script, but for its own viewer, not for our origin.
+ *
+ * Deliberately *not* on it: `text/plain`. Tika sniffs a lot of things into `text/plain`, and whether
+ * a browser re-sniffs it as HTML depends on `X-Content-Type-Options` surviving a proxy hop — which is
+ * a thing to know rather than a thing to depend on. A `.txt` that downloads is a small price.
+ *
+ * The type is Tika's, sniffed from the content, so renaming a file does not move it between these
+ * cases.
  */
-private val MUST_DOWNLOAD = setOf("text/html", "image/svg+xml")
+private val MAY_RENDER_INLINE = setOf("application/pdf")
+private val MAY_RENDER_INLINE_PREFIXES = listOf("image/", "audio/", "video/")
+private val NEVER_INLINE = setOf("image/svg+xml")
 
 /**
  * The `Content-Disposition` a stored file is served with. One function because it is applied in two
  * unrelated places — attached to the object at upload time for the S3 backend, and set on the
  * response at read time for the local one — and a policy that lives in two places is a policy that
  * will eventually disagree with itself.
+ *
+ * Note the asymmetry that follows from *where* each backend applies it: the local backend decides on
+ * every read, so a change here covers files already stored, while S3 baked the answer into the object
+ * when it was uploaded and keeps serving the old one. Production is local.
  */
 fun contentDispositionFor(mimeType: String, filename: String): String {
-    val kind = if (mimeType.substringBefore(';').trim().lowercase() in MUST_DOWNLOAD) "attachment" else "inline"
+    val kind = if (mayRenderInline(mimeType)) "inline" else "attachment"
     return """$kind; filename="$filename""""
+}
+
+fun mayRenderInline(mimeType: String): Boolean {
+    val type = mimeType.substringBefore(';').trim().lowercase()
+    if (type in NEVER_INLINE) return false
+    return type in MAY_RENDER_INLINE || MAY_RENDER_INLINE_PREFIXES.any { type.startsWith(it) }
 }
