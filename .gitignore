@@ -94,3 +94,16 @@ deploy/prod/
 # nobody notices.
 test-results/
 playwright-report/
+
+# The whole-repo review programme — its scope, and the working notes it accumulates. Security review
+# findings live here until they are fixed or until a public tracker can safely hold them, so this
+# repository being public is the whole reason for the rule.
+#
+# Both halves are ignored rather than only the notes, for the same reason deploy/prod/ is ignored
+# whole: "the review programme is not in git" needs no per-file judgement from whoever adds the next
+# file, and the scope half carries much of the same information anyway. Findings graduate to
+# YouTrack, restricted there where that is warranted.
+#
+# This comment is deliberately short on detail for the same reason the files are ignored. Ask kspar.
+doc/review-plan.md
+doc/review-log.md
