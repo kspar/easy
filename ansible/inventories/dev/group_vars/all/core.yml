@@ -76,6 +76,20 @@ easy_core_moodle_grades_url: http://127.0.0.1:9/moodle-disabled-on-dev
 # which environment is being configured. On dev it stays a placeholder, which is harmless — the
 # URLs above go to a discard port, so there is nothing for a token to authenticate against.
 
+# --- bug reports: stored and mailed, not filed ------------------------------------------------------
+# Left off, and this is the one place where dev *not* reaching a real external system is about noise
+# rather than about safety. The tracker is ours and an issue is harmless, but dev exists to be poked
+# at — every button pressed twice, every form submitted with nonsense — and routing that into EZ would
+# bury real reports under test ones. There is also no way to tell them apart afterwards: the issue
+# says who filed it, not which environment they were on.
+#
+# So dev exercises everything up to the HTTP call: the dialog, the endpoint, the row, the DISABLED
+# state, the admin mail. The one untested step against a real tracker is the step that has to be
+# tested against the real tracker anyway, because the thing worth checking is that a filed issue is
+# invisible to a logged-out reader — and only production's own token and group can answer that.
+#
+# easy_core_youtrack_enabled: false   <- inherited from the role, on purpose
+
 # --- file storage: dev's own S3 bucket ---------------------------------------------------------------
 # Opted in explicitly, and separately from the outbound catch above, which stays off. An object store
 # is a real external system but not one that can hurt anybody outside this project: the bucket is

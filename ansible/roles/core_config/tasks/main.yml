@@ -246,6 +246,7 @@
           (("spring", "datasource", "password"), lambda: secrets.token_urlsafe(33)),
           (("easy", "core", "keycloak", "client-secret"), lambda: "CHANGEME-no-realm-yet"),
           (("easy", "core", "moodle-sync", "wstoken"), lambda: "CHANGEME-no-moodle-token"),
+          (("easy", "core", "youtrack", "token"), lambda: "CHANGEME-no-youtrack-token"),
           # Deliberately NOT here: easy.core.storage.s3.access-key / secret-key. They belong in this
           # file when they exist — the credential grep at the end of this role would fail the run if
           # they appeared in the managed config — but most environments should use an instance role
@@ -285,7 +286,7 @@
   ansible.builtin.shell:
     cmd: >-
       set -o pipefail;
-      grep -oE '^[[:space:]]*(password|client-secret|wstoken|access-key|secret-key):' {{ easy_core_secrets_path | quote }}
+      grep -oE '^[[:space:]]*(password|client-secret|wstoken|token|access-key|secret-key):' {{ easy_core_secrets_path | quote }}
       | tr -d ' :' | sort -u
     # Without this the module runs under dash, which has no `set -o pipefail`, so the whole command
     # errors and — with failed_when off — hands back empty output that reads as "no keys found".
@@ -331,6 +332,11 @@
       - "'password' in easy_core_secret_keys.stdout_lines"
       - "'client-secret' in easy_core_secret_keys.stdout_lines"
       - "'wstoken' in easy_core_secret_keys.stdout_lines"
+      # Asserted on the same basis as wstoken: the Python above creates it on every host, so a
+      # missing one means that step did not run rather than that this environment opted out. The
+      # `token` alternative in the grep above is what surfaces it — the pattern is a fixed list, so a
+      # new key added to WANTED and not to it would stop being checked without anything saying so.
+      - "'token' in easy_core_secret_keys.stdout_lines"
       # Not asserted: access-key and secret-key. The Python above creates them so the file has a
       # place for them, but an environment using an instance role has no such credential to hold and
       # should not be blocked for it. A placeholder there is reported like the others.

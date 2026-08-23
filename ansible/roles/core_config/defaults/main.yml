@@ -100,6 +100,20 @@ easy_core_never_cron: "0 0 5 31 2 ?"
 easy_core_keycloak_cron: "{{ easy_core_never_cron }}"
 easy_core_keycloak_ignore_missing_users: false
 
+# --- youtrack ---------------------------------------------------------------------------------------
+# Off by default, and the ids empty. An environment that should file issues in a real tracker says so
+# explicitly; one that has not been configured stores the report and emails it, which is the whole
+# fallback the feature is built around.
+#
+# The ids are YouTrack's internal ones, not `EZ` and `EZ Team`. Blank is safe: core checks them at
+# submit time, logs a warning naming what is missing, and treats forwarding as off — a
+# half-configured integration must not turn a bug report into a 500.
+easy_core_youtrack_enabled: false
+easy_core_youtrack_base_url: "https://easy.youtrack.cloud"
+easy_core_youtrack_project_id: ""
+easy_core_youtrack_visibility_group_id: ""
+easy_core_youtrack_retry_cron: "{{ easy_core_never_cron }}"
+
 # --- mail -------------------------------------------------------------------------------------------
 # Off by default. An environment that should send mail says so; one that has not been configured
 # sends nothing rather than sending the wrong thing to real students.

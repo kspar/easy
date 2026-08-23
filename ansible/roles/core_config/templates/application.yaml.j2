@@ -176,6 +176,28 @@ easy:
       ## No `client-secret:` here either — imported, same reason as the database password.
       ignore-missing-keycloak-users: {{ easy_core_keycloak_ignore_missing_users | bool | lower }}
 
+    ## Filing bug reports submitted in the app as YouTrack issues.
+    ##
+    ## Off loses nothing except the automatic issue: a report is stored in `bug_report` and mailed to
+    ## the sys address regardless, so an environment with this disabled still hears about bugs.
+    youtrack:
+      enabled: {{ easy_core_youtrack_enabled | bool | lower }}
+      base-url: "{{ easy_core_youtrack_base_url }}"
+      ## YouTrack's OWN INTERNAL IDS, not `EZ` and not `EZ Team`. Its REST API does not accept the
+      ## names people use, and resolving them at runtime would need admin-read scope the token has no
+      ## reason to hold. doc/bug-reporting.md has the two curls that print them.
+      project-id: "{{ easy_core_youtrack_project_id }}"
+      ## Every issue filed by this integration is restricted to this group, unconditionally — there
+      ## is no setting for "file it publicly", and doc/bug-reporting.md says why. Getting this id
+      ## wrong does not make an issue public; it makes YouTrack reject the request, which is the
+      ## failure direction to prefer.
+      visibility-group-id: "{{ easy_core_youtrack_visibility_group_id }}"
+      ## Catches outages and restarts. The first attempt happens as the report arrives, so this only
+      ## ever picks up what that could not deliver.
+      retry-cron: "{{ easy_core_youtrack_retry_cron }}"
+      ## No `token:` here — imported from the secrets file, same reason as the database password. A
+      ## key matching (password|secret|token) in this managed file fails the run further down.
+
   ## Public base URL of the web UI, used to build links in outgoing email — so a wrong value here
   ## sends real people to the wrong environment.
   web:
