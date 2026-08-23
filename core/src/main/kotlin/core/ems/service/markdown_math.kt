@@ -105,6 +105,45 @@ class MathBlock(var tex: String = "") : CustomBlock()
 
 private const val CLASS = "easy-math"
 
+/**
+ * Takes the backticks off `` $`x^2`$ ``.
+ *
+ * **This is the form the corpus is actually written in.** The adoc→md migration emitted dollars
+ * wrapping a code span, and 43 of the 48 exercises carrying maths look like this — including
+ * exercise 164, whose formula was reported as not rendering and is what led here. Only 5 use the
+ * plain `$…$` this extension was first written against.
+ *
+ * Claiming the delimiters and passing the backticks through as TeX would be worse than not claiming
+ * them: a backtick is not valid TeX, so those exercises would go from showing raw dollars to showing
+ * a KaTeX error. Nothing downstream can undo it either — by then the backticks are indistinguishable
+ * from ones an author typed.
+ *
+ * Three rules, and each one is a test:
+ *
+ * - the run has to **wrap the whole formula**, so a lone backtick mid-formula stays where the author
+ *   put it;
+ * - the runs have to **match in length**, because that is what makes it a code span rather than
+ *   stray punctuation — and stripping half of an unmatched pair would corrupt TeX that legitimately
+ *   contains a backtick;
+ * - there has to be **something left over**, since unwrapping to nothing is the empty-formula case
+ *   that made a whole line disappear once already.
+ *
+ * Done here rather than in the code-span parser because CommonMark never sees a code span at all:
+ * [MathInlineParser] claims the whole `$…$` span first, so the backticks arrive as ordinary
+ * characters inside the TeX and this is the only place they can be recognised for what they are.
+ */
+internal fun unwrapCodeSpan(tex: String): String {
+    val leading = tex.takeWhile { it == '`' }.length
+    if (leading == 0) return tex
+
+    val trailing = tex.takeLastWhile { it == '`' }.length
+    // `tex.length > leading * 2` rather than `>=`: equal means the whole string is backticks, so
+    // there is no formula to unwrap to.
+    if (trailing != leading || tex.length <= leading * 2) return tex
+
+    return tex.substring(leading, tex.length - trailing)
+}
+
 private class MathNodeRenderer(private val context: HtmlNodeRendererContext) : NodeRenderer {
 
     override fun getNodeTypes(): Set<Class<out Node>> = setOf(MathInline::class.java, MathBlock::class.java)
@@ -186,7 +225,10 @@ private class MathInlineParser : InlineContentParser {
         // typeset "5 and ". Only for single `$` — `$$…$$` is unambiguous enough not to need it.
         if (open == 1 && scanner.peek().isDigit()) return ParsedInline.none()
 
-        return ParsedInline.of(MathInline(tex, display = open == 2), scanner.position())
+        return ParsedInline.of(
+            MathInline(unwrapCodeSpan(tex), display = open == 2),
+            scanner.position(),
+        )
     }
 
     /**
@@ -307,6 +349,10 @@ private class MathBlockParser(private val oneLiner: String?) : AbstractBlockPars
      * would silently eat a teacher's formula over a missing `$$`.
      */
     override fun closeBlock() {
-        if (oneLiner == null) block.tex = lines.joinToString("\n").trim()
+        // Unwrapped here as well as inline: the migration's `$`…`$` form appears in display maths
+        // too, and a fenced block whose body is one code span is the same mistake at a larger size.
+        block.tex =
+            if (oneLiner == null) unwrapCodeSpan(lines.joinToString("\n").trim())
+            else unwrapCodeSpan(oneLiner)
     }
 }

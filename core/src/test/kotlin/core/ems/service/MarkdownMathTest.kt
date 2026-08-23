@@ -68,6 +68,62 @@ class MarkdownMathTest {
         assertFalse(html("\$a ` b\$").contains("<code>"))
     }
 
+    // --- The form the adoc→md migration actually wrote --------------------------------------------
+
+    /**
+     * `$`…`$` — dollars wrapping a code span — is what 43 of the 48 migrated exercises contain, not
+     * the plain `$…$` this extension was first written for. Found by reading exercise 164 on dev
+     * after its formula was reported as not rendering.
+     *
+     * The backticks have to come off. Claiming the delimiters and passing the backticks through as
+     * TeX is worse than not claiming them at all: a backtick is not valid TeX, so those exercises
+     * would go from showing raw dollars to showing a KaTeX error.
+     *
+     * Only a run of backticks that wraps the *whole* formula is stripped — the test above pins a
+     * lone backtick mid-formula staying exactly where the author put it.
+     */
+    @Test
+    fun `a code span wrapping the whole formula is unwrapped`() {
+        // Verbatim from exercise_version 164 on dev.
+        assertEquals(
+            listOf("(kaal) = (pikkus)^3 \\times (fti) \\div 100"),
+            tex("\$`(kaal) = (pikkus)^3 \\times (fti) \\div 100`\$"),
+        )
+    }
+
+    @Test
+    fun `unwrapping leaves no code element behind`() {
+        assertFalse(html("\$`x^2`\$").contains("<code>"))
+        assertEquals(listOf("x^2"), tex("\$`x^2`\$"))
+    }
+
+    @Test
+    fun `display maths is unwrapped too`() {
+        assertEquals(listOf("x^2" to "display"), maths("\$\$`x^2`\$\$").map { it.second to it.first })
+    }
+
+    @Test
+    fun `a multi-backtick code span is unwrapped by its matching run`() {
+        // CommonMark allows any number of backticks as long as the run matches. The converter used
+        // one, but the rule should be about matching rather than about counting to one.
+        assertEquals(listOf("x^2"), tex("\$``x^2``\$"))
+    }
+
+    @Test
+    fun `an unmatched backtick run is left alone`() {
+        // Not a code span, so not the converter's wrapper — and stripping half of it would corrupt
+        // TeX that legitimately contains a backtick.
+        assertEquals(listOf("`x^2"), tex("\$`x^2\$"))
+        assertEquals(listOf("``x^2`"), tex("\$``x^2`\$"))
+    }
+
+    @Test
+    fun `a formula that is only backticks is left alone`() {
+        // Nothing to unwrap to. Stripping would produce empty TeX, and an empty formula is the
+        // case that made a whole line vanish once already.
+        assertEquals(listOf("``"), tex("\$``\$"))
+    }
+
 
     // --- Inline -----------------------------------------------------------------------------------
 
