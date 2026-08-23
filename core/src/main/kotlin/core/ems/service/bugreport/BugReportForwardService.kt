@@ -214,7 +214,7 @@ class BugReportForwardService(
             |
             |$diagnostics
             |
-            |_Filed automatically from a bug report submitted in the app (EZ-1786)._
+            |_Filed automatically from a bug report submitted in the app._
         """.trimMargin()
     }
 
