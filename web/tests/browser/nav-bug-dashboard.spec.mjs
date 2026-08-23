@@ -56,6 +56,11 @@ test('nav-bug-dashboard', async ({ launch, check }) => {
       target: found > 0 ? await link.getAttribute('target') : null,
       rel: found > 0 ? await link.getAttribute('rel') : null,
       text: found > 0 ? (await link.innerText()).trim() : null,
+      // The Administration section this now sits in, and what else is in it.
+      heading: await page.locator('nav').getByText('Administration', { exact: true }).count(),
+      navItems: (await page.locator('nav [class*=MuiListItemButton]').allInnerTexts()).map((s) =>
+        s.trim().replace(/\s+/g, ' '),
+      ),
     }
   }
 
@@ -65,13 +70,32 @@ test('nav-bug-dashboard', async ({ launch, check }) => {
   {
     const r = await sidebarFor({
       activeRole: 'admin',
-      config: { ...base, bugReportDashboardUrl: DASHBOARD },
+      // `idpAdminUrl` too, so the section renders at its full four items. Without it the Keycloak
+      // entry is legitimately absent — which is what the first run of the ordering check below
+      // caught, reporting a missing item when the fixture simply had not configured one.
+      config: { ...base, bugReportDashboardUrl: DASHBOARD, idpAdminUrl: 'https://idp.example/idp-admin/' },
     })
     check(`an admin gets the link (${r.found})`, r.found === 1)
     check(`it is labelled (${r.text})`, r.text === 'Reported bugs')
     // It leaves the app, so it opens in a new tab — and rel is not optional with target=_blank.
     check(`opens in a new tab (${r.target})`, r.target === '_blank')
     check(`and is not an open redirect vector (${r.rel})`, (r.rel ?? '').includes('noopener'))
+
+    // The section it lives in, and its three companions. Asserted here because the whole point of
+    // the section is that these four are together — an item quietly rendering somewhere else still
+    // works and is still wrong.
+    check(`there is an Administration heading (${r.heading})`, r.heading === 1)
+    for (const item of ['System messages', 'Reported bugs', 'Keycloak admin', 'Operating info']) {
+      check(`${item} is in the nav`, r.navItems.some((t) => t.includes(item)))
+    }
+    // Last, so it never pushes the course someone is working in further down the page.
+    const lastFour = r.navItems.slice(-4).join(' | ')
+    check(
+      `and the section is at the bottom (${lastFour})`,
+      ['System messages', 'Reported bugs', 'Keycloak admin', 'Operating info'].every((i) =>
+        lastFour.includes(i),
+      ),
+    )
     await r.close()
   }
 
@@ -104,6 +128,8 @@ test('nav-bug-dashboard', async ({ launch, check }) => {
     // Gated on the role being *acted in*, not on what the account could switch to — an admin working
     // as a teacher is doing teacher things, which is how every other admin-only item here behaves.
     check('a teacher does not get it even when configured', r.found === 0)
+    // Nor the section around it — a teacher should not see an empty Administration heading.
+    check(`nor the Administration heading (${r.heading})`, r.heading === 0)
     await r.close()
   }
 

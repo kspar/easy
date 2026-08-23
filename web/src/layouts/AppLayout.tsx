@@ -57,6 +57,7 @@ import {
   OpenInNewOutlined,
   CampaignOutlined,
   BugReportOutlined,
+  MonitorHeartOutlined,
 } from '@mui/icons-material'
 import { useThemeMode } from '../theme/useThemeMode.ts'
 import { useCourseExercises } from '../api/exercises.ts'
@@ -417,38 +418,6 @@ export default function AppLayout() {
           </ListItem>
         )}
 
-        {/*
-        Admin-only: where the bug reports users file from the app end up (EZ-1786).
-
-        Gated on the config value as well as the role, exactly like the IdP admin item in the account
-        menu — an environment with no dashboard configured shows nothing rather than a link to
-        someone else's tracker. Production and dev do not necessarily point at the same one.
-
-        In the sidebar rather than the account menu because it is a place you go to work, next to
-        Articles, and not a setting. It leaves the app, hence target=_blank and the trailing icon
-        that says so before the click rather than after.
-        */}
-        {activeRole === 'admin' && config.bugReportDashboardUrl && (
-          <ListItem disablePadding>
-            <ListItemButton
-              component="a"
-              href={config.bugReportDashboardUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={closeDrawerOnMobile}
-            >
-              <ListItemIcon>
-                <BugReportOutlined color="action" />
-              </ListItemIcon>
-              <ListItemText
-                primary={t('nav.bugReportDashboard')}
-                primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
-              />
-              <OpenInNewOutlined fontSize="small" sx={{ opacity: 0.5 }} />
-            </ListItemButton>
-          </ListItem>
-        )}
-
       </List>
 
         {/* Recently viewed exercises on library pages */}
@@ -664,6 +633,140 @@ export default function AppLayout() {
                   <SettingsOutlined sx={{ fontSize: 18 }} color="action" />
                 </ListItemIcon>
                 <ListItemText primary={t('courses.courseSettings')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        )}
+
+        {/*
+        Administration, last and admin-only.
+
+        These four were scattered: the bug-report dashboard was loose in the main nav, System
+        messages and Keycloak admin were in the account menu, and Operating info was reachable only
+        by knowing that the About page grows an extra section for admins. Three of them are places
+        you go to do a job, which is what a sidebar is for — an account menu is for things about
+        *you*, and "Account settings" and "Report a bug" are the only two items there that still are.
+
+        Last, because it is the section a teacher never sees and an admin uses rarely; putting it
+        above the course they are actually working in would cost every other visit a little.
+
+        The two external links stay config-gated as well as role-gated, so an environment that has
+        nowhere to send an admin shows one item fewer rather than a broken link. Which means this
+        section can hold anywhere between two and four items, and that is fine — it is never empty,
+        because System messages and Operating info are always there for an admin.
+        */}
+        {activeRole === 'admin' && (
+          <List disablePadding>
+            <ListSubheader
+              disableSticky
+              sx={{
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'text.secondary',
+                lineHeight: '32px',
+                mt: 1,
+                px: 2.5,
+              }}
+            >
+              {t('nav.administration')}
+            </ListSubheader>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                component={RouterLink}
+                to="/admin/messages"
+                selected={isActive('/admin/messages')}
+                onClick={closeDrawerOnMobile}
+                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  <CampaignOutlined
+                    sx={{ fontSize: 18 }}
+                    color={isActive('/admin/messages') ? 'primary' : 'action'}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={t('admin.messages.title')}
+                  primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }}
+                />
+              </ListItemButton>
+            </ListItem>
+
+            {config.bugReportDashboardUrl && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  component="a"
+                  href={config.bugReportDashboardUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeDrawerOnMobile}
+                  sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 28 }}>
+                    <BugReportOutlined sx={{ fontSize: 18 }} color="action" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={t('nav.bugReportDashboard')}
+                    primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }}
+                  />
+                  <OpenInNewOutlined sx={{ fontSize: 14, opacity: 0.5 }} />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {/*
+              Being an app admin does not make you a Keycloak admin — separate systems, separate
+              grants. The page behind this exists to say so, which is why it is shown to every app
+              admin even though some of them cannot use what is on the other side.
+            */}
+            {config.idpAdminUrl && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  component="a"
+                  href={config.idpAdminUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeDrawerOnMobile}
+                  sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 28 }}>
+                    <AdminPanelSettingsOutlined sx={{ fontSize: 18 }} color="action" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={t('nav.idpAdmin')}
+                    primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }}
+                  />
+                  <OpenInNewOutlined sx={{ fontSize: 14, opacity: 0.5 }} />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {/*
+              The About page, which renders an admin-only operating-info block — uptime, the
+              executors, what is grading right now. Labelled for what an admin comes here to read
+              rather than for the route it happens to use, because "About Lahendus" in the footer is
+              the same page and is not what this is for.
+            */}
+            <ListItem disablePadding>
+              <ListItemButton
+                component={RouterLink}
+                to="/about"
+                selected={isActive('/about')}
+                onClick={closeDrawerOnMobile}
+                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  <MonitorHeartOutlined
+                    sx={{ fontSize: 18 }}
+                    color={isActive('/about') ? 'primary' : 'action'}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={t('nav.operatingInfo')}
+                  primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }}
+                />
               </ListItemButton>
             </ListItem>
           </List>
@@ -885,50 +988,13 @@ export default function AppLayout() {
                     </ListItemIcon>
                     <ListItemText>{t('bugReport.title')}</ListItemText>
                   </MenuItem>
-                  {activeRole === 'admin' && (
-                    // An internal route, so a RouterLink rather than an anchor — but still a real
-                    // href, so ctrl/cmd-click opens it in a tab like any other link.
-                    <MenuItem
-                      component={RouterLink}
-                      to="/admin/messages"
-                      onClick={() => setProfileAnchor(null)}
-                    >
-                      <ListItemIcon>
-                        <CampaignOutlined fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText>{t('admin.messages.title')}</ListItemText>
-                    </MenuItem>
-                  )}
-                  {activeRole === 'admin' && config.idpAdminUrl && (
-                    // Only while actually acting as an admin, not merely for someone who could
-                    // switch to it — an admin working as a teacher is doing teacher things, and
-                    // this is the same reasoning as isTeacherOrAdmin above.
-                    //
-                    // A real anchor, so ctrl/cmd-click opens it in a new tab like any other link.
-                    // It leaves the application entirely, hence target=_blank and the trailing
-                    // icon that says so before you click rather than after.
-                    //
-                    // Being an app admin does not make you a Keycloak admin — they are separate
-                    // systems and separate grants. That is exactly what the page this points at
-                    // exists to explain, so showing the link to every app admin is right even
-                    // though some of them cannot use what is behind it.
-                    <MenuItem
-                      component="a"
-                      href={config.idpAdminUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setProfileAnchor(null)}
-                    >
-                      <ListItemIcon>
-                        <AdminPanelSettingsOutlined fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText>{t('nav.idpAdmin')}</ListItemText>
-                      <OpenInNewOutlined
-                        fontSize="small"
-                        sx={{ ml: 1.5, opacity: 0.5 }}
-                      />
-                    </MenuItem>
-                  )}
+                  {/*
+                    System messages and Keycloak admin used to be here, and moved to the
+                    Administration section of the sidebar. What is left is the account menu doing
+                    only what its name says: things about *you* — your settings, your bug report,
+                    your language, your theme, your role, your session. Nothing an admin goes to in
+                    order to do a job.
+                  */}
                   <MenuItem
                     onClick={() => {
                       toggleLanguage()

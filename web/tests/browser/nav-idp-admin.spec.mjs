@@ -1,5 +1,5 @@
-// The IdP admin link in the profile menu: shown only while acting as an admin, and only where the
-// environment says where to send them.
+// The IdP admin link in the sidebar's Administration section: shown only while acting as an admin,
+// and only where the environment says where to send them.
 //
 //   cd web && npx playwright test nav-idp-admin
 import { test } from '../support/spec.mjs'
@@ -10,7 +10,7 @@ test('nav-idp-admin', async ({ launch, check }) => {
   const GATE = 'https://idp.example/idp-admin/'
 
   /**
-   * Open the profile menu with a given active role and config, and report what is in it.
+   * Render the sidebar with a given active role and config, and report what is in it.
    *
    * `launch()` pins `activeRole` to 'teacher' for every non-student role, in an init script that
    * re-runs on every navigation — so setting localStorage after `goto` is silently undone by the next
@@ -30,18 +30,19 @@ test('nav-idp-admin', async ({ launch, check }) => {
       { log: false },
     )
     await page.goto(`${BASE_URL}/courses`)
-    await waitUntil(async () => (await page.locator('[class*=MuiAppBar] button').count()) > 0)
-    await page.locator('[class*=MuiAppBar] button').last().click()
-    await waitUntil(async () => (await page.locator('[role=menuitem]').count()) > 0)
+    // The sidebar, not the account menu. This link lived in the account menu until the
+    // Administration section was added; the menu now holds only things about *you*, so a spec
+    // looking for it there would report a missing feature rather than a moved one.
+    await waitUntil(async () => (await page.locator('nav [class*=MuiListItemButton]').count()) > 0)
 
-    const items = (await page.locator('[role=menuitem]').allInnerTexts()).map((s) =>
+    const items = (await page.locator('nav [class*=MuiListItemButton]').allInnerTexts()).map((s) =>
       s.trim().replace(/\s+/g, ' '),
     )
-    // Named by its text, not by being the first anchor in the menu. It was the only one when this
-    // was written; adding the "System messages" item — an internal RouterLink, which also renders an
-    // anchor — made `.first()` silently start asserting against a different link, and the failure
-    // read as this feature being broken.
-    const anchor = page.locator('a[role=menuitem]').filter({ hasText: 'Keycloak admin' })
+    // Named by its text, not by being the first anchor in the nav. It was the only one when this was
+    // written; the section it now sits in has three siblings that are also anchors, so `.first()`
+    // would silently start asserting against a different link and the failure would read as this
+    // feature being broken.
+    const anchor = page.locator('nav a').filter({ hasText: 'Keycloak admin' })
     const has = await anchor.count()
     const result = {
       items,
@@ -58,7 +59,7 @@ test('nav-idp-admin', async ({ launch, check }) => {
   const asAdmin = await menuFor({ activeRole: 'admin', config: { emsRoot: '/v2', keycloak: KC, idpAdminUrl: GATE } })
   check(`admin: acting role really is admin (${asAdmin.role})`, asAdmin.role === 'admin')
   check(
-    `admin: the link is in the menu (${asAdmin.items.join(' | ')})`,
+    `admin: the link is in the sidebar (${asAdmin.items.join(' | ')})`,
     asAdmin.items.some((t) => t.includes('Keycloak admin')),
   )
   check(`admin: points at the configured URL (${asAdmin.href})`, asAdmin.href === GATE)
@@ -77,12 +78,12 @@ test('nav-idp-admin', async ({ launch, check }) => {
   )
 
   // --- hidden, where the environment has nowhere to send them ---------------------------------------
-  // Production's IdP has no gate page installed, so its config.json omits the key and the menu must
-  // not offer a link to a 404. This is the case that makes the key optional rather than derived.
+  // Production's IdP has no gate page installed, so its config.json omits the key and the sidebar
+  // must not offer a link to a 404. This is the case that makes the key optional rather than derived.
   const noUrl = await menuFor({ activeRole: 'admin', config: { emsRoot: '/v2', keycloak: KC } })
   check(
     `admin, no idpAdminUrl: no link (${noUrl.items.join(' | ')})`,
     !noUrl.items.some((t) => t.includes('Keycloak admin')),
   )
-  check('admin, no idpAdminUrl: the rest of the menu is intact', noUrl.items.length >= 3)
+  check('admin, no idpAdminUrl: the rest of the sidebar is intact', noUrl.items.length >= 3)
 })
