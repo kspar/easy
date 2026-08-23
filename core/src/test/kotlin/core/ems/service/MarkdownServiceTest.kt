@@ -84,6 +84,13 @@ class MarkdownServiceTest {
         "<figure><img src=\"/v2/resource/k/p.png\" alt=\"x\" width=\"300\"><figcaption>c</figcaption></figure>"
                 to "width=\"300\"",
         "<table><colgroup><col span=\"2\"></colgroup><tr><td>a</td></tr></table>" to "<col span=\"2\">",
+        // Proportional table columns are written as `style` on `col`, and it is the one place `style`
+        // survives. CSS applies only border, background, width and visibility to a table column, so
+        // the overlay `style` is otherwise excluded for cannot be expressed here.
+        "<table><colgroup><col style=\"width: 33.3333%;\"></colgroup><tr><td>a</td></tr></table>"
+                to "style=\"width: 33.3333%;\"",
+        // A lettered list. Without `type` this silently renumbers itself 1, 2, 3.
+        "<ol type=\"a\"><li>first</li></ol>" to "<ol type=\"a\">",
         "<dl><dt>term</dt><dd>def</dd></dl>" to "<dt>term</dt>",
         "H<sub>2</sub>O" to "<sub>2</sub>",
         "x<sup>2</sup>" to "<sup>2</sup>",
@@ -173,6 +180,77 @@ class MarkdownServiceTest {
         assertTrue(html.contains("rel=\"noopener noreferrer\""), html)
         assertFalse(html.contains("_self"), html)
         assertFalse(html.contains("\"opener\""), html)
+    }
+
+    @Test
+    fun `every tag and attribute pair the stored corpus contains survives`() {
+        // This list is not invented. Every (tag, attribute) pair present in the six stored rich-text
+        // columns was extracted and checked against the safelist, and this is that list — so a
+        // failure here means the safelist got tighter than content that already exists.
+        //
+        // Two pairs from that extraction are deliberately absent and are asserted below instead:
+        // `style` on anything but `col`, and nothing else. Everything here must round-trip.
+        val corpus = """
+            <div class="paragraph" id="d1" role="doc-part" data-wrapper="x"><p class="p">t</p></div>
+            <a href="/x" class="bare" id="a1" lang="et">l</a>
+            <pre class="highlightjs highlight"><code class="language-python" data-lang="python">x</code></pre>
+            <h1 class="sect0" id="h1">a</h1><h2 id="h2">b</h2><h3 id="h3">c</h3>
+            <h4 id="h4">d</h4><h5 id="h5">e</h5>
+            <img src="/v2/resource/k/p.png" alt="a" width="300" height="200" title="t" role="img">
+            <ol class="olist arabic" start="3" type="a"><li>x</li></ol>
+            <ul class="ulist"><li>y</li></ul>
+            <table class="tableblock" role="grid">
+              <!-- inside the table, because a caption anywhere else is invalid HTML and the parser
+                   discards it before the safelist is consulted -->
+              <caption class="title">c</caption>
+              <colgroup><col span="2" width="50" style="width: 33.3333%;"></colgroup>
+              <thead><tr><th class="tableblock" colspan="2" scope="col">h</th></tr></thead>
+              <tbody><tr><td class="tableblock" rowspan="1">d</td></tr></tbody>
+            </table>
+            <dl class="dlist"><dt class="hdlist1">term</dt><dd>def</dd></dl>
+            <details open><summary class="title">Hint</summary><p>a</p></details>
+            <figure><img src="/x.png" alt="f"><figcaption>cap</figcaption></figure>
+            <span class="bold" role="note">s</span><mark>m</mark><sub>2</sub><sup>3</sup>
+            <b>b</b><i>i</i><hr><br><blockquote class="quoteblock">q</blockquote>
+        """.trimIndent()
+
+        val html = service.mdToHtml(corpus)
+
+        // Tags: everything the corpus contains, none of which may be dropped.
+        listOf(
+            "div", "a", "caption", "pre", "code", "h1", "h2", "h3", "h4", "h5", "img", "ol", "ul",
+            "li", "table", "colgroup", "col", "thead", "tr", "th", "tbody", "td", "dl", "dt", "dd",
+            "details", "summary", "figure", "figcaption", "span", "mark", "sub", "sup", "b", "i",
+            "hr", "br", "blockquote", "p",
+        ).forEach { tag -> assertTrue(html.contains("<$tag"), "lost <$tag>: $html") }
+
+        // Attributes, by the pair that carries them.
+        listOf(
+            "class=\"paragraph\"", "id=\"d1\"", "role=\"doc-part\"", "data-wrapper=\"x\"",
+            "href=\"/x\"", "lang=\"et\"", "data-lang=\"python\"", "class=\"language-python\"",
+            "alt=\"a\"", "width=\"300\"", "height=\"200\"", "title=\"t\"",
+            "start=\"3\"", "type=\"a\"",
+            "span=\"2\"", "style=\"width: 33.3333%;\"", "colspan=\"2\"", "scope=\"col\"",
+            "rowspan=\"1\"", "open",
+        ).forEach { attr -> assertTrue(html.contains(attr), "lost $attr: $html") }
+    }
+
+    @Test
+    fun `style survives on col and nowhere else`() {
+        // The exemption, and its boundary. Both halves matter: dropping the first breaks every
+        // proportional table, and widening it past `col` reinstates the overlay the ban is for.
+        val html = service.mdToHtml(
+            """
+            <table><colgroup><col style="width: 50%;"></colgroup>
+            <tr><td style="padding: 2em">a</td><th style="padding: 2em">b</th></tr></table>
+            <span style="position: fixed; inset: 0">s</span>
+            <p style="color: red">p</p>
+            <img src="/x.png" alt="i" style="position: fixed">
+            """.trimIndent()
+        )
+
+        assertTrue(html.contains("style=\"width: 50%;\""), html)
+        assertEquals(1, Regex("style=").findAll(html).count(), "style survived somewhere else: $html")
     }
 
     @Test

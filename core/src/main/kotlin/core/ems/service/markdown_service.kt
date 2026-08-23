@@ -75,10 +75,13 @@ class MarkdownService {
  *    author-drawn login box on the application's own origin is indistinguishable from the real one.
  *  - **no event handlers**, which comes for free: jsoup keeps only the attributes named here, and
  *    `on*` is never named.
- *  - **no `style` attribute.** It cannot execute anything in a current browser, but it can position
- *    an element over the whole viewport, which is the same phishing surface `form` is excluded for.
- *    A small number of exercises carry one today; they lose the inline styling the next time someone
- *    saves them, and that was judged the better trade.
+ *  - **no `style` attribute, except on `col`.** It cannot execute anything in a current browser, but
+ *    it can position an element over the whole viewport, which is the same phishing surface `form` is
+ *    excluded for. `col` is exempt because CSS ignores all but four properties there — see the note on
+ *    that line. Everywhere else it goes, and content that has one loses its inline styling the next
+ *    time somebody saves it. The corpus was counted before choosing that: `col` is where nearly all of
+ *    them are, and what remains is a scattering on `span`, `td`, `th`, `img` and `p`. Keeping the
+ *    exemption narrow costs little because of how lopsided that is.
  *  - **`title` is allowed** and is the one attribute whose value is author-controlled free text. It
  *    is escaped as text by jsoup's output, so it renders as a tooltip and nothing else.
  *
@@ -138,11 +141,19 @@ private val SAFELIST: Safelist = Safelist()
     // at would have been the worse kind of partial fix.
     .addAttributes("a", "href", "name")
     .addAttributes("img", "src", "alt", "width", "height")
-    .addAttributes("ol", "start")
+    // `type` gives a lettered or roman list, which is what asciidoc's `loweralpha` and friends
+    // became. Without it such a list silently renumbers itself 1, 2, 3.
+    .addAttributes("ol", "start", "type")
     .addAttributes("li", "value")
     .addAttributes("td", "colspan", "rowspan", "align", "valign")
     .addAttributes("th", "colspan", "rowspan", "align", "valign", "scope", "abbr")
-    .addAttributes("col", "span", "width")
+    // `style` on `col` is the one exception to the rule below, and it is a narrow one. Table column
+    // widths are written this way — `<col style="width: 33.3333%;">` is what a proportional table
+    // becomes — and CSS applies only `border`, `background`, `width` and `visibility` to a table
+    // column element (CSS 2.1 §17.3). So the thing `style` is otherwise excluded for, positioning an
+    // element over the page, is not expressible here: the declaration is ignored. Without this,
+    // every table with proportional columns loses them on its next save.
+    .addAttributes("col", "span", "width", "style")
     .addAttributes("colgroup", "span")
     .addAttributes("table", "align")
     .addAttributes("details", "open")
