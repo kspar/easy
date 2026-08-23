@@ -13,11 +13,43 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
+import org.joda.time.DateTimeZone
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.DateTimeFormatter
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.info.BuildProperties
 import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+
+/** Where the people reading these issues are, rather than wherever the server happens to be. */
+private val TALLINN: DateTimeZone = DateTimeZone.forID("Europe/Tallinn")
+
+/**
+ * Day-first with dots, which is how a date is written in Estonian. Seconds included: several reports
+ * arriving within a minute is the normal shape of "I clicked it three times and nothing happened".
+ */
+private val HUMAN_TIME: DateTimeFormatter = DateTimeFormat.forPattern("dd.MM.yyyy HH:mm:ss")
+
+/**
+ * The timestamp as the people triaging these read it.
+ *
+ * Shown beside the ISO form rather than instead of it. The ISO string is what you paste into
+ * `easy-core-log --since` and what pins the instant beyond argument; it is also the form nobody can
+ * read at a glance, because "was 16:56:23.508Z before or after the lecture?" is a timezone
+ * conversion done in your head.
+ *
+ * **Converted explicitly to Europe/Tallinn rather than left in the server's zone.** The instant is
+ * correct either way — `created_at` is a timestamp without a zone and the same JVM writes and reads
+ * it, so the offset it comes back with is the offset it went in with — but a production host running
+ * UTC would render 16:56 for a report filed at 19:56, and every reader would have to know which zone
+ * they were looking at. Naming the zone in the output settles that.
+ *
+ * A top-level `internal` function so the conversion is testable without a Spring context, for the
+ * same reason `buildIssueBody` is: a wrong timezone or a transposed date pattern produces a
+ * plausible-looking string, which is the kind of wrong that never gets noticed.
+ */
+internal fun humanTime(at: DateTime): String = "${at.withZone(TALLINN).toString(HUMAN_TIME)} Tallinn"
 
 /**
  * Turns stored bug reports into YouTrack issues, and remembers what happened.
@@ -203,7 +235,7 @@ class BugReportForwardService(
             || | |
             ||---|---|
             || Reported by | `${report.userId}` (${report.email}) |
-            || At | ${report.createdAt} |
+            || At | ${humanTime(report.createdAt)} · `${report.createdAt}` |
             || Page | ${report.pageUrl ?: "not reported"} |
             || Web build | ${report.webVersion ?: "not reported"} |
             || Core build | $core |

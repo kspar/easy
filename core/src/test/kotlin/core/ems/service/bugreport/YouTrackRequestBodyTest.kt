@@ -1,5 +1,6 @@
 package core.ems.service.bugreport
 
+import org.joda.time.DateTime
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -90,6 +91,40 @@ class YouTrackRequestBodyTest {
         assertEquals(mapOf("id" to projectId), body["project"])
         assertEquals("Grades page is empty", body["summary"])
         assertEquals("…the description…", body["description"])
+    }
+
+    // --- the timestamp -----------------------------------------------------------------------------
+
+    @Test
+    fun `the human timestamp is Estonian day-first, in Tallinn time, and says so`() {
+        // Summer: Tallinn is EEST, UTC+3.
+        assertEquals(
+            "23.08.2026 19:56:23 Tallinn",
+            humanTime(DateTime.parse("2026-08-23T16:56:23.508Z")),
+        )
+    }
+
+    @Test
+    fun `and it follows Estonian daylight saving rather than a fixed offset`() {
+        // Winter: EET, UTC+2. A hardcoded +3 would put this an hour out — which is exactly the kind
+        // of wrong that looks perfectly reasonable in an issue description.
+        assertEquals(
+            "15.01.2026 12:00:00 Tallinn",
+            humanTime(DateTime.parse("2026-01-15T10:00:00Z")),
+        )
+    }
+
+    @Test
+    fun `the same instant renders identically whatever zone it arrives in`() {
+        // The DB column carries no zone, so what comes back depends on the server's. These are the
+        // same moment expressed three ways; all three must read the same to a triager.
+        val rendered = listOf(
+            "2026-08-23T16:56:23Z",
+            "2026-08-23T19:56:23+03:00",
+            "2026-08-23T12:56:23-04:00",
+        ).map { humanTime(DateTime.parse(it)) }.distinct()
+
+        assertEquals(listOf("23.08.2026 19:56:23 Tallinn"), rendered)
     }
 
     @Test
