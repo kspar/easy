@@ -91,7 +91,7 @@ finishes or it goes back to `todo`.
 
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
-| S1 | The theme as a system | todo | — | Do before S2 and the whole V track. **From J1:** X-004 already measured the three contrast decisions with real ratios (`#fff` on `#16a34a` = 3.29:1, `#16a34a` on `#f5f5f5` = 3.02:1, `#757575` on `#f5f5f5` = 4.22:1 at 12px). S1 owns the token-level fix and should check whether `GREEN[700]` as `primary.main` breaks anything else. Also settle the derived `#989898` at 2.64:1, which is not a theme value |
+| S1 | The theme as a system | **in progress** 2026-08-23 `1bfdaf9d` | X-012, X-013 | Colour half done, with the arithmetic in `tests/audit/reports/s1-token-contrast.json`: the palette's mode-invariance is a structural defect, not a bad value (X-012), and `text.secondary` fails only on `background.default` (X-013). **Remaining before `done`:** the non-colour half — `shape.borderRadius: 12` contradicted by six component overrides, the 25-entry `shadows` array whose last 16 are duplicates and all of which are black-alpha in both modes, `MuiCard`'s hover treatment applied to non-interactive cards, the six dead palette entries from R-001, and whether the 17 component overrides match how the components are actually used. Original note follows. **From J1:** X-004 already measured the three contrast decisions with real ratios (`#fff` on `#16a34a` = 3.29:1, `#16a34a` on `#f5f5f5` = 3.02:1, `#757575` on `#f5f5f5` = 4.22:1 at 12px). S1 owns the token-level fix and should check whether `GREEN[700]` as `primary.main` breaks anything else. Also settle the derived `#989898` at 2.64:1, which is not a theme value |
 | S2 | Dark mode, everywhere | todo | — | |
 | S3 | Phone | todo | — | Do after S4 |
 | S4 | Laptop — the reference | todo | — | **Do first in this track after S1**: establishes the reference the others diff against |
@@ -522,6 +522,63 @@ Template:
 - Evidence: `c5-a11y-sweep.mjs` and `c5-verify-main-landmark.mjs` at `79248877`; `/landing` measured
   `main elements: 0` with no error boundary and the page rendering correctly, which is what separates
   it from the four refuted routes in R-005
+- Register: not previously filed
+
+### X-012 The palette cannot be fixed as it stands: no single brand green passes AA in both themes
+- Unit: S1
+- Surface: app-wide, both themes
+- Norm: WCAG 2.1 AA (source 5); and the theme's own claim to be a two-mode palette (source 6)
+- Class: design + a11y
+- Severity: high
+- Reach: `primary.main` has 26 direct use sites and reaches every contained button, chip, tab
+  indicator, link and active nav item in the application
+- Verdict: CONFIRMED
+- What happens: `createAppTheme(mode)` switches only `background`, `text` and `divider`. `primary` is
+  the same value in both themes — and the arithmetic says that cannot work, because light and dark
+  want the green to move in opposite directions:
+
+  | pairing | current `GREEN[600]` `#16a34a` | `GREEN[700]` `#15803d` |
+  |---|---|---|
+  | white text on it (buttons, chips) | **3.30:1** fail | **5.02:1** AA |
+  | as text on light default `#f5f5f5` | **3.02:1** fail | **4.60:1** AA |
+  | as text on dark default `#121212` | 5.68:1 AA | **3.74:1** fail |
+  | as text on dark paper `#1e1e1e` | 5.06:1 AA | **3.32:1** fail |
+
+  So darkening one step fixes every light-mode failure and introduces two dark-mode ones. Lightening
+  does the reverse. **The defect is not the value, it is that the value is shared.** This is the same
+  root cause as the four dead `*.light` tints from R-001: the palette was written as if only the
+  background changes between modes.
+- Instead: make `primary` mode-aware, which is one ternary in `theme.ts` beside the three that are
+  already there. A pairing that clears AA on every axis, using steps already in the ramp:
+  `primary.main = GREEN[700]` in light with `contrastText: '#fff'` (5.02:1), and
+  `GREEN[400]` `#4ade80` in dark with `contrastText` = `background.default` (**10.75:1 both as text on
+  the dark background and as dark text on the green fill**). Note the second half of that: a dark-mode
+  primary button wants *dark* text, so `contrastText` has to stop being the hardcoded `#fff` it is
+  today — which is the reason this is a palette change rather than a colour swap. Whether the brand
+  will accept two greens is kspar's call; the alternative is accepting AA failures in one mode.
+- Evidence: `tests/audit/s1-token-contrast.mjs`, report
+  `tests/audit/reports/s1-token-contrast.json`, at `1bfdaf9d`. Pure WCAG arithmetic over the values in
+  `theme.ts`, cross-checked against axe's own measurements in C5's sweep, which agreed to 0.01
+- Register: not previously filed. Supersedes the "just darken the green" reading of X-004
+
+### X-013 `text.secondary` fails AA only on the app background, which is where most of it sits
+- Unit: S1
+- Surface: app-wide, light theme
+- Norm: WCAG 2.1 AA (source 5)
+- Class: a11y
+- Severity: high
+- Reach: **177 use sites — the most-used token in the codebase**, and 49 route-instances of the
+  failure in C5's sweep
+- Verdict: CONFIRMED
+- What happens: `#757575` measures **4.61:1 on `background.paper` `#ffffff`** — a pass — and
+  **4.23:1 on `background.default` `#f5f5f5`** — a fail. So the token is not uniformly broken, which
+  is why it has survived: every instance inside a Card or Paper is fine, and every instance sitting
+  directly on the page background is not. That includes the sidebar footer links, page-level captions
+  and the sub-labels under stat numbers.
+- Instead: darken the light-mode value. `#6b6b6b` gives 4.89:1 on default and more on paper; `#666666`
+  gives 5.27:1. One line, and it is strictly safer than auditing 177 call sites for which background
+  each one happens to land on. The dark-mode value needs no change — `#9e9e9e` is 6.99:1 on default
+- Evidence: `tests/audit/s1-token-contrast.mjs` at `1bfdaf9d`; failure instances from C5's sweep
 - Register: not previously filed
 
 ---

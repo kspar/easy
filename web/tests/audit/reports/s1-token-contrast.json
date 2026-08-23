@@ -1,0 +1,187 @@
+{
+  "sha": "1bfdaf9d",
+  "pairs": [
+    {
+      "label": "#fff on GREEN[500]",
+      "fg": "#ffffff",
+      "bg": "#22c55e",
+      "ratio": 2.28,
+      "verdict": "fail"
+    },
+    {
+      "label": "#fff on GREEN[600]",
+      "fg": "#ffffff",
+      "bg": "#16a34a",
+      "ratio": 3.3,
+      "verdict": "AA-large-only"
+    },
+    {
+      "label": "#fff on GREEN[700]",
+      "fg": "#ffffff",
+      "bg": "#15803d",
+      "ratio": 5.02,
+      "verdict": "AA"
+    },
+    {
+      "label": "#fff on GREEN[800]",
+      "fg": "#ffffff",
+      "bg": "#166534",
+      "ratio": 7.13,
+      "verdict": "AA"
+    },
+    {
+      "label": "#fff on GREEN[900]",
+      "fg": "#ffffff",
+      "bg": "#14532d",
+      "ratio": 9.11,
+      "verdict": "AA"
+    },
+    {
+      "label": "GREEN[600] on light default",
+      "fg": "#16a34a",
+      "bg": "#f5f5f5",
+      "ratio": 3.02,
+      "verdict": "AA-large-only"
+    },
+    {
+      "label": "GREEN[600] on light paper",
+      "fg": "#16a34a",
+      "bg": "#ffffff",
+      "ratio": 3.3,
+      "verdict": "AA-large-only"
+    },
+    {
+      "label": "GREEN[700] on light default",
+      "fg": "#15803d",
+      "bg": "#f5f5f5",
+      "ratio": 4.6,
+      "verdict": "AA"
+    },
+    {
+      "label": "GREEN[700] on light paper",
+      "fg": "#15803d",
+      "bg": "#ffffff",
+      "ratio": 5.02,
+      "verdict": "AA"
+    },
+    {
+      "label": "GREEN[800] on light paper",
+      "fg": "#166534",
+      "bg": "#ffffff",
+      "ratio": 7.13,
+      "verdict": "AA"
+    },
+    {
+      "label": "text.secondary light on default",
+      "fg": "#757575",
+      "bg": "#f5f5f5",
+      "ratio": 4.23,
+      "verdict": "AA-large-only"
+    },
+    {
+      "label": "text.secondary light on paper",
+      "fg": "#757575",
+      "bg": "#ffffff",
+      "ratio": 4.61,
+      "verdict": "AA"
+    },
+    {
+      "label": "text.secondary dark on default",
+      "fg": "#9e9e9e",
+      "bg": "#121212",
+      "ratio": 6.99,
+      "verdict": "AA"
+    },
+    {
+      "label": "text.secondary dark on paper",
+      "fg": "#9e9e9e",
+      "bg": "#1e1e1e",
+      "ratio": 6.22,
+      "verdict": "AA"
+    },
+    {
+      "label": "candidate #6b6b6b on light default",
+      "fg": "#6b6b6b",
+      "bg": "#f5f5f5",
+      "ratio": 4.89,
+      "verdict": "AA"
+    },
+    {
+      "label": "candidate #666666 on light default",
+      "fg": "#666666",
+      "bg": "#f5f5f5",
+      "ratio": 5.27,
+      "verdict": "AA"
+    },
+    {
+      "label": "candidate #616161 on light default",
+      "fg": "#616161",
+      "bg": "#f5f5f5",
+      "ratio": 5.68,
+      "verdict": "AA"
+    },
+    {
+      "label": "candidate #5f5f5f on light default",
+      "fg": "#5f5f5f",
+      "bg": "#f5f5f5",
+      "ratio": 5.86,
+      "verdict": "AA"
+    },
+    {
+      "label": "candidate #595959 on light default",
+      "fg": "#595959",
+      "bg": "#f5f5f5",
+      "ratio": 6.42,
+      "verdict": "AA"
+    },
+    {
+      "label": "text.primary light on default",
+      "fg": "#212121",
+      "bg": "#f5f5f5",
+      "ratio": 14.77,
+      "verdict": "AA"
+    },
+    {
+      "label": "text.primary dark on default",
+      "fg": "#e0e0e0",
+      "bg": "#121212",
+      "ratio": 14.19,
+      "verdict": "AA"
+    },
+    {
+      "label": "GREEN[600] on dark default",
+      "fg": "#16a34a",
+      "bg": "#121212",
+      "ratio": 5.68,
+      "verdict": "AA"
+    },
+    {
+      "label": "GREEN[600] on dark paper",
+      "fg": "#16a34a",
+      "bg": "#1e1e1e",
+      "ratio": 5.06,
+      "verdict": "AA"
+    },
+    {
+      "label": "GREEN[500] on dark paper",
+      "fg": "#22c55e",
+      "bg": "#1e1e1e",
+      "ratio": 7.32,
+      "verdict": "AA"
+    },
+    {
+      "label": "GREEN[400] on dark paper",
+      "fg": "#4ade80",
+      "bg": "#1e1e1e",
+      "ratio": 9.57,
+      "verdict": "AA"
+    },
+    {
+      "label": "#fff on GREEN[600] (dark, unchanged)",
+      "fg": "#ffffff",
+      "bg": "#16a34a",
+      "ratio": 3.3,
+      "verdict": "AA-large-only"
+    }
+  ]
+}
