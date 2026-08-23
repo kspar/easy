@@ -120,7 +120,20 @@ function scheduleFlush(): void {
 export function record(kind: BreadcrumbKind, text: string): void {
   try {
     const now = Date.now()
-    buffer = prune([...buffer, { t: now, kind, text: redact(text).slice(0, MAX_TEXT) }], now)
+    const entry = { t: now, kind, text: redact(text).slice(0, MAX_TEXT) }
+
+    // A route recorded twice in a row is noise, and it happens: React's StrictMode double-invokes
+    // effects in development, so every navigation showed up as two identical lines in the panel the
+    // reporter is asked to read. Arriving at the same URL twice also tells a reader nothing the
+    // first line did not.
+    //
+    // Only for routes. Two identical console lines or two identical failed requests are a
+    // repetition that matters — a retry loop looks exactly like this, and collapsing it would hide
+    // the thing worth seeing.
+    const last = buffer[buffer.length - 1]
+    if (kind === 'route' && last?.kind === 'route' && last.text === entry.text) return
+
+    buffer = prune([...buffer, entry], now)
 
     // An error is flushed immediately rather than debounced: the plausible next event is the page
     // going away, and a debounced write would not survive it.

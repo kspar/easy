@@ -7,7 +7,7 @@
   "account-settings.spec.mjs": 14,
   "admin-system-messages.spec.mjs": 17,
   "articles.spec.mjs": 19,
-  "bug-report.spec.mjs": 20,
+  "bug-report.spec.mjs": 21,
   "course-exercise-assessment.spec.mjs": 18,
   "course-exercise-embed.spec.mjs": 16,
   "course-exercise-grading.spec.mjs": 19,

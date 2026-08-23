@@ -71,6 +71,35 @@ describe('caps', () => {
     expect(entries.map((e) => e.text)).toEqual(['/recent'])
   })
 
+  test('collapses a route recorded twice in a row, but not a repeated error', async () => {
+    const { record, readBreadcrumbs } = await freshModule()
+
+    // StrictMode double-invokes effects in development, so every navigation was arriving twice and
+    // the reporter saw each page listed twice in the panel they are asked to read.
+    record('route', '/courses')
+    record('route', '/courses')
+    record('route', '/courses/1/exercises')
+    record('route', '/courses')
+
+    expect(readBreadcrumbs().map((e) => e.text)).toEqual([
+      '/courses',
+      '/courses/1/exercises',
+      // Not collapsed: leaving and coming back is a different fact from never having left.
+      '/courses',
+    ])
+  })
+
+  test('does not collapse repeated errors or api failures, which is what a retry loop looks like', async () => {
+    const { record, readBreadcrumbs } = await freshModule()
+
+    record('api', 'GET /courses -> 500')
+    record('api', 'GET /courses -> 500')
+    record('error', 'boom')
+    record('error', 'boom')
+
+    expect(readBreadcrumbs()).toHaveLength(4)
+  })
+
   test('truncates one enormous entry rather than letting it fill the buffer', async () => {
     const { record, readBreadcrumbs } = await freshModule()
 

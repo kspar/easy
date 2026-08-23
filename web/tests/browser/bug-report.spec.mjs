@@ -71,6 +71,11 @@ test('bug-report', async ({ launch, check }) => {
     await waitUntil(async () => (await page.locator('[role=menu]').count()) > 0)
     await page.getByRole('menuitem', { name: 'Report a bug' }).click()
     await waitUntil(async () => (await page.locator('[role=dialog]').count()) > 0)
+    // And wait for the menu to actually go. Both it and the dialog animate, and a screenshot taken
+    // between the two catches the menu still fading out over a dialog still fading in — which is
+    // what the 02-disclosure screenshot showed for its first two runs.
+    await page.locator('[role=dialog]').waitFor({ state: 'visible' })
+    await waitUntil(async () => (await page.locator('[role=menu]').count()) === 0)
   }
 
   // --- the dialog is reachable, and asks one thing ---------------------------------------------------
@@ -112,6 +117,19 @@ test('bug-report', async ({ launch, check }) => {
     )
 
     await page.getByRole('button', { name: 'See exactly what will be sent' }).click()
+    // Waited for, not just clicked. The first version of this shot fired during the expand
+    // animation, so the screenshot showed a collapsed panel — and since the only assertion was that
+    // the *summary* text existed, a disclosure that never opened would have passed.
+    // `state: 'visible'`, not a count. MUI's Collapse keeps its children mounted at height 0, so the
+    // `pre` is in the DOM — and readable by innerText — while the panel is still shut. A count-based
+    // wait therefore returns instantly and proves nothing about the disclosure opening.
+    await dialog.locator('pre').waitFor({ state: 'visible' })
+
+    // And `.length > 0` would not do either: the empty state renders "Nothing has been recorded in
+    // this tab yet", which is also text. Asserting the route we actually visited proves the buffer
+    // is being read rather than that a box exists.
+    const shown = await dialog.locator('pre').innerText()
+    check(`expanding it reveals real activity (${shown.split('\n')[0]})`, shown.includes('/courses'))
     await shot('02-disclosure')
     await close()
   }

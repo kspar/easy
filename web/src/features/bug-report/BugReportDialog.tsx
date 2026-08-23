@@ -14,6 +14,7 @@ import {
   DialogTitle,
   FormControlLabel,
   TextField,
+  Typography,
 } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { useTranslation } from 'react-i18next'
@@ -24,6 +25,16 @@ import { clearBreadcrumbs, serialiseBreadcrumbs } from './breadcrumbs.ts'
 
 /** Matches the server's `@Size(max = 5000)`, so the limit is felt in the field rather than as a 400. */
 const MAX_MESSAGE = 5000
+
+/**
+ * A real monospace stack.
+ *
+ * The bare `monospace` keyword resolves to Courier on macOS, which is what the first version of this
+ * panel rendered in — cramped, dated, and noticeably not the font anything else technical in the app
+ * uses. Named faces first, `monospace` last so there is always a fallback.
+ */
+const MONO =
+  'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace'
 
 /**
  * One text box, one checkbox, and the full text of what will be sent.
@@ -156,27 +167,70 @@ export default function BugReportDialog({
         />
 
         {includeActivity && (
-          <Accordion disableGutters elevation={0} sx={{ mt: 1, '&:before': { display: 'none' } }}>
+          <Accordion
+            disableGutters
+            elevation={0}
+            sx={{
+              mt: 1,
+              '&:before': { display: 'none' },
+              // Transparent, because an Accordion is a Paper and defaults to
+              // `background.paper` — which in dark mode is *darker* than the elevated surface a
+              // Dialog sits on. The result was a black slab behind the summary row and the log,
+              // clearly a different colour from the dialog around it. Invisible in light mode,
+              // where both are white, which is exactly why this needed looking at in both.
+              bgcolor: 'transparent',
+              // The other half of the same problem: Paper paints an elevation overlay as a
+              // background *image* in dark mode, which a background colour does not clear.
+              backgroundImage: 'none',
+            }}
+          >
             <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 0 }}>
               {t('bugReport.seeWhatIsSent')}
             </AccordionSummary>
-            <AccordionDetails sx={{ px: 0 }}>
-              <Box
-                component="pre"
-                sx={{
-                  m: 0,
-                  p: 1,
-                  maxHeight: 200,
-                  // Both axes: a stack frame is one long line, and wrapping it would make the log
-                  // unreadable, so it scrolls sideways inside its own box instead.
-                  overflow: 'auto',
-                  fontSize: '0.75rem',
-                  bgcolor: 'action.hover',
-                  borderRadius: 1,
-                }}
-              >
-                {diagnostics || t('bugReport.nothingRecorded')}
-              </Box>
+            {/*
+              `px: 0` so the panel lines up with the text field above it rather than being inset by
+              MUI's default AccordionDetails padding; `pt: 0` because the summary row already leaves
+              a gap and a second one reads as a hole.
+            */}
+            <AccordionDetails sx={{ px: 0, pt: 0 }}>
+              {diagnostics ? (
+                <Box
+                  component="pre"
+                  sx={{
+                    m: 0,
+                    // 8px was not enough for a monospace log — the text touched the edges and the
+                    // faint background read as a smudge rather than a panel.
+                    px: 1.5,
+                    py: 1.25,
+                    maxHeight: 220,
+                    // Both axes: a stack frame is one long line, and wrapping it would make the log
+                    // unreadable, so it scrolls sideways inside its own box instead.
+                    overflow: 'auto',
+                    fontFamily: MONO,
+                    fontSize: '0.75rem',
+                    // Logs are scanned, not read. Looser than body text so the eye can find the line
+                    // it wants.
+                    lineHeight: 1.65,
+                    // Secondary, so the reporter's own words stay the most prominent thing in the
+                    // dialog and this stays evidence attached to them.
+                    color: 'text.secondary',
+                    bgcolor: 'action.hover',
+                    // The border is what makes it a panel. `action.hover` alone is 4% black, which
+                    // all but disappears against the dialog and vanishes entirely in dark mode.
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                  }}
+                >
+                  {diagnostics}
+                </Box>
+              ) : (
+                // Prose, not code. The empty state is a sentence, and rendering it inside the
+                // monospace box made it look like log output claiming nothing had been logged.
+                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                  {t('bugReport.nothingRecorded')}
+                </Typography>
+              )}
             </AccordionDetails>
           </Accordion>
         )}
