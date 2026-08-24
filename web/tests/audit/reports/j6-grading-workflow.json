@@ -1,0 +1,111 @@
+{
+  "list": {
+    "text": "Kahe arvu summa Liida kaks arvu. Õpilased Testimine Hindamine Nimi 2 lahendatud 3 hindamata 1 esitamata Aare, Anna aug 22, 13:00 – Bome, Boris aug 22, 14:00 – Curro, Carla aug 22, 15:00 – Doe, Dmitri aug 21, 12:00 90 Eesti, Eeva aug 20, 12:00 55 Fox, Fred – 2 / 6 hinnatud",
+    "controls": [
+      "Ülesande sätted",
+      "Peida vasak paneel",
+      "Peida parem paneel",
+      "Õpilased",
+      "Testimine",
+      "Hindamine",
+      "Nimi",
+      "2 lahendatud",
+      "3 hindamata",
+      "1 esitamata",
+      "–",
+      "–",
+      "–",
+      "90",
+      "55",
+      "–"
+    ],
+    "rows": 0,
+    "badges": 0
+  },
+  "gradingUi": {
+    "textFields": 1,
+    "buttons": [
+      "Ülesande sätted",
+      "Peida vasak paneel",
+      "Peida parem paneel",
+      "Õpilased",
+      "Testimine",
+      "Hindamine",
+      "Tagasi nimekirja",
+      "Anna Aare",
+      "Märgi vaadatuks",
+      "Märgi ülevaatamiseks",
+      "Bold",
+      "Italic",
+      "Code",
+      "Bullet list",
+      "Numbered list",
+      "Salvesta"
+    ],
+    "studentNav": [
+      {
+        "text": "",
+        "ariaLabel": "Ülesande sätted",
+        "title": null,
+        "svg": true
+      },
+      {
+        "text": "",
+        "ariaLabel": "Peida vasak paneel",
+        "title": null,
+        "svg": true
+      },
+      {
+        "text": "",
+        "ariaLabel": "Peida parem paneel",
+        "title": null,
+        "svg": true
+      },
+      {
+        "text": "",
+        "ariaLabel": "Tagasi nimekirja",
+        "title": null,
+        "svg": true
+      },
+      {
+        "text": "",
+        "ariaLabel": null,
+        "title": null,
+        "svg": true
+      },
+      {
+        "text": "",
+        "ariaLabel": null,
+        "title": null,
+        "svg": true
+      },
+      {
+        "text": "",
+        "ariaLabel": "Märgi vaadatuks",
+        "title": null,
+        "svg": true
+      },
+      {
+        "text": "",
+        "ariaLabel": "Märgi ülevaatamiseks",
+        "title": null,
+        "svg": true
+      },
+      {
+        "text": "",
+        "ariaLabel": "Bold",
+        "title": null,
+        "svg": true
+      },
+      {
+        "text": "",
+        "ariaLabel": "Italic",
+        "title": null,
+        "svg": true
+      }
+    ],
+    "text": "Kahe arvu summa Liida kaks arvu. Õpilased Testimine Hindamine Anna Aare Esitus #1 (viimane) lahendus.py + + + + 1 2 3 4 a = int(input()) b = int(input()) print(a - b) Tagasiside Hinne ​ / 100 Kirjuta tagasiside... Teavita õpilast Salvesta Varasem tegevus puudub"
+  },
+  "clicksToNextStudent": 2,
+  "putBodies": []
+}

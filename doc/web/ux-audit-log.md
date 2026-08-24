@@ -70,7 +70,7 @@ finishes or it goes back to `todo`.
 | J3 | Teacher: course lifecycle | todo | — | |
 | J4 | Teacher: exercise authoring | todo | — | EZ-1732 (math no longer renders) is the one to check first |
 | J5 | Teacher: putting an exercise on a course | todo | — | |
-| J6 | Teacher: grading | todo | — | `doc/testing.md` priority 1; review F-035 lands here |
+| J6 | Teacher: grading | **in progress** 2026-08-24 `a47bda36` | X-030; R-011 | The workflow is **better than the plan assumed** — R-011 refutes the punishing-path lead: one-click prev/next between students, and a roster carrying "3 hindamata" / "2 / 6 hinnatud" counts. The finding is that the two student-navigation chevrons are the only unlabelled icon buttons among nine in the view (X-030). **Remaining before `done`:** actually saving a grade and checking F-035's consequence on this page as well as the grade table; `AnnotatedCodeEditor`'s inline comments (871 lines, the most complex thing in the flow); and `ActivityFeed` plus `PreviousSubmissions`, inherited from J1. **Fixture note that cost two runs:** the grading pane needs `/submissions/all/students/{id}` stubbed or it renders "Esitamata" and proves nothing |
 | J7 | Teacher: roster & groups | todo | — | Largest file in the repo; V3 will want its notes |
 | J8 | Teacher: results out | todo | — | |
 | J9 | Admin | todo | — | Re-map first: EZ-1786 changed the admin surface at `df7244af` |
@@ -1101,6 +1101,35 @@ Template:
   period after the year
 - Register: not previously filed
 
+### X-030 The only unlabelled icon buttons in the grading view are the ones that move between students
+- Unit: J6
+- Surface: `/courses/:c/exercises/:ce` (teacher), a student's submission open, et
+- Norm: the app's **own** practice in the same view — eight sibling icon buttons all carry an
+  `aria-label` (source 2); plus WCAG `button-name` (source 5)
+- Class: a11y + consistency
+- Severity: medium
+- Reach: the two controls a teacher uses most while grading a cohort
+- Verdict: CONFIRMED
+- What happens: the student header reads `‹  Anna Aare ▾  ›`, and the two chevrons are the fast path
+  between students — one click instead of a round trip through the roster. Enumerated from the DOM,
+  every icon button in the view has an accessible name — *Ülesande sätted*, *Peida vasak paneel*,
+  *Peida parem paneel*, *Tagasi nimekirja*, *Märgi vaadatuks*, *Märgi ülevaatamiseks*, *Bold*,
+  *Italic* — **except these two, whose `aria-label` is `null`**. So a screen-reader user grading
+  thirty submissions is the one user who cannot find the control that exists to make that bearable,
+  and they will fall back to the roster round trip.
+  This is asymmetric divergence rather than a general omission, which is what makes it worth filing:
+  the convention is established and applied eight times in one component, and missed twice.
+- Instead: two `aria-label`s, from the strings that presumably already exist for the roster's ordering.
+  Worth adding a tooltip at the same time — the chevrons are also the least discoverable control on
+  the screen for sighted users, which is how this audit's own first pass missed them and briefly
+  concluded there was no next-student affordance at all (see R-011).
+- Evidence: `tests/audit/j6-grading-workflow.mjs`, report
+  `tests/audit/reports/j6-grading-workflow.json`, at `a47bda36`; accessible names read from the DOM.
+  Shot `j6-02-grading-anna.png`
+- Register: not previously filed. Same class as X-002/X-003/X-010 — this programme has now found
+  icon-only controls without names on four separate surfaces, which argues for the sweep C5 proposes
+  rather than four separate fixes
+
 ---
 
 ## Refuted
@@ -1155,6 +1184,23 @@ scale, not a contradiction: small interactive things are less round than the pan
 sub-claims also died: the numbers 8 and 12 inside `styleOverrides` are raw CSS, not `sx` multiples, so
 they mean 8px and 12px as written; and the only oddity measured was a single `9px` Box, which is not
 worth a line. Radius is one of the more coherent things about this theme.
+
+`R-011` — **Grading a cohort is a punishing path: there is no way to reach the next student except
+back through the roster, so thirty submissions is thirty round trips.** Refuted twice over. The
+grading header has `‹` / `›` chevrons **and** a name dropdown, so moving to the next student is **one
+click**, not two. And the roster is genuinely helpful: it carries summary chips reading *"2 lahendatud
+· 3 hindamata · 1 esitamata"* and a *"2 / 6 hinnatud"* footer, so a teacher can see how much is left
+without counting rows. My driver reported `hasNextAffordance: false` because it searched for *text*
+matching `/järgmine|next|edasi/` and the controls are icon-only with no accessible name — the detector
+was measuring the absence of a label and I read it as the absence of a feature. The label really is
+missing, and that is X-030; the feature is not. Fifth time in this programme that a false negative came
+from my setup rather than the app, and the first where the same measurement yielded a real finding
+once read correctly.
+
+An earlier attempt at this unit also produced nothing at all because it never stubbed
+`/submissions/all/students/{id}` — `StudentGradingView.tsx:459` renders *"Esitamata"* when that list is
+empty, so the pane truthfully reported no submissions and the run said `fields=0` about a grading form
+that was never asked to render. Both mistakes are recorded in the driver's own comments.
 
 `R-009` — **A teacher-graded submission is never confirmed, because there is no grader to answer.** It
 is confirmed: submitting produces a snackbar reading *"Lahendus esitatud"*, and the button label adapts
