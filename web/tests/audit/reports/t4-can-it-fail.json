@@ -1,0 +1,106 @@
+{
+  "presetMenu": [
+    {
+      "role": "li",
+      "text": "Käivitab koodi"
+    },
+    {
+      "role": "menuitem",
+      "text": "Käivitab programmi"
+    },
+    {
+      "role": "menuitem",
+      "text": "Kutsub välja funktsiooni"
+    },
+    {
+      "role": "li",
+      "text": "Mida kood sisaldab"
+    },
+    {
+      "role": "menuitem",
+      "text": "Kasutab tsüklit"
+    },
+    {
+      "role": "menuitem",
+      "text": "Kasutab try/except plokki"
+    },
+    {
+      "role": "menuitem",
+      "text": "Impordib mooduli"
+    },
+    {
+      "role": "menuitem",
+      "text": "Sisaldab sõnet"
+    },
+    {
+      "role": "li",
+      "text": "Mida kood välja kutsub"
+    },
+    {
+      "role": "menuitem",
+      "text": "Kutsub välja funktsiooni"
+    },
+    {
+      "role": "menuitem",
+      "text": "Ei kutsu välja printi"
+    },
+    {
+      "role": "li",
+      "text": "Mida kood defineerib"
+    },
+    {
+      "role": "menuitem",
+      "text": "Defineerib funktsiooni"
+    },
+    {
+      "role": "menuitem",
+      "text": "Defineerib klassi"
+    },
+    {
+      "role": "li",
+      "text": "Funktsiooni omadused"
+    },
+    {
+      "role": "menuitem",
+      "text": "On rekursiivne"
+    },
+    {
+      "role": "menuitem",
+      "text": "Kasutab vaid lokaalseid muutujaid"
+    },
+    {
+      "role": "li",
+      "text": "Muu"
+    },
+    {
+      "role": "menuitem",
+      "text": "Tühi test"
+    }
+  ],
+  "chosenPreset": "Käivitab programmi",
+  "freshTest": {
+    "type": "program_execution_test",
+    "id": 95615502415492,
+    "name": null,
+    "standardInputData": [],
+    "inputFiles": [],
+    "genericChecks": [],
+    "outputFileChecks": [],
+    "exceptionCheck": null
+  },
+  "warnings": {
+    "alerts": [],
+    "mentionsChecksNothing": false,
+    "warningColoured": false,
+    "bodyText": "Ülesandekogu / Kahe arvu summa Tühista Salvesta Muudetud: eile, 13:00 · kspar Kasutusel kursustel: – Kahe arvu summa Liida. Ülesanne Automaatkontroll Testimine Lahenduse failinimi Lahenduse failinimi Esitamise viis Tekstiredaktor Esitamise viis Automaatkontrolli tüüp TSL Automaatkontrolli tüüp Max aeg (s) Max aeg (s) Max mälu (MB) Max mälu (MB) Testid TSL Genereeritud skriptid Programmi käivituse test Testi tüüp Programmi käivituse test Testi tüüp Punktid Punktid Õpilasele nähtav Sisendandmed Ka"
+  },
+  "compiled": {
+    "ok": true,
+    "feedback": null,
+    "python": "from tiivad import *\nvalidate_files(['''lahendus.py'''])\nexecute_test(file_name='''lahendus.py''', standard_input_data=[], input_files=[], standard_output_checks=[], output_file_checks=[], exception_check=None, type='''program_execution_test''', points_weight=1.0, id=95615502415492, name='''Programmi käivituse test''', inputs=None, passed_next=None, failed_next=None, visible_to_user=True)\nprint(Results(None))\n"
+  },
+  "checkArrays": [
+    "standard_output_checks=[]",
+    "output_file_checks=[]"
+  ]
+}

@@ -82,7 +82,7 @@ finishes or it goes back to `todo`.
 | T1 | Entry & first run | **in progress** 2026-08-23 `278d1ee1` | X-015, X-016 | The empty-`tsl.json` lead is **confirmed by execution**: `{"tsl_spec":"","format":"JSON"}` is sent unprompted and Save is disabled. **Remaining before `done`:** what the 12-item preset menu teaches a teacher who has never seen TSL (and its labels disagreeing with the type `Select`'s — "Run the program" vs "Program execution test"), EZ-1734's hardcoded container dropdown, and the read-only view of an existing TSL exercise as a non-owner. **For T6:** the builder gets ~700px of a 1440px viewport because the left half is a static preview card that does not collapse |
 | T2 | The test forms | todo | — | |
 | T3 | Model vs compiler | **in progress** 2026-08-23 `9dbe8dd1` | X-019, X-020; R-007 | The reverse direction is done — nine specs against the real compiler establish that six capabilities work and are unreachable from any form (X-019), and that duplicate ids compile (X-020). R-007 is the near-miss worth reading. **Remaining before `done`:** the forward direction beyond what `library-exercise-tsl-live.spec.mjs` already covers — fields the UI *emits* that the compiler ignores (`definitionCheckValue`, `class_instance_test.className`, the forced `containsWhatArg: 'import'`), and the validation tiivad performs at grading time that neither side surfaces. Leads in hand — the compiler emits its own Estonian default test name into the generated script while the UI derives its own from `testDefaultName`, so one string has two sources; and `emptySpec()` hardcodes `requiredFiles: ['lahendus.py']` rather than reading `solution_file_name` (see X-015) |
-| T4 | The feedback loop | **in progress** 2026-08-23 `a8626fa4` | X-018 | The error-message half is done and confirmed against the real compiler: what reaches the teacher is kotlinx's developer diagnostic, verbatim. **Remaining before `done`:** whether a teacher can tell a *working* test set from a broken one before a student meets it — the `Generated scripts` tab as the only preview, the Testimine round trip (see X-016), and the two always-passing shapes nothing warns about. Note the compiler reports `backend_version: "?.?.?"`, which the UI shows in its synthetic `meta.txt` |
+| T4 | The feedback loop | **in progress** 2026-08-24 `c9cb3cdb` | X-018, X-023, X-024 | The unit's central question is answered, and the answer is no: nothing reports that a test cannot fail, and the first preset in the menu produces exactly that (X-023). Error messages are kotlinx diagnostics verbatim (X-018). Two menu items are byte-identical in Estonian (X-024). **Remaining before `done`:** the `Generated scripts` tab judged as a preview in its own right — it shows Python, and whether any teacher can read it is the question — and the Testimine round trip end to end, which needs a real grading run and therefore a **write** to core, so ask before doing it. Note the compiler reports `backend_version: "?.?.?"`, which the UI shows verbatim in its synthetic `meta.txt` |
 | T5 | State, persistence, escape | **done `fbd7a43e`** (2026-08-24) | X-017, X-021, X-022 | 4 candidates, 4 kept, and every one settled by execution with a control. The router guard is critical (X-017); destructive edits are unconfirmed and unrecoverable (X-021); an invalid spec locks Save even after the exercise stops being TSL (X-022). Two method notes for later units: observe the spec through the **debounced compile payload**, not the JSON tab — the payload is the app's own serialisation and survives the card collapsing; and `{dirs: [], exercises: []}` is **not** `LibraryDirResp`'s shape and crashes `ExerciseLibraryPage.tsx:106`, so look the response up before stubbing the library list |
 | T6 | TSL under pressure | todo | — | Do after S1–S3 so the theme baseline exists |
 | T7 | The other end | todo | — | Read review F-019 first |
@@ -876,6 +876,68 @@ Template:
   none, with no reference to what any executor actually has
 - Register: not previously filed
 
+### X-023 The first preset in the menu produces a test that checks nothing, and nothing says so
+- Unit: T4
+- Surface: `/library/exercise/:id` → Automaatkontroll → Testid → Lisa test, editing (teacher), et
+- Norm: design judgement, argued (source 6) — a grader that cannot fail is worse than no grader,
+  because it looks like it worked
+- Class: journey + design
+- Severity: **high**
+- Reach: every exercise built from a preset, which is the primary way tests are added
+- Verdict: CONFIRMED end to end — UI, contract and generated script
+- What happens: a teacher opens **Lisa test** and picks the first item in the first group, *"Käivitab
+  programmi"*. The resulting test carries `genericChecks: []`, `outputFileChecks: []` and
+  `exceptionCheck: null` — it examines nothing. Nothing on screen says so: no alert, no caption, and
+  nothing painted in `warning.main`. Sent through the **real compiler** it is accepted without
+  complaint and emits `standard_output_checks=[], output_file_checks=[], exception_check=None` with
+  `points_weight=1.0`. So a teacher can add a test, save, put the exercise on a course, and every
+  student who submits anything at all scores full marks — and the exercise looks configured.
+  The app already knows how to say this: `class_instance_test` gets an orange caption when both its
+  checkboxes are off, reading that it "compares nothing and passes for everyone". That sentence is
+  exactly what is missing here, on the far more common path.
+- **This finding is also T4's answer to its own question.** The unit asks whether a teacher can tell a
+  working test set from a broken one before a student meets it. There is no preview of *results*, only
+  of generated Python; the Testimine tab does not exist until the exercise is saved (X-016); and nothing
+  anywhere reports "this test cannot fail". This audit could not answer it either without reading the
+  generated script — which is the finding, not a gap in the audit.
+- Instead: reuse the existing pattern. A test with no checks gets the same orange caption the
+  class-instance case gets, and the Testid tab gets a count of tests-that-check-nothing beside the
+  Save button. Neither needs a new component. Longer-term, the honest fix is a way to run the set
+  against a deliberately wrong solution and see it fail — but the caption is a day's work and removes
+  the silent-failure mode.
+- Evidence: `tests/audit/t4-can-it-fail.mjs`, report `tests/audit/reports/t4-can-it-fail.json`, at
+  `c9cb3cdb`. Shots `t4-01-preset-menu.png`, `t4-02-fresh-test-no-checks.png`
+- Register: not previously filed
+
+### X-024 Two different presets are labelled identically in Estonian
+- Unit: T4
+- Surface: the Lisa test menu, `et`
+- Norm: WCAG's `duplicate link names` rule generalised — two controls that do different things must be
+  distinguishable (source 5); and the menu is the primary discovery surface for TSL
+- Class: copy
+- Severity: high — the teacher cannot form an intention, and the two tests are not similar
+- Reach: every teacher adding a test in the app's **default language**
+- Verdict: CONFIRMED
+- What happens: the menu contains **"Kutsub välja funktsiooni" twice** — under *Käivitab koodi* and
+  again under *Mida kood välja kutsub*. They are different presets producing different test types:
+  `callFunction` → `function_execution_test`, which *runs* a function in the student's code and checks
+  what it returns; and `callsFunction` → `calls_test`, which checks whether the student's code *calls*
+  a function at all. Byte-identical labels, opposite intents.
+  English escapes by a single letter and a change of mood — `"Call a function"` versus
+  `"Calls a function"` — which is a real distinction (you make it run / the code does it) that Estonian's
+  *kutsub välja* cannot carry the same way. So this is not a missing translation; it is a naming scheme
+  that only works in one language.
+- Instead: name them by what the teacher is *checking*, in both languages, rather than by grammatical
+  mood — along the lines of "Käivitab funktsiooni ja kontrollib tulemust" versus "Kontrollib, kas kood
+  kutsub funktsiooni". The group headers already carry half the distinction; the items should not
+  depend on the reader having noticed which group they are in.
+- Evidence: menu enumerated from the live DOM by `tests/audit/t4-can-it-fail.mjs` at `c9cb3cdb`, and
+  the collision confirmed in `src/i18n/et.json` — `tsl.preset.callFunction` and
+  `tsl.preset.callsFunction` are the same string. Shot `t4-01-preset-menu.png`
+- Register: not previously filed. **Belongs to EZ-1785 as well** — it is the clearest instance yet of
+  the audit's premise that the default language is the untested one, and it is recorded in the leads
+  section below
+
 ---
 
 ## Refuted
@@ -965,7 +1027,12 @@ EZ-1759 rather than here.
   **137 where Estonian is ≥30% longer** than English. Worst offender
   `tsl.containsName.KEYWORD_WITH_PRECEDING_ARG` at **2.42×**, inside the densest UI in the app.
 - The app defaults to Estonian and every browser spec runs in English, so the default language is the
-  untested one.
+  untested one. **X-024 is the proof of that premise**: `tsl.preset.callFunction` and
+  `tsl.preset.callsFunction` are byte-identical in `et.json` ("Kutsub välja funktsiooni") while English
+  distinguishes them by one letter and a change of grammatical mood ("Call a function" / "Calls a
+  function"). A naming scheme that carries meaning in English and collapses in Estonian is the whole
+  shape of EZ-1785 in one pair of keys — and worth checking for elsewhere: any English pair
+  distinguished only by verb inflection is a candidate.
 - The 149 `tsl.*` keys are the *entire* user-facing documentation of TSL — there is no teacher-facing
   guide anywhere — so they carry more weight than labels usually do.
 
