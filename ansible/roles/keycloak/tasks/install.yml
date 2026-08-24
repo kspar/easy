@@ -115,11 +115,11 @@
   # what a theme under active repair wants: edit a template, restart, look. A jar would mean a build
   # step between every attempt, and this theme needed attempts — see the fixes below.
   #
-  # Copied only when it is not already there, because the tasks below *edit* what was copied. An
-  # unconditional copy would restore the upstream file every run, the fixes would re-apply every run,
-  # and the role would report changed forever while flapping the login page's stylesheets.
+  # Copied only when it is not already there. Nothing edits the copy any more, so this could be
+  # unconditional — but "copy once" is what makes a hand-edit on the host survive a playbook run
+  # while someone is debugging a template, and that is worth more than the tidiness.
   # To pick up a changed source: remove {{ keycloak_versioned_home }}/themes/{{ keycloak_theme_name }}
-  # and run again.
+  # and run again. A version bump gets a new versioned home, so it copies afresh by itself.
   ansible.builtin.copy:
     src: "{{ keycloak_theme_src }}/{{ keycloak_theme_name }}/"
     dest: "{{ keycloak_versioned_home }}/themes/{{ keycloak_theme_name }}/"
@@ -134,45 +134,16 @@
     - not keycloak_theme_installed.stat.exists | default(false)
   notify: Restart keycloak
 
-# --- what three years of Keycloak releases did to this theme --------------------------------------
-# The theme loads and the login form works, but it asked for three stylesheets that Keycloak 25 does
-# not ship, and a 404 stylesheet is an unstyled page rather than a visible error. Both fixes are
-# idempotent (the regexp matches the corrected line too), which is what lets them live in the role.
+# --- the stylesheet fixes that used to live here ---------------------------------------------------
+# Until Keycloak 26.7 this role rewrote two lines of the theme's login/theme.properties on the way in:
+# the 2023 theme asked for PatternFly 4 paths (web_modules/...) that the Quarkus distributions do not
+# ship, and for a css/tile.css that exists in no theme it inherits from. Upstream easy-kc-theme now
+# tests against current Keycloak and ships the right paths, so patching them here would fight the
+# source rather than repair it.
 #
-# The right long-term fix is not either of these: it is that this theme has no home. It arrived with
-# a home-directory restore, it is in no repository, and a rebuilt host would get the 2023 copy again.
-# Vendoring it is filed as follow-up work in doc/idp-setup.md.
-
-- name: Point the theme at stylesheets Keycloak 25 actually ships
-  # Was: web_modules/@patternfly/react-core/dist/styles/{base,app}.css — paths from the PatternFly 4
-  # layout Keycloak 15 used. Keycloak 25's common/keycloak has no web_modules directory at all; the
-  # equivalent is node_modules/@patternfly/patternfly/patternfly.min.css. Taken from KC 25's own
-  # keycloak/login/theme.properties rather than guessed.
-  ansible.builtin.lineinfile:
-    path: "{{ keycloak_versioned_home }}/themes/{{ keycloak_theme_name }}/login/theme.properties"
-    regexp: '^stylesCommon='
-    line: >-
-      stylesCommon=node_modules/@patternfly/patternfly/patternfly.min.css
-      node_modules/patternfly/dist/css/patternfly.min.css
-      node_modules/patternfly/dist/css/patternfly-additions.min.css lib/pficon/pficon.css
-  when:
-    - keycloak_ready_to_configure | bool
-    - keycloak_theme_install | bool
-    - keycloak_theme_stat.stat.exists | default(false)
-  notify: Restart keycloak
-
-- name: Stop the theme asking for a stylesheet that exists nowhere
-  # css/tile.css is not in this theme's resources and not in the parent it inherits from. It was
-  # presumably real in whatever Keycloak this was written against; it 404s on 25.
-  ansible.builtin.lineinfile:
-    path: "{{ keycloak_versioned_home }}/themes/{{ keycloak_theme_name }}/login/theme.properties"
-    regexp: '^styles='
-    line: "styles=css/login.css css/easy-login.css"
-  when:
-    - keycloak_ready_to_configure | bool
-    - keycloak_theme_install | bool
-    - keycloak_theme_stat.stat.exists | default(false)
-  notify: Restart keycloak
+# If the login page comes up unstyled after a version bump, the fix belongs in
+# github.com/kspar/easy-kc-theme — not back in this file. What the role still does not solve is that
+# the theme is copied from a directory on the host rather than vendored; see doc/idp-setup.md.
 
 - name: Say the theme still has to be selected
   # Installing a theme does not apply it. Keeping selection in the realm rather than in this role is

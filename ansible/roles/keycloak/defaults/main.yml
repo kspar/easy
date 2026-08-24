@@ -13,14 +13,19 @@
 # Pinned, and verified by checksum rather than trusted. Keycloak upgrades change realm storage, so
 # "whatever is latest" is not a thing this role should ever install on its own.
 #
-# The checksum is the SHA-256 of the official release asset, confirmed on 2026-08-08 by downloading
-# it from GitHub on the host and comparing against the copy that was already sitting in ~kspar — they
-# matched, which is what makes that copy's provenance known rather than assumed.
-keycloak_version: 25.0.2
+# The checksum is the SHA-256 of the official release asset. Keycloak publishes no .sha256 alongside
+# the zip, so there is no upstream hash to compare against: this one was computed on 2026-08-24 from
+# the asset downloaded off the GitHub release. That makes it a pin rather than an independent
+# verification — the second opinion is that `get_url` below refuses any host whose download differs.
+#
+# 26.7.2 is not a routine bump. It carries CVE-2026-18963 (CVSS 9.1, unauthenticated account takeover
+# through the reset-credentials flow) and seven more; the version before it that anyone should run is
+# no version before it.
+keycloak_version: 26.7.2
 keycloak_zip_url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_version }}/keycloak-{{ keycloak_version }}.zip"
-keycloak_zip_sha256: 782860ef21cbdbef3c3b8203a35202e0ce7f0047e34a41406ba9b3201a6c2b8b
+keycloak_zip_sha256: 744ced2aee48932be2de935ff380085ebded737655c0986aa3512bbcec62f69b
 
-# Keycloak 25 runs on Java 17 or 21. 21 is the newer of the two it supports — deliberately NOT the
+# Keycloak 26.7 runs on Java 17 or 21. 21 is the newer of the two it supports — deliberately NOT the
 # Java 25 core runs on, because Quarkus in this release predates it and the failure mode is an
 # obscure startup crash rather than a version check.
 keycloak_jre_package: openjdk-21-jre-headless
@@ -77,10 +82,11 @@ keycloak_acme_webroot: /var/www/certbot
 keycloak_cert_dir: "/etc/letsencrypt/live/{{ keycloak_hostname }}"
 
 # --- the theme ------------------------------------------------------------------------------------
-# The lahendus login/account/email theme, so dev looks like production. Built in 2023 against
-# Keycloak 15 and never run on 25 — see doc/idp-setup.md for what to check if the login page renders
-# oddly. Installing it does not select it: that is a realm setting, deliberately, so a broken theme
-# can be switched off without a playbook run.
+# The lahendus login/account/email theme, so dev looks like production. Upstream now tests it against
+# current Keycloak, so the role installs the source verbatim — the stylesheet fixes this role used to
+# apply on the way in are gone, and a theme that renders wrongly is a bug to fix upstream rather than
+# in a lineinfile here. Installing it does not select it: that is a realm setting, deliberately, so a
+# broken theme can be switched off without a playbook run.
 keycloak_theme_install: true
 keycloak_theme_name: lahendus
 # Where the theme source is taken from on the host. It arrived with the home-directory restore rather
