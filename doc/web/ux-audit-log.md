@@ -84,7 +84,7 @@ finishes or it goes back to `todo`.
 | T3 | Model vs compiler | **in progress** 2026-08-23 `9dbe8dd1` | X-019, X-020; R-007 | The reverse direction is done — nine specs against the real compiler establish that six capabilities work and are unreachable from any form (X-019), and that duplicate ids compile (X-020). R-007 is the near-miss worth reading. **Remaining before `done`:** the forward direction beyond what `library-exercise-tsl-live.spec.mjs` already covers — fields the UI *emits* that the compiler ignores (`definitionCheckValue`, `class_instance_test.className`, the forced `containsWhatArg: 'import'`), and the validation tiivad performs at grading time that neither side surfaces. Leads in hand — the compiler emits its own Estonian default test name into the generated script while the UI derives its own from `testDefaultName`, so one string has two sources; and `emptySpec()` hardcodes `requiredFiles: ['lahendus.py']` rather than reading `solution_file_name` (see X-015) |
 | T4 | The feedback loop | **in progress** 2026-08-24 `c9cb3cdb` | X-018, X-023, X-024 | The unit's central question is answered, and the answer is no: nothing reports that a test cannot fail, and the first preset in the menu produces exactly that (X-023). Error messages are kotlinx diagnostics verbatim (X-018). Two menu items are byte-identical in Estonian (X-024). **Remaining before `done`:** the `Generated scripts` tab judged as a preview in its own right — it shows Python, and whether any teacher can read it is the question — and the Testimine round trip end to end, which needs a real grading run and therefore a **write** to core, so ask before doing it. Note the compiler reports `backend_version: "?.?.?"`, which the UI shows verbatim in its synthetic `meta.txt` |
 | T5 | State, persistence, escape | **done `fbd7a43e`** (2026-08-24) | X-017, X-021, X-022 | 4 candidates, 4 kept, and every one settled by execution with a control. The router guard is critical (X-017); destructive edits are unconfirmed and unrecoverable (X-021); an invalid spec locks Save even after the exercise stops being TSL (X-022). Two method notes for later units: observe the spec through the **debounced compile payload**, not the JSON tab — the payload is the app's own serialisation and survives the card collapsing; and `{dirs: [], exercises: []}` is **not** `LibraryDirResp`'s shape and crashes `ExerciseLibraryPage.tsx:106`, so look the response up before stubbing the library list |
-| T6 | TSL under pressure | todo | — | Do after S1–S3 so the theme baseline exists |
+| T6 | TSL under pressure | **done `bf48e09b`** (2026-08-24) | X-025; R-008 | 2 candidates, 1 kept, 1 refuted — and the refutation is the useful half. The builder does **not** break at 390px in dark in Estonian: zero horizontal overflow across 390/1440/2560 × light/dark, and the app's longest Estonian string renders in full. What is real is scale: 2200px of page height at 1440 **and** at 2560, so extra width buys nothing (X-025). Mild lead onward: 4–5 elements per viewport clip their own content — **S3**/**S8** |
 | T7 | The other end | todo | — | Read review F-019 first |
 
 ### Track S — Surfaces (9 units)
@@ -938,6 +938,42 @@ Template:
   the audit's premise that the default language is the untested one, and it is recorded in the leads
   section below
 
+### X-025 The TSL builder's height is the same on a phone-width column and a 2560px monitor
+- Unit: T6
+- Surface: `/library/exercise/:id` → Automaatkontroll, editing (teacher), et, both themes
+- Norm: design judgement, argued (source 6); and EZ-1527's premise that large screens should buy
+  something
+- Class: responsive + design
+- Severity: medium
+- Reach: every TSL authoring session, and the same single-column-forever shape is likely to hold
+  wherever else the app stacks form sections
+- Verdict: CONFIRMED
+- What happens: measured rendered page height for **one** expanded test plus one collapsed one:
+
+  | viewport | page height | vs laptop |
+  |---|---|---|
+  | 390 × 844 (phone) | 2834 px | +29% |
+  | 1440 × 900 (laptop) | **2200 px** | — |
+  | 2560 × 1440 (monitor) | **2200 px** | **identical** |
+
+  Going from a laptop to a large monitor adds 1120 px of width and removes **zero** pixels of height.
+  The builder is a single column of stacked sections at every size, so a teacher on a 2560×1440 screen
+  scrolls ~2.4 viewport heights through one test while more than half the screen stays empty. Six
+  tests — an ordinary exercise — is on the order of fifteen screens either way, and the shape of the
+  test set is never visible at once.
+- Instead: spend the width. At `lg` and above the checks could sit in two columns, or the Inputs and
+  Checks groups side by side — both are the kind of change `sx={{ display: {xs:'block', lg:'grid'} }}`
+  expresses, and the app already uses responsive `sx` objects in eight files. Cheaper still and
+  probably worth doing first: a collapse-all/expand-all control and a one-line summary per collapsed
+  card (type, points, how many checks), so a teacher can see the whole set without expanding anything.
+  That also serves X-023 — "how many of these check nothing" is exactly the summary line's job.
+- Evidence: `tests/audit/t6-tsl-under-pressure.mjs`, report
+  `tests/audit/reports/t6-tsl-under-pressure.json`, at `bf48e09b`; heights read from the rendered PNG
+  dimensions at `deviceScaleFactor: 2`. Shots `t6-{phone,laptop,monitor}-{light,dark}.png`
+- Register: **EZ-1527** ("Optimise for large screens") is the general form; this is the instance on the
+  app's deepest screen, and it pairs with X-008, which found the same viewport-invariance in the
+  student's code editor. Two independent measurements of one habit
+
 ---
 
 ## Refuted
@@ -992,6 +1028,18 @@ scale, not a contradiction: small interactive things are less round than the pan
 sub-claims also died: the numbers 8 and 12 inside `styleOverrides` are raw CSS, not `sx` multiples, so
 they mean 8px and 12px as written; and the only oddity measured was a single `9px` Box, which is not
 worth a line. Radius is one of the more coherent things about this theme.
+
+`R-008` — **The TSL builder breaks down at 390px, in dark mode, in Estonian — the plan's T6 lead.** It
+does not, and this is the most clearly wrong prediction the planning pass made. Measured across
+390/1440/2560 × light/dark with a filled-in function-execution test expanded: **zero horizontal
+overflow at every combination**, no worst offender at all, and the longest Estonian label in the app
+(`tsl.containsName.KEYWORD_WITH_PRECEDING_ARG`, 2.42× its English source) renders in full as *"Programm
+otsib reserveeritud võtmesõna koos argumendiga import"* without truncating or wrapping badly. The
+three-level nesting reads correctly on a phone because every check is a bordered card, the sections
+stack in one column, and the pass/fail message pairs keep their ✓/✗ markers. The `minWidth` values the
+lead was suspicious of are doing their job rather than causing overflow. What survives is not a
+breakage but a scale problem, filed as X-025 — and 4–5 elements per viewport clip their own content,
+which is a mild lead for **S3**/**S8** rather than a finding here.
 
 `R-007` — **`ignoreCase` and `nothingElse` are accepted by the compiler and silently ignored.** They
 are not: both reach the generated Python and work. The first run of `t3-model-vs-compiler.mjs` traced
