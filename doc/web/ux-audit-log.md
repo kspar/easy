@@ -85,7 +85,7 @@ finishes or it goes back to `todo`.
 | T4 | The feedback loop | **in progress** 2026-08-24 `c9cb3cdb` | X-018, X-023, X-024 | The unit's central question is answered, and the answer is no: nothing reports that a test cannot fail, and the first preset in the menu produces exactly that (X-023). Error messages are kotlinx diagnostics verbatim (X-018). Two menu items are byte-identical in Estonian (X-024). **Remaining before `done`:** the `Generated scripts` tab judged as a preview in its own right — it shows Python, and whether any teacher can read it is the question — and the Testimine round trip end to end, which needs a real grading run and therefore a **write** to core, so ask before doing it. Note the compiler reports `backend_version: "?.?.?"`, which the UI shows verbatim in its synthetic `meta.txt` |
 | T5 | State, persistence, escape | **done `fbd7a43e`** (2026-08-24) | X-017, X-021, X-022 | 4 candidates, 4 kept, and every one settled by execution with a control. The router guard is critical (X-017); destructive edits are unconfirmed and unrecoverable (X-021); an invalid spec locks Save even after the exercise stops being TSL (X-022). Two method notes for later units: observe the spec through the **debounced compile payload**, not the JSON tab — the payload is the app's own serialisation and survives the card collapsing; and `{dirs: [], exercises: []}` is **not** `LibraryDirResp`'s shape and crashes `ExerciseLibraryPage.tsx:106`, so look the response up before stubbing the library list |
 | T6 | TSL under pressure | **done `bf48e09b`** (2026-08-24) | X-025; R-008 | 2 candidates, 1 kept, 1 refuted — and the refutation is the useful half. The builder does **not** break at 390px in dark in Estonian: zero horizontal overflow across 390/1440/2560 × light/dark, and the app's longest Estonian string renders in full. What is real is scale: 2200px of page height at 1440 **and** at 2560, so extra width buys nothing (X-025). Mild lead onward: 4–5 elements per viewport clip their own content — **S3**/**S8** |
-| T7 | The other end | todo | — | Read review F-019 first |
+| T7 | The other end | **done `29271a61`** (2026-08-24) | X-026 | 4 failure shapes driven through the student view; 1 finding. The designed path is **good** — an ordinary `OK_V3` FAIL gives per-test accordions, a clear grade and an actionable "Ootasin väljundis stringi …, aga seda ei leidnud", and a student's own traceback is shown in full under "Erind", which is correct and must survive any fix. The finding is the two *infrastructure* failure shapes being rendered as assessment results (X-026). `TeacherFeedback`'s rendering of written teacher feedback was not covered here and belongs to **J1**/**J6**, which read it from both seats |
 
 ### Track S — Surfaces (9 units)
 
@@ -973,6 +973,46 @@ Template:
 - Register: **EZ-1527** ("Optimise for large screens") is the general form; this is the instance on the
   app's deepest screen, and it pairs with X-008, which found the same viewport-invariance in the
   student's code editor. Two independent measurements of one habit
+
+### X-026 When the grading infrastructure fails, the student is graded 0 and shown the Docker error
+- Unit: T7
+- Surface: `/courses/:c/exercises/:ce` (student), Automaatkontroll panel, light, 1440×900, et
+- Norm: errors say what happened and how to fix it, in the interface's voice, and never blame the
+  reader for something they did not do (source 5)
+- Class: journey + copy
+- Severity: **high**
+- Reach: every student affected by any grader outage — and by construction that is many students at
+  once, since infrastructure fails for a whole cohort rather than one person
+- Verdict: CONFIRMED
+- What happens: two failure shapes, both rendered as though they were the assessment.
+  - **Feedback that is not `OK_V3` at all.** `parseOkV3` returns `null`, `tests` becomes `[]`, and the
+    raw string is printed in a monospace panel under the heading **Automaatkontroll** with **0 / 100**
+    beside it. Measured content reaching the student verbatim: `Traceback (most recent call last):`, a
+    `/usr/local/lib/python3.11/site-packages/tiivad/__init__.py` path, `RuntimeError: container image
+    tiivad:tsl-compose is missing scripts`, `docker: Error response from daemon: OCI runtime create
+    failed`, and `killed`. Nothing on screen says this is not about their program.
+  - **`pre_evaluate_error`.** The student gets an alert reading
+    `SyntaxError: invalid syntax (generated_0.py, line 3)` — a syntax error in the *teacher's generated
+    grading script*, named by a filename the student has never seen and cannot open, presented beside
+    their own code with a 0.
+  In both cases the sidebar status dot and the 0/100 make it read as a completed attempt that they
+  failed. This is review C2/F-019 confirmed on the student's screen rather than in the pipeline.
+- **Deliberately not a finding:** an `OK_V3` test whose `exception_message` carries the *student's own*
+  traceback renders it in full under "Erind", and that is right — a student debugging a `TypeError` in
+  their own code needs exactly that text. The distinction the fix has to preserve is whose stack trace
+  it is.
+- Instead: branch on it. When feedback does not parse as `OK_V3`, or when `pre_evaluate_error` is set,
+  the panel should say — in Estonian, in the app's voice — that the automatic check could not run, that
+  it is not the student's fault, and that the teacher has been notified; then keep the raw text behind
+  a "Details" disclosure for the teacher who will be asked about it. The grade display wants the same
+  treatment: 0/100 for an outage is a wrong statement about a student's work, and "not assessed" is the
+  honest one. Whether the attempt is *stored* as a 0 is a core question and belongs with the review
+  programme, but the UI should not assert it.
+- Evidence: `tests/audit/t7-student-sees-failure.mjs`, report
+  `tests/audit/reports/t7-student-sees-failure.json`, at `29271a61`; four failure shapes driven
+  through the real student view. Shot `t7-not-ok-v3-raw-container-output.png`
+- Register: not previously filed on the web side. Related to review **F-019**, which found raw
+  container output entering student-visible feedback; this is the other end of that pipe
 
 ---
 

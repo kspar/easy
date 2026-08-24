@@ -1,0 +1,51 @@
+[
+  {
+    "case": "ordinary FAIL (OK_V3)",
+    "mainLength": 435,
+    "text": "Kahe arvu summa Kirjuta programm, mis küsib kasutajalt kaks arvu ja väljastab nende summa. Näiteks kui kasutaja sisestab 2 ja 3, siis programm väljastab 5. Hinne: 50 / 100 lahendus.py 1 2 3 4 a = int(input()) b = int(input()) print(a + b) Esita ja kontrolli Automaatkontroll 50 / 100 Programm küsib kaks arvu Programm töötab ka negatiivsete arvudega Ootasin väljundis stringi \"-2\", aga seda ei leidnud. Väljund 6 Varasemad esitused (1)",
+    "showsTraceback": false,
+    "showsKilled": false,
+    "alerts": [
+      "Hinne: 50 / 100"
+    ],
+    "accordions": 3,
+    "preBlocks": 0
+  },
+  {
+    "case": "student exception (OK_V3)",
+    "mainLength": 485,
+    "text": "Kahe arvu summa Kirjuta programm, mis küsib kasutajalt kaks arvu ja väljastab nende summa. Näiteks kui kasutaja sisestab 2 ja 3, siis programm väljastab 5. Hinne: 0 / 100 lahendus.py 1 2 3 4 a = int(input()) b = int(input()) print(a + b) Esita ja kontrolli Automaatkontroll 0 / 100 Programm küsib kaks arvu Erind Traceback (most recent call last): File \"lahendus.py\", line 3, in <module> print(a + b) TypeError: unsupported operand type(s) for +: 'int' and 'str' Varasemad esitused (1)",
+    "showsTraceback": true,
+    "showsKilled": false,
+    "alerts": [
+      "Hinne: 0 / 100"
+    ],
+    "accordions": 2,
+    "preBlocks": 0
+  },
+  {
+    "case": "pre_evaluate_error (OK_V3, no tests)",
+    "mainLength": 357,
+    "text": "Kahe arvu summa Kirjuta programm, mis küsib kasutajalt kaks arvu ja väljastab nende summa. Näiteks kui kasutaja sisestab 2 ja 3, siis programm väljastab 5. Hinne: 0 / 100 lahendus.py 1 2 3 4 a = int(input()) b = int(input()) print(a + b) Esita ja kontrolli Automaatkontroll 0 / 100 SyntaxError: invalid syntax (generated_0.py, line 3) Varasemad esitused (1)",
+    "showsTraceback": false,
+    "showsKilled": false,
+    "alerts": [
+      "Hinne: 0 / 100",
+      "SyntaxError: invalid syntax (generated_0.py, line 3)"
+    ],
+    "accordions": 1,
+    "preBlocks": 1
+  },
+  {
+    "case": "NOT OK_V3 — raw container output",
+    "mainLength": 640,
+    "text": "Kahe arvu summa Kirjuta programm, mis küsib kasutajalt kaks arvu ja väljastab nende summa. Näiteks kui kasutaja sisestab 2 ja 3, siis programm väljastab 5. Hinne: 0 / 100 lahendus.py 1 2 3 4 a = int(input()) b = int(input()) print(a + b) Esita ja kontrolli Automaatkontroll 0 / 100 Traceback (most recent call last): File \"/usr/local/lib/python3.11/site-packages/tiivad/__init__.py\", line 12, in <module> raise RuntimeError('container image tiivad:tsl-compose is missing scripts') RuntimeError: container image tiivad:tsl-compose is missing scripts docker: Error response from daemon: OCI runtime create failed killed Varasemad esitused (1)",
+    "showsTraceback": true,
+    "showsKilled": true,
+    "alerts": [
+      "Hinne: 0 / 100"
+    ],
+    "accordions": 1,
+    "preBlocks": 0
+  }
+]
