@@ -70,7 +70,7 @@ finishes or it goes back to `todo`.
 | J3 | Teacher: course lifecycle | todo | — | |
 | J4 | Teacher: exercise authoring | todo | — | EZ-1732 (math no longer renders) is the one to check first |
 | J5 | Teacher: putting an exercise on a course | todo | — | |
-| J6 | Teacher: grading | **in progress** 2026-08-24 `06ddddf0` | X-030, X-031; R-011 | The workflow is **better than the plan assumed** — R-011 refutes the punishing-path lead: one-click prev/next between students, and a roster carrying "3 hindamata" / "2 / 6 hinnatud" counts. Findings: the two student-navigation chevrons are the only unlabelled icon buttons among nine in the view (X-030), and F-035's consequence is now executed — grade saved, grade table still shows "–" on return, exact key mismatch identified (X-031). **Remaining before `done`:** `AnnotatedCodeEditor`'s inline comments (871 lines) and `ActivityFeed` + `PreviousSubmissions` inherited from J1. **Fixture note that cost two runs:** the grading pane needs `/submissions/all/students/{id}` stubbed or it renders "Esitamata" and proves nothing; and the cache test must navigate client-side — one `goto()` wipes the cache under test |
+| J6 | Teacher: grading | **done `b3e0a832`** (2026-08-24) | X-030, X-031; R-011, R-012 | 5 candidates, 2 kept, 2 refuted (one lead absorbed into X-031). The flow is **better than the plan assumed**: one-click prev/next between students, a roster with "3 hindamata" / "2 / 6 hinnatud" counts (R-011), a GitHub-style `+` comment gutter, and the full conversation — inline comment, feedback, grade, teacher's name — reaching both seats (R-012). Kept: the two navigation chevrons are the only unlabelled icon buttons of nine (X-030), and grading leaves the grade table stale, executed end to end with the exact key mismatch (X-031). **Fixture notes:** stub `/submissions/all/students/{id}` or the pane renders "Esitamata"; cache tests must navigate client-side; hover affordances toggle CSS classes, not DOM nodes |
 | J7 | Teacher: roster & groups | todo | — | Largest file in the repo; V3 will want its notes |
 | J8 | Teacher: results out | todo | — | |
 | J9 | Admin | todo | — | Re-map first: EZ-1786 changed the admin surface at `df7244af` |
@@ -1211,6 +1211,15 @@ scale, not a contradiction: small interactive things are less round than the pan
 sub-claims also died: the numbers 8 and 12 inside `styleOverrides` are raw CSS, not `sx` multiples, so
 they mean 8px and 12px as written; and the only oddity measured was a single `9px` Box, which is not
 worth a line. Radius is one of the more coherent things about this theme.
+
+`R-012` — **There is no visible way for a teacher to add an inline comment on a line of code.** There
+is: `AnnotatedCodeEditor` renders a dedicated 28px `.cm-add-comment-gutter` column, and hovering it
+reveals a `+` marker per line (`gutter-hovered`, measured `{text: "+", visible: true}`) — the
+GitHub-review pattern. The first measurement counted DOM nodes across a hover and saw Δ0, because the
+markers exist permanently and are revealed by a CSS class; node-counting is structurally blind to
+class toggles. Also verified in the same unit: the whole conversation pipe works — an inline comment,
+written teacher feedback, the grade and the teacher's name all reach the student's view, and the
+teacher's feed shows the same. The grading conversation is in good shape.
 
 `R-011` — **Grading a cohort is a punishing path: there is no way to reach the next student except
 back through the roster, so thirty submissions is thirty round trips.** Refuted twice over. The
