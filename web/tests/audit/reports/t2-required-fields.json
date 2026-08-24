@@ -1,0 +1,30 @@
+[
+  {
+    "case": "required functionName left blank",
+    "fieldsMarkedError": 3,
+    "errorFieldLabels": [
+      "Funktsiooni nimi *",
+      "Funktsiooni nimi *",
+      "Funktsiooni nimi *"
+    ],
+    "requiredAsterisks": 1,
+    "saveDisabled": false,
+    "warningColouredElements": 0,
+    "warningText": [],
+    "compilerAccepts": true,
+    "compilerFeedback": null
+  },
+  {
+    "case": "class-instance check that compares nothing",
+    "fieldsMarkedError": 0,
+    "errorFieldLabels": [],
+    "requiredAsterisks": 1,
+    "saveDisabled": false,
+    "warningColouredElements": 1,
+    "warningText": [
+      "Kui mõlemad on märkimata, ei kontrolli see midagi ja läbitakse alati."
+    ],
+    "compilerAccepts": true,
+    "compilerFeedback": null
+  }
+]

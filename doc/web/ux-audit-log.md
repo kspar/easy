@@ -80,7 +80,7 @@ finishes or it goes back to `todo`.
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
 | T1 | Entry & first run | **in progress** 2026-08-23 `278d1ee1` | X-015, X-016 | The empty-`tsl.json` lead is **confirmed by execution**: `{"tsl_spec":"","format":"JSON"}` is sent unprompted and Save is disabled. **Remaining before `done`:** what the 12-item preset menu teaches a teacher who has never seen TSL (and its labels disagreeing with the type `Select`'s — "Run the program" vs "Program execution test"), EZ-1734's hardcoded container dropdown, and the read-only view of an existing TSL exercise as a non-owner. **For T6:** the builder gets ~700px of a 1440px viewport because the left half is a static preview card that does not collapse |
-| T2 | The test forms | todo | — | |
+| T2 | The test forms | **in progress** 2026-08-24 `72b18060` | X-027 | The enforcement question is settled at all three layers: required fields are marked, not gated, and accepted by the compiler (X-027) — and the one place the builder warns properly (the class-instance "checks nothing" caption) is the model any fix should copy. Nesting comprehensibility was answered by T6's R-008: it reads correctly even at 390px. **Remaining before `done`:** a per-type read of the nine body components in `TslTestBody` against a teacher's vocabulary rather than the model's — X-024 found one label collision by accident, so a deliberate pass is likely to find more; plus `RawBody`'s unknown-type fallback and the `Veateated` error-message expander |
 | T3 | Model vs compiler | **in progress** 2026-08-23 `9dbe8dd1` | X-019, X-020; R-007 | The reverse direction is done — nine specs against the real compiler establish that six capabilities work and are unreachable from any form (X-019), and that duplicate ids compile (X-020). R-007 is the near-miss worth reading. **Remaining before `done`:** the forward direction beyond what `library-exercise-tsl-live.spec.mjs` already covers — fields the UI *emits* that the compiler ignores (`definitionCheckValue`, `class_instance_test.className`, the forced `containsWhatArg: 'import'`), and the validation tiivad performs at grading time that neither side surfaces. Leads in hand — the compiler emits its own Estonian default test name into the generated script while the UI derives its own from `testDefaultName`, so one string has two sources; and `emptySpec()` hardcodes `requiredFiles: ['lahendus.py']` rather than reading `solution_file_name` (see X-015) |
 | T4 | The feedback loop | **in progress** 2026-08-24 `c9cb3cdb` | X-018, X-023, X-024 | The unit's central question is answered, and the answer is no: nothing reports that a test cannot fail, and the first preset in the menu produces exactly that (X-023). Error messages are kotlinx diagnostics verbatim (X-018). Two menu items are byte-identical in Estonian (X-024). **Remaining before `done`:** the `Generated scripts` tab judged as a preview in its own right — it shows Python, and whether any teacher can read it is the question — and the Testimine round trip end to end, which needs a real grading run and therefore a **write** to core, so ask before doing it. Note the compiler reports `backend_version: "?.?.?"`, which the UI shows verbatim in its synthetic `meta.txt` |
 | T5 | State, persistence, escape | **done `fbd7a43e`** (2026-08-24) | X-017, X-021, X-022 | 4 candidates, 4 kept, and every one settled by execution with a control. The router guard is critical (X-017); destructive edits are unconfirmed and unrecoverable (X-021); an invalid spec locks Save even after the exercise stops being TSL (X-022). Two method notes for later units: observe the spec through the **debounced compile payload**, not the JSON tab — the payload is the app's own serialisation and survives the card collapsing; and `{dirs: [], exercises: []}` is **not** `LibraryDirResp`'s shape and crashes `ExerciseLibraryPage.tsx:106`, so look the response up before stubbing the library list |
@@ -1013,6 +1013,42 @@ Template:
   through the real student view. Shot `t7-not-ok-v3-raw-container-output.png`
 - Register: not previously filed on the web side. Related to review **F-019**, which found raw
   container output entering student-visible feedback; this is the other end of that pipe
+
+### X-027 "Required" in the TSL builder is decoration — nothing enforces it, and a student finds out
+- Unit: T2
+- Surface: `/library/exercise/:id` → Automaatkontroll → a test card, editing (teacher), et
+- Norm: platform — a field marked required is enforced, or it is not marked required (source 5); and
+  the app's own `isAutoAssessValid`, which *does* gate Save on three other fields (source 2)
+- Class: journey + correctness
+- Severity: **high**
+- Reach: every required field in the builder — `functionName` on function-execution and function-is
+  tests, `className` on class-instance tests, and the scope-implied name on all four static types
+- Verdict: CONFIRMED at all three layers
+- What happens: a `function_execution_test` with `functionName: ''` — the field the form itself marks
+  required — renders exactly as it should: an asterisk on the label *Funktsiooni nimi \**, and three
+  elements carrying `Mui-error`, so the field is visibly red. Then:
+  - **Save is enabled.** `saveDisabled: false`. `isAutoAssessValid` gates only `solutionFileName`,
+    `maxTimeSec` and `maxMemMb`; the red field is not consulted.
+  - **The real compiler accepts it.** `feedback: null`, scripts emitted. `functionName` is a
+    non-nullable `String` in Kotlin and `""` satisfies that.
+  So a teacher can save the exercise, put it on a course, and nothing has objected. tiivad is the first
+  thing that will care, at grading time — which is where **X-026** showed the student gets raw output
+  and a zero. Three findings, one story: the form knows, the app does not enforce, and the person who
+  discovers it is a student.
+- **The app already has the right pattern, in one place.** A class-instance check with both checkboxes
+  off draws an orange caption in `warning.main`: *"Kui mõlemad on märkimata, ei kontrolli see midagi ja
+  läbitakse alati."* Correct severity, correct voice, correct colour — and it is the only instance. So
+  the fix is not a new mechanism, it is applying this one consistently.
+- Instead: two tiers, and they are different judgements. A blank *required* field should **gate Save**,
+  the way the three `isAutoAssessValid` fields already do — the red outline is already computed, so this
+  is wiring an existing signal into an existing gate. A test that is merely *pointless* (no checks,
+  X-023; a check comparing nothing) should **warn** in the class-instance caption's style and still
+  save, because a teacher may be part-way through. The distinction to hold is broken-versus-unfinished:
+  today both are silent.
+- Evidence: `tests/audit/t2-required-fields.mjs`, report `tests/audit/reports/t2-required-fields.json`,
+  at `72b18060`; UI state read from the DOM, compiler verdict from the real core. Shots
+  `t2-required-functionname-left-blank.png`, `t2-class-instance-check-that-compares-nothing.png`
+- Register: not previously filed
 
 ---
 
