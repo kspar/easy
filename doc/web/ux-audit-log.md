@@ -70,7 +70,7 @@ finishes or it goes back to `todo`.
 | J3 | Teacher: course lifecycle | todo | — | |
 | J4 | Teacher: exercise authoring | todo | — | EZ-1732 (math no longer renders) is the one to check first |
 | J5 | Teacher: putting an exercise on a course | todo | — | |
-| J6 | Teacher: grading | **in progress** 2026-08-24 `a47bda36` | X-030; R-011 | The workflow is **better than the plan assumed** — R-011 refutes the punishing-path lead: one-click prev/next between students, and a roster carrying "3 hindamata" / "2 / 6 hinnatud" counts. The finding is that the two student-navigation chevrons are the only unlabelled icon buttons among nine in the view (X-030). **Remaining before `done`:** actually saving a grade and checking F-035's consequence on this page as well as the grade table; `AnnotatedCodeEditor`'s inline comments (871 lines, the most complex thing in the flow); and `ActivityFeed` plus `PreviousSubmissions`, inherited from J1. **Fixture note that cost two runs:** the grading pane needs `/submissions/all/students/{id}` stubbed or it renders "Esitamata" and proves nothing |
+| J6 | Teacher: grading | **in progress** 2026-08-24 `06ddddf0` | X-030, X-031; R-011 | The workflow is **better than the plan assumed** — R-011 refutes the punishing-path lead: one-click prev/next between students, and a roster carrying "3 hindamata" / "2 / 6 hinnatud" counts. Findings: the two student-navigation chevrons are the only unlabelled icon buttons among nine in the view (X-030), and F-035's consequence is now executed — grade saved, grade table still shows "–" on return, exact key mismatch identified (X-031). **Remaining before `done`:** `AnnotatedCodeEditor`'s inline comments (871 lines) and `ActivityFeed` + `PreviousSubmissions` inherited from J1. **Fixture note that cost two runs:** the grading pane needs `/submissions/all/students/{id}` stubbed or it renders "Esitamata" and proves nothing; and the cache test must navigate client-side — one `goto()` wipes the cache under test |
 | J7 | Teacher: roster & groups | todo | — | Largest file in the repo; V3 will want its notes |
 | J8 | Teacher: results out | todo | — | |
 | J9 | Admin | todo | — | Re-map first: EZ-1786 changed the admin surface at `df7244af` |
@@ -1129,6 +1129,33 @@ Template:
 - Register: not previously filed. Same class as X-002/X-003/X-010 — this programme has now found
   icon-only controls without names on four separate surfaces, which argues for the sweep C5 proposes
   rather than four separate fixes
+
+### X-031 Grade a student, open the grade table: the student still shows as ungraded
+- Unit: J6
+- Surface: `/courses/:c/exercises/:ce` (grading) → sidebar → `/courses/:c/grades`, teacher, et
+- Norm: the button that says Salvesta produces a table that says saved (source 5); review F-035 is the
+  mechanism, already CONFIRMED — this is its user-visible consequence, driven end to end
+- Class: journey + correctness
+- Severity: high
+- Reach: every grading session that touches the grade table afterwards — checking progress after
+  grading is the natural next step, so most of them
+- Verdict: CONFIRMED by execution
+- What happens: the exact sequence a teacher performs. (1) Open Hinded — Anna shows "–". (2) Navigate
+  client-side to the exercise, open Anna, enter 77, Salvesta — the POST lands, the server now holds 77.
+  (3) Sidebar → Hinded, seconds later. **The table still shows "–".** Measured: the exercises-list
+  endpoint was fetched three times, all before the POST; the return to the table triggered **no
+  fetch** — react-query served the cached copy (`staleTime: 30_000`), and `usePostGrade` invalidates
+  `['teacher','courses',c,'exercises',ce]` while the table's key is
+  `['teacher','courses',c,'exercises',{groupId}]` — a string never prefix-matches an object, so the
+  cache was never marked stale.
+- Instead: one line in `usePostGrade` (and `usePostFeedback`): invalidate
+  `['teacher','courses',c,'exercises']` — the parent prefix — or add the table's exact key. E4 already
+  noted the CSV reads the same query, so the export inherits the fix.
+- Evidence: `tests/audit/j6b-grade-then-gradetable.mjs`, report
+  `tests/audit/reports/j6b-grade-then-gradetable.json`, at `06ddddf0`. Shots `j6b-1-table-before.png`,
+  `j6b-3-table-after.png`
+- Register: review **F-035** (mechanism, confirmed there by reading). This adds the executed
+  user-visible proof and the exact key mismatch
 
 ---
 
