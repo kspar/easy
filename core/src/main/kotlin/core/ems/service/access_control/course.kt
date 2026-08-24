@@ -49,18 +49,28 @@ fun AccessChecksBuilder.studentOnCourse(courseId: Long) = add { caller: EasyUser
 
 /**
  * Can access this course and this exercise is on that course (can be hidden).
+ *
+ * Two questions, split along the seam that decides which one is role-dependent. *Who may look* at a
+ * course varies by role — an admin always, a teacher only with access, a student not at all. Whether
+ * a `(exercise, course)` pair is *coherent* — the exercise is actually on that course — is a fact
+ * about the objects, the same for everyone, so it runs unconditionally after the role gate.
+ *
+ * The admin arm used to be an empty `{}`, which skipped both halves for an admin: its two sibling
+ * rules in this file each assert `assertCourseExists` for an admin, and this one asserted nothing.
+ * That was harmless only because the rule's sole caller (`TeacherAutoassess`) never used `courseId`
+ * again and an admin reaches the exercise by another path anyway — a contingency, not a guarantee,
+ * and one an 85% coverage gate on this package could not see, since an empty branch body counts as
+ * covered. `assertExerciseIsOnCourse` is the stronger check that its siblings' `assertCourseExists`
+ * approximates: an exercise cannot be on a course that does not exist, so this subsumes existence
+ * rather than needing a separate query.
  */
 fun AccessChecksBuilder.exerciseViaCourse(exerciseId: Long, courseId: Long) = add { caller: EasyUser ->
     when {
         caller.isAdmin() -> {}
-
-        caller.isTeacher() -> {
-            assertTeacherCanAccessCourse(caller.id, courseId)
-            assertExerciseIsOnCourse(exerciseId, courseId)
-        }
-
+        caller.isTeacher() -> assertTeacherCanAccessCourse(caller.id, courseId)
         else -> throw ForbiddenException("Role not allowed", ReqError.ROLE_NOT_ALLOWED)
     }
+    assertExerciseIsOnCourse(exerciseId, courseId)
 }
 
 fun assertCourseExerciseIsOnCourse(

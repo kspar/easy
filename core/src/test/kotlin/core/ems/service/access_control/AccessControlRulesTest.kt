@@ -267,6 +267,24 @@ class AccessControlRulesTest {
         }
     }
 
+    @Test
+    fun `an admin is still bound by the exercise being on the course`() {
+        // The admin arm used to be an empty `{}`, so this whole test had nothing to catch: an admin
+        // passed for any pair of ids, coherent or not. The coherence half of the rule is not a
+        // permission and does not get a role bypass — an exercise that is not on the named course is
+        // not on it, whoever is asking.
+        asAdmin().assertAccess { exerciseViaCourse(exerciseId, courseId) }
+
+        // The pair the empty branch used to wave through. Same shape as the teacher cases above,
+        // which is the point: the check no longer depends on who is asking.
+        assertThrows(ForbiddenException::class.java) {
+            asAdmin().assertAccess { exerciseViaCourse(exerciseId, otherCourseId) }
+        }
+        assertThrows(ForbiddenException::class.java) {
+            asAdmin().assertAccess { exerciseViaCourse(999_999, courseId) }
+        }
+    }
+
     // --- the public surface ----------------------------------------------------------------
 
     /**
