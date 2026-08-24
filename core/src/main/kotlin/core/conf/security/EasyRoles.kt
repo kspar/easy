@@ -55,11 +55,34 @@ enum class EasyRole(val roleWithPrefix: String) {
 }
 
 /**
- * Roles arrive as a JSON array in the `easy_role` JWT claim, but as a comma-separated string
- * in the `oidc_claim_easy_role` header the auth-disabled dev path uses.
+ * The one place claim text becomes a list of role names.
+ *
+ * Roles arrive in two shapes — a JSON array in the `easy_role` JWT claim, and a comma-separated
+ * string in the `oidc_claim_easy_role` header the auth-disabled dev path uses — and each shape used
+ * to be parsed by its own code. They disagreed: the header split on comma, the JWT single-string
+ * fallback wrapped the whole value as one role, so a realm emitting `easy_role: "student,teacher"`
+ * as one string was rejected in production and accepted in dev. Neither trimmed, so `student, teacher`
+ * in a header threw out of a filter that does not catch, i.e. a 500.
+ *
+ * So: every element may itself be a comma-separated list, whitespace around a separator is not part
+ * of a role, and both callers come through here. `RoleParsingTest.bothPathsAgree` is what keeps them
+ * from drifting apart again.
+ *
+ * **Dropping an empty fragment is not the same as dropping a role**, which matters because
+ * [mapRoleStringsToRoles] deliberately throws rather than ignoring what it cannot map. A trailing
+ * comma is an artefact of the separator and carries no claim about what the user may do; `wizard` is a
+ * claim we cannot honour and still fails. A value that normalises to nothing returns an empty list,
+ * which is what lets [EasyUserJwtConverter] report an empty `easy_role` rather than blaming a role
+ * named `""`.
  */
+fun normaliseRoleStrings(roleStrings: List<String>): List<String> =
+    roleStrings.flatMap { it.split(",") }
+        .map(String::trim)
+        .filter { it.isNotEmpty() }
+
+/** The dev header's shape: one comma-separated string. See [normaliseRoleStrings]. */
 fun mapHeaderToRoles(rolesHeader: String): Set<EasyGrantedAuthority> =
-    mapRoleStringsToRoles(rolesHeader.split(","))
+    mapRoleStringsToRoles(normaliseRoleStrings(listOf(rolesHeader)))
 
 /**
  * Throws on an unrecognised role rather than dropping it: a role we cannot map is a Keycloak

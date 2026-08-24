@@ -31,8 +31,15 @@ class EasyUserJwtConverter : Converter<Jwt, AbstractAuthenticationToken> {
         val email = jwt.getClaimAsString("email")
         // Keycloak sends easy_role as an array. getClaimAsStringList returns null for a
         // single-string claim, so fall back rather than lock out a user over realm config.
-        val roleStrings = jwt.getClaimAsStringList("easy_role")
-            ?: jwt.getClaimAsString("easy_role")?.let { listOf(it) }
+        //
+        // Normalised before the guard below, not after, and that order is the point: a single string
+        // may carry several comma-separated roles (which this path used to wrap as one unmappable
+        // role), and a claim of `""` normalises to nothing — so the emptiness check has to see the
+        // normalised list or it would pass a one-element list of blank through and reintroduce the
+        // authenticated-with-no-authorities principal. See normaliseRoleStrings.
+        val roleStrings = (jwt.getClaimAsStringList("easy_role")
+            ?: jwt.getClaimAsString("easy_role")?.let { listOf(it) })
+            ?.let { normaliseRoleStrings(it) }
 
         // `isNullOrEmpty` and not `== null` for the roles: `easy_role: []` is a claim that is present
         // and carries nothing, which used to survive this guard and produce an authenticated principal

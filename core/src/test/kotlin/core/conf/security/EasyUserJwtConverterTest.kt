@@ -113,15 +113,35 @@ class EasyUserJwtConverterTest {
     }
 
     @Test
-    fun `an easy_role of one empty string was already refused, by the role mapper`() {
-        // Adjacent shape, different path: `getClaimAsStringList` returns null for a non-list claim, so
-        // this goes through the bare-string fallback and arrives as `listOf("")`, which the mapper
-        // rejects as unmapped. Pinned because the fix above is in the guard and this case never
-        // reaches it — if the fallback ever stops producing a single-element list, this is the test
-        // that notices.
-        assertThrows(InvalidBearerTokenException::class.java) {
-            converter.convert(jwt(fullClaims + ("easy_role" to "")))
-        }
+    fun `an easy_role of one empty string is refused the same way an empty array is`() {
+        // Adjacent shape, and it reaches the same place by a longer route: `getClaimAsStringList`
+        // returns null for a non-list claim, so this takes the bare-string fallback, and
+        // normalisation turns `""` into nothing at all — so the guard above sees an empty list and
+        // says so. It used to arrive as `listOf("")` and be refused by the role mapper instead, with
+        // "unmapped role ''", which blamed a role name nobody had written.
+        assertRejects(fullClaims + ("easy_role" to ""), "easy_role")
+    }
+
+    @Test
+    fun `a comma-separated easy_role string is several roles, as it always was in a dev header`() {
+        // The asymmetry. A realm whose mapper emits the roles joined into one string used to get 401
+        // "unmapped role student,teacher" here, while the identical value in `oidc_claim_easy_role`
+        // authenticated as two roles. See RoleParsingTest.bothPathsAgree.
+        val user = converter.convert(jwt(fullClaims + ("easy_role" to "student,teacher"))) as EasyUser
+        assertEquals(setOf("ROLE_STUDENT", "ROLE_TEACHER"), user.authorities.map { it.authority }.toSet())
+    }
+
+    @Test
+    fun `whitespace around a comma in easy_role is not part of the role`() {
+        val user = converter.convert(jwt(fullClaims + ("easy_role" to "student, teacher"))) as EasyUser
+        assertEquals(setOf("ROLE_STUDENT", "ROLE_TEACHER"), user.authorities.map { it.authority }.toSet())
+    }
+
+    @Test
+    fun `whitespace inside an easy_role array element is not part of the role either`() {
+        // The array is the production shape and had no normalisation at all.
+        val user = converter.convert(jwt(fullClaims + ("easy_role" to listOf("student", " teacher")))) as EasyUser
+        assertEquals(setOf("ROLE_STUDENT", "ROLE_TEACHER"), user.authorities.map { it.authority }.toSet())
     }
 
     @Test
