@@ -179,11 +179,19 @@ class SecurityConf {
             .cors { it.configurationSource(getCorsConfiguration()) }
             .csrf { it.disable() }.build()
 
-    @Bean
-    @Throws(Exception::class)
-    fun authenticationManager(authenticationConfiguration: AuthenticationConfiguration): AuthenticationManager? {
-        return authenticationConfiguration.getAuthenticationManager()
-    }
+    // There was an `authenticationManager` bean here, and an `EasyUserAuthProvider` beside it whose
+    // `authenticate` did `isAuthenticated = authorities.isNotEmpty()`. Both are gone, and the second
+    // is the one worth a note: that line was the only statement anywhere that a principal with no
+    // roles is not authenticated, and it never ran. Nothing invoked the global manager — the
+    // `oauth2ResourceServer { jwt }` DSL builds its own provider for `BearerTokenAuthenticationToken`,
+    // which the provider's `supports()` would have rejected anyway, and DummyZeroAuthFilter writes the
+    // SecurityContext directly.
+    //
+    // Deleted rather than wired up, because wiring it up would have been a bug: Spring Security 7
+    // requires `isAuthenticated() == true`, which is why [EasyUser] sets it unconditionally, so a
+    // provider that set it to false for an empty role set would reject the user outright. The real
+    // handling of "no roles" is in [EasyUserJwtConverter], which refuses the token — one statement of
+    // the rule instead of one live and one decorative.
 
     // There was an `HttpFirewall` bean here that did `setAllowedHeaderValues { true }`, turning
     // Spring's header-value validation off for every request in every environment. It was labelled a

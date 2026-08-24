@@ -98,6 +98,33 @@ class EasyUserJwtConverterTest {
     }
 
     @Test
+    fun `rejects an empty easy_role array, which is not the same as an absent one`() {
+        // The gap the null check leaves. `easy_role: []` is not null, so it passed the guard above,
+        // `mapRoleStringsToRoles(emptyList())` returned an empty set without throwing, and
+        // `EasyUser.init` then marked the token authenticated — an authenticated principal with zero
+        // authorities, which clears `anyRequest().authenticated()` and is refused 403 by every
+        // `@Secured` method.
+        //
+        // That is the outcome this class's own docblock says it exists to avoid: a token from our IdP
+        // carrying nothing usable means the realm's claim mappers are misconfigured, and "invalid
+        // token" says so where a 403 three layers later does not. It also puts the empty array with
+        // its siblings — an absent claim and an unmappable role are both already 401.
+        assertRejects(fullClaims + ("easy_role" to emptyList<String>()), "easy_role")
+    }
+
+    @Test
+    fun `an easy_role of one empty string was already refused, by the role mapper`() {
+        // Adjacent shape, different path: `getClaimAsStringList` returns null for a non-list claim, so
+        // this goes through the bare-string fallback and arrives as `listOf("")`, which the mapper
+        // rejects as unmapped. Pinned because the fix above is in the guard and this case never
+        // reaches it — if the fallback ever stops producing a single-element list, this is the test
+        // that notices.
+        assertThrows(InvalidBearerTokenException::class.java) {
+            converter.convert(jwt(fullClaims + ("easy_role" to "")))
+        }
+    }
+
+    @Test
     fun `names every missing claim at once, rather than only the first`() {
         val e = assertThrows(InvalidBearerTokenException::class.java) {
             converter.convert(jwt(fullClaims - "email" - "easy_role"))

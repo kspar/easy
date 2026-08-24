@@ -21,7 +21,8 @@ private val log = KotlinLogging.logger {}
  * A verified token missing the claims we need is rejected as an invalid token (401), not
  * treated as an anonymous request: the signature proves it came from our IdP, so absent
  * claims mean the realm's claim mappers are misconfigured and saying so is more useful than
- * a confusing 403 later on.
+ * a confusing 403 later on. An `easy_role` that is present but **empty** counts as missing,
+ * for the same reason — see the guard below.
  */
 class EasyUserJwtConverter : Converter<Jwt, AbstractAuthenticationToken> {
 
@@ -33,14 +34,19 @@ class EasyUserJwtConverter : Converter<Jwt, AbstractAuthenticationToken> {
         val roleStrings = jwt.getClaimAsStringList("easy_role")
             ?: jwt.getClaimAsString("easy_role")?.let { listOf(it) }
 
-        if (username == null || email == null || roleStrings == null) {
+        // `isNullOrEmpty` and not `== null` for the roles: `easy_role: []` is a claim that is present
+        // and carries nothing, which used to survive this guard and produce an authenticated principal
+        // with zero authorities — refused 403 by every `@Secured` method, i.e. exactly the confusing
+        // outcome the docblock above says this rejection exists to avoid. An empty array is the realm
+        // saying the user has no role, which is the same misconfiguration as not saying anything.
+        if (username == null || email == null || roleStrings.isNullOrEmpty()) {
             val missing = buildList {
                 if (username == null) add("preferred_username")
                 if (email == null) add("email")
-                if (roleStrings == null) add("easy_role")
+                if (roleStrings.isNullOrEmpty()) add("easy_role")
             }
-            log.warn { "Token for '${jwt.subject}' is missing required claims: $missing" }
-            throw InvalidBearerTokenException("Token is missing required claims: $missing")
+            log.warn { "Token for '${jwt.subject}' has missing or empty required claims: $missing" }
+            throw InvalidBearerTokenException("Token has missing or empty required claims: $missing")
         }
 
         val roles = try {
