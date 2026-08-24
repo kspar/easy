@@ -83,7 +83,7 @@ finishes or it goes back to `todo`.
 | T2 | The test forms | todo | — | |
 | T3 | Model vs compiler | **in progress** 2026-08-23 `9dbe8dd1` | X-019, X-020; R-007 | The reverse direction is done — nine specs against the real compiler establish that six capabilities work and are unreachable from any form (X-019), and that duplicate ids compile (X-020). R-007 is the near-miss worth reading. **Remaining before `done`:** the forward direction beyond what `library-exercise-tsl-live.spec.mjs` already covers — fields the UI *emits* that the compiler ignores (`definitionCheckValue`, `class_instance_test.className`, the forced `containsWhatArg: 'import'`), and the validation tiivad performs at grading time that neither side surfaces. Leads in hand — the compiler emits its own Estonian default test name into the generated script while the UI derives its own from `testDefaultName`, so one string has two sources; and `emptySpec()` hardcodes `requiredFiles: ['lahendus.py']` rather than reading `solution_file_name` (see X-015) |
 | T4 | The feedback loop | **in progress** 2026-08-23 `a8626fa4` | X-018 | The error-message half is done and confirmed against the real compiler: what reaches the teacher is kotlinx's developer diagnostic, verbatim. **Remaining before `done`:** whether a teacher can tell a *working* test set from a broken one before a student meets it — the `Generated scripts` tab as the only preview, the Testimine round trip (see X-016), and the two always-passing shapes nothing warns about. Note the compiler reports `backend_version: "?.?.?"`, which the UI shows in its synthetic `meta.txt` |
-| T5 | State, persistence, escape | **in progress** 2026-08-23 `108bdd1f` | X-017 | The router-navigation guard is **confirmed critical, with a control**: the breadcrumb destroys the draft silently while Cancel on the same state asks first. **Remaining before `done`:** the other three leads — switching a test's type discarding the whole body with no confirm, the absence of any model-level undo after deleting a test or check, and the stale `tslValid` flag leaving Save disabled after the container is switched away from TSL. The driver reaches all three but crashed on step 3; note also that `{dirs: [], exercises: []}` is **not** `LibraryDirResp`'s shape and crashes `ExerciseLibraryPage.tsx:106` — look the response up before re-running |
+| T5 | State, persistence, escape | **done `fbd7a43e`** (2026-08-24) | X-017, X-021, X-022 | 4 candidates, 4 kept, and every one settled by execution with a control. The router guard is critical (X-017); destructive edits are unconfirmed and unrecoverable (X-021); an invalid spec locks Save even after the exercise stops being TSL (X-022). Two method notes for later units: observe the spec through the **debounced compile payload**, not the JSON tab — the payload is the app's own serialisation and survives the card collapsing; and `{dirs: [], exercises: []}` is **not** `LibraryDirResp`'s shape and crashes `ExerciseLibraryPage.tsx:106`, so look the response up before stubbing the library list |
 | T6 | TSL under pressure | todo | — | Do after S1–S3 so the theme baseline exists |
 | T7 | The other end | todo | — | Read review F-019 first |
 
@@ -810,6 +810,71 @@ Template:
 - Evidence: `tests/audit/t3-model-vs-compiler.mjs` at `9dbe8dd1`
 - Register: not previously filed. Belongs with the review programme's F1 findings on the compiler
   rather than with the web ones; noted here because T3 is where it surfaced
+
+### X-021 Every destructive edit in the TSL builder is unconfirmed and unrecoverable
+- Unit: T5
+- Surface: `/library/exercise/:id` → Automaatkontroll → Testid, editing (teacher), et
+- Norm: platform — destructive actions confirm, or are undoable (source 5); and the app's own
+  `ConfirmDialog` and the `Cancel` guard, which show it knows how (source 2)
+- Class: journey
+- Severity: high
+- Reach: every TSL authoring session; the two actions are on the primary card controls
+- Verdict: CONFIRMED
+- What happens: two actions, both one click, both silent, neither reversible.
+  - **Changing a test's type discards the whole body.** Measured through the compile payload: a
+    `program_execution_test` carrying `standardInputData: ["2","3"]`, an input file and one output
+    check became a `function_execution_test` with `standardInputData: []` and zero checks. No
+    confirmation. The hand-set *name* survives — `changeType` keeps a non-default name deliberately —
+    which makes it worse, because the card still says "Minu käsitsi nimetatud test" while everything
+    under it is gone. A teacher who picked the wrong type first, filled it in, and then corrected the
+    type loses the lot.
+  - **Deleting a test asks nothing and offers no way back.** The kebab's Kustuta removes it, the spec
+    goes from one test to none, the empty state appears, and a sweep of every visible button and menu
+    item finds **no undo, restore or "tagasi" affordance anywhere**.
+  There is no model-level undo in the builder at all: the only history is CodeMirror's own, which lives
+  inside the JSON tab and the constructor-code fields and dies when those unmount on a tab switch.
+- Instead: these want different fixes, which is why they are one finding and not two patches. Deleting
+  a test is the classic case for **undo rather than confirm** — remove it, show "Test kustutatud ·
+  Võta tagasi" in the snackbar the app already mounts for bug reports, and keep the object for the
+  session. Changing a type is the case for **confirm**, and only when the body is non-empty: the
+  question "this will clear the fields you have filled in — continue?" is answerable, whereas an undo
+  after a type change leaves the UI in a state that is hard to describe. `ConfirmDialog` already
+  exists; it is under `features/participants/`, which is C3's finding.
+- Evidence: `tests/audit/t5b-tsl-state-rest.mjs` at `fbd7a43e`, observing the debounced compile
+  payloads rather than the JSON tab, so the before/after specs are the app's own serialisation. Shots
+  `t5b-A2-after-type-switch.png`, `t5b-B1-after-delete.png`
+- Register: not previously filed
+
+### X-022 An invalid spec locks Save permanently, even after the exercise stops being a TSL exercise
+- Unit: T5
+- Surface: `/library/exercise/:id` → Automaatkontroll, editing (teacher), et
+- Norm: a control that cannot be used must say why (source 5)
+- Class: correctness + journey
+- Severity: high — it is a dead end, and the only exits lose work
+- Reach: any TSL session where the spec is invalid at the moment the teacher changes their mind about
+  auto-assessment, which is exactly when they are most likely to
+- Verdict: CONFIRMED, **with a control**
+- What happens: break the JSON in the TSL tab and Save correctly disables. Then change
+  Automaatkontrolli tüüp to **–** (no auto-assessment at all): the TSL editor unmounts, the error alert
+  goes with it, there is no longer any TSL spec in play — and **Save stays disabled, with nothing on
+  screen explaining why.** `tslValid` is only ever written by `TslEditor`, so unmounting it leaves the
+  flag stuck at `false`, and `isAutoAssessValid` keeps failing. The teacher's only ways out are Cancel,
+  which discards everything, or going back to TSL to repair JSON they may not understand — to configure
+  a feature they have just decided not to use.
+  The control rules out the boring explanation: with the spec left **valid**, the identical sequence
+  leaves Save **enabled** after switching to –. So it is the stale flag, not the switch.
+- Instead: reset `tslValid` when the container stops being TSL — the same effect as treating a
+  non-TSL exercise as trivially valid. Better, since it removes the class rather than the instance:
+  derive validity from the current draft instead of latching it in state, so there is nothing to go
+  stale.
+- Evidence: `tests/audit/t5c-stale-tslvalid.mjs` at `fbd7a43e`, both arms. Note the first attempt at
+  this measured the *submission type* select instead of the auto-assessment one and produced a
+  meaningless pass — the driver now finds the select by its visible label. Shots `t5c-broken-*.png`,
+  `t5c-valid-*.png`.
+  Incidental confirmation for EZ-1734: the type options are exactly
+  `["–","TSL","Silmused PostgreSQL","Python Grader","Pildituvastus"]` — four hardcoded containers plus
+  none, with no reference to what any executor actually has
+- Register: not previously filed
 
 ---
 
