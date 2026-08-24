@@ -120,3 +120,18 @@ keycloak_gate_realm: "{{ keycloak_realm | default('master') }}"
 # /admin/master/console/*, and widening a built-in client to cover a page of ours would be a change
 # to Keycloak's own furniture for no benefit.
 keycloak_gate_client_id: idp-admin-gate
+
+# The JavaScript adapter, vendored next to the page rather than loaded from the server.
+#
+# Keycloak used to serve it at {{ keycloak_http_relative_path }}/js/keycloak.js. Keycloak 26 does
+# not: the adapter was split out into its own npm package on its own release cycle, and the endpoint
+# is simply gone — a 404, and a gate page that cannot run. The same release also removed the UMD
+# build, so it is no longer a `<script src>` that defines a global; it is an ES module and the page
+# imports it.
+#
+# Pinned and checksummed for the same reason the server is. The version tracks the adapter's own
+# releases, not the server's — 26.2.4 against a 26.7.2 server is expected, not drift — and it is the
+# same major.minor the SPA carries in web/package.json.
+keycloak_js_version: 26.2.4
+keycloak_js_url: "https://registry.npmjs.org/keycloak-js/-/keycloak-js-{{ keycloak_js_version }}.tgz"
+keycloak_js_sha256: 1e52998fd8f44dc15293df6af88f0bae57248e503617930067cb802ebe9665c9
