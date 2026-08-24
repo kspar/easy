@@ -1,0 +1,138 @@
+[
+  {
+    "case": "TEXT_UPLOAD submission type",
+    "before": {
+      "hasCodeMirror": true,
+      "hasFileInput": false,
+      "buttons": [
+        {
+          "label": "Konto menüü",
+          "disabled": false
+        },
+        {
+          "label": "Peida vasak paneel",
+          "disabled": false
+        },
+        {
+          "label": "Peida parem paneel",
+          "disabled": false
+        },
+        {
+          "label": "Rohkem valikuid",
+          "disabled": false
+        },
+        {
+          "label": "Esita ja kontrolli",
+          "disabled": false
+        }
+      ],
+      "alerts": [],
+      "text": "Kahe arvu summa Kirjuta programm, mis küsib kasutajalt kaks arvu ja väljastab nende summa. Näiteks kui kasutaja sisestab 2 ja 3, siis programm väljastab 5. lahendus.py 1 Kirjuta, kopeeri või lohista lahendus siia... Esita ja kontrolli"
+    },
+    "after": null,
+    "posted": false
+  },
+  {
+    "case": "closed exercise (is_open false)",
+    "before": {
+      "hasCodeMirror": true,
+      "hasFileInput": false,
+      "buttons": [
+        {
+          "label": "Konto menüü",
+          "disabled": false
+        },
+        {
+          "label": "Peida vasak paneel",
+          "disabled": false
+        },
+        {
+          "label": "Peida parem paneel",
+          "disabled": false
+        },
+        {
+          "label": "Rohkem valikuid",
+          "disabled": false
+        }
+      ],
+      "alerts": [],
+      "text": "Kahe arvu summa See ülesanne on suletud ja ei luba enam uusi esitusi Kirjuta programm, mis küsib kasutajalt kaks arvu ja väljastab nende summa. Näiteks kui kasutaja sisestab 2 ja 3, siis programm väljastab 5. lahendus.py 1 Kirjuta, kopeeri või lohista lahendus siia... "
+    },
+    "after": null,
+    "posted": false
+  },
+  {
+    "case": "deadline in the past, still open",
+    "before": {
+      "hasCodeMirror": true,
+      "hasFileInput": false,
+      "buttons": [
+        {
+          "label": "Konto menüü",
+          "disabled": false
+        },
+        {
+          "label": "Peida vasak paneel",
+          "disabled": false
+        },
+        {
+          "label": "Peida parem paneel",
+          "disabled": false
+        },
+        {
+          "label": "Rohkem valikuid",
+          "disabled": false
+        },
+        {
+          "label": "Esita ja kontrolli",
+          "disabled": false
+        }
+      ],
+      "alerts": [],
+      "text": "Kahe arvu summa Tähtaeg: 2. aug 2026. 02:59 Kirjuta programm, mis küsib kasutajalt kaks arvu ja väljastab nende summa. Näiteks kui kasutaja sisestab 2 ja 3, siis programm väljastab 5. lahendus.py 1 Kirjuta, kopeeri või lohista lahendus siia... Esita ja kontrolli"
+    },
+    "after": null,
+    "posted": false
+  },
+  {
+    "case": "teacher-graded — nothing will answer",
+    "before": {
+      "hasCodeMirror": true,
+      "hasFileInput": false,
+      "buttons": [
+        {
+          "label": "Konto menüü",
+          "disabled": false
+        },
+        {
+          "label": "Peida vasak paneel",
+          "disabled": false
+        },
+        {
+          "label": "Peida parem paneel",
+          "disabled": false
+        },
+        {
+          "label": "Rohkem valikuid",
+          "disabled": false
+        },
+        {
+          "label": "Esita",
+          "disabled": false
+        }
+      ],
+      "alerts": [],
+      "text": "Kahe arvu summa Kirjuta programm, mis küsib kasutajalt kaks arvu ja väljastab nende summa. Näiteks kui kasutaja sisestab 2 ja 3, siis programm väljastab 5. lahendus.py 1 Kirjuta, kopeeri või lohista lahendus siia... Esita"
+    },
+    "after": {
+      "snackbars": [
+        "Lahendus esitatud"
+      ],
+      "alerts": [
+        "Hinne: Hindamata"
+      ],
+      "text": "Kahe arvu summa Kirjuta programm, mis küsib kasutajalt kaks arvu ja väljastab nende summa. Näiteks kui kasutaja sisestab 2 ja 3, siis programm väljastab 5. Hinne: Hindamata lahendus.py 1 2 3 4 a = int(input()) b = int(input()) print(a + b) Esita Lahendus esitatud Varasemad esitused (1)"
+    },
+    "posted": true
+  }
+]

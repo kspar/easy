@@ -65,7 +65,7 @@ finishes or it goes back to `todo`.
 
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
-| J1 | Student core loop | **in progress** 2026-08-23 `bf673235` | X-001…X-006 | Core loop walked: `/courses` → list → exercise → type → submit → grader → result, plus the draft question and a graded-with-feedback state. **Remaining before `done`:** past-deadline and closed states, a `TEACHER`-graded exercise (no autograde path), `PreviousSubmissions` expanded, `ActivityFeed` from the student's seat in depth, and `solution_file_type: 'TEXT_UPLOAD'`, which is a different editor entirely |
+| J1 | Student core loop | **done `1bdd895c`** (2026-08-24) | X-001…X-008, X-028, X-029; R-009, R-010 | The loop and all four edge states walked. 12 candidates, 10 kept, 2 refuted — and both refutations were my own flawed measurements, which is the useful pattern here. The app handles the *closed* state well (R-010) and confirms teacher-graded submissions properly (R-009); what it does not do is honour `TEXT_UPLOAD` at all (X-028) or say that a deadline has passed (X-029). **Scope moved:** `ActivityFeed` and `PreviousSubmissions` in depth go to **J6**, which reads the same components from the teacher's seat — auditing them twice from two seats is the same read, and J6 is where the grading conversation lives |
 | J2 | Student periphery & the front door | todo | — | Pairs with S9 on the login handover |
 | J3 | Teacher: course lifecycle | todo | — | |
 | J4 | Teacher: exercise authoring | todo | — | EZ-1732 (math no longer renders) is the one to check first |
@@ -1050,6 +1050,57 @@ Template:
   `t2-required-functionname-left-blank.png`, `t2-class-instance-check-that-compares-nothing.png`
 - Register: not previously filed
 
+### X-028 Teachers can set the submission type to "File upload" and students get a text box
+- Unit: J1
+- Surface: `/library/exercise/:id` (teacher, the setting) → `/courses/:c/exercises/:ce` (student, the
+  consequence)
+- Norm: a setting that is offered is honoured, or it is not offered (source 5)
+- Class: journey
+- Severity: high — a teacher configuring an upload exercise gets no error and no upload
+- Reach: every exercise a teacher sets to `TEXT_UPLOAD`; unknown how many exist, and worth counting in
+  the database before triaging
+- Verdict: CONFIRMED
+- What happens: `AutoAssessTab.tsx:224` offers **Esitamise viis → "Faili üleslaadimine"** ("File
+  upload") as one of two options. `grep -rn TEXT_UPLOAD web/src` returns exactly **two** hits: that
+  `MenuItem`, and the `SolutionFileType` union in `api/types.ts`. **Nothing on the student side reads
+  `solution_file_type` at all.** Driven with `solution_file_type: 'TEXT_UPLOAD'`, the student page
+  renders a CodeMirror editor and **no `input[type=file]`** — identical to `TEXT_EDITOR`, with the
+  placeholder still reading *"Kirjuta, kopeeri või lohista lahendus siia…"*.
+  So a teacher sets up a file-upload exercise, sees it accepted, and their students are asked to paste
+  a file's contents into a text box. Nobody is told.
+- Instead: the honest short-term fix is to **remove the option** until the student half exists, since an
+  ignored setting is worse than an absent one — and to check what existing exercises carry the value.
+  If upload is wanted, it is a real feature and belongs in EZ as one; note `ExerciseDetails` already
+  ships `solution_file_type` to the client, so the contract is ready and only the UI is missing.
+- Evidence: `tests/audit/j1b-student-edge-states.mjs`, report
+  `tests/audit/reports/j1b-student-edge-states.json`, at `1bdd895c`; plus the two-hit grep. Shot
+  `j1b-text-upload-submission-type.png`
+- Register: not previously filed. Distinct from EZ-1764, which is about creating stored files from the
+  *markdown* editor
+
+### X-029 A past deadline is shown but never marked as past
+- Unit: J1
+- Surface: `/courses/:c/exercises/:ce` (student), et
+- Norm: platform — state the reader needs should not require arithmetic (source 5); the app already
+  knows both the deadline and the date
+- Class: journey
+- Severity: medium
+- Reach: every exercise with a deadline, at every point after it passes
+- Verdict: CONFIRMED
+- What happens: with a deadline in the past and `is_open: true`, the page shows **"Tähtaeg: 2. aug
+  2026. 02:59"** and an enabled *Esita ja kontrolli*. Nothing says the deadline has gone, nothing says
+  whether a late submission still counts, and the student has to compare the date against today's to
+  find out they are late. Compare the closed case, which the app handles **well**: `is_open: false`
+  produces *"See ülesanne on suletud ja ei luba enam uusi esitusi"* and removes the submit button
+  entirely. The vocabulary for saying this exists; it just is not used for lateness.
+- Instead: mark the state, not just the date — "Tähtaeg möödus 3 nädalat tagasi" using the
+  `RelativeTime` component the app already has, and a line on whether late submissions are accepted,
+  which is the actual question. The deadline chip in the exercise list wants the same treatment.
+- Evidence: same driver and report as X-028, case 3. Shot `j1b-deadline-in-the-past-still-open.png`.
+  Incidental string lead for EZ-1785: the rendered date is *"2. aug 2026. 02:59"*, with a trailing
+  period after the year
+- Register: not previously filed
+
 ---
 
 ## Refuted
@@ -1104,6 +1155,20 @@ scale, not a contradiction: small interactive things are less round than the pan
 sub-claims also died: the numbers 8 and 12 inside `styleOverrides` are raw CSS, not `sx` multiples, so
 they mean 8px and 12px as written; and the only oddity measured was a single `9px` Box, which is not
 worth a line. Radius is one of the more coherent things about this theme.
+
+`R-009` — **A teacher-graded submission is never confirmed, because there is no grader to answer.** It
+is confirmed: submitting produces a snackbar reading *"Lahendus esitatud"*, and the button label adapts
+correctly from *Esita ja kontrolli* to plain *Esita* when `grader_type` is `TEACHER`. The first run of
+the driver said otherwise and was worthless — it clicked Submit on an **empty editor**, so no POST
+fired and "nothing confirmed the submission" was true only because there was no submission. Typing
+first changed the answer completely. Fourth time in this programme that a measurement needed its own
+premise checked; the tell was `posted: false` sitting in the output next to a conclusion that assumed
+`true`.
+
+`R-010` — **A closed exercise leaves the submit button available.** It does not. `is_open: false`
+renders *"See ülesanne on suletud ja ei luba enam uusi esitusi"* at the top of the page and removes the
+submit button from the DOM entirely. This is the app handling a state well, and it is the model X-029
+asks for on lateness.
 
 `R-008` — **The TSL builder breaks down at 390px, in dark mode, in Estonian — the plan's T6 lead.** It
 does not, and this is the most clearly wrong prediction the planning pass made. Measured across
