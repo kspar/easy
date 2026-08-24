@@ -18,8 +18,6 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
-import org.springframework.security.web.firewall.HttpFirewall
-import org.springframework.security.web.firewall.StrictHttpFirewall
 import org.springframework.http.server.PathContainer
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
@@ -187,13 +185,18 @@ class SecurityConf {
         return authenticationConfiguration.getAuthenticationManager()
     }
 
-    // Temporary workaround for EZ-1434
-    @Bean
-    fun getHttpFirewall(): HttpFirewall {
-        val strictHttpFirewall = StrictHttpFirewall()
-        strictHttpFirewall.setAllowedHeaderValues { true }
-        return strictHttpFirewall
-    }
+    // There was an `HttpFirewall` bean here that did `setAllowedHeaderValues { true }`, turning
+    // Spring's header-value validation off for every request in every environment. It was labelled a
+    // temporary workaround for EZ-1434 ("auth fails if the user's name contains Ü"), from when
+    // mod_auth_openidc passed claims as HTTP headers. Nothing in front of core does that any more —
+    // core verifies JWTs itself since EZ-1724 — and EZ-1434 is closed as Won't implement, so the
+    // workaround outlived its cause and the default is back. `FilterChainProxyFirewallTest` pins it.
+    //
+    // Worth knowing what the default actually rejects, because it is not "non-ASCII":
+    // `[\p{IsAssigned}&&[^\p{IsControl}]]*`, so `Ü` passes on its own. What failed in EZ-1434 was
+    // mojibake — `Ü` is `0xC3 0x9C` in UTF-8, request headers are decoded as ISO-8859-1, and the
+    // second byte lands on U+009C, a C1 control character. See DummyZeroAuthFilter, the one place
+    // that still reads a name out of a header.
 
     private fun makeRequestLogMsg(req: HttpServletRequest): String {
         // Read from the security context rather than the request: there are no oidc_claim_*
