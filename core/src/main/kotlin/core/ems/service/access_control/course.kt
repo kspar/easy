@@ -154,11 +154,24 @@ private fun assertTeacherCanAccessCourse(teacherId: String, courseId: Long) {
 }
 
 
+/**
+ * `InvalidRequestException` and not `ForbiddenException`, matching [assertCourseExerciseIsOnCourse]
+ * just above, which states the same fact about the same pair of ids.
+ *
+ * Two reasons, and the second is the one that bites. An exercise that is not on the named course is an
+ * incoherent pair of ids rather than a permission the caller lacks, so 400 describes it and 403 does
+ * not — a client branching on the status would otherwise show "no permission" for a typo. And
+ * `handleForbiddenException` sends the sysadmin a stack trace **unconditionally**: `ForbiddenException`
+ * has no `notify` flag, while `InvalidRequestException` has one that the handler checks. Since this
+ * check now runs for admins as well, keeping it a `ForbiddenException` would have turned every
+ * client-side id mismatch into an operator alert.
+ */
 private fun assertExerciseIsOnCourse(exerciseId: Long, courseId: Long) {
     if (!isExerciseOnCourse(exerciseId, courseId)) {
-        throw ForbiddenException(
+        throw InvalidRequestException(
             "Exercise $exerciseId not found on course $courseId",
-            ReqError.ENTITY_WITH_ID_NOT_FOUND
+            ReqError.ENTITY_WITH_ID_NOT_FOUND,
+            notify = false,
         )
     }
 }

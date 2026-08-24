@@ -80,16 +80,22 @@ fun normaliseRoleStrings(roleStrings: List<String>): List<String> =
         .map(String::trim)
         .filter { it.isNotEmpty() }
 
-/** The dev header's shape: one comma-separated string. See [normaliseRoleStrings]. */
-fun mapHeaderToRoles(rolesHeader: String): Set<EasyGrantedAuthority> =
-    mapRoleStringsToRoles(normaliseRoleStrings(listOf(rolesHeader)))
+// There was a `mapHeaderToRoles(header)` here, `mapRoleStringsToRoles(normaliseRoleStrings(listOf(h)))`
+// in one call. [DummyZeroAuthFilter] no longer uses it — it needs the normalised list in its own hand
+// to reject a header that carries no role — so the function's only remaining callers were tests, which
+// made it a test-only paraphrase of the dev path rather than the dev path. That is the same drift this
+// file exists to prevent, one level up: a test exercising a convenience wrapper proves nothing about
+// the caller that no longer uses it. `RoleParsingTest` drives the filter and the converter directly.
 
 /**
  * Throws on an unrecognised role rather than dropping it: a role we cannot map is a Keycloak
  * configuration problem, and silently ignoring it would quietly change what a user can do.
  */
 fun mapRoleStringsToRoles(roleStrings: List<String>): Set<EasyGrantedAuthority> =
-    roleStrings.map {
+    // Normalises here too, so this is safe for any caller rather than only for the two that remember
+    // to normalise first. It is idempotent, so the converter normalising before its own emptiness
+    // guard — which it must, to name every missing claim in one message — costs nothing.
+    normaliseRoleStrings(roleStrings).map {
         when (it) {
             "student" -> EasyGrantedAuthority(EasyRole.STUDENT)
             "teacher" -> EasyGrantedAuthority(EasyRole.TEACHER)

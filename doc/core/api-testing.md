@@ -22,7 +22,18 @@ curl -s \
 `preferred_username`, `email` and `easy_role` are all required — omit any one and the filter
 skips authentication entirely and you get a 401. `oidc_claim_given_name` and
 `oidc_claim_family_name` are optional. `easy_role` is comma-separated for multiple roles
-(`teacher,admin`).
+(`teacher,admin`); surrounding whitespace is trimmed, and a value carrying no role at all
+(`,`) is treated as missing, so you get the 401 rather than a user with no permissions. An
+`easy_role` naming something unmappable (`wizard`) is also a 401, with the reason in core's log.
+
+**Keep these values ASCII.** `StrictHttpFirewall` refuses any request whose header value contains a
+control character, and a non-ASCII name becomes one on the way in: request headers are decoded as
+ISO-8859-1, so the UTF-8 bytes of `Ü` (`0xC3 0x9C`) arrive as `Ã` followed by U+009C, a C1 control.
+The request is refused with a bare 400 that says nothing about names. That is the whole of EZ-1434,
+which was originally worked around by disabling the firewall's header-value check globally — a
+production control switched off for a testing convenience. The names here are arbitrary, so a test
+user called `Ulo` proves everything one called `Ülo` would; if you genuinely need a non-ASCII display
+name, exercise it through a JWT claim against a real IdP instead (`core/dev-idp/`).
 
 `web/vite.config.ts` fabricates these same headers from the SPA's bearer token when proxying
 `/v2`, so browser-based local dev works against an auth-disabled core with no IdP — that file is

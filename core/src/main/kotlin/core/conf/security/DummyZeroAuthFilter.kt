@@ -40,13 +40,34 @@ class DummyZeroAuthFilter(private val securityContextRepository: SecurityContext
         val familyName = request.getOptionalHeader("oidc_claim_family_name")
         val roles = request.getOptionalHeader("oidc_claim_easy_role")
 
-        if (username != null && email != null && roles != null) {
-            val context = SecurityContextHolder.createEmptyContext()
-            context.authentication = EasyUser(
-                username, email, givenName, familyName, mapHeaderToRoles(roles)
-            )
-            SecurityContextHolder.setContext(context)
-            securityContextRepository.saveContext(context, request, response)
+        // Both failure shapes leave the context unset, so the request continues as anonymous and the
+        // chain answers 401 — the same answer the JWT path gives for the same input. Neither is
+        // reachable in a deployed environment, since this filter only exists when auth is disabled,
+        // but both used to produce something worse than a 401 here:
+        //
+        //  - roles that normalise to nothing. `getOptionalHeader` nulls only *blank* values, so
+        //    `oidc_claim_easy_role: ","` passed the null check, normalised to an empty list, and built
+        //    an authenticated principal with zero authorities — 403 from every `@Secured` method, with
+        //    nothing in the log naming the cause.
+        //  - a role we cannot map. `mapRoleStringsToRoles` throws, and this filter sits at the
+        //    pre-auth position ahead of `ExceptionTranslationFilter`, which only translates
+        //    authentication and access-denied exceptions; `EasyExceptionHandler` is
+        //    DispatcherServlet-scoped and never sees it. So it left the container to answer 500.
+        val roleStrings = roles?.let { normaliseRoleStrings(listOf(it)) }
+
+        if (username != null && email != null && !roleStrings.isNullOrEmpty()) {
+            val mappedRoles = try {
+                mapRoleStringsToRoles(roleStrings)
+            } catch (e: RuntimeException) {
+                logger.warn("Unmappable oidc_claim_easy_role '$roles' for '$username': ${e.message}")
+                null
+            }
+            if (mappedRoles != null) {
+                val context = SecurityContextHolder.createEmptyContext()
+                context.authentication = EasyUser(username, email, givenName, familyName, mappedRoles)
+                SecurityContextHolder.setContext(context)
+                securityContextRepository.saveContext(context, request, response)
+            }
         }
 
         filterChain.doFilter(request, response)

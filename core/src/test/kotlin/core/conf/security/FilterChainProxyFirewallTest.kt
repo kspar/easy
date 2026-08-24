@@ -5,8 +5,10 @@ import core.testing.IntegrationTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.security.authentication.AuthenticationProvider
+import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.RequestPostProcessor
 
 /**
  * That Spring's `StrictHttpFirewall` is doing its default job on header values.
@@ -32,14 +34,18 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor
  * legible in a diff and cannot be mangled by an editor.
  */
 @IntegrationTest
-class FilterChainProxyFirewallTest(@Autowired mockMvc: MockMvc) {
+class FilterChainProxyFirewallTest(
+    @Autowired mockMvc: MockMvc,
+    @Autowired private val context: ApplicationContext,
+) {
 
     private val api = HttpApi(mockMvc)
 
-    private fun getWithAuthorization(value: String) = api.get(
-        "/v2/versions",
-        RequestPostProcessor { req -> req.addHeader("Authorization", value); req },
-    )
+    // `getWithHeaders`, not the `caller` slot: that parameter means identity, and passing null through
+    // it clears the security context — so borrowing it for a header would have made these tests pass
+    // or fail for a reason unrelated to the header under test.
+    private fun getWithAuthorization(value: String) =
+        api.getWithHeaders("/v2/versions", mapOf("Authorization" to value))
 
     @Test
     fun `a control character in a header value is refused before the application sees it`() {
@@ -59,12 +65,31 @@ class FilterChainProxyFirewallTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
+    fun `core has no username-and-password authentication at all`() {
+        // Boot's UserDetailsServiceAutoConfiguration is excluded in EasyCoreApp. It had been
+        // suppressed only incidentally, by an `authenticationManager` bean and an
+        // `EasyUserAuthProvider` that nothing invoked — so deleting those for being dead would have
+        // switched it on, creating an InMemoryUserDetailsManager and logging a generated password at
+        // startup. Identity here comes from a JWT or, in dev, from oidc_claim_* headers; there is no
+        // third source, and this asserts that rather than trusting a bean's continued existence.
+        assertEquals(0, context.getBeanNamesForType(UserDetailsService::class.java).size) {
+            context.getBeanNamesForType(UserDetailsService::class.java).joinToString()
+        }
+        assertEquals(0, context.getBeanNamesForType(AuthenticationProvider::class.java).size) {
+            context.getBeanNamesForType(AuthenticationProvider::class.java).joinToString()
+        }
+    }
+
+    @Test
     fun `a non-ASCII character is not itself the problem`() {
         // Worth pinning, because "the firewall rejects non-ASCII" is the natural misreading of
         // EZ-1434 and is what would justify bringing the workaround back. The default pattern is
         // `[\p{IsAssigned}&&[^\p{IsControl}]]*`, so `Ü` passes on its own and only the mojibake
         // control character fails. 401 and not 400: the value reached the application.
         val resp = getWithAuthorization("Bearer \u00DClo")
+        // 401 from DefaultBearerTokenResolver's token regex rather than from JWT decoding — a
+        // different mechanism from the `not-a-token` control above, but the same distinction that
+        // matters here: the value reached the application instead of being refused at the door.
         assertEquals(401, resp.status) { "a bare non-ASCII letter should not be refused: ${resp.body}" }
     }
 }

@@ -253,12 +253,14 @@ class AccessControlRulesTest {
     fun `exerciseViaCourse needs both course access and the exercise being on that course`() {
         asTeacher().assertAccess { exerciseViaCourse(exerciseId, courseId) }
 
-        // Right exercise, wrong course.
+        // Right exercise, wrong course. Still 403: this teacher has no access to that course, so the
+        // role gate refuses before coherence is even considered.
         assertThrows(ForbiddenException::class.java) {
             asTeacher().assertAccess { exerciseViaCourse(exerciseId, otherCourseId) }
         }
-        // Right course, exercise that is not on it.
-        assertThrows(ForbiddenException::class.java) {
+        // Right course, exercise that is not on it. 400, because this is the ids not matching rather
+        // than the caller lacking anything — the same distinction the two exception types draw.
+        assertThrows(InvalidRequestException::class.java) {
             asTeacher().assertAccess { exerciseViaCourse(999_999, courseId) }
         }
         // Students have no business here at all, whatever the ids.
@@ -275,12 +277,15 @@ class AccessControlRulesTest {
         // not on it, whoever is asking.
         asAdmin().assertAccess { exerciseViaCourse(exerciseId, courseId) }
 
-        // The pair the empty branch used to wave through. Same shape as the teacher cases above,
-        // which is the point: the check no longer depends on who is asking.
-        assertThrows(ForbiddenException::class.java) {
+        // The pair the empty branch used to wave through. `InvalidRequestException` — a 400 — and not
+        // `ForbiddenException`, matching the sibling rules: an exercise that is not on the named
+        // course is an incoherent pair of ids, not a permission the caller lacks. It also keeps this
+        // off the sysadmin's mail, since handleForbiddenException notifies unconditionally while
+        // InvalidRequestException carries the `notify` flag this one sets to false.
+        assertThrows(InvalidRequestException::class.java) {
             asAdmin().assertAccess { exerciseViaCourse(exerciseId, otherCourseId) }
         }
-        assertThrows(ForbiddenException::class.java) {
+        assertThrows(InvalidRequestException::class.java) {
             asAdmin().assertAccess { exerciseViaCourse(999_999, courseId) }
         }
     }

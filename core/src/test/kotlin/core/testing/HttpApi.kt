@@ -120,6 +120,17 @@ class HttpApi(private val mockMvc: MockMvc) {
     fun anonymous(): RequestPostProcessor? = null
 
     fun get(path: String, caller: RequestPostProcessor? = null) = call(HttpMethod.GET, path, caller)
+
+    /**
+     * A GET carrying raw request headers, for tests about the request itself rather than the caller.
+     *
+     * Separate from [caller] on purpose. That parameter means identity and nothing else — passing
+     * `null` *clears* the security context rather than merely omitting it — so a header-only test that
+     * borrowed the slot would silently opt out of that clearing, and would then pass or fail for a
+     * reason unrelated to the headers it was written for.
+     */
+    fun getWithHeaders(path: String, headers: Map<String, String>, caller: RequestPostProcessor? = null) =
+        call(HttpMethod.GET, path, caller, headers = headers)
     fun delete(path: String, caller: RequestPostProcessor? = null) = call(HttpMethod.DELETE, path, caller)
 
     fun post(path: String, body: String? = null, caller: RequestPostProcessor? = null) =
@@ -148,9 +159,11 @@ class HttpApi(private val mockMvc: MockMvc) {
         path: String,
         caller: RequestPostProcessor?,
         body: String? = null,
+        headers: Map<String, String> = emptyMap(),
     ): Response {
         val request = MockMvcRequestBuilders.request(method, path)
             .also { req -> body?.let { req.contentType(MediaType.APPLICATION_JSON).content(it) } }
+            .also { req -> headers.forEach { (name, value) -> req.header(name, value) } }
         if (caller == null) TestSecurityContextHolder.clearContext() else request.with(caller)
         return respond(mockMvc.perform(request).andReturn().response)
     }
