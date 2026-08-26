@@ -71,7 +71,7 @@ finishes or it goes back to `todo`.
 | J4 | Teacher: exercise authoring | todo | — | EZ-1732 (math no longer renders) is the one to check first |
 | J5 | Teacher: putting an exercise on a course | todo | — | |
 | J6 | Teacher: grading | **done `b3e0a832`** (2026-08-24) | X-030, X-031; R-011, R-012 | 5 candidates, 2 kept, 2 refuted (one lead absorbed into X-031). The flow is **better than the plan assumed**: one-click prev/next between students, a roster with "3 hindamata" / "2 / 6 hinnatud" counts (R-011), a GitHub-style `+` comment gutter, and the full conversation — inline comment, feedback, grade, teacher's name — reaching both seats (R-012). Kept: the two navigation chevrons are the only unlabelled icon buttons of nine (X-030), and grading leaves the grade table stale, executed end to end with the exact key mismatch (X-031). **Fixture notes:** stub `/submissions/all/students/{id}` or the pane renders "Esitamata"; cache tests must navigate client-side; hover affordances toggle CSS classes, not DOM nodes |
-| J7 | Teacher: roster & groups | todo | — | Largest file in the repo; V3 will want its notes |
+| J7 | Teacher: roster & groups | **done `a7ca430f`** (2026-08-26) | X-032; R-013 | 3 candidates, 1 kept, 1 refuted, 1 exemplary. The invite flow is the create-with-defaults-then-edit pattern done properly (R-013), and the delete-group dialog names every affected student — a model for C3. Kept: the remove-from-course confirm never says what happens to the student's work (X-032). Moodle link/sync/handover left to the five existing specs and the already-filed EZ-1768/EZ-1778; nothing new to add there. **For V3:** the page carries its 4 tabs and 33 `useState` well at this fixture size — the shape question needs S7's 200-row pass, not this one |
 | J8 | Teacher: results out | todo | — | |
 | J9 | Admin | todo | — | Re-map first: EZ-1786 changed the admin surface at `df7244af` |
 
@@ -1157,6 +1157,30 @@ Template:
 - Register: review **F-035** (mechanism, confirmed there by reading). This adds the executed
   user-visible proof and the exact key mismatch
 
+### X-032 Removing a student from a course asks for confirmation but never says what happens to their work
+- Unit: J7 (the pattern belongs to C3)
+- Surface: `/courses/:c/participants` → select a student → Eemalda kursuselt, teacher, et
+- Norm: a destructive confirm says what will be destroyed (source 5); the same page's *delete-group*
+  dialog, which lists every affected student by name, shows the app knows how (source 2)
+- Class: journey + copy
+- Severity: medium
+- Reach: every removal — and the question it leaves unanswered is exactly the one a teacher has at
+  that moment
+- Verdict: CONFIRMED
+- What happens: the confirm reads, in full: *"Eemalda Mari Maasikas sellelt kursuselt? Tühista /
+  Eemalda."* It names the student — good — but says nothing about their submissions, grades or
+  feedback: kept? deleted? restored if the student rejoins by invite link? The teacher deciding
+  whether to click is deciding blind on the only fact that matters.
+  The contrast is the same page's delete-group dialog, measured in the same run: *"Kustuta rühm 'Rühm
+  A'? Need õpilased eemaldatakse rühmast: Mari Maasikas."* — consequence stated, affected people
+  listed.
+- Instead: one sentence stating the fate of the student's work, whatever core's answer is. If
+  submissions survive and rejoining restores them, saying so makes the action safe to use; if they are
+  deleted, the confirm is currently hiding the destruction it exists to warn about.
+- Evidence: `tests/audit/j7-roster-workflow.mjs`, report `tests/audit/reports/j7-roster-workflow.json`,
+  at `a7ca430f`. Shot `j7-03-remove-confirm.png`
+- Register: not previously filed
+
 ---
 
 ## Refuted
@@ -1211,6 +1235,16 @@ scale, not a contradiction: small interactive things are less round than the pan
 sub-claims also died: the numbers 8 and 12 inside `styleOverrides` are raw CSS, not `sx` multiples, so
 they mean 8px and 12px as written; and the only oddity measured was a single `9px` Box, which is not
 worth a line. Radius is one of the more coherent things about this theme.
+
+`R-013` — **Getting students into a course is convoluted now that email invites are gone (EZ-1740).**
+It is one click. "Loo kutselink" creates the link with sensible defaults (50 uses, one month) and
+immediately shows the full URL, *"0 / 50 kasutatud · Kehtib kuni: 26. sept 2026"*, a copy button, and a
+*"Näita täisekraanil"* mode for showing the link to a lecture hall — and `EditInviteDialog` adjusts the
+limits afterwards. This is the create-with-defaults-then-edit pattern done properly. Two of the first
+run's three negative readings were the audit's own: a non-stateful stub answered every GET with "no
+invite" so the link could never render, and the probe's regex (`/kehtiv/`) did not match the actual
+copy ("Kehtib"). The delete-group dialog from the same run is also worth naming as a model: it lists
+every affected student by name.
 
 `R-012` — **There is no visible way for a teacher to add an inline comment on a line of code.** There
 is: `AnnotatedCodeEditor` renders a dedicated 28px `.cm-add-comment-gutter` column, and hovering it
