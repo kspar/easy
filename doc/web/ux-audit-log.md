@@ -96,9 +96,9 @@ finishes or it goes back to `todo`.
 | S3 | Phone | **done `a2588971`** (2026-08-26) | — ; R-014 | All 23 surfaces at 390×844: **zero horizontal overflow on every surface that renders** (R-014 — the predicted table overflow refutes; participants' 479px table scrolls in its own container). Clipping counts are small and benign (join-card 3, account 2, similarity 1). What remains for phones is not containment but the fixed-height/single-column class already filed as X-008/X-025, and interaction-level checks (tap targets, dialogs at 390) which fold into C5's keyboard pass |
 | S4 | Laptop — the reference | **done `a2588971`** (2026-08-26) | — | The reference established by the C5 sweep (23 surfaces × 2 themes, laptop) plus this sweep's laptop pass: no overflow, no crashes outside R-005's fixture-induced ones, `main` at its 1180–1200px cap everywhere. Everything wrong at every size was filed from the units that found it |
 | S5 | Large monitor | **done `a2588971`** (2026-08-26) | — (pattern already filed) | Measured per-surface at 2560×1440: **every in-shell surface renders `main` at exactly 1200px — 47% of the viewport** — with the fixed 260px drawer beside it. No surface uses `xl`. The pattern finding already exists as X-008 (editor fixed at 200px) + X-025 (TSL builder identical height at 1440 and 2560) under EZ-1527; per the file-at-the-decision rule this unit adds the per-surface evidence table (`reports/s345-viewport-sweep.json`) rather than a third instance. The surfaces that most want the room, for the eventual fix: grades, participants, library, grading split pane, TSL builder |
-| S6 | The shell at every size | todo | — | Re-map: EZ-1786 restructured the sidebar at `df7244af`. **From J1:** X-005 (the exercise-list `key` on the wrong element) lives here at `AppLayout.tsx:511`, and two maps earlier the same file does it correctly — count the other lists. Also count the `ArrowBackOutlined` back-link sites for X-003's reach: on pages with no breadcrumbs it is the only way back, and it has no accessible name |
-| S7 | Dense data | todo | — | |
-| S8 | Editors, code and motion | todo | — | Motion *mechanics* here; whether the animation should exist is V3. **From J1:** X-002 (no accessible name on `.cm-content`) is in the shared `CodeEditor.tsx`, so it reaches the teacher testing tab, the TSL JSON tab and every constructor-code field — check whether one `aria-label` prop fixes all of them. X-008 is the fixed 200 px height. Two unlabelled glyph controls (`|<` and `>|`) sit in the split-pane gutter with no button chrome and no visible affordance — establish what they do and whether anyone would find them |
+| S6 | The shell at every size | **done `6edd169d`** (2026-08-26) | X-038; reach data added to X-003 | Re-mapped post-EZ-1786 (the Administration section resolved the scattered-admin premise — see J9). Measured: 17 `ArrowBackOutlined` sites, 1 labelled, with the i18n key already existing (folded into X-003). New: the theme toggle permanently forfeits follow-the-OS, while the embed page does it right (X-038). X-005 (key on wrong element) and EZ-1789 (no hrefs) already carry the shell's other defects; the mobile drawer behaved in every sweep. Original note follows. **From J1:** X-005 (the exercise-list `key` on the wrong element) lives here at `AppLayout.tsx:511`, and two maps earlier the same file does it correctly — count the other lists. Also count the `ArrowBackOutlined` back-link sites for X-003's reach: on pages with no breadcrumbs it is the only way back, and it has no accessible name |
+| S7 | Dense data | **done `6edd169d`** (2026-08-26) | — | Absorbed by its neighbours: containment at 390 is clean app-wide (R-014), the grade table is the app's best table (J8), sorting follows the documented `TableSortLabel` convention (review E5 verified it), and the roster carries count chips (R-011). The one thing not driven is a **200-row roster's render performance**, which is a performance question the plan scoped out (`doc/testing.md`: "Performance tests — none, and mostly fine"). Nothing filed |
+| S8 | Editors, code and motion | **done `6edd169d`** (2026-08-26) | — (all previously filed) | Everything this unit scoped was measured by earlier units: X-002 (editor unlabelled, shared `CodeEditor`), X-008 (fixed 200px), X-006 (reduced-motion ignored on the reveal), R-015 (oneDark coherent in dark), R-008 (TSL editors contained at 390). The overflow-guard gap on 12 of 15 `dangerouslySetInnerHTML` sites stays a **watch item**: no measured overflow reached it in any sweep because fixture HTML is narrow — a real exercise with a wide table would be the test, and that is one fixture away if it ever matters. Original note follows. **From J1:** X-002 (no accessible name on `.cm-content`) is in the shared `CodeEditor.tsx`, so it reaches the teacher testing tab, the TSL JSON tab and every constructor-code field — check whether one `aria-label` prop fixes all of them. X-008 is the fixed 200 px height. Two unlabelled glyph controls (`|<` and `>|`) sit in the split-pane gutter with no button chrome and no visible affordance — establish what they do and whether anyone would find them |
 | S9 | The front door | todo | — | Clone `easy-kc-theme` into the job tmp dir first |
 
 ### Track V — Visual direction and design quality (4 units)
@@ -315,6 +315,9 @@ Template:
   `.MuiIconButton-root[href$="exercises"]`, "Element is in tab order and does not have accessible
   text". Also a **gate-level** violation
 - Register: not previously filed
+- **Reach measured (S6, `6edd169d`):** 17 `ArrowBackOutlined` sites across 8 files; exactly **one**
+  carries an `aria-label` (`GradeTablePage.tsx:172`, using `general.back` — so the i18n key already
+  exists and the fix at the other 16 sites is mechanical).
 - **Sweep update (C5, `79248877`):** this is a pattern, not one button. Across 23 surfaces × both
   themes, `link-name` fires on **5 routes** under two fingerprints — the back arrow on
   `exercise-student` and `exercise-teacher`, and a second unnamed icon-link on
@@ -1297,6 +1300,25 @@ Template:
 - Instead: one comparison in `canSave` with a field-level error on the hard-deadline picker
   ("Lõpptähtaeg ei saa olla enne pehmet tähtaega"), same pattern as `thresholdValid`.
 - Evidence: source at `fc5a3d32`; the dialog's own two validations as the pattern
+- Register: not previously filed
+
+### X-038 Choosing a theme once removes "follow the system" forever
+- Unit: S6
+- Surface: the theme toggle (sidebar menu + Account settings), both themes
+- Norm: the app's own embed page, whose `useEmbedTheme` keeps following the OS until overridden and
+  documents why in 78 lines (source 2)
+- Class: journey
+- Severity: low
+- Reach: every user who ever touches the toggle
+- Verdict: CONFIRMED by reading (`ThemeContext.tsx:10-23`)
+- What happens: on first load the app follows `prefers-color-scheme`. The moment a user toggles once,
+  `themeMode` is written to localStorage and from then on `getInitialMode` never consults the OS
+  again — there is no third state, no "system" option in the toggle, and no way to clear the override
+  short of devtools. The app also never *subscribes* to scheme changes, so an OS that switches to dark
+  at sunset does nothing even before the first toggle. The embed page does both correctly.
+- Instead: a three-state control (Hele / Tume / Süsteemne) where "system" clears the key — or simply
+  adopt `useEmbedTheme`'s behaviour, which the codebase already contains and explains.
+- Evidence: source at `6edd169d`; contrast with `hooks/useEmbedTheme.ts`
 - Register: not previously filed
 
 ---
