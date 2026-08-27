@@ -1,5 +1,30 @@
 # Managed by Ansible (roles/nginx) — local edits are overwritten.
 
+{#
+    A note about the security headers below, because they are written out four times and that is
+    deliberate.
+
+    **nginx does not inherit `add_header` the way this file reads as though it does.** Its rule is that
+    `add_header` directives are inherited from the enclosing level *only if the current level defines
+    none of its own* — so a location that sets its own `Cache-Control` silently drops every header set
+    at server level. That is what had happened: `= /config.json`, `/assets/` and `/` each set a
+    `Cache-Control`, so the three security headers reached none of them. They applied to the SPA
+    document, the JS bundle and the runtime config not at all, and to proxied uploads — the one
+    location that sets no `add_header` — perfectly. `always` does not help; it governs whether a header
+    is sent on error responses, not inheritance.
+
+    So any location that adds a header of its own repeats these. A Jinja macro would remove the
+    repetition and is the wrong trade here: the rendered file on the host is what an operator reads
+    when a header is missing, and it should say what is actually configured rather than expand to it.
+
+    The API vhost sets its own two at server level and its locations add nothing, which is why they
+    are correct without repetition — and why this was easy to miss, since the same file contains a
+    working example of the thing that was broken.
+
+    A content-security-policy belongs in all four places whenever one is added, for exactly this
+    reason: written at server level alone it would apply to uploaded files and nothing else.
+#}
+
 # --- HTTP: ACME, and otherwise go away -----------------------------------------------------------
 server {
     listen 80;
@@ -57,12 +82,20 @@ server {
     # backend, which fails in a way that looks like an application bug rather than a caching one.
     location = /config.json {
         add_header Cache-Control "no-store" always;
+        # Repeated, not inherited — see the note at the top of this file.
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
         try_files $uri =404;
     }
 
     # Vite emits content-hashed filenames, so these can be cached hard and for a long time.
     location /assets/ {
         add_header Cache-Control "public, max-age=31536000, immutable" always;
+        # Repeated, not inherited — see the note at the top of this file.
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
         try_files $uri =404;
     }
 
@@ -90,6 +123,10 @@ server {
     # must never be cached or a deploy does not reach anyone still holding the old one.
     location / {
         add_header Cache-Control "no-cache" always;
+        # Repeated, not inherited — see the note at the top of this file.
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
         # The trailing `=404` is not decoration. Without it, a request that falls through to
         # /index.html when that file does not exist — which is the state of this host until the first
         # deploy — re-enters this same location and nginx gives up with "rewrite or internal
