@@ -72,7 +72,7 @@ finishes or it goes back to `todo`.
 | J5 | Teacher: putting an exercise on a course | todo | — | |
 | J6 | Teacher: grading | **done `b3e0a832`** (2026-08-24) | X-030, X-031; R-011, R-012 | 5 candidates, 2 kept, 2 refuted (one lead absorbed into X-031). The flow is **better than the plan assumed**: one-click prev/next between students, a roster with "3 hindamata" / "2 / 6 hinnatud" counts (R-011), a GitHub-style `+` comment gutter, and the full conversation — inline comment, feedback, grade, teacher's name — reaching both seats (R-012). Kept: the two navigation chevrons are the only unlabelled icon buttons of nine (X-030), and grading leaves the grade table stale, executed end to end with the exact key mismatch (X-031). **Fixture notes:** stub `/submissions/all/students/{id}` or the pane renders "Esitamata"; cache tests must navigate client-side; hover affordances toggle CSS classes, not DOM nodes |
 | J7 | Teacher: roster & groups | **done `a7ca430f`** (2026-08-26) | X-032; R-013 | 3 candidates, 1 kept, 1 refuted, 1 exemplary. The invite flow is the create-with-defaults-then-edit pattern done properly (R-013), and the delete-group dialog names every affected student — a model for C3. Kept: the remove-from-course confirm never says what happens to the student's work (X-032). Moodle link/sync/handover left to the five existing specs and the already-filed EZ-1768/EZ-1778; nothing new to add there. **For V3:** the page carries its 4 tabs and 33 `useState` well at this fixture size — the shape question needs S7's 200-row pass, not this one |
-| J8 | Teacher: results out | todo | — | |
+| J8 | Teacher: results out | **done `fc0c2141`** (2026-08-26) | — (X-031 carries the one defect) | 4 candidates, **0 new kept**. The surface is in good shape: every grade cell links to the exact student×exercise view with an accessible name and documented reasoning — **EZ-1706 was implemented and is now closed** (verified by reading + `grade-table.spec.mjs`); `toCsv` is RFC 4180-quoted, semicolon-separated for European locales, and carried by 7 unit tests; the sticky first column and `TableContainer` are the app's best table. Non-findings, recorded: the on-screen Σ column (a completion count) is absent from the CSV — derived and recomputable, no task cost; CSV formula injection is review **F-016**, already filed. The staleness defect is X-031. Similarity left to its spec's 15 checks; nothing new found |
 | J9 | Admin | todo | — | Re-map first: EZ-1786 changed the admin surface at `df7244af` |
 
 ### Track T — The TSL builder (7 units)
@@ -194,7 +194,7 @@ Queries used: `project: EZ #Unresolved Subsystem: web` (paged) and
 ### Grades and similarity
 | id | Type | Summary |
 |---|---|---|
-| EZ-1706 | Usability | Grade table: link grade cells to the student's submission |
+| EZ-1706 | Usability | Grade table: link grade cells to the student's submission — **closed during J8**: implemented at `GradeTablePage.tsx:385`, verified by reading and by `grade-table.spec.mjs` |
 | EZ-1767 | Bug | Grade table — **verify state**: commit `785a8cc7` reads as a fix ("stops losing students, and learns to sort the same way twice") |
 
 ### Admin
