@@ -92,7 +92,7 @@ finishes or it goes back to `todo`.
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
 | S1 | The theme as a system | **done `278d1ee1`** (2026-08-23) | X-012, X-013, X-014; R-006 | 4 candidates, 3 kept, 1 refuted. The colour half is the substance: the palette's mode-invariance is a **structural** defect rather than a bad value (X-012), and `text.secondary` fails AA only on `background.default`, which is why 177 sites survived it (X-013). The non-colour half is mostly good news — the radius vocabulary measured coherent (R-006) and the real finding is dead weight rather than incoherence (X-014). Arithmetic in `tests/audit/reports/s1-token-contrast.json`. Original note follows. **From J1:** X-004 already measured the three contrast decisions with real ratios (`#fff` on `#16a34a` = 3.29:1, `#16a34a` on `#f5f5f5` = 3.02:1, `#757575` on `#f5f5f5` = 4.22:1 at 12px). S1 owns the token-level fix and should check whether `GREEN[700]` as `primary.main` breaks anything else. Also settle the derived `#989898` at 2.64:1, which is not a theme value |
-| S2 | Dark mode, everywhere | todo | — | |
+| S2 | Dark mode, everywhere | **done `b039eb07`** (2026-08-26) | — ; R-015, and one correction to X-004 | Contrast data was already collected in dark by C5; the visual pass read the named risk surfaces off PNGs, and dark mode is **good**: the course-colour edge bars and activity dots read cleanly, `oneDark` + the green banner + accordions are coherent on the exercise page, JoinCard/RobotFace survive (the `backgroundColor:'white'` never manifests at card scale), and the sponsor plates stand as deliberate (R-002). The one 'dark-only defect' in X-004's table — `pre`/`code` at 3.91:1 — **dissolved on inspection**: its four routes are exactly R-005's crashed pages, so it was React Router's error-page stack trace, not app content (struck in X-004, R-015). Dark mode's real debts remain the mode-blind palette (X-012) and the theme's dead entries (X-014) |
 | S3 | Phone | **done `a2588971`** (2026-08-26) | — ; R-014 | All 23 surfaces at 390×844: **zero horizontal overflow on every surface that renders** (R-014 — the predicted table overflow refutes; participants' 479px table scrolls in its own container). Clipping counts are small and benign (join-card 3, account 2, similarity 1). What remains for phones is not containment but the fixed-height/single-column class already filed as X-008/X-025, and interaction-level checks (tap targets, dialogs at 390) which fold into C5's keyboard pass |
 | S4 | Laptop — the reference | **done `a2588971`** (2026-08-26) | — | The reference established by the C5 sweep (23 surfaces × 2 themes, laptop) plus this sweep's laptop pass: no overflow, no crashes outside R-005's fixture-induced ones, `main` at its 1180–1200px cap everywhere. Everything wrong at every size was filed from the units that found it |
 | S5 | Large monitor | **done `a2588971`** (2026-08-26) | — (pattern already filed) | Measured per-surface at 2560×1440: **every in-shell surface renders `main` at exactly 1200px — 47% of the viewport** — with the fixed 260px drawer beside it. No surface uses `xl`. The pattern finding already exists as X-008 (editor fixed at 200px) + X-025 (TSL builder identical height at 1440 and 2560) under EZ-1527; per the file-at-the-decision rule this unit adds the per-surface evidence table (`reports/s345-viewport-sweep.json`) rather than a third instance. The surfaces that most want the room, for the eventual fix: grades, participants, library, grading split pane, TSL builder |
@@ -362,7 +362,7 @@ Template:
   | **3.29:1** | `#ffffff` on `#16a34a` | 18 | `primary.contrastText` on `primary.main` — contained buttons and primary chips |
   | 2.57:1 | `#505350` on `#050905` | 17 | `LandingPage` again |
   | **3.29:1** | `#16a34a` on `#ffffff` | 15 | brand green as text/links on paper, incl. selected tabs |
-  | 3.91:1 | `#e0e0e0` on `#6d6d6d` | 8 | **dark mode only** — `pre` and `code` blocks |
+  | ~~3.91:1~~ | ~~`#e0e0e0` on `#6d6d6d`~~ | ~~8~~ | **struck during S2**: its 4 routes are exactly R-005's crashed pages — this is React Router's *error page* stack-trace styling, not app content. Dissolves into X-009 |
   | 3.02:1 | `#16a34a` on `#f5f5f5` | 7 | brand green as text on the app background |
   | 2.67:1 | `#9e9e9e` on `#ffffff` | 1 | a derived grey, not a theme value |
   Three observations that change the fix. The worst offender by reach is not the brand colour but
@@ -1235,6 +1235,15 @@ scale, not a contradiction: small interactive things are less round than the pan
 sub-claims also died: the numbers 8 and 12 inside `styleOverrides` are raw CSS, not `sx` multiples, so
 they mean 8px and 12px as written; and the only oddity measured was a single `9px` Box, which is not
 worth a line. Radius is one of the more coherent things about this theme.
+
+`R-015` — **Dark mode has a class of hardcoded-fill breakages waiting on the named risk surfaces.**
+Read off PNGs at `b039eb07`: it does not. Course colour bars and activity dots read cleanly on dark;
+the exercise page's `oneDark` editor, green grade banner and result accordions are coherent; JoinCard
+and RobotFace survive; the sponsor plates are R-002's deliberate accommodation. And the one entry in
+X-004's sweep table marked "dark mode only" — `pre`/`code` at 3.91:1 — dissolved: its four routes are
+exactly R-005's crashed pages, so axe was measuring **React Router's error-page stack trace**, not app
+content. Struck from the table. A sweep finding whose route list coincides with the known-crashed set
+should always be checked against that set first; this one hid for three units.
 
 `R-014` — **The bare `<Table>`s (participants, library) overflow the page at phone width.** They do
 not. Measured across all 23 surfaces at 390×844: **zero horizontal document overflow on every surface
