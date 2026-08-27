@@ -21,8 +21,11 @@
     are correct without repetition — and why this was easy to miss, since the same file contains a
     working example of the thing that was broken.
 
-    A content-security-policy belongs in all four places whenever one is added, for exactly this
-    reason: written at server level alone it would apply to uploaded files and nothing else.
+    The content-security-policy is subject to the same rule and is now repeated the same way — five
+    places, not four, because `/embed/` needed a location of its own to be exempt from
+    `frame-ancestors`. Its *text* is a `set` variable rather than five copies: a ten-directive string
+    duplicated five times is a divergence nobody would spot, whereas a one-line header per location
+    still reads as "this location adds this header", which is the property worth keeping.
 #}
 
 # --- HTTP: ACME, and otherwise go away -----------------------------------------------------------
@@ -67,12 +70,50 @@ server {
     ssl_stapling on;
     ssl_stapling_verify on;
 
+    # --- Content-Security-Policy ------------------------------------------------------------------
+    #
+    # **Report-Only for now, deliberately.** Nothing is blocked; violations surface in the browser
+    # console. Flipping to enforcement is renaming the header in the four `add_header` lines that
+    # reference these variables — the policy itself is written once, here, because a ten-directive
+    # string copied four times is a divergence nobody would see. The plain security headers above are
+    # repeated rather than factored, for the reason at the top of this file, and a `set` keeps that
+    # property — each location still states that it adds the header — without four copies of the text.
+    #
+    # Why this exists rather than as hardening for its own sake: an uploaded XHTML file executed script
+    # on this origin, and rendered Markdown reaches fifteen `dangerouslySetInnerHTML` sites.
+    # `script-src 'self'` is the directive that turns both from exploitable into blocked.
+    #
+    # Directive by directive, since each is a constraint someone would otherwise rediscover:
+    #
+    #   script-src 'self'        No inline script and no eval. `index.html` loads one module by src and
+    #                            the Vite build emits no inline script, so no nonce is needed. This is
+    #                            the line with the value in it; the rest is containment around it.
+    #   style-src 'unsafe-inline' MUI/emotion injects styles at runtime, so this directive is weak by
+    #                            necessity. Said plainly rather than left looking stronger than it is;
+    #                            removing it needs a build that emits nonces.
+    #   img-src https:           Stored exercise HTML references external images by absolute URL, in
+    #                            quantity. Narrowing this blanks images across the library, and an
+    #                            image is not a script vector.
+    #   connect-src / frame-src  The API and the IdP are separate origins. `frame-src` is not optional:
+    #                            keycloak-js runs check-sso in a hidden iframe, so omitting the IdP
+    #                            breaks login outright rather than degrading it.
+    #   frame-ancestors 'self'   Clickjacking against a logged-in teacher. Absent from the embed
+    #                            policy below — that route exists to be framed on third-party course
+    #                            pages, so a blanket deny would break the feature this protects.
+    #
+    # `easy_core_idp_base_url` is referenced with no default on purpose: it is an origin without a
+    # path, both environments set it in `group_vars/all`, and a missing value should fail the run
+    # rather than render a policy with a hole where the IdP should be.
+    set $easy_csp "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://{{ easy_nginx_api_host }} {{ easy_core_idp_base_url }}; frame-src 'self' {{ easy_core_idp_base_url }}; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'";
+    set $easy_csp_embeddable "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://{{ easy_nginx_api_host }} {{ easy_core_idp_base_url }}; frame-src 'self' {{ easy_core_idp_base_url }}; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'";
+
     # No includeSubDomains: this name has siblings (dev.ems, dev.idp, dev.aas) that are not all
     # guaranteed to be HTTPS-only, and a subdomain-wide pin is remembered by browsers long after the
     # header stops being sent.
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy-Report-Only $easy_csp always;
 
     root {{ easy_nginx_web_root }};
     index index.html;
@@ -86,6 +127,7 @@ server {
         add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy-Report-Only $easy_csp always;
         try_files $uri =404;
     }
 
@@ -96,6 +138,7 @@ server {
         add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy-Report-Only $easy_csp always;
         try_files $uri =404;
     }
 
@@ -119,6 +162,24 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # The embed route is built to be framed on somebody else's course page — `EmbedDialog` generates
+    # the snippet a teacher pastes there — so it gets the policy *without* `frame-ancestors`. That is
+    # the whole reason this location exists: `frame-ancestors 'self'` on the SPA is the clickjacking
+    # control, and applying it here would break the one route whose job is to be embedded.
+    #
+    # Otherwise identical to `location /` below, because `/embed/...` is a SPA route like any other and
+    # is answered with index.html. Kept as its own location rather than handled by a `map`, so that the
+    # exemption is visible next to the thing it exempts.
+    location /embed/ {
+        add_header Cache-Control "no-cache" always;
+        # Repeated, not inherited — see the note at the top of this file.
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy-Report-Only $easy_csp_embeddable always;
+        try_files $uri $uri/ /index.html =404;
+    }
+
     # A single-page app: every route that is not a real file is index.html, and index.html itself
     # must never be cached or a deploy does not reach anyone still holding the old one.
     location / {
@@ -127,6 +188,7 @@ server {
         add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy-Report-Only $easy_csp always;
         # The trailing `=404` is not decoration. Without it, a request that falls through to
         # /index.html when that file does not exist — which is the state of this host until the first
         # deploy — re-enters this same location and nginx gives up with "rewrite or internal
