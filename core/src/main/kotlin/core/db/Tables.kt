@@ -366,7 +366,19 @@ object TeacherSubmission : LongIdTable("teacher_submission") {
 
 object FeedbackSnippet : LongIdTable("feedback_snippet") {
     val teacher = reference("teacher_id", Account)
-    val createdAt = datetime("created_at")
+
+    /**
+     * Last modified, not created — and named for it since changeset `240826-1`.
+     *
+     * Every edit writes `now()` here and the teacher's list is ordered by it descending, so this is
+     * the ordering the feature has: most recently touched first. It was called `created_at`, which
+     * made "editing an old snippet moves it to the top" look like a bug in the sort rather than the
+     * column's actual meaning.
+     *
+     * It is *not* most-recently-used: nothing bumps this when a snippet is inserted into feedback,
+     * only when its text is edited.
+     */
+    val modifiedAt = datetime("modified_at")
     val snippetHtml = text("snippet_html")
     val snippetMd = text("snippet_md")
 }

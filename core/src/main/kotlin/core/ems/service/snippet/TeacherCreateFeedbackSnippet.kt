@@ -50,7 +50,7 @@ class TeacherCreateFeedbackSnippetController(val markdownService: MarkdownServic
             it[teacher] = teacherId
             it[snippetMd] = dto.snippetMd
             it[snippetHtml] = markdownService.mdToHtml(dto.snippetMd)
-            it[createdAt] = DateTime.now()
+            it[modifiedAt] = DateTime.now()
         }
         // Get the count of snippets for the given teacher
         val snippetCount = FeedbackSnippet.selectAll().where { FeedbackSnippet.teacher eq teacherId }.count().toInt()
@@ -64,7 +64,12 @@ class TeacherCreateFeedbackSnippetController(val markdownService: MarkdownServic
             val idsToDelete = FeedbackSnippet
                 .select(FeedbackSnippet.id)
                 .where { FeedbackSnippet.teacher eq teacherId }
-                .orderBy(FeedbackSnippet.createdAt, SortOrder.ASC)
+                // Least recently modified first — this deletes rows, so the tie matters more here
+                // than in a read: without `id` the database chooses which snippet to destroy among
+                // any that share a timestamp. Note the column means last-modified (see
+                // FeedbackSnippet.modifiedAt), so editing a snippet now also protects it from being
+                // pruned — which follows from keeping the most-recently-touched ordering.
+                .orderBy(FeedbackSnippet.modifiedAt to SortOrder.ASC, FeedbackSnippet.id to SortOrder.ASC)
                 .limit(excessCount)
                 .map { it[FeedbackSnippet.id] }
 

@@ -32,7 +32,9 @@ class TeacherReadFeedbackSnippetsController {
         @get:JsonProperty("id") val id: String,
         @get:JsonProperty("snippet_md") val snippetMd: String,
         @get:JsonProperty("snippet_html") val snippetHtml: String,
-        @get:JsonProperty("created_at") @get:JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime
+        // Last modified, not created — see FeedbackSnippet.modifiedAt. Renamed on the wire too,
+        // because a field called created_at that moves when you edit is worse than a rename.
+        @get:JsonProperty("modified_at") @get:JsonSerialize(using = DateTimeSerializer::class) val modifiedAt: DateTime
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -49,13 +51,15 @@ class TeacherReadFeedbackSnippetsController {
             FeedbackSnippet
                 .selectAll()
                 .where { FeedbackSnippet.teacher eq teacherId }
-                .orderBy(FeedbackSnippet.createdAt, SortOrder.DESC)
+                // `id` breaks the tie: two snippets created in the same instant would otherwise come
+                // back in any order, and this list is rendered to a teacher as a stable menu.
+                .orderBy(FeedbackSnippet.modifiedAt to SortOrder.DESC, FeedbackSnippet.id to SortOrder.DESC)
                 .map {
                     SnippetResp(
                         it[FeedbackSnippet.id].value.toString(),
                         it[FeedbackSnippet.snippetMd],
                         it[FeedbackSnippet.snippetHtml],
-                        it[FeedbackSnippet.createdAt],
+                        it[FeedbackSnippet.modifiedAt],
                     )
                 })
     }

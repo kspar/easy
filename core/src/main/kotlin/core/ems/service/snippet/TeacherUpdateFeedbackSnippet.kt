@@ -44,7 +44,9 @@ class TeacherUpdateFeedbackSnippetController(val markdownService: MarkdownServic
                 FeedbackSnippet.update({ FeedbackSnippet.id eq snippetId and (FeedbackSnippet.teacher eq teacherId) }) {
                     it[snippetMd] = dto.snippetMd
                     it[snippetHtml] = markdownService.mdToHtml(dto.snippetMd)
-                    it[createdAt] = DateTime.now()
+                    // Deliberate: this column is last-modified and named for it since changeset
+                    // 240826-1, so the list orders most recently touched first.
+                    it[modifiedAt] = DateTime.now()
                 }
             }
         }

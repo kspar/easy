@@ -600,4 +600,22 @@
         </createTable>
     </changeSet>
 
+    <!--
+        `feedback_snippet.created_at` never held a creation time. Every edit wrote
+        `DateTime.now()` into it and the list is ordered by it descending, so fixing a typo in an old
+        snippet moved it to the top — the column recorded last-modified while being named and
+        reported as created_at.
+
+        Renamed rather than corrected, because most-recently-touched is the ordering that was kept:
+        the write stays and the name now matches it. Note that this does not give
+        most-recently-*used* ordering — nothing bumps the timestamp when a snippet is inserted into
+        feedback, only when it is edited — so if that is ever wanted it is a separate change.
+
+        No data migration: every existing value already is a modification time, which is the whole
+        point. Safe against a populated database — a rename touches no rows.
+    -->
+    <changeSet id="240826-1" author="kspar">
+        <renameColumn tableName="feedback_snippet" oldColumnName="created_at" newColumnName="modified_at"/>
+    </changeSet>
+
 </databaseChangeLog>

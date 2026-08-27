@@ -60,7 +60,12 @@ class ReadLatestTeacherSubmissions {
                     (TeacherSubmission.exercise eq exerciseId) and
                             (TeacherSubmission.teacher eq teacherId)
                 }
-                .orderBy(TeacherSubmission.createdAt to SortOrder.DESC)
+                // `id` breaks the tie, and this list is paginated, so it is not cosmetic. Two
+                // submissions can share a `created_at` — a teacher testing an exercise submits in
+                // bursts — and rows tied on the whole sort key may come back in any order, including a
+                // different order for `offset 0` than for `offset 10`. That loses a row from one page
+                // and repeats it on another. `id` is unique and monotonic, so the sort is now total.
+                .orderBy(TeacherSubmission.createdAt to SortOrder.DESC, TeacherSubmission.id to SortOrder.DESC)
 
             val totalSubmissions = selectQuery.count()
 
@@ -77,6 +82,10 @@ class ReadLatestTeacherSubmissions {
                     )
                 }
 
-            Resp(submissions.size, submissions)
+            // The total, not `submissions.size`. `count` used to be the size of the page, which equals
+            // the total only when nothing is paginated — so it was wrong in precisely the case a
+            // `count` field exists for, and a client asking for a page could not learn how many rows
+            // there were. The COUNT(*) was already being issued on every request and then discarded.
+            Resp(totalSubmissions.toInt(), submissions)
         }
 }

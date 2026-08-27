@@ -1188,8 +1188,8 @@
       "snippets": { "kind": "array", "type": "core.ems.service.snippet.TeacherReadFeedbackSnippetsController.SnippetResp" }
     },
     "core.ems.service.snippet.TeacherReadFeedbackSnippetsController.SnippetResp": {
-      "created_at": { "kind": "datetime" },
       "id": { "kind": "string" },
+      "modified_at": { "kind": "datetime" },
       "snippet_html": { "kind": "string" },
       "snippet_md": { "kind": "string" }
     },
