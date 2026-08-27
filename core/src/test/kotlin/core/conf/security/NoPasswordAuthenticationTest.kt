@@ -1,10 +1,15 @@
 package core.conf.security
 
 import core.EasyCoreApp
+import core.testing.IntegrationTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+import org.springframework.context.ApplicationContext
+import org.springframework.security.authentication.AuthenticationProvider
 
 /**
  * That `EasyCoreApp` still excludes [UserDetailsServiceAutoConfiguration].
@@ -29,7 +34,8 @@ import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoCon
  * the exclusion, which is the change actually worth catching. Written down rather than implied, since
  * the honest scope of a guard is part of the guard.
  */
-class NoPasswordAuthenticationTest {
+@IntegrationTest
+class NoPasswordAuthenticationTest(@Autowired private val context: ApplicationContext) {
 
     @Test
     fun `the app excludes Boot's user-details autoconfiguration`() {
@@ -41,5 +47,20 @@ class NoPasswordAuthenticationTest {
         assertTrue(excluded.contains(UserDetailsServiceAutoConfiguration::class)) {
             "EasyCoreApp no longer excludes UserDetailsServiceAutoConfiguration; excludes = $excluded"
         }
+    }
+
+    @Test
+    fun `nothing registers an AuthenticationProvider`() {
+        // The half of the replaced test that was *not* tautological, restored. The `JwtDecoder`
+        // argument only vacated the `UserDetailsService` assertion: an `AuthenticationProvider` bean
+        // would be a real change and this really does catch it.
+        //
+        // Why it is worth catching: re-adding one silently makes that bean, rather than the annotation
+        // above, the thing suppressing `UserDetailsServiceAutoConfiguration` — and with
+        // `auth-enabled: false` a provider like the deleted `EasyUserAuthProvider`, whose `authenticate`
+        // set `isAuthenticated = false` for an empty role set, would reject users outright. That is the
+        // failure SecurityConf's deletion note gives as the reason not to wire one up.
+        val providers = context.getBeanNamesForType(AuthenticationProvider::class.java).toList()
+        assertEquals(emptyList<String>(), providers) { "an AuthenticationProvider is registered: $providers" }
     }
 }

@@ -91,16 +91,20 @@ fun normaliseRoleStrings(roleStrings: List<String>): List<String> =
  * Throws rather than dropping anything: a role we cannot map is a Keycloak configuration problem, and
  * silently ignoring it would quietly change what a user can do.
  *
- * Normalises its input, so it is safe for a caller that has not already done so — but note the second
- * throw, which is what keeps that from being a downgrade. Normalising discards empty fragments, so
- * without it `mapRoleStringsToRoles(listOf(","))` would *return an empty set* where it used to throw
- * `Unmapped role ""` — turning the loudest available signal into the exact quiet failure this area has
- * now produced twice, an authenticated principal with no authorities. Input that carries something and
- * yields no role is therefore an error, not an empty answer.
+ * Normalises its input, so a caller that has not already done so still gets trimming and comma
+ * splitting, and the second throw keeps that from being a downgrade: without it,
+ * `mapRoleStringsToRoles(listOf(","))` would *return an empty set* where it used to throw
+ * `Unmapped role ""`, turning the loudest available signal into the quiet failure this area has now
+ * produced twice — an authenticated principal with no authorities.
  *
- * `mapRoleStringsToRoles(emptyList())` is still an empty set: a caller that asked about no roles gets
- * no roles, and deciding whether *that* is allowed belongs to the caller — [EasyUserJwtConverter]
- * rejects it as a missing claim, [DummyZeroAuthFilter] declines to authenticate.
+ * **Scope that honestly, though: this does not decide whether "no roles" is allowed, and cannot.**
+ * The guard is keyed on the raw argument, so it fires for `mapRoleStringsToRoles(listOf(","))` and
+ * not for `mapRoleStringsToRoles(normaliseRoleStrings(listOf(",")))` — which is `emptyList()` by then,
+ * and an empty request legitimately maps to an empty set. Both real callers take that second shape,
+ * because both need the emptiness answer *before* mapping in order to say which claim was missing, so
+ * both do their own check and neither is protected by this one. A third caller written in the same
+ * style would not be either. Refusing an authority-less principal is the caller's job, and there is no
+ * version of this function that can take it over while the callers still need to name what was absent.
  */
 fun mapRoleStringsToRoles(roleStrings: List<String>): Set<EasyGrantedAuthority> {
     val normalised = normaliseRoleStrings(roleStrings)

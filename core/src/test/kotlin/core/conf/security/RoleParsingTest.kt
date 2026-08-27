@@ -181,6 +181,30 @@ class RoleParsingTest {
     }
 
     @Test
+    fun `claim headers sent empty are a failed login, not an anonymous request`() {
+        // The distinction has to be drawn on header *presence*, not on the blank-nulled values:
+        // `getOptionalHeader` nulls a blank, so testing those classified "every claim header sent
+        // empty" as anonymous — credentials offered, unusable, and 200 on a `permitAll` path.
+        // `EMS.postman_collection.json` sends these as `{{…}}` variables, so running it against an
+        // unset environment produces exactly this request.
+        val allEmpty = runFilter(
+            mapOf(
+                "oidc_claim_preferred_username" to "",
+                "oidc_claim_email" to "",
+                "oidc_claim_easy_role" to "",
+            )
+        )
+        assertEquals(401, allEmpty.status)
+        assertEquals(false, allEmpty.continued) { "empty claim headers were treated as anonymous" }
+
+        // And a request carrying only an optional name is still an attempt, so it is refused rather
+        // than downgraded — all five header names count, not just the three required ones.
+        val onlyGivenName = runFilter(mapOf("oidc_claim_given_name" to "Ulo"))
+        assertEquals(401, onlyGivenName.status)
+        assertEquals(false, onlyGivenName.continued)
+    }
+
+    @Test
     fun `no claim headers at all is an anonymous request, which still reaches permitAll`() {
         // The other half, and why the filter cannot simply refuse everything it does not like: a
         // request offering no credentials is not a failed login, and a public endpoint must still serve

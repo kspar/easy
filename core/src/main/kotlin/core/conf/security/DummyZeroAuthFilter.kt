@@ -10,6 +10,15 @@ import org.springframework.security.web.context.SecurityContextRepository
 import org.springframework.web.filter.OncePerRequestFilter
 
 
+/** Every header this filter reads. Named once so the presence check cannot drift from the reads. */
+private val CLAIM_HEADERS = listOf(
+    "oidc_claim_preferred_username",
+    "oidc_claim_email",
+    "oidc_claim_given_name",
+    "oidc_claim_family_name",
+    "oidc_claim_easy_role",
+)
+
 /**
  * Trusts `oidc_claim_*` request headers verbatim, so anything that can reach core can be any
  * user. Installed only when `easy.core.auth-enabled` is false — local dev and curl-based API
@@ -43,7 +52,15 @@ class DummyZeroAuthFilter(private val securityContextRepository: SecurityContext
         // No headers at all is not a failed login, it is an anonymous request: it falls through so a
         // `permitAll` path still works without credentials. Headers that are *present and unusable* are
         // a failed login, and that is answered 401 here rather than passed on — see [reject].
-        if (username == null && email == null && roles == null) {
+        //
+        // Presence is asked of the **raw** headers, not of the values above, and the difference is not
+        // hypothetical. `getOptionalHeader` nulls a blank value, so testing those would classify a
+        // request that sent every claim header empty as anonymous — credentials offered, unusable, and
+        // answered 200 on a `permitAll` path. `EMS.postman_collection.json` sends these as `{{…}}`
+        // variables, so running it against an unset environment does exactly that. All five names, so
+        // a request carrying only `given_name` is an attempt too.
+        val attempted = CLAIM_HEADERS.any { request.getHeader(it) != null }
+        if (!attempted) {
             filterChain.doFilter(request, response)
             return
         }
