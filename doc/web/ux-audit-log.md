@@ -127,8 +127,8 @@ and a reach estimate — a design finding without all three stays `UNCERTAIN`.
 
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
-| D1 | UI/UX docs against reality | todo | — | Three stale claims already identified; see the register's "candidates to close". **From the baseline:** EZ-1722 says "38 across 18 files"; `npm run lint` at `bf673235` reports **55 warnings, 0 errors**, so that issue's number needs updating and the backlog is growing rather than shrinking |
-| D2 | The consolidated guide | todo | — | **Last unit.** Writes `doc/web/ui-guide.md` from this log |
+| D1 | UI/UX docs against reality | **done `718902e8`** (2026-08-28) | X-043 | The drift census, one finding: testing.md's false "no a11y tests", the 13-vs-9 golden fixtures, EZ-1722's shrunken number, and the register itself as the largest drift — seven implemented-features-with-open-tickets found and closed across the audit. `doc/wui/` needed no new verdict: its own README already says nothing in it describes the current UI |
+| D2 | The consolidated guide | **done `718902e8`** (2026-08-28) | — | **`doc/web/ui-guide.md` written**, from this log's evidence: the conventions table (now including the audit-earned rules — labels on icon controls, destructive-dialog copy, exit guards, no native dialogs), the theme's live/dead tokens with the X-012/X-013 warnings, the radius vocabulary, viewports, loading/empty/error patterns, the a11y floor, Estonian-first, and the fixture lessons. Every rule carries a check line |
 
 ---
 
@@ -195,7 +195,7 @@ Queries used: `project: EZ #Unresolved Subsystem: web` (paged) and
 | id | Type | Summary |
 |---|---|---|
 | EZ-1706 | Usability | Grade table: link grade cells to the student's submission — **closed during J8**: implemented at `GradeTablePage.tsx:385`, verified by reading and by `grade-table.spec.mjs` |
-| EZ-1767 | Bug | Grade table — **verify state**: commit `785a8cc7` reads as a fix ("stops losing students, and learns to sort the same way twice") |
+| EZ-1767 | Bug | Grade table roster bug — **already Resolved** (2026-08-16), verified during D1 |
 
 ### Admin
 | id | Type | Summary |
@@ -1420,6 +1420,30 @@ Template:
 - Evidence: T5's measured native confirm; `window.prompt` sites in `AutoAssessTab` (T7 note); dialog
   census (mapping pass)
 - Register: not previously filed
+
+### X-043 The documentation's numbers have drifted, in both directions
+- Unit: D1
+- Surface: `doc/testing.md`, `doc/review-plan.md`, `doc/review-log.md`, EZ-1722
+- Norm: the project's own memory rule — a number without its commit is a rumour
+- Class: docs
+- Severity: low, but each instance misdirects whoever reads it next
+- Verdict: CONFIRMED
+- What happens, per instance:
+  - `doc/testing.md` §"Accessibility tests — **none**, and cheap to start" — false since EZ-1776:
+    `a11y.mjs` is 376 lines with a shrink-only baseline, wired into two specs. A reader planning a11y
+    work from this doc would rebuild what exists.
+  - "**13 golden fixture sets**" — `doc/review-plan.md` and `doc/review-log.md` (twice). The directory
+    holds **9** `.json` specs; `GoldenOutputTest` guards `>= 8`. Off by four in the docs of the
+    programme that coined the numbers-carry-their-commit rule.
+  - **EZ-1722**: "38 warnings across 18 files". `npm run lint` at `bf673235` reports **55**. The
+    backlog grows while the issue's number shrinks the problem.
+  - The **issue register itself** was the largest drift: six issues describing missing features that
+    exist (EZ-1414, 1705, 1707, 1706, 1754, 1748, 1764 — all closed during this audit, EZ-1767 was
+    already resolved). Features land faster than their tickets notice; a periodic register sweep like
+    this audit's is the only correction mechanism observed to work.
+- Instead: the three text fixes are one small commit; EZ-1722 gets its number refreshed in place.
+- Evidence: greps and counts at `bf673235`–`718902e8`, recorded per unit above
+- Register: this *is* the register finding
 
 ---
 
