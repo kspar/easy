@@ -69,11 +69,11 @@ finishes or it goes back to `todo`.
 | J2 | Student periphery & the front door | **done `57c722fa`** (2026-08-26) | X-033 | The role-mismatch redirect is confirmed and worse than the lead said: several seconds of spinner, then a silent landing on /courses (X-033). The rest of the periphery is already accounted for — joining is covered by `join-by-link.spec.mjs` (16 checks) and J7's R-013; `/register` and `/tos` are EZ-1691/EZ-1692, filed; `checkinFailed`'s bare alert folds into C1's error-copy pattern. The S9 login-handover half stays with S9 |
 | J3 | Teacher: course lifecycle | **done `57c722fa`** (2026-08-26) | X-034 | The lifecycle has a beginning and no end: creation works (CreateCourseDialog, covered by `courses-page.spec.mjs`), `EditCourseDialog` edits identifier/code/name — and archiving does not exist in the UI at all, though `archived` arrives on every course response (X-034, a gap-in-the-gap-list find). Course colours' mode-blindness was settled in S2 (they read fine on dark) |
 | J4 | Teacher: exercise authoring | **done `e58849ca`** (2026-08-26) | — | 3 candidates, **0 kept** — the authoring loop is well built and well covered. Live preview exists (`useMarkdownPreview`, 400ms debounce, rendered in the left column while editing); image/file upload is implemented with paste, drop and a two-mode Image menu — **EZ-1764 was implemented on 2026-08-16 and never resolved; closed during this unit**. The genuine gaps are all filed already: EZ-1732 (math), EZ-1765 (course-exercise instructions have no editor), EZ-1757 (versions), EZ-1760/EZ-1687 (share dialog). Nothing new to add |
-| J5 | Teacher: putting an exercise on a course | todo | — | |
+| J5 | Teacher: putting an exercise on a course | **done `fc5a3d32`** (2026-08-26) | X-037 | The dialogs are spec-covered (`course-exercises.spec.mjs`: settings, reorder, add-from-library, mass actions); the assessment-tab placeholder turned out implemented — **EZ-1754 closed during this unit**. The keep: soft/hard deadlines are never cross-validated, so hard-before-soft saves silently (X-037). Exceptions UI left as read-verified; nothing anomalous |
 | J6 | Teacher: grading | **done `b3e0a832`** (2026-08-24) | X-030, X-031; R-011, R-012 | 5 candidates, 2 kept, 2 refuted (one lead absorbed into X-031). The flow is **better than the plan assumed**: one-click prev/next between students, a roster with "3 hindamata" / "2 / 6 hinnatud" counts (R-011), a GitHub-style `+` comment gutter, and the full conversation — inline comment, feedback, grade, teacher's name — reaching both seats (R-012). Kept: the two navigation chevrons are the only unlabelled icon buttons of nine (X-030), and grading leaves the grade table stale, executed end to end with the exact key mismatch (X-031). **Fixture notes:** stub `/submissions/all/students/{id}` or the pane renders "Esitamata"; cache tests must navigate client-side; hover affordances toggle CSS classes, not DOM nodes |
 | J7 | Teacher: roster & groups | **done `a7ca430f`** (2026-08-26) | X-032; R-013 | 3 candidates, 1 kept, 1 refuted, 1 exemplary. The invite flow is the create-with-defaults-then-edit pattern done properly (R-013), and the delete-group dialog names every affected student — a model for C3. Kept: the remove-from-course confirm never says what happens to the student's work (X-032). Moodle link/sync/handover left to the five existing specs and the already-filed EZ-1768/EZ-1778; nothing new to add there. **For V3:** the page carries its 4 tabs and 33 `useState` well at this fixture size — the shape question needs S7's 200-row pass, not this one |
 | J8 | Teacher: results out | **done `fc0c2141`** (2026-08-26) | — (X-031 carries the one defect) | 4 candidates, **0 new kept**. The surface is in good shape: every grade cell links to the exact student×exercise view with an accessible name and documented reasoning — **EZ-1706 was implemented and is now closed** (verified by reading + `grade-table.spec.mjs`); `toCsv` is RFC 4180-quoted, semicolon-separated for European locales, and carried by 7 unit tests; the sticky first column and `TableContainer` are the app's best table. Non-findings, recorded: the on-screen Σ column (a completion count) is absent from the CSV — derived and recomputable, no task cost; CSV formula injection is review **F-016**, already filed. The staleness defect is X-031. Similarity left to its spec's 15 checks; nothing new found |
-| J9 | Admin | todo | — | Re-map first: EZ-1786 changed the admin surface at `df7244af` |
+| J9 | Admin | **done `fc5a3d32`** (2026-08-26) | — | Re-mapped post-EZ-1786: the Administration sidebar section now gathers System messages, Reported bugs, Keycloak admin and Operating info, which dissolved the plan's scattered-admin-tools premise. `SystemMessagesPage` ships as designed and is the app's only field-validated form — **EZ-1748 closed during this unit** (fifth implemented-but-unresolved issue). What an admin still cannot do from the UI is already filed: EZ-1761 (executors), EZ-1781 (grading libraries). Articles' view/edit-on-one-URL noted for V3; no new numbers |
 
 ### Track T — The TSL builder (7 units)
 
@@ -172,7 +172,7 @@ Queries used: `project: EZ #Unresolved Subsystem: web` (paged) and
 ### Course exercise and assessment
 | id | Type | Summary |
 |---|---|---|
-| EZ-1754 | Bug | Course exercise's assessment tab shows a placeholder instead of the auto-assessment config |
+| EZ-1754 | Bug | Assessment tab placeholder — **closed during J5**: renders read-only `AutoAssessTab` since before `df7244af`, spec-covered |
 | EZ-1755 | Feature | Teacher testing tab should open with the solution last tested |
 | EZ-1756 | Feature | Store the auto-assessment result with each teacher test submission and show it |
 
@@ -202,7 +202,7 @@ Queries used: `project: EZ #Unresolved Subsystem: web` (paged) and
 |---|---|---|
 | EZ-1761 | Feature | Admin UI for executors: loads, and container image assignments |
 | EZ-1781 | Feature | Let non-core-devs update grading library versions, with rollback, and show the versions |
-| EZ-1748 | Feature | Scheduled system messages — **verify state**: `SystemMessagesPage` ships |
+| EZ-1748 | Feature | Scheduled system messages — **closed during J9**: implemented as designed, two specs cover it |
 | EZ-1786 | Feature | Generic bug reporting from the app — in flight at `df7244af` |
 
 ### Shell, navigation, conventions
@@ -1278,6 +1278,25 @@ Template:
   string); C5 sweep + the suite's own empty-state screenshot for `/courses`. Loading states are the
   same story in miniature — 31 files use bare `CircularProgress`, one uses `Skeleton` — but spinners
   are adequate, so that half is a style-guide line (D2), not a finding
+- Register: not previously filed
+
+### X-037 A hard deadline before the soft one saves without a word
+- Unit: J5
+- Surface: `ExerciseSettingsDialog` (course exercise settings), teacher
+- Norm: a form that knows two values are ordered enforces the order (source 5); the dialog already
+  validates its other two fields, so the machinery is present (source 2)
+- Class: correctness + journey
+- Severity: low-medium — an easy mistake with confusing downstream semantics
+- Reach: every deadline pair set in the app
+- Verdict: CONFIRMED by reading (`ExerciseSettingsDialog.tsx:175-177`)
+- What happens: `canSave = thresholdValid && visibleFromValid` — the two deadline pickers are not in
+  it, and nothing compares them. A teacher can save `hard_deadline` **before** `soft_deadline` (or
+  either in the past, which is sometimes intended but never remarked on). What a hard-before-soft pair
+  *means* downstream — submissions rejected before the "soft" deadline arrives — is exactly the kind of
+  contradiction a student meets and a teacher cannot explain.
+- Instead: one comparison in `canSave` with a field-level error on the hard-deadline picker
+  ("Lõpptähtaeg ei saa olla enne pehmet tähtaega"), same pattern as `thresholdValid`.
+- Evidence: source at `fc5a3d32`; the dialog's own two validations as the pattern
 - Register: not previously filed
 
 ---
