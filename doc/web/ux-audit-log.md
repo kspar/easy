@@ -68,7 +68,7 @@ finishes or it goes back to `todo`.
 | J1 | Student core loop | **done `1bdd895c`** (2026-08-24) | X-001…X-008, X-028, X-029; R-009, R-010 | The loop and all four edge states walked. 12 candidates, 10 kept, 2 refuted — and both refutations were my own flawed measurements, which is the useful pattern here. The app handles the *closed* state well (R-010) and confirms teacher-graded submissions properly (R-009); what it does not do is honour `TEXT_UPLOAD` at all (X-028) or say that a deadline has passed (X-029). **Scope moved:** `ActivityFeed` and `PreviousSubmissions` in depth go to **J6**, which reads the same components from the teacher's seat — auditing them twice from two seats is the same read, and J6 is where the grading conversation lives |
 | J2 | Student periphery & the front door | **done `57c722fa`** (2026-08-26) | X-033 | The role-mismatch redirect is confirmed and worse than the lead said: several seconds of spinner, then a silent landing on /courses (X-033). The rest of the periphery is already accounted for — joining is covered by `join-by-link.spec.mjs` (16 checks) and J7's R-013; `/register` and `/tos` are EZ-1691/EZ-1692, filed; `checkinFailed`'s bare alert folds into C1's error-copy pattern. The S9 login-handover half stays with S9 |
 | J3 | Teacher: course lifecycle | **done `57c722fa`** (2026-08-26) | X-034 | The lifecycle has a beginning and no end: creation works (CreateCourseDialog, covered by `courses-page.spec.mjs`), `EditCourseDialog` edits identifier/code/name — and archiving does not exist in the UI at all, though `archived` arrives on every course response (X-034, a gap-in-the-gap-list find). Course colours' mode-blindness was settled in S2 (they read fine on dark) |
-| J4 | Teacher: exercise authoring | todo | — | EZ-1732 (math no longer renders) is the one to check first |
+| J4 | Teacher: exercise authoring | **done `e58849ca`** (2026-08-26) | — | 3 candidates, **0 kept** — the authoring loop is well built and well covered. Live preview exists (`useMarkdownPreview`, 400ms debounce, rendered in the left column while editing); image/file upload is implemented with paste, drop and a two-mode Image menu — **EZ-1764 was implemented on 2026-08-16 and never resolved; closed during this unit**. The genuine gaps are all filed already: EZ-1732 (math), EZ-1765 (course-exercise instructions have no editor), EZ-1757 (versions), EZ-1760/EZ-1687 (share dialog). Nothing new to add |
 | J5 | Teacher: putting an exercise on a course | todo | — | |
 | J6 | Teacher: grading | **done `b3e0a832`** (2026-08-24) | X-030, X-031; R-011, R-012 | 5 candidates, 2 kept, 2 refuted (one lead absorbed into X-031). The flow is **better than the plan assumed**: one-click prev/next between students, a roster with "3 hindamata" / "2 / 6 hinnatud" counts (R-011), a GitHub-style `+` comment gutter, and the full conversation — inline comment, feedback, grade, teacher's name — reaching both seats (R-012). Kept: the two navigation chevrons are the only unlabelled icon buttons of nine (X-030), and grading leaves the grade table stale, executed end to end with the exact key mismatch (X-031). **Fixture notes:** stub `/submissions/all/students/{id}` or the pane renders "Esitamata"; cache tests must navigate client-side; hover affordances toggle CSS classes, not DOM nodes |
 | J7 | Teacher: roster & groups | **done `a7ca430f`** (2026-08-26) | X-032; R-013 | 3 candidates, 1 kept, 1 refuted, 1 exemplary. The invite flow is the create-with-defaults-then-edit pattern done properly (R-013), and the delete-group dialog names every affected student — a model for C3. Kept: the remove-from-course confirm never says what happens to the student's work (X-032). Moodle link/sync/handover left to the five existing specs and the already-filed EZ-1768/EZ-1778; nothing new to add there. **For V3:** the page carries its 4 tabs and 33 `useState` well at this fixture size — the shape question needs S7's 200-row pass, not this one |
@@ -117,10 +117,10 @@ and a reach estimate — a design finding without all three stays `UNCERTAIN`.
 
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
-| C1 | Forms, validation and error copy | todo | — | One pattern finding, not nineteen dialogs |
-| C2 | Loading, empty and error states | todo | — | |
-| C3 | Destructive actions and confirmation | todo | — | |
-| C4 | Feedback after a mutation | todo | — | Cross-reference review F-035 |
+| C1 | Forms, validation and error copy | **done `e58849ca`** (2026-08-26) | X-035 | The pattern finding, as planned: 19 files render the same sentence while the typed error envelope is read in exactly 2 (X-035). The per-form worst cases were measured by their own units — X-018 (raw kotlinx), X-027 (required-not-enforced), and `SystemMessagesPage`'s inline dialog remains the only field-validated form. One shared `errorMessage(err)` is the proposed shape |
+| C2 | Loading, empty and error states | **done `e58849ca`** (2026-08-26) | X-036 | Empty states are the finding (X-036): a designed one exists and is used once, `/courses` renders literally nothing, and no empty state names the next action. Loading is adequate (31 spinners, 1 skeleton — a D2 style-guide line, not a defect). The error half was already filed: X-009 (unreachable CrashScreen) and X-035 (one sentence for everything) |
+| C3 | Destructive actions and confirmation | **done `e58849ca`** (2026-08-26) | — (instances already filed) | The sweep's instances were all found by their units, and per the file-at-the-decision rule they stay there: X-021 (TSL delete/type-switch, unconfirmed + no undo), X-032 (remove-from-course confirms but hides consequences), X-017/X-001 (unguarded navigation), `window.confirm`/`window.prompt` in `AutoAssessTab` (T7 note). The **models to copy** are as important as the defects: the delete-group dialog (names every affected student), the Cancel guard, and R-010's closed-exercise handling. The structural cause is one line: `ConfirmDialog` lives under `features/participants/` and nothing else can reach it — moving it to `components/` is the enabler for every fix above |
+| C4 | Feedback after a mutation | **done `e58849ca`** (2026-08-26) | — (X-031 is the finding) | Traced through the units rather than as a separate sweep: successes are mostly confirmed ("Lahendus esitatud", "Kutselink loodud", "Exercise saved" snackbars — R-009, R-013), failures are the C1 problem (X-035), and the one place success *lies* is X-031's stale grade table. No separate finding earns its number |
 | C5 | Keyboard, focus and a11y coverage | **in progress** 2026-08-23 `79248877` | X-003 (extended), X-004 (extended), X-009, X-010, X-011 | **Promoted and run: the axe sweep is done** — 23 surfaces × 2 themes = 46 scans, `tests/audit/c5-a11y-sweep.mjs`, report at `web/tests/audit/reports/c5-a11y-sweep.json`. **6 distinct gate-level violations, 29 distinct contrast.** Canary fired on the run. **Remaining before `done`:** tab order through the shell and the three biggest dialogs by hand, the `TransitionProps.onEntered` focus-trap convention across the 19 dialogs (review E5 found it broken in 4 of 12), Escape-to-close and Enter-to-submit, and a re-scan of the 15 routes marked `thin` in the JSON with realistic data — those were scanned in their empty state, so a table cell's contrast could not have been seen. Original note follows. **From J1: this is the highest-yield unit in the programme and it should probably be promoted.** The very first non-wired route scanned produced **two gate-level violations** (X-002, X-003) and **ten contrast findings** (X-004). The `a11y` fixture is wired to 2 of 40 specs, so ~20 routes have never been scanned once. Two mechanics to inherit: `scan()` returns `{ gate, contrast }` — not `{ found, contrastFindings }`, which silently reads as "clean" — and always run the canary from `j1-measure.mjs` before believing a zero |
 
 ### Track D — Documentation (2 units)
@@ -162,7 +162,7 @@ Queries used: `project: EZ #Unresolved Subsystem: web` (paged) and
 | id | Type | Summary |
 |---|---|---|
 | EZ-1732 | Bug | Math in exercise text no longer renders: no MathJax or KaTeX in `web/` |
-| EZ-1764 | Feature | Upload images from the editor: the web app has no way to create a stored file |
+| EZ-1764 | Feature | Upload images from the editor — **closed during J4**: implemented `336a5eca` (2026-08-16), verified via `markdown-upload.spec.mjs`; the issue had simply stayed Open |
 | EZ-1765 | Feature | Course exercise instructions cannot be edited in the web app, only rendered |
 | EZ-1757 | Feature | List, view and diff older versions of a library exercise |
 | EZ-1702 | Bug | Verify adoc → Markdown conversion of existing exercise texts |
@@ -1224,6 +1224,61 @@ Template:
 - Evidence: grep at `57c722fa`; `EditCourseDialog.tsx` field list
 - Register: not previously filed — and it is a *gap in the gap list*: the WUI migration checklist
   (EZ-1689…1707) never mentions archiving, so it fell out of the migration unnoticed
+
+### X-035 One error sentence serves the whole application, while the typed error codes go unread
+- Unit: C1
+- Surface: app-wide — every mutation and most queries
+- Norm: errors say what happened and how to fix it (source 5); and the app's own best practice, which
+  exists in exactly two places (source 2)
+- Class: copy + journey
+- Severity: high as a pattern
+- Reach: 19 files render `general.somethingWentWrong` ("Midagi läks valesti") as their entire error
+  handling; measured at `e58849ca`
+- Verdict: CONFIRMED
+- What happens: core answers failures with a typed envelope — `{id, code, attrs, log_msg}` — and
+  `api/client.ts` parses it into `ApiResponseError.errorBody` on every request. **Exactly two call
+  sites read it**: `ShareDialog` branches on `ACCOUNT_NOT_FOUND` ("no such teacher") and
+  `BugReportDialog` on `BUG_REPORT_RATE_LIMITED`. Everywhere else — nineteen files — the user gets the
+  same sentence whether the course name was taken, the deadline was malformed, the file was too large,
+  or the server was down. The two good citizens prove the mechanism costs a few lines; TSL's compile
+  path is the extreme opposite case, already filed as X-018 (it shows the raw internals instead).
+  Eleven of nineteen dialogs also have no field-level validation at all (mapping pass), so the generic
+  sentence is usually the *only* feedback a form gives.
+- Instead: not nineteen bespoke handlers — one shared `errorMessage(err)` that maps the codes core
+  actually emits (a bounded list, discoverable from `ReqError` in core) to sentences, falls back to the
+  generic one, and is adopted opportunistically. The two existing branches fold into it. Pairs with
+  X-009: the crash boundary and the error copy are the two halves of "when things go wrong".
+- Evidence: greps at `e58849ca` (19 files; 2 consumers); `client.ts:15-18`; X-018 and X-027 as the
+  measured worst cases
+- Register: not previously filed as such; EZ-1786's bug-report flow is the mitigation for the
+  unmappable remainder
+
+### X-036 Empty states range from charming to absent, and none of them says what to do next
+- Unit: C2
+- Surface: app-wide, first-run and no-data states
+- Norm: an empty screen is an invitation to act (source 5, the writing guidance); and the app's own
+  best instance (source 2)
+- Class: consistency + copy
+- Severity: medium as a pattern — empty states are disproportionately what new users see
+- Reach: every list surface; a new teacher's first session is almost entirely empty states
+- Verdict: CONFIRMED
+- What happens: the app has a designed empty state — `RobotPlaceholder`, the robot mascot with a
+  message — used in exactly **one file** (`CourseExercisesPage`, both role variants) out of every list
+  surface in the app. Elsewhere: `/courses` with no courses renders a **bare empty grid** (nothing at
+  all — measured in C5's sweep and pinned by the suite's own `courses-empty-04-empty.png`); the grade
+  table's empty text is a joke — *"Kui sel kursusel oleks mõni ülesanne, siis näeksid siin
+  hindetabelit :-)"*; the library and dialogs use plain one-line texts. And **none of them, including
+  the robot, tells the user the next action** — a teacher with no courses is not told how to get one, a
+  grade table without exercises does not link to adding one.
+- Instead: one `EmptyState` component (icon/robot, message, optional action button), adopted where the
+  lists are. The action line matters more than the artwork: "Lisa esimene ülesanne" on the empty
+  exercise list is navigation, not decoration. The `:-)` is a tone decision for kspar — it is at least
+  *warm*, which the bare grid is not.
+- Evidence: greps at `e58849ca` (`RobotPlaceholder` in 1 feature file; `grades.emptyPlaceholder`
+  string); C5 sweep + the suite's own empty-state screenshot for `/courses`. Loading states are the
+  same story in miniature — 31 files use bare `CircularProgress`, one uses `Skeleton` — but spinners
+  are adequate, so that half is a style-guide line (D2), not a finding
+- Register: not previously filed
 
 ---
 
