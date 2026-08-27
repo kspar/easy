@@ -24,11 +24,20 @@ private val CLAIM_HEADERS = listOf(
  * user. Installed only when `easy.core.auth-enabled` is false — local dev and curl-based API
  * testing (doc/core/api-testing.md). Production verifies JWTs instead; see [EasyUserJwtConverter].
  *
- * **Keep these header values ASCII.** Spring's `StrictHttpFirewall` rejects a request whose header
- * value contains a control character, and a non-ASCII name typed into `curl` becomes one: request
- * headers are decoded as ISO-8859-1, so the UTF-8 bytes of `Ü` (`0xC3 0x9C`) arrive as `Ã` followed
- * by U+009C — a C1 control. The request is refused before reaching any of this, with a 400 that says
- * nothing about names.
+ * **Keep these header values ASCII, and not because you get told off if you do not.** Request headers
+ * are decoded as ISO-8859-1, so a UTF-8 name arrives as mojibake — and whether that is *refused* comes
+ * down to which byte it happens to land on. `StrictHttpFirewall` rejects a control character, and the
+ * second UTF-8 byte of the Estonian **uppercase** vowels falls in the C1 range: `Ü` is `0xC3 0x9C`, so
+ * it arrives as `Ã` + U+009C and the request is refused with a 400 that says nothing about names.
+ *
+ * The **lowercase** ones are not: `ä` is `0xC3 0xA4` → `Ã¤`, and `ö`, `ü`, `õ` likewise land on
+ * assigned, non-control characters. Those are accepted and stored mangled, silently. So the rule is
+ * not "you will be stopped", it is "half of these are corrupted without complaint" — which is the
+ * worse half and the actual reason to keep them ASCII.
+ *
+ * Nothing consumes these two names today, which is the only reason the blast radius is nil:
+ * `account_checkin` takes the display name from its request body, not from the principal. That is
+ * load-bearing and worth knowing before anything starts reading `EasyUser.givenName`.
  *
  * That is the whole of EZ-1434, which was worked around by switching the firewall's header-value
  * check off globally. The workaround is gone (see [SecurityConf]), because turning a production

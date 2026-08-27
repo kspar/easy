@@ -30,11 +30,14 @@ is refused with a 401 and a line in core's log saying which. That is deliberate 
 credentials that are rejected is a failed login, so it fails everywhere rather than quietly
 continuing as anonymous and succeeding on a public path.
 
-**Keep these values ASCII.** `StrictHttpFirewall` refuses any request whose header value contains a
-control character, and a non-ASCII name becomes one on the way in: request headers are decoded as
-ISO-8859-1, so the UTF-8 bytes of `Ü` (`0xC3 0x9C`) arrive as `Ã` followed by U+009C, a C1 control.
-The request is refused with a bare 400 that says nothing about names. That is the whole of EZ-1434,
-which was originally worked around by disabling the firewall's header-value check globally — a
+**Keep these values ASCII.** Request headers are decoded as ISO-8859-1, so a UTF-8 name arrives as
+mojibake, and whether it is *refused* depends on which byte it lands on. `StrictHttpFirewall` refuses a
+control character, and the second UTF-8 byte of the uppercase Estonian vowels falls in that range — `Ü`
+is `0xC3 0x9C`, arriving as `Ã` + U+009C — so those give a bare 400 that says nothing about names. The
+lowercase ones (`ä` → `Ã¤`, and `ö`, `ü`, `õ`) land on ordinary printable characters instead: they are
+accepted and mangled, with no error at all. The silent half is the reason for the rule.
+
+That is the whole of EZ-1434, which was originally worked around by disabling the firewall's header-value check globally — a
 production control switched off for a testing convenience. The names here are arbitrary, so a test
 user called `Ulo` proves everything one called `Ülo` would; if you genuinely need a non-ASCII display
 name, exercise it through a JWT claim against a real IdP instead (`core/dev-idp/`).

@@ -108,16 +108,15 @@ val coverageTargets = listOf(
     // and throws nothing. 85% today; the missing lines are error branches in courses.kt.
     CoverageTarget("core.ems.service.access_control.", 85, "who may see whose work"),
 
-    CoverageTarget(
-        "core.conf.security.", 85, "the security configuration",
-        except = listOf(
-            // Trusts oidc_claim_* headers verbatim and is installed only when auth is disabled.
-            // Core refuses to start with that flag off a loopback address, so this is code whose
-            // correctness we assert by it never running. Testing it would make the release gate the
-            // biggest consumer of the one path that must never run anywhere real.
-            "core.conf.security.DummyZeroAuthFilter",
-        ),
-    ),
+    // `DummyZeroAuthFilter` was excluded here, on the argument that it is "code whose correctness we
+    // assert by it never running" — installed only when auth is disabled, and core refuses to start
+    // that way off a loopback address. That reasoning stopped being true: `RoleParsingTest` now drives
+    // the filter directly, because it is one of the two role-parsing paths that have to agree, and it
+    // is the only thing pinning the rule that offered-but-unusable credentials are a 401 rather than
+    // an anonymous request. The exclusion kept those lines out of the denominator, so the gate whose
+    // job is noticing an area falling out of the suite was blind to the one area that had just been
+    // added to it.
+    CoverageTarget("core.conf.security.", 85, "the security configuration"),
 
     // The only code in this application that removes an object from storage.
     CoverageTarget("core.ems.service.storage.", 90, "object storage"),
