@@ -81,6 +81,62 @@
     group: "{{ keycloak_group }}"
     recurse: true
 
+# --- password denylists ----------------------------------------------------------------------------
+# Stamped into the install because Keycloak looks for them inside it, and kept outside the install
+# because an upgrade replaces that directory. A realm policy naming a file that is not there stops
+# the server from starting — after the schema has migrated — so this runs before the first build.
+
+- name: Look for password denylists to carry into this install
+  ansible.builtin.find:
+    paths: "{{ keycloak_blacklists_dir }}"
+    file_type: file
+  register: keycloak_blacklists
+  changed_when: false
+  check_mode: false
+  failed_when: false
+
+- name: Make the directory Keycloak reads denylists from
+  # A fresh distribution does not ship it — data/ is created by the build and the runtime — so the
+  # copy below has nowhere to land until this exists.
+  ansible.builtin.file:
+    path: "{{ keycloak_versioned_home }}/data/password-blacklists"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_group }}"
+    mode: "0755"
+  when:
+    - keycloak_ready_to_configure | bool
+    - (keycloak_blacklists.files | default([]) | length) > 0
+
+- name: Stamp the denylists into the install
+  # Keycloak reads exactly this path; there is no option pointing it elsewhere that is worth the
+  # coupling. Copying is cheap and makes the install self-contained once built.
+  ansible.builtin.copy:
+    src: "{{ item.path }}"
+    dest: "{{ keycloak_versioned_home }}/data/password-blacklists/{{ item.path | basename }}"
+    remote_src: true
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_group }}"
+    mode: "0644"
+  loop: "{{ keycloak_blacklists.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: keycloak_ready_to_configure | bool
+  notify: Restart keycloak
+
+- name: Say the realm asks for a denylist that is not here
+  # The one failure this role can see coming and nothing else would: the policy lives in the realm
+  # (data, not config), the file lives on disk, and they are checked against each other only at
+  # startup — by which point Liquibase has already migrated the schema.
+  ansible.builtin.debug:
+    msg: >-
+      {{ keycloak_blacklists_dir }} is empty. If this realm's password policy contains
+      passwordBlacklist(<file>), Keycloak will migrate the database and then refuse to start. Put
+      the file there and re-run before restarting.
+  when:
+    - keycloak_ready_to_configure | bool
+    - (keycloak_blacklists.files | default([]) | length) == 0
+
 # --- the theme -------------------------------------------------------------------------------------
 
 - name: Look for the theme source

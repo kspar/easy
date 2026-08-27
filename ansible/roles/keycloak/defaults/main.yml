@@ -93,6 +93,19 @@ keycloak_theme_name: lahendus
 # than from a repository, which is itself the reason this is a variable and not a hardcoded path.
 keycloak_theme_src: /home/kspar/easy-kc-theme
 
+# --- password denylists ---------------------------------------------------------------------------
+# A realm whose password policy contains passwordBlacklist(<file>) will not START if <file> is
+# missing — not a warning, not a disabled policy: the server exits, after Liquibase has already
+# migrated the schema. That failure mode is why this exists.
+#
+# Keycloak reads these from data/password-blacklists inside the install, which an upgrade replaces.
+# So the copy that matters lives here, outside the versioned tree, and the role stamps it into each
+# install — the same reasoning that keeps keycloak.conf in /etc.
+#
+# Empty by default: a realm with no such policy needs none of this, and the role skips it silently.
+# To adopt one, put the file in this directory on the host and re-run.
+keycloak_blacklists_dir: "{{ keycloak_conf_dir }}/password-blacklists"
+
 # --- JVM ------------------------------------------------------------------------------------------
 # Keycloak's own defaults, minus the container heap percentages that only make sense in a container.
 # 512m is comfortable for a dev realm with a handful of users; production wants more.
