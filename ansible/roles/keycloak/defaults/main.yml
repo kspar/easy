@@ -111,6 +111,15 @@ keycloak_blacklists_dir: "{{ keycloak_conf_dir }}/password-blacklists"
 # 512m is comfortable for a dev realm with a handful of users; production wants more.
 keycloak_java_opts: "-Xms256m -Xmx768m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -XX:+ExitOnOutOfMemoryError -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom"
 
+# --- headers nginx adds -----------------------------------------------------------------------
+# form-action for the login page: the origins a form served by Keycloak may post to. Production's
+# Apache has carried this since 2023 and the value is its own — `*.ut.ee` covers both environments'
+# hostnames, `*.google.com` is there for the Google identity provider's flow, and the loopback entry
+# is what lets a developer run the SPA locally against a deployed IdP.
+#
+# Set to an empty string to add no header at all.
+keycloak_csp_form_action: "'self' *.ut.ee *.google.com http://127.0.0.1:*"
+
 # --- the admin-console gate ---------------------------------------------------------------------
 # A door in front of Keycloak's admin console. The console's own answer to "signed in, but not an
 # admin" is a blank page with two spinners, indefinitely — it authenticates fine and
