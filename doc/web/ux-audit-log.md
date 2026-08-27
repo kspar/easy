@@ -66,8 +66,8 @@ finishes or it goes back to `todo`.
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
 | J1 | Student core loop | **done `1bdd895c`** (2026-08-24) | X-001…X-008, X-028, X-029; R-009, R-010 | The loop and all four edge states walked. 12 candidates, 10 kept, 2 refuted — and both refutations were my own flawed measurements, which is the useful pattern here. The app handles the *closed* state well (R-010) and confirms teacher-graded submissions properly (R-009); what it does not do is honour `TEXT_UPLOAD` at all (X-028) or say that a deadline has passed (X-029). **Scope moved:** `ActivityFeed` and `PreviousSubmissions` in depth go to **J6**, which reads the same components from the teacher's seat — auditing them twice from two seats is the same read, and J6 is where the grading conversation lives |
-| J2 | Student periphery & the front door | todo | — | Pairs with S9 on the login handover |
-| J3 | Teacher: course lifecycle | todo | — | |
+| J2 | Student periphery & the front door | **done `57c722fa`** (2026-08-26) | X-033 | The role-mismatch redirect is confirmed and worse than the lead said: several seconds of spinner, then a silent landing on /courses (X-033). The rest of the periphery is already accounted for — joining is covered by `join-by-link.spec.mjs` (16 checks) and J7's R-013; `/register` and `/tos` are EZ-1691/EZ-1692, filed; `checkinFailed`'s bare alert folds into C1's error-copy pattern. The S9 login-handover half stays with S9 |
+| J3 | Teacher: course lifecycle | **done `57c722fa`** (2026-08-26) | X-034 | The lifecycle has a beginning and no end: creation works (CreateCourseDialog, covered by `courses-page.spec.mjs`), `EditCourseDialog` edits identifier/code/name — and archiving does not exist in the UI at all, though `archived` arrives on every course response (X-034, a gap-in-the-gap-list find). Course colours' mode-blindness was settled in S2 (they read fine on dark) |
 | J4 | Teacher: exercise authoring | todo | — | EZ-1732 (math no longer renders) is the one to check first |
 | J5 | Teacher: putting an exercise on a course | todo | — | |
 | J6 | Teacher: grading | **done `b3e0a832`** (2026-08-24) | X-030, X-031; R-011, R-012 | 5 candidates, 2 kept, 2 refuted (one lead absorbed into X-031). The flow is **better than the plan assumed**: one-click prev/next between students, a roster with "3 hindamata" / "2 / 6 hinnatud" counts (R-011), a GitHub-style `+` comment gutter, and the full conversation — inline comment, feedback, grade, teacher's name — reaching both seats (R-012). Kept: the two navigation chevrons are the only unlabelled icon buttons of nine (X-030), and grading leaves the grade table stale, executed end to end with the exact key mismatch (X-031). **Fixture notes:** stub `/submissions/all/students/{id}` or the pane renders "Esitamata"; cache tests must navigate client-side; hover affordances toggle CSS classes, not DOM nodes |
@@ -1180,6 +1180,50 @@ Template:
 - Evidence: `tests/audit/j7-roster-workflow.mjs`, report `tests/audit/reports/j7-roster-workflow.json`,
   at `a7ca430f`. Shot `j7-03-remove-confirm.png`
 - Register: not previously filed
+
+### X-033 A student who opens a teacher's link watches a spinner, then silently lands on "Minu kursused"
+- Unit: J2
+- Surface: any teacher-only URL opened as a student; measured on `/courses/:c/grades`, et
+- Norm: a redirect the user did not ask for is explained, or it reads as a bug (source 5)
+- Class: journey
+- Severity: medium
+- Reach: every teacher-shared link that reaches a student — which is how course URLs move around in
+  practice (chat, slides, email)
+- Verdict: CONFIRMED
+- What happens: a student opens `/courses/119/grades`. They get the loading spinner ("Laen...") for
+  several seconds — the guard waits for check-in and role data — and are then deposited on
+  `/courses`, with **no alert, no snackbar, no text anywhere** saying why. Measured: path
+  `/courses`, alerts `[]`. To the student, the link their teacher sent is simply broken, and nothing
+  suggests otherwise; the natural next step is to ask the teacher or re-click the link, which does the
+  same thing.
+- Instead: keep the redirect, add the sentence — a snackbar or a dismissible banner on arrival: "See
+  leht on nähtav ainult õpetajatele." One state flag through the existing `Navigate`, and the app
+  already mounts a snackbar in the shell.
+- Evidence: `tests/audit/j2-role-redirect.mjs` at `57c722fa`; shot `j2-role-redirect.png`
+- Register: not previously filed. The seeded lead from the plan, now measured — including the detail
+  the lead missed, that the spinner phase makes it feel like a slow crash rather than a policy
+
+### X-034 Courses cannot end: no way to archive one, and an archived one looks live
+- Unit: J3
+- Surface: `/courses`, `EditCourseDialog`, teacher/admin
+- Norm: the contract — `archived: boolean` arrives on every course response (source 4: a capability
+  the API carries that no UI reaches); and the course lifecycle the schema implies (source 4)
+- Class: journey
+- Severity: medium now, rising every semester — course lists only grow
+- Reach: every teacher, cumulatively; a teacher of four years carries every course they have ever run
+- Verdict: CONFIRMED (by exhaustive grep, at `57c722fa`)
+- What happens: `archived` appears in exactly three places in `src/` — twice in `types.ts`, once in
+  `courses.ts`'s fetch type. **Nothing renders it and nothing writes it.** `EditCourseDialog` offers
+  identifier, code and name fields only; `CoursesPage` neither filters nor badges archived courses. So
+  a teacher cannot end a semester's course from the UI at all — and a course archived by other means
+  (the old wui, the DB) renders indistinguishably from a live one, which defeats whatever archiving
+  already happened.
+- Instead: two small pieces, separable. Display first: archived courses collapse into an "Arhiveeritud"
+  section or filter on `/courses` — the flag is already in every response, so this is render-only.
+  Write second: an archive action in `EditCourseDialog`, if core has or grows the endpoint.
+- Evidence: grep at `57c722fa`; `EditCourseDialog.tsx` field list
+- Register: not previously filed — and it is a *gap in the gap list*: the WUI migration checklist
+  (EZ-1689…1707) never mentions archiving, so it fell out of the migration unnoticed
 
 ---
 
