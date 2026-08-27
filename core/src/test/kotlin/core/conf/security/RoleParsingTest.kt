@@ -54,22 +54,31 @@ class RoleParsingTest {
         }
     }
 
-    /**
-     * Roles the dev header path grants for an `oidc_claim_easy_role` value, or null if it declines to
-     * authenticate — which for a filter means leaving the context unset, so the chain answers 401.
-     */
-    private fun viaHeader(header: String): List<String>? {
-        val request = MockHttpServletRequest("GET", "/v2/versions").apply {
-            addHeader("oidc_claim_preferred_username", "dev")
-            addHeader("oidc_claim_email", "dev@test.ee")
-            addHeader("oidc_claim_easy_role", header)
-        }
-        val response: HttpServletResponse = MockHttpServletResponse()
+    /** What the dev header filter did with a given `oidc_claim_easy_role` value. */
+    private class HeaderOutcome(val roles: List<String>?, val status: Int, val continued: Boolean)
+
+    private fun runFilter(headers: Map<String, String>): HeaderOutcome {
+        val request = MockHttpServletRequest("GET", "/v2/versions")
+        headers.forEach { (name, value) -> request.addHeader(name, value) }
+        val response = MockHttpServletResponse()
+        val chain = MockFilterChain()
         SecurityContextHolder.clearContext()
-        DummyZeroAuthFilter().doFilter(request, response, MockFilterChain())
-        val authentication = SecurityContextHolder.getContext().authentication
-        return (authentication as EasyUser?)?.let { authorityNames(it.roles) }
+        DummyZeroAuthFilter().doFilter(request, response, chain)
+        val authentication = SecurityContextHolder.getContext().authentication as EasyUser?
+        // `chain.request` is null until the chain is actually invoked, which is how "declined and
+        // stopped" is told apart from "declined and passed on as anonymous" — the distinction that
+        // decides whether a `permitAll` path answers 401 or 200.
+        return HeaderOutcome(authentication?.let { authorityNames(it.roles) }, response.status, chain.request != null)
     }
+
+    /** Roles the dev header path grants for an `oidc_claim_easy_role` value, or null if it refuses. */
+    private fun viaHeader(header: String): List<String>? = runFilter(
+        mapOf(
+            "oidc_claim_preferred_username" to "dev",
+            "oidc_claim_email" to "dev@test.ee",
+            "oidc_claim_easy_role" to header,
+        )
+    ).roles
 
     private fun authorityNames(roles: Set<EasyGrantedAuthority>) = roles.map { it.authority }.sorted()
 
@@ -138,10 +147,73 @@ class RoleParsingTest {
     }
 
     @Test
+    fun `bad claim headers are refused outright, not passed on as anonymous`() {
+        // The divergence a "leave the context unset" decline hides. On an authenticated endpoint both
+        // look like 401, so it reads as parity with the JWT path — but continuing the chain means a
+        // `permitAll` path (`/v2/unauth/articles/{id}`, an uploaded file) answers **200 anonymously**
+        // for credentials that were offered and rejected, where the same bad token gets 401 in
+        // production because `BearerTokenAuthenticationFilter` aborts. An attempt to authenticate that
+        // fails is a failure on every path.
+        val unmappable = runFilter(
+            mapOf(
+                "oidc_claim_preferred_username" to "dev",
+                "oidc_claim_email" to "dev@test.ee",
+                "oidc_claim_easy_role" to "wizard",
+            )
+        )
+        assertEquals(401, unmappable.status)
+        assertEquals(false, unmappable.continued) { "the request was passed on and would 200 on permitAll" }
+
+        val noRole = runFilter(
+            mapOf(
+                "oidc_claim_preferred_username" to "dev",
+                "oidc_claim_email" to "dev@test.ee",
+                "oidc_claim_easy_role" to ",",
+            )
+        )
+        assertEquals(401, noRole.status)
+        assertEquals(false, noRole.continued)
+
+        // An incomplete set is also an attempt, so it is refused rather than downgraded.
+        val partial = runFilter(mapOf("oidc_claim_preferred_username" to "dev"))
+        assertEquals(401, partial.status)
+        assertEquals(false, partial.continued)
+    }
+
+    @Test
+    fun `no claim headers at all is an anonymous request, which still reaches permitAll`() {
+        // The other half, and why the filter cannot simply refuse everything it does not like: a
+        // request offering no credentials is not a failed login, and a public endpoint must still serve
+        // it. This is the case that keeps the refusal above from breaking the anonymous surface.
+        val anonymous = runFilter(emptyMap())
+
+        assertEquals(true, anonymous.continued) { "an anonymous request must reach the rest of the chain" }
+        assertNull(anonymous.roles)
+        assertEquals(200, anonymous.status)
+    }
+
+    @Test
     fun `the mapper itself still throws rather than dropping a role it cannot map`() {
         // The two paths turn this into "no authentication"; the mapper must keep saying why, because
         // silently ignoring a role would quietly change what a user can do.
         assertThrows(RuntimeException::class.java) { mapRoleStringsToRoles(listOf("wizard")) }
+    }
+
+    @Test
+    fun `input that carries something but yields no role is an error, not an empty answer`() {
+        // The trap in normalising inside the mapper. Normalisation drops empty fragments, so without
+        // this guard `mapRoleStringsToRoles(listOf(","))` would *return an empty set* where it used to
+        // throw — turning the loudest signal available into the quiet failure this area has produced
+        // twice already, an authenticated principal with no authorities. A third caller writing the
+        // obvious `if (roleStrings.isNotEmpty()) EasyUser(..., mapRoleStringsToRoles(roleStrings))`
+        // must not be able to build one.
+        assertThrows(RuntimeException::class.java) { mapRoleStringsToRoles(listOf(",")) }
+        assertThrows(RuntimeException::class.java) { mapRoleStringsToRoles(listOf("")) }
+        assertThrows(RuntimeException::class.java) { mapRoleStringsToRoles(listOf(" ", " , ")) }
+
+        // Asking about no roles is still no roles: whether that is allowed is the caller's decision,
+        // and both callers reject it.
+        assertEquals(emptySet<EasyGrantedAuthority>(), mapRoleStringsToRoles(emptyList()))
     }
 
     // --- the actual finding ----------------------------------------------------------------------

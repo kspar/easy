@@ -19,12 +19,16 @@ curl -s \
   http://localhost:8080/v2/student/courses
 ```
 
-`preferred_username`, `email` and `easy_role` are all required — omit any one and the filter
-skips authentication entirely and you get a 401. `oidc_claim_given_name` and
+`preferred_username`, `email` and `easy_role` are all required. `oidc_claim_given_name` and
 `oidc_claim_family_name` are optional. `easy_role` is comma-separated for multiple roles
-(`teacher,admin`); surrounding whitespace is trimmed, and a value carrying no role at all
-(`,`) is treated as missing, so you get the 401 rather than a user with no permissions. An
-`easy_role` naming something unmappable (`wizard`) is also a 401, with the reason in core's log.
+(`teacher,admin`) and surrounding whitespace is trimmed.
+
+Send **none** of these headers and the request is anonymous, which is what lets the public
+endpoints be tested without credentials. Send **any** of them and they have to work: an
+incomplete set, a value carrying no role at all (`,`), or a role that does not map (`wizard`)
+is refused with a 401 and a line in core's log saying which. That is deliberate — offering
+credentials that are rejected is a failed login, so it fails everywhere rather than quietly
+continuing as anonymous and succeeding on a public path.
 
 **Keep these values ASCII.** `StrictHttpFirewall` refuses any request whose header value contains a
 control character, and a non-ASCII name becomes one on the way in: request headers are decoded as

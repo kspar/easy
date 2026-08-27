@@ -290,6 +290,20 @@ class AccessControlRulesTest {
         }
     }
 
+    @Test
+    fun `a mismatched exercise and course does not page the sysadmin`() {
+        // The exception *type* was the only thing asserted, and the type is not the point. `notify`
+        // defaults to true, so dropping the `notify = false` argument would restore an operator email —
+        // with a stack trace — for every client-side id typo, while every other test here stayed green.
+        // `handleForbiddenException` has no such flag at all, which is why this stopped being a
+        // ForbiddenException in the first place.
+        val e = assertThrows(InvalidRequestException::class.java) {
+            asAdmin().assertAccess { exerciseViaCourse(999_999, courseId) }
+        }
+        assertEquals(false, e.notify) { "a mistyped id would email the sysadmin a stack trace" }
+        assertEquals(ReqError.ENTITY_WITH_ID_NOT_FOUND, e.code)
+    }
+
     // --- the public surface ----------------------------------------------------------------
 
     /**

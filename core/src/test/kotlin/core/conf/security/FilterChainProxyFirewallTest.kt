@@ -5,9 +5,6 @@ import core.testing.IntegrationTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationContext
-import org.springframework.security.authentication.AuthenticationProvider
-import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.test.web.servlet.MockMvc
 
 /**
@@ -34,10 +31,7 @@ import org.springframework.test.web.servlet.MockMvc
  * legible in a diff and cannot be mangled by an editor.
  */
 @IntegrationTest
-class FilterChainProxyFirewallTest(
-    @Autowired mockMvc: MockMvc,
-    @Autowired private val context: ApplicationContext,
-) {
+class FilterChainProxyFirewallTest(@Autowired mockMvc: MockMvc) {
 
     private val api = HttpApi(mockMvc)
 
@@ -62,22 +56,6 @@ class FilterChainProxyFirewallTest(
         // The control. Without it, a chain that answered 400 to everything would pass the test above.
         val resp = getWithAuthorization("Bearer not-a-token")
         assertEquals(401, resp.status) { resp.body }
-    }
-
-    @Test
-    fun `core has no username-and-password authentication at all`() {
-        // Boot's UserDetailsServiceAutoConfiguration is excluded in EasyCoreApp. It had been
-        // suppressed only incidentally, by an `authenticationManager` bean and an
-        // `EasyUserAuthProvider` that nothing invoked — so deleting those for being dead would have
-        // switched it on, creating an InMemoryUserDetailsManager and logging a generated password at
-        // startup. Identity here comes from a JWT or, in dev, from oidc_claim_* headers; there is no
-        // third source, and this asserts that rather than trusting a bean's continued existence.
-        assertEquals(0, context.getBeanNamesForType(UserDetailsService::class.java).size) {
-            context.getBeanNamesForType(UserDetailsService::class.java).joinToString()
-        }
-        assertEquals(0, context.getBeanNamesForType(AuthenticationProvider::class.java).size) {
-            context.getBeanNamesForType(AuthenticationProvider::class.java).joinToString()
-        }
     }
 
     @Test

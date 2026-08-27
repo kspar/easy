@@ -88,14 +88,26 @@ fun normaliseRoleStrings(roleStrings: List<String>): List<String> =
 // the caller that no longer uses it. `RoleParsingTest` drives the filter and the converter directly.
 
 /**
- * Throws on an unrecognised role rather than dropping it: a role we cannot map is a Keycloak
- * configuration problem, and silently ignoring it would quietly change what a user can do.
+ * Throws rather than dropping anything: a role we cannot map is a Keycloak configuration problem, and
+ * silently ignoring it would quietly change what a user can do.
+ *
+ * Normalises its input, so it is safe for a caller that has not already done so — but note the second
+ * throw, which is what keeps that from being a downgrade. Normalising discards empty fragments, so
+ * without it `mapRoleStringsToRoles(listOf(","))` would *return an empty set* where it used to throw
+ * `Unmapped role ""` — turning the loudest available signal into the exact quiet failure this area has
+ * now produced twice, an authenticated principal with no authorities. Input that carries something and
+ * yields no role is therefore an error, not an empty answer.
+ *
+ * `mapRoleStringsToRoles(emptyList())` is still an empty set: a caller that asked about no roles gets
+ * no roles, and deciding whether *that* is allowed belongs to the caller — [EasyUserJwtConverter]
+ * rejects it as a missing claim, [DummyZeroAuthFilter] declines to authenticate.
  */
-fun mapRoleStringsToRoles(roleStrings: List<String>): Set<EasyGrantedAuthority> =
-    // Normalises here too, so this is safe for any caller rather than only for the two that remember
-    // to normalise first. It is idempotent, so the converter normalising before its own emptiness
-    // guard — which it must, to name every missing claim in one message — costs nothing.
-    normaliseRoleStrings(roleStrings).map {
+fun mapRoleStringsToRoles(roleStrings: List<String>): Set<EasyGrantedAuthority> {
+    val normalised = normaliseRoleStrings(roleStrings)
+    if (normalised.isEmpty() && roleStrings.isNotEmpty()) {
+        throw RuntimeException("No role in $roleStrings")
+    }
+    return normalised.map {
         when (it) {
             "student" -> EasyGrantedAuthority(EasyRole.STUDENT)
             "teacher" -> EasyGrantedAuthority(EasyRole.TEACHER)
@@ -103,3 +115,4 @@ fun mapRoleStringsToRoles(roleStrings: List<String>): Set<EasyGrantedAuthority> 
             else -> throw RuntimeException("Unmapped role $it")
         }
     }.toSet()
+}
