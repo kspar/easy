@@ -1,0 +1,695 @@
+{
+  "sha": "a2588971",
+  "results": [
+    {
+      "surface": "landing",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "not-found",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "courses-student",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "courses-teacher",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "courses-admin",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "exercise-list-student",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "exercise-student",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "exercise-list-teacher",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "exercise-teacher",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "participants",
+      "viewport": "phone",
+      "overflow": 828,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "grades",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "similarity",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 1,
+      "thin": true
+    },
+    {
+      "surface": "library-dir",
+      "viewport": "phone",
+      "overflow": 828,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "library-exercise",
+      "viewport": "phone",
+      "overflow": 828,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "join-by-link",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 3,
+      "thin": true
+    },
+    {
+      "surface": "join-by-moodle-link",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 3,
+      "thin": true
+    },
+    {
+      "surface": "articles-admin",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "article-public",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "about-teacher",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "about-admin",
+      "viewport": "phone",
+      "overflow": 828,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "account",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 2,
+      "thin": true
+    },
+    {
+      "surface": "admin-messages",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 390,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "embed",
+      "viewport": "phone",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 390,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "landing",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "not-found",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "courses-student",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "courses-teacher",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "courses-admin",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "exercise-list-student",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "exercise-student",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "exercise-list-teacher",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "exercise-teacher",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "participants",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "grades",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "similarity",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 1,
+      "thin": true
+    },
+    {
+      "surface": "library-dir",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "library-exercise",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "join-by-link",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 3,
+      "thin": true
+    },
+    {
+      "surface": "join-by-moodle-link",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 3,
+      "thin": true
+    },
+    {
+      "surface": "articles-admin",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "article-public",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "about-teacher",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "about-admin",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "account",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 2,
+      "thin": true
+    },
+    {
+      "surface": "admin-messages",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1180,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "embed",
+      "viewport": "laptop",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 1440,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "landing",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "not-found",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "courses-student",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "courses-teacher",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "courses-admin",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "exercise-list-student",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "exercise-student",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "exercise-list-teacher",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "exercise-teacher",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "participants",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "grades",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "similarity",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 1,
+      "thin": true
+    },
+    {
+      "surface": "library-dir",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "library-exercise",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "join-by-link",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 3,
+      "thin": true
+    },
+    {
+      "surface": "join-by-moodle-link",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 3,
+      "thin": true
+    },
+    {
+      "surface": "articles-admin",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "article-public",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "about-teacher",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "about-admin",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": false
+    },
+    {
+      "surface": "account",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 2,
+      "thin": true
+    },
+    {
+      "surface": "admin-messages",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": 1200,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    },
+    {
+      "surface": "embed",
+      "viewport": "monitor",
+      "overflow": 0,
+      "worst": null,
+      "mainW": null,
+      "viewportW": 2560,
+      "clipped": 0,
+      "thin": true
+    }
+  ]
+}
