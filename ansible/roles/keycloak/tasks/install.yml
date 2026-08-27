@@ -59,6 +59,35 @@
     creates: "{{ keycloak_versioned_home }}/bin/kc.sh"
   when: keycloak_ready_to_configure | bool
 
+- name: Find out whether the unpacked tree is actually there
+  # The same guard the download above needed, for the same reason one step later. In a dry run
+  # against a host that has never had this version, `Unpack it` was only simulated — so the symlink
+  # below has no target, fails, and takes the unit, the vhost, the certificate and the gate with it.
+  # A dry run that cannot reach the interesting half is not a dry run, and this host's first apply is
+  # exactly the one worth rehearsing.
+  ansible.builtin.stat:
+    path: "{{ keycloak_versioned_home }}"
+  register: keycloak_tree_stat
+  check_mode: false
+
+- name: Say how far this dry run can go
+  ansible.builtin.debug:
+    msg: >-
+      {{ keycloak_versioned_home }} does not exist and this is a dry run, so the symlink, the theme,
+      the denylists, the config, the unit and the build cannot be evaluated. What is above is real.
+      Run without --check to unpack it, then dry-run again to see the rest.
+  when:
+    - ansible_check_mode
+    - keycloak_ready_to_configure | bool
+    - not keycloak_tree_stat.stat.exists
+
+- name: Stop here in a dry run with nothing unpacked
+  ansible.builtin.set_fact:
+    keycloak_ready_to_configure: false
+  when:
+    - ansible_check_mode
+    - not keycloak_tree_stat.stat.exists
+
 - name: Point the stable path at this version
   ansible.builtin.file:
     src: "{{ keycloak_versioned_home }}"
