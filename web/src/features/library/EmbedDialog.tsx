@@ -165,6 +165,18 @@ export default function EmbedDialog({
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
+      // The only sender we want is the preview iframe below, whose `src` is built from
+      // `window.location.origin` — so comparing against that origin is right on every deployment
+      // without naming a domain anywhere. A hardcoded host would have to be wrong on dev or on
+      // production, and a config key would be a second place for the same fact to live.
+      //
+      // Without this, anything able to post into this window could set the preview's height: a frame
+      // it embeds, a window it opened, or its opener. The ceiling is cosmetic today — the handler's
+      // whole effect is `setPreviewHeight(number)` — and the reachable senders are our own pages.
+      // It is checked anyway because an unvalidated `message` handler stops being cosmetic the moment
+      // somebody adds a second `msg.type`, and by then the missing check is not what they are
+      // thinking about.
+      if (e.origin !== window.location.origin) return
       try {
         const msg = JSON.parse(String(e.data))
         if (msg?.type === 'ez-frame-resize' && typeof msg.height === 'number' && msg.height > 0) {

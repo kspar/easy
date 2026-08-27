@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import Keycloak from 'keycloak-js'
 import config from '../config.ts'
 import { AuthContext, type Role, type AuthState, type LoginOptions } from './auth-context.ts'
-import { apiFetch } from '../api/client.ts'
+import { apiFetch, setUnauthorizedHandler } from '../api/client.ts'
 
 // Type-only re-export, so the many existing `import { type Role } from './AuthContext.tsx'`
 // call sites keep working. Erased at runtime, so it doesn't count as a non-component export
@@ -78,6 +78,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const initCalled = useRef(false)
 
+  /**
+   * Get the session back, or find out there isn't one — by redirecting to the IdP.
+   *
+   * Guarded, because both callers can fire repeatedly: `onTokenExpired` can be raised again, and a
+   * page with a dozen queries produces a dozen 401s at once. Without the flag that is a dozen
+   * `login()` calls racing to set `location`, which in the worst case is a redirect loop rather than
+   * a login. One attempt per page load is all that can help anyway — after it, either the redirect
+   * happens or this tab is gone.
+   */
+  const recoveringRef = useRef(false)
+  const recoverSession = useCallback((reason: string) => {
+    if (recoveringRef.current) return
+    recoveringRef.current = true
+    console.warn(`Session lost (${reason}); returning to the identity provider`)
+    keycloak.login()
+  }, [])
+
   useEffect(() => {
     if (initCalled.current) return
     initCalled.current = true
@@ -137,11 +154,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     keycloak.onTokenExpired = () => {
       keycloak.updateToken(config.keycloakTokenMinValidSec).catch(() => {
-        console.warn('Token refresh failed')
+        // The refresh token is gone or rejected, so there is nothing left to recover from in this
+        // tab. Previously this logged and stopped: every subsequent query 401'd, react-query gave up
+        // after one retry, and the user was left in error and spinner states with no way back that
+        // anything told them about. A reload fixed it, by re-running check-sso.
+        //
+        // So do what the reload does. `login()` goes to the IdP, and if the SSO session is still
+        // alive it comes straight back to the same URL with a fresh token and the user notices
+        // nothing; if it is not, they get the login page, which is the honest answer.
+        recoverSession('the token expired and could not be refreshed')
       })
     }
-    // keycloak is a module-level constant now, so it is not a valid dependency.
-  }, [])
+
+    // Same recovery, reached the other way: core rejected a token we thought was good. Registered
+    // here because `api/client.ts` cannot import this context without a cycle, and because the
+    // decision of what to do about it is this module's, not the fetch layer's.
+    setUnauthorizedHandler(() => recoverSession('core answered 401'))
+    // keycloak is a module-level constant now, so it is not a valid dependency. `recoverSession` is
+    // listed and is a `useCallback` over no dependencies, so it is stable and this still runs once.
+  }, [recoverSession])
 
   const switchRole = useCallback(
     (role: Role) => {

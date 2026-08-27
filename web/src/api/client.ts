@@ -27,6 +27,24 @@ export function setTokenProvider(provider: () => Promise<string | undefined>) {
   getToken = provider
 }
 
+/**
+ * What to do when core says the caller is not authenticated.
+ *
+ * Registered the same way as the token provider, and for the same reason: this module cannot import
+ * the auth context without a cycle, and the decision does not belong here anyway. `AuthContext`
+ * supplies it.
+ *
+ * Before this existed, nothing anywhere inspected a 401. A session that outlived its refresh token
+ * left every query failing, react-query retrying once and giving up, and the user looking at error
+ * and spinner states with two `console.warn`s they could not see. The only recovery was a manual
+ * reload — which works, because it re-runs `check-sso`, and which nothing told them to do.
+ */
+let onUnauthorized: (() => void) | null = null
+
+export function setUnauthorizedHandler(handler: () => void) {
+  onUnauthorized = handler
+}
+
 export async function apiFetch<T>(
   path: string,
   options: {
@@ -79,6 +97,16 @@ export async function apiFetch<T>(
     // and to the admin email — so a bug report carrying these ids gives whoever picks it up an exact
     // grep key into the backend log, instead of a timestamp and a username to search around.
     record('api', `${method} ${path} -> ${response.status}${errorBody?.id ? ` id=${errorBody.id}` : ''}`)
+
+    // A 401 means the token we sent — or the absence of one — was not accepted, so no amount of
+    // retrying will help and the error the caller is about to see is not the useful part. Told once,
+    // here, because this is the only place every core call passes through.
+    //
+    // `noAuth` requests are exempt: those are the deliberately public reads (a published article, an
+    // uploaded file), and a 401 from one of them is about that resource rather than about the
+    // session. Treating it as a dead session would bounce a logged-out visitor off a page that is
+    // meant to be readable without logging in.
+    if (response.status === 401 && !noAuth) onUnauthorized?.()
 
     throw new ApiResponseError(response.status, errorBody)
   }

@@ -471,7 +471,7 @@ export default function ExerciseLibraryPage() {
                 sx={{ cursor: 'pointer', '& td': { borderBottom: '1px solid', borderColor: 'divider' } }}
                 onClick={(e) => {
                   if ((e as unknown as MouseEvent).metaKey || (e as unknown as MouseEvent).ctrlKey) {
-                    window.open(dirLink(dir.id, dir.name), '_blank')
+                    window.open(dirLink(dir.id, dir.name), '_blank', 'noopener')
                   } else {
                     navigate(dirLink(dir.id, dir.name))
                   }
@@ -534,7 +534,7 @@ export default function ExerciseLibraryPage() {
                 }}
                 onClick={(e) => {
                   if ((e as unknown as MouseEvent).metaKey || (e as unknown as MouseEvent).ctrlKey) {
-                    window.open(exerciseLink(ex.exercise_id, ex.title), '_blank')
+                    window.open(exerciseLink(ex.exercise_id, ex.title), '_blank', 'noopener')
                   } else {
                     navigate(exerciseLink(ex.exercise_id, ex.title))
                   }

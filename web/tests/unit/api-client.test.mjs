@@ -28,7 +28,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 // telling the truth about the module it stands in for.
 vi.mock('../../src/config.ts', () => ({ default: { emsRoot: 'https://api.test/v2' } }))
 
-const { apiFetch, setTokenProvider } = await import('../../src/api/client.ts')
+const { apiFetch, setTokenProvider, setUnauthorizedHandler } = await import('../../src/api/client.ts')
 
 /** The last call `fetch` received, so assertions read like the request that went out. */
 let calls = []
@@ -150,5 +150,55 @@ describe('responses', () => {
       },
     }))
     await expect(apiFetch('/things')).rejects.toMatchObject({ status: 502 })
+  })
+})
+
+describe('a 401', () => {
+  /**
+   * The handler `AuthContext` registers in order to get the session back. Before it existed, nothing
+   * in the application inspected a 401 at all: a session that outlived its refresh token left every
+   * query failing, react-query retrying once and giving up, and the user looking at spinners with
+   * nothing telling them that reloading was the way out.
+   */
+  let unauthorized
+
+  beforeEach(() => {
+    unauthorized = 0
+    setUnauthorizedHandler(() => {
+      unauthorized += 1
+    })
+  })
+
+  const respond = (status) =>
+    vi.stubGlobal('fetch', async () => ({
+      ok: false,
+      status,
+      json: async () => ({ code: 'X' }),
+    }))
+
+  test('tells the session handler, and still throws', async () => {
+    respond(401)
+    await expect(apiFetch('/things')).rejects.toMatchObject({ status: 401 })
+    expect(unauthorized).toBe(1)
+  })
+
+  test('does not fire for other failures', async () => {
+    // A 403 is a permission answer about a live session and a 500 is core's problem. Recovering the
+    // session for either would bounce the user to the identity provider over something a redirect
+    // cannot fix.
+    respond(403)
+    await expect(apiFetch('/things')).rejects.toMatchObject({ status: 403 })
+    respond(500)
+    await expect(apiFetch('/things')).rejects.toMatchObject({ status: 500 })
+    expect(unauthorized).toBe(0)
+  })
+
+  test('does not fire for a deliberately unauthenticated request', async () => {
+    // `noAuth` is the public surface — a published article, an uploaded file. A 401 from one of those
+    // is about that resource, not about the session, and treating it as a dead session would bounce a
+    // logged-out visitor off a page written to be readable without logging in.
+    respond(401)
+    await expect(apiFetch('/things', { noAuth: true })).rejects.toMatchObject({ status: 401 })
+    expect(unauthorized).toBe(0)
   })
 })
