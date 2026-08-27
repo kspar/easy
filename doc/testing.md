@@ -475,13 +475,18 @@ two exceptions worth measuring rather than assuming:
 A single scripted "1000 students, one course" fixture would answer more than a load-testing
 framework would.
 
-### Accessibility tests — none, and cheap to start
+### Accessibility tests — have the detector, want it pointed at more routes
 
-The app is used by students under exam conditions and by teachers all day. This session found two
-real a11y defects by accident — a switch demoted to a checkbox by `slotProps`, and two controls
-sharing one accessible name. Both were found because Playwright locators use the accessibility
-tree, which is a hint: `@axe-core/playwright` in the existing harness would catch a class of these
-automatically for the cost of one dependency.
+*(Updated 2026-08-28 by the EZ-1791 UI/UX audit; this section previously said "none", which had been
+false since EZ-1776.)* The detector exists: `web/tests/support/a11y.mjs` wraps
+`@axe-core/playwright` plus three checks axe does not have, with a shrink-only baseline
+(`a11y-baseline.json`) whose entries must carry a note and an issue id. What is missing is coverage:
+it is wired into **2 of 40** specs, and the first unwired route the audit scanned returned two
+gate-level violations (`doc/web/ux-audit-log.md`, X-002/X-003). The audit's full-route sweep lives in
+`web/tests/audit/c5-a11y-sweep.mjs`; wiring the `a11y` fixture into more specs is the standing ask.
+Historical context kept for the record: this section's original motivation was two a11y defects found
+by accident — a switch demoted to a checkbox by `slotProps`, and two controls sharing one accessible
+name.
 
 ---
 

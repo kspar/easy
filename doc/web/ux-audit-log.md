@@ -285,15 +285,35 @@ and `easy-kc-theme` — X-039), **the display face on page titles** with a three
 
 `doc/web/ui-guide.md` (D2) — the conventions, tokens, floors and fixture lessons, each with a check
 line. `web/tests/audit/` — 20 drivers and their JSON reports, reusable. The EZ-1785/EZ-1759 leads
-section below. **One measurement deliberately left open**: the Testimine round trip needs a real
-grading run (a write to core) — ask kspar before running it.
+section below. **One measurement left open, now for infrastructure rather than authorization** (checked 2026-08-28
+after kspar's go-ahead): the core on :8080 has one executor, `mock-executor`, carrying only the `mock`
+container — no `tiivad:tsl-compose` — so a real TSL grading run cannot execute there without
+registering the image and an executor for it, which is infra this audit does not create. The
+Testimine round trip runs whenever a TSL-capable executor exists; `HARNESS_LIVE=1` plus
+`course-exercise-teacher-testing.spec.mjs` are the starting points.
 
-### Triage split proposal
+### Triage — executed 2026-08-28, on kspar's go-ahead
 
-Everything here can go to EZ — nothing is security-sensitive (the one security-adjacent observation
-was routed to `doc/review-log.md` per the carve-out). Suggested shape: the five priorities above as
-individual issues; the cheap sweeps as one batch issue each; the V-track direction as a single
-decision issue; X-043's doc fixes as one commit, no issue needed.
+Nine issues filed (nothing here is security-sensitive; the one security-adjacent observation went to
+`doc/review-log.md` per the carve-out):
+
+| issue | carries |
+|---|---|
+| **EZ-1793** (Critical) | X-001 + X-017 + X-021 — unsaved work destroyed by navigation |
+| **EZ-1794** (High) | X-026 (+X-018) — grader failure shown as the student's own |
+| **EZ-1795** (High) | X-015 + X-022 + X-023 + X-027 (+X-019/020/024 referenced) — the TSL silent-failure chain |
+| **EZ-1796** (High) | X-031 — stale grade table, the one-line invalidation fix |
+| **EZ-1797** (High) | X-009 — unreachable CrashScreen, the one-line errorElement fix |
+| **EZ-1798** (High) | X-012 + X-013 + X-004 + X-014 — **one green** (decision recorded): GREEN[700], darker text.secondary, three families retired, dead tokens removed |
+| **EZ-1799** | X-002 + X-003 + X-030 + X-010 + X-011 — the accessible-name sweep |
+| **EZ-1800** | X-006/007, X-024, X-028/029/032/033/034/036/037/038/042, X-035 — the small-UX batch |
+| **EZ-1801** | X-039 + X-040 + X-041 — the visual direction, line-by-line rejectable |
+
+X-043's tracked fix (doc/testing.md §Accessibility) is committed with this change; the two instances
+in the **gitignored** review-plan/log ("13 golden fixture sets" → 9) are in the main checkout, which
+this worktree session must not edit — one `sed` for kspar, noted here. EZ-1722's count was refreshed
+by comment. X-005/X-008/X-020/X-025/X-041's deeper halves ride along in the issues that own their
+areas or await the fix commits themselves.
 
 ---
 
@@ -1656,6 +1676,25 @@ positive control has to exercise the same mechanism the real cases do**, which i
 ---
 
 ## The design direction
+
+**Decision, kspar, 2026-08-28: one green.** The two-green (mode-aware `primary`) proposal from X-012
+is **considered-and-rejected** — a later audit should not re-propose it. What follows, computed at
+`34fc6fe7`:
+
+- The best single green in the ramp is **`GREEN[700]` `#15803d`**: white-on-it passes AA in **both**
+  modes (5.02:1 — a fill is mode-independent), and as text it passes light (4.60 / 5.02) and fails
+  only as **small text on dark surfaces** (3.74 / 3.32 — both above the 3:1 large-text bar). Today's
+  `GREEN[600]` fails the *button itself*, which is worse.
+- The fix under the decision: `primary.main = GREEN[700]`, keep `contrastText: '#fff'`, plus one usage
+  rule for the guide: green is a fill and a large-text colour; small green text on dark surfaces uses
+  a lighter ramp step via `primary.light` — a shade rule, not a second brand green.
+- "One green" also settles the *family* question: the manifest's `#43a047`, the theme's dark
+  selected-state `rgba(76,175,80)`, and `easy-kc-theme`'s `#3c9440` family all converge on the chosen
+  green (X-039, X-040 transfer #1).
+
+The rest of the direction stands proposed and unrejected: display face on page titles + a three-level
+scale (X-040/X-041), warm empty states with a next action (X-036), retiring the native dialogs
+(X-042).
 
 Filled by the V track, and read as one proposal rather than a list of tickets: palette, type scale,
 density, motion, and which components should change shape — ordered by reach, for kspar to accept, amend

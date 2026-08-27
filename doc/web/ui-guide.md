@@ -42,9 +42,12 @@ Each rule names the file that already does it right. **Copy that file.**
 What actually switches with mode: `background`, `text`, `divider`, and per-component borders. What
 does **not**: every semantic colour. Two consequences the audit measured:
 
-- **No single brand green passes AA in both modes** (X-012): white-on-`GREEN[600]` is 3.30:1 in light;
-  `GREEN[700]` fixes light and breaks dark. Until `primary` is mode-aware, know that the contained
-  button fails AA in light mode. Do not "fix" one surface locally — it is a token decision.
+- **The green is decided: one green, `GREEN[700]` `#15803d`** (kspar, 2026-08-28 — X-012, two-green
+  proposal rejected). White-on-it passes AA in both modes (5.02:1); as text it passes light and is
+  large-text-only on dark surfaces (3.74/3.32) — so **small green text on dark uses a lighter ramp
+  step via `primary.light`**, a shade rule, not a second green. The same green propagates to the
+  manifest, `index.html` and `easy-kc-theme`, retiring the other three green families. Do not "fix"
+  green contrast locally — it is this token decision.
 - **`text.secondary` (`#757575`) passes on paper, fails on the page background** at small sizes
   (4.23:1 — X-013). Use it for metadata and captions only, never running text.
 - Six palette entries are **dead**: the whole `secondary` triplet and all four `*.light` tints (R-001,
