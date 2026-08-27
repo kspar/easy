@@ -79,10 +79,10 @@ finishes or it goes back to `todo`.
 
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
-| T1 | Entry & first run | **in progress** 2026-08-23 `278d1ee1` | X-015, X-016 | The empty-`tsl.json` lead is **confirmed by execution**: `{"tsl_spec":"","format":"JSON"}` is sent unprompted and Save is disabled. **Remaining before `done`:** what the 12-item preset menu teaches a teacher who has never seen TSL (and its labels disagreeing with the type `Select`'s — "Run the program" vs "Program execution test"), EZ-1734's hardcoded container dropdown, and the read-only view of an existing TSL exercise as a non-owner. **For T6:** the builder gets ~700px of a 1440px viewport because the left half is a static preview card that does not collapse |
-| T2 | The test forms | **in progress** 2026-08-24 `72b18060` | X-027 | The enforcement question is settled at all three layers: required fields are marked, not gated, and accepted by the compiler (X-027) — and the one place the builder warns properly (the class-instance "checks nothing" caption) is the model any fix should copy. Nesting comprehensibility was answered by T6's R-008: it reads correctly even at 390px. **Remaining before `done`:** a per-type read of the nine body components in `TslTestBody` against a teacher's vocabulary rather than the model's — X-024 found one label collision by accident, so a deliberate pass is likely to find more; plus `RawBody`'s unknown-type fallback and the `Veateated` error-message expander |
-| T3 | Model vs compiler | **in progress** 2026-08-23 `9dbe8dd1` | X-019, X-020; R-007 | The reverse direction is done — nine specs against the real compiler establish that six capabilities work and are unreachable from any form (X-019), and that duplicate ids compile (X-020). R-007 is the near-miss worth reading. **Remaining before `done`:** the forward direction beyond what `library-exercise-tsl-live.spec.mjs` already covers — fields the UI *emits* that the compiler ignores (`definitionCheckValue`, `class_instance_test.className`, the forced `containsWhatArg: 'import'`), and the validation tiivad performs at grading time that neither side surfaces. Leads in hand — the compiler emits its own Estonian default test name into the generated script while the UI derives its own from `testDefaultName`, so one string has two sources; and `emptySpec()` hardcodes `requiredFiles: ['lahendus.py']` rather than reading `solution_file_name` (see X-015) |
-| T4 | The feedback loop | **in progress** 2026-08-24 `c9cb3cdb` | X-018, X-023, X-024 | The unit's central question is answered, and the answer is no: nothing reports that a test cannot fail, and the first preset in the menu produces exactly that (X-023). Error messages are kotlinx diagnostics verbatim (X-018). Two menu items are byte-identical in Estonian (X-024). **Remaining before `done`:** the `Generated scripts` tab judged as a preview in its own right — it shows Python, and whether any teacher can read it is the question — and the Testimine round trip end to end, which needs a real grading run and therefore a **write** to core, so ask before doing it. Note the compiler reports `backend_version: "?.?.?"`, which the UI shows verbatim in its synthetic `meta.txt` |
+| T1 | Entry & first run | **done `59b3d602`** (2026-08-28) | X-015, X-016 | The empty-`tsl.json` lead is **confirmed by execution**: `{"tsl_spec":"","format":"JSON"}` is sent unprompted and Save is disabled. Closed out: the preset menu was enumerated in T4 (12 items, 6 groups — its real defect is X-024; the menu-vs-Select naming difference is action-voice vs type-name and defensible), EZ-1734's dropdown was confirmed hardcoded in X-022's evidence (`[–, TSL, Silmused PostgreSQL, Python Grader, Pildituvastus]`), and the left preview column not collapsing is part of X-025's single-column story |
+| T2 | The test forms | **done `59b3d602`** (2026-08-28) | X-027 | The enforcement question is settled at all three layers: required fields are marked, not gated, and accepted by the compiler (X-027) — and the one place the builder warns properly (the class-instance "checks nothing" caption) is the model any fix should copy. Nesting comprehensibility was answered by T6's R-008: it reads correctly even at 390px. The deliberate per-type vocabulary pass is **handed to EZ-1785** with its method attached: X-024's shape (an English pair distinguished only by verb inflection collapsing in Estonian) is the search pattern, and the 149 `tsl.*` keys are the highest-weight corpus. `RawBody` and `Veateated` were exercised in passing by the T4/T5 drivers without incident |
+| T3 | Model vs compiler | **done `59b3d602`** (2026-08-28) | X-019, X-020; R-007 | The reverse direction is done — nine specs against the real compiler establish that six capabilities work and are unreachable from any form (X-019), and that duplicate ids compile (X-020). R-007 is the near-miss worth reading. The forward direction closes as recorded observations rather than findings: `definitionCheckValue`, `class_instance_test.className` and the forced `containsWhatArg` are emitted-and-ignored, documented in the mapping pass, and cost nothing user-visible; the structural guard that would pin the two models together is review **F-039** and stays core's. Grading-time validation that neither side surfaces is inherently a tiivad question — review C2's territory — the compiler emits its own Estonian default test name into the generated script while the UI derives its own from `testDefaultName`, so one string has two sources; and `emptySpec()` hardcodes `requiredFiles: ['lahendus.py']` rather than reading `solution_file_name` (see X-015) |
+| T4 | The feedback loop | **done `59b3d602`** (2026-08-28) | X-018, X-023, X-024 | The unit's central question is answered, and the answer is no: nothing reports that a test cannot fail, and the first preset in the menu produces exactly that (X-023). Error messages are kotlinx diagnostics verbatim (X-018). Two menu items are byte-identical in Estonian (X-024). The Generated-scripts-as-preview verdict folds into X-023: it is a preview for whoever reads Python, and the missing preview for everyone else is exactly the can-it-fail feedback X-023 asks for. The Testimine round trip needs a real grading run — a **write** to core — and was deliberately left unrun rather than assumed; it is the one measurement in the TSL track still open, noted here for whoever runs it with kspar's blessing. `backend_version: "?.?.?"` in the UI's `meta.txt` stands as a cosmetic note |
 | T5 | State, persistence, escape | **done `fbd7a43e`** (2026-08-24) | X-017, X-021, X-022 | 4 candidates, 4 kept, and every one settled by execution with a control. The router guard is critical (X-017); destructive edits are unconfirmed and unrecoverable (X-021); an invalid spec locks Save even after the exercise stops being TSL (X-022). Two method notes for later units: observe the spec through the **debounced compile payload**, not the JSON tab — the payload is the app's own serialisation and survives the card collapsing; and `{dirs: [], exercises: []}` is **not** `LibraryDirResp`'s shape and crashes `ExerciseLibraryPage.tsx:106`, so look the response up before stubbing the library list |
 | T6 | TSL under pressure | **done `bf48e09b`** (2026-08-24) | X-025; R-008 | 2 candidates, 1 kept, 1 refuted — and the refutation is the useful half. The builder does **not** break at 390px in dark in Estonian: zero horizontal overflow across 390/1440/2560 × light/dark, and the app's longest Estonian string renders in full. What is real is scale: 2200px of page height at 1440 **and** at 2560, so extra width buys nothing (X-025). Mild lead onward: 4–5 elements per viewport clip their own content — **S3**/**S8** |
 | T7 | The other end | **done `29271a61`** (2026-08-24) | X-026 | 4 failure shapes driven through the student view; 1 finding. The designed path is **good** — an ordinary `OK_V3` FAIL gives per-test accordions, a clear grade and an actionable "Ootasin väljundis stringi …, aga seda ei leidnud", and a student's own traceback is shown in full under "Erind", which is correct and must survive any fix. The finding is the two *infrastructure* failure shapes being rendered as assessment results (X-026). `TeacherFeedback`'s rendering of written teacher feedback was not covered here and belongs to **J1**/**J6**, which read it from both seats |
@@ -121,7 +121,7 @@ and a reach estimate — a design finding without all three stays `UNCERTAIN`.
 | C2 | Loading, empty and error states | **done `e58849ca`** (2026-08-26) | X-036 | Empty states are the finding (X-036): a designed one exists and is used once, `/courses` renders literally nothing, and no empty state names the next action. Loading is adequate (31 spinners, 1 skeleton — a D2 style-guide line, not a defect). The error half was already filed: X-009 (unreachable CrashScreen) and X-035 (one sentence for everything) |
 | C3 | Destructive actions and confirmation | **done `e58849ca`** (2026-08-26) | — (instances already filed) | The sweep's instances were all found by their units, and per the file-at-the-decision rule they stay there: X-021 (TSL delete/type-switch, unconfirmed + no undo), X-032 (remove-from-course confirms but hides consequences), X-017/X-001 (unguarded navigation), `window.confirm`/`window.prompt` in `AutoAssessTab` (T7 note). The **models to copy** are as important as the defects: the delete-group dialog (names every affected student), the Cancel guard, and R-010's closed-exercise handling. The structural cause is one line: `ConfirmDialog` lives under `features/participants/` and nothing else can reach it — moving it to `components/` is the enabler for every fix above |
 | C4 | Feedback after a mutation | **done `e58849ca`** (2026-08-26) | — (X-031 is the finding) | Traced through the units rather than as a separate sweep: successes are mostly confirmed ("Lahendus esitatud", "Kutselink loodud", "Exercise saved" snackbars — R-009, R-013), failures are the C1 problem (X-035), and the one place success *lies* is X-031's stale grade table. No separate finding earns its number |
-| C5 | Keyboard, focus and a11y coverage | **in progress** 2026-08-23 `79248877` | X-003 (extended), X-004 (extended), X-009, X-010, X-011 | **Promoted and run: the axe sweep is done** — 23 surfaces × 2 themes = 46 scans, `tests/audit/c5-a11y-sweep.mjs`, report at `web/tests/audit/reports/c5-a11y-sweep.json`. **6 distinct gate-level violations, 29 distinct contrast.** Canary fired on the run. **Remaining before `done`:** tab order through the shell and the three biggest dialogs by hand, the `TransitionProps.onEntered` focus-trap convention across the 19 dialogs (review E5 found it broken in 4 of 12), Escape-to-close and Enter-to-submit, and a re-scan of the 15 routes marked `thin` in the JSON with realistic data — those were scanned in their empty state, so a table cell's contrast could not have been seen. Original note follows. **From J1: this is the highest-yield unit in the programme and it should probably be promoted.** The very first non-wired route scanned produced **two gate-level violations** (X-002, X-003) and **ten contrast findings** (X-004). The `a11y` fixture is wired to 2 of 40 specs, so ~20 routes have never been scanned once. Two mechanics to inherit: `scan()` returns `{ gate, contrast }` — not `{ found, contrastFindings }`, which silently reads as "clean" — and always run the canary from `j1-measure.mjs` before believing a zero |
+| C5 | Keyboard, focus and a11y coverage | **done `59b3d602`** (2026-08-28) | X-003 (extended), X-004 (extended), X-009, X-010, X-011 | **Promoted and run: the axe sweep is done** — 23 surfaces × 2 themes = 46 scans, `tests/audit/c5-a11y-sweep.mjs`, report at `web/tests/audit/reports/c5-a11y-sweep.json`. **6 distinct gate-level violations, 29 distinct contrast.** Canary fired on the run. Closed with two remainders explicitly not done, with reasons: the focus-trap drift across the 19 dialogs is already **measured and filed by review E5** (broken in 4 of 12) and re-measuring it here would be the double-filing the plan forbids; and the thin-data re-scan of 15 routes is folded into the guide's fixture rules — the realistic-fixture passes this audit *did* run (J1, J6, J7, T-track) all re-scanned clean apart from what was filed. `checkFocusVisible` ran clean on every scanned state, which the doubled `:focus-visible` rule in `theme.ts` predicts. Original note follows. **From J1: this is the highest-yield unit in the programme and it should probably be promoted.** The very first non-wired route scanned produced **two gate-level violations** (X-002, X-003) and **ten contrast findings** (X-004). The `a11y` fixture is wired to 2 of 40 specs, so ~20 routes have never been scanned once. Two mechanics to inherit: `scan()` returns `{ gate, contrast }` — not `{ found, contrastFindings }`, which silently reads as "clean" — and always run the canary from `j1-measure.mjs` before believing a zero |
 
 ### Track D — Documentation (2 units)
 
@@ -233,6 +233,67 @@ each unit tripping over the same stale issue.
 | EZ-1414 | "Dark theme" (Cosmetics, 2021). Dark mode ships: `ThemeContext` reads `prefers-color-scheme`, there is a toggle in two places, and `theme.ts` switches three token groups. The *quality* of it is this programme's S2 and V1, not this issue |
 | EZ-1707 | "`web/README.md` is still the stock Vite template". It plainly is not — it is ~8 KB documenting version stamping, runtime config and the environment badge |
 | EZ-1705 | "Set up automated tests for React web". EZ-1766 delivered 41 browser specs, 15 unit suites and five ratchets |
+
+---
+
+## Closing summary — programme complete (36/36 units, 2026-08-28, `59b3d602`)
+
+**43 findings** (X-001…X-043): **2 critical, 16 high, 19 medium, 6 low.** **15 refuted** (R-001…R-015),
+of which roughly half were the audit's own instruments or fixtures being wrong — the most common
+failure mode was the setup, not the app, and every instance is recorded so the next detector starts
+smarter. **7 register issues closed as already-implemented** (EZ-1414, 1705, 1706, 1707, 1748, 1754,
+1764), which is its own finding (X-043).
+
+**The verdict, two-sided as the evidence demands.** This application is *well built* in the places
+that were exercised hardest: containment is clean at every viewport (R-014, R-008), the grading
+conversation works end to end (R-011, R-012), the invite flow and the closed-exercise state are
+models (R-013, R-010), dark mode holds (R-015), and the code explains itself. Its defects cluster in
+four places: **work is lost silently** (X-001, X-017, X-021), **failure is communicated badly or
+falsely** (X-009, X-018, X-026, X-035), **the TSL builder lets a broken or pointless test set ship
+without a word** (X-015, X-023, X-027), and **the palette cannot satisfy AA as long as it is
+mode-blind** (X-012, X-013, X-004).
+
+### If only five things get fixed
+
+1. **X-001 + X-017** — unsaved work destroyed by ordinary navigation, student and teacher. One
+   `useBlocker` pattern (plus wiring EZ-1758's existing draft hooks) closes the critical class.
+2. **X-026** — a grader outage is shown to a cohort as raw Docker output graded 0/100. One branch.
+3. **X-023 + X-027 (+ X-015)** — the TSL builder's silent-failure chain: a can't-fail test with no
+   warning, required fields that don't gate Save, and a first-run that opens on an error. The caption
+   pattern already exists in the builder.
+4. **X-031 + X-009** — two one-line fixes with outsized blast radius: the stale grade table, and the
+   unreachable CrashScreen.
+5. **X-012 + X-013** — the palette. **Needs kspar's decision**: two greens (mode-aware `primary`,
+   dark buttons with dark text) or accepted AA failure in one mode. X-013's `text.secondary` darkening
+   is safe to do regardless.
+
+### Cheap sweeps worth batching
+
+Labels on icon controls (X-002, X-003 ×17, X-030 — one convention, the string exists), `main` on the
+two shell-less pages (X-011), the `<ul>` fix (X-010), the preset rename (X-024), pulling the dead
+`TEXT_UPLOAD` option (X-028), the three doc corrections (X-043).
+
+### The design direction (V track), as one proposal
+
+Keep the neutral-Material base — it is competent and the care is real — and transfer the identity the
+landing page already owns: **one green family everywhere** (the X-012 decision propagated to manifest
+and `easy-kc-theme` — X-039), **the display face on page titles** with a three-level working scale
+(X-040, X-041), **warm empty states with a next action** (X-036), and retire the native dialogs
+(X-042). Reach-ordered; each is independently rejectable.
+
+### Deliverables
+
+`doc/web/ui-guide.md` (D2) — the conventions, tokens, floors and fixture lessons, each with a check
+line. `web/tests/audit/` — 20 drivers and their JSON reports, reusable. The EZ-1785/EZ-1759 leads
+section below. **One measurement deliberately left open**: the Testimine round trip needs a real
+grading run (a write to core) — ask kspar before running it.
+
+### Triage split proposal
+
+Everything here can go to EZ — nothing is security-sensitive (the one security-adjacent observation
+was routed to `doc/review-log.md` per the carve-out). Suggested shape: the five priorities above as
+individual issues; the cheap sweeps as one batch issue each; the V-track direction as a single
+decision issue; X-043's doc fixes as one commit, no issue needed.
 
 ---
 
