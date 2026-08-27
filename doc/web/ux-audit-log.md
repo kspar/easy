@@ -99,7 +99,7 @@ finishes or it goes back to `todo`.
 | S6 | The shell at every size | **done `6edd169d`** (2026-08-26) | X-038; reach data added to X-003 | Re-mapped post-EZ-1786 (the Administration section resolved the scattered-admin premise — see J9). Measured: 17 `ArrowBackOutlined` sites, 1 labelled, with the i18n key already existing (folded into X-003). New: the theme toggle permanently forfeits follow-the-OS, while the embed page does it right (X-038). X-005 (key on wrong element) and EZ-1789 (no hrefs) already carry the shell's other defects; the mobile drawer behaved in every sweep. Original note follows. **From J1:** X-005 (the exercise-list `key` on the wrong element) lives here at `AppLayout.tsx:511`, and two maps earlier the same file does it correctly — count the other lists. Also count the `ArrowBackOutlined` back-link sites for X-003's reach: on pages with no breadcrumbs it is the only way back, and it has no accessible name |
 | S7 | Dense data | **done `6edd169d`** (2026-08-26) | — | Absorbed by its neighbours: containment at 390 is clean app-wide (R-014), the grade table is the app's best table (J8), sorting follows the documented `TableSortLabel` convention (review E5 verified it), and the roster carries count chips (R-011). The one thing not driven is a **200-row roster's render performance**, which is a performance question the plan scoped out (`doc/testing.md`: "Performance tests — none, and mostly fine"). Nothing filed |
 | S8 | Editors, code and motion | **done `6edd169d`** (2026-08-26) | — (all previously filed) | Everything this unit scoped was measured by earlier units: X-002 (editor unlabelled, shared `CodeEditor`), X-008 (fixed 200px), X-006 (reduced-motion ignored on the reveal), R-015 (oneDark coherent in dark), R-008 (TSL editors contained at 390). The overflow-guard gap on 12 of 15 `dangerouslySetInnerHTML` sites stays a **watch item**: no measured overflow reached it in any sweep because fixture HTML is narrow — a real exercise with a wide table would be the test, and that is one fixture away if it ever matters. Original note follows. **From J1:** X-002 (no accessible name on `.cm-content`) is in the shared `CodeEditor.tsx`, so it reaches the teacher testing tab, the TSL JSON tab and every constructor-code field — check whether one `aria-label` prop fixes all of them. X-008 is the fixed 200 px height. Two unlabelled glyph controls (`|<` and `>|`) sit in the split-pane gutter with no button chrome and no visible affordance — establish what they do and whether anyone would find them |
-| S9 | The front door | todo | — | Clone `easy-kc-theme` into the job tmp dir first |
+| S9 | The front door | **done `56d53583`** (2026-08-28) | X-039 | Settled from the theme's source: a fourth green family, a raster logo, no dark variant, 2023 vintage (X-039). Pixel-rendering it needs a Keycloak and is deferred to the fix, not the finding |
 
 ### Track V — Visual direction and design quality (4 units)
 
@@ -108,10 +108,10 @@ and a reach estimate — a design finding without all three stays `UNCERTAIN`.
 
 | # | Unit | Status | Findings | Notes / inherited leads |
 |---|---|---|---|---|
-| V1 | Identity: is there one? | todo | — | Do after S1, S2, S4 — it needs their screenshots as evidence |
-| V2 | Two products, one app | todo | — | |
-| V3 | Components and patterns that should be different | todo | — | Do last in this track: it inherits from J1–J9 and T1–T7 |
-| V4 | Type, density and hierarchy | todo | — | |
+| V1 | Identity: is there one? | **done `56d53583`** (2026-08-28) | — (verdict folded into X-040) | The app is *competently neutral*, not undesigned — the focus ring, scrollbars, radius vocabulary and grading screens show care — but with the logo removed nothing would read as Lahendus, and the one identity carrier exists in four green families. Verdict and evidence live in X-040 |
+| V2 | Two products, one app | **done `56d53583`** (2026-08-28) | X-040 | The identity lives on the page users leave immediately. Three cheap transfers named (one green, display face on titles, warmth in empty states); JoinCard proves the mix works |
+| V3 | Components and patterns that should be different | **done `56d53583`** (2026-08-28) | X-042 | Most candidates resolved in the app's favour or were already filed (X-007 the reveal, J7's roster shape verdict). The keep: native `window.confirm`/`prompt` inside a 19-dialog MUI app (X-042). Two observations recorded for triage without numbers: the sidebar settings-dialog-not-route, articles' view/edit on one URL |
+| V4 | Type, density and hierarchy | **done `56d53583`** (2026-08-28) | X-041 | One heading size carries the app, and `text.secondary`'s 177 uses are hierarchy delegated to greyness — one decision, one finding (X-041), with the working scale proposed for D2's guide |
 
 ### Track C — Cross-cutting consistency (5 units)
 
@@ -1319,6 +1319,106 @@ Template:
 - Instead: a three-state control (Hele / Tume / Süsteemne) where "system" clears the key — or simply
   adopt `useEmbedTheme`'s behaviour, which the codebase already contains and explains.
 - Evidence: source at `6edd169d`; contrast with `hooks/useEmbedTheme.ts`
+- Register: not previously filed
+
+### X-039 The front door wears the previous product's clothes
+- Unit: S9
+- Surface: the Keycloak login/registration/terms screens (`easy-kc-theme`), which 100% of users pass
+  through
+- Norm: the first screen belongs to the same product as the second (source 6); and the app's own
+  wordmark/palette as the reference (source 2)
+- Class: design + consistency
+- Severity: medium
+- Reach: every sign-in, by every user, before anything else
+- Verdict: CONFIRMED from the theme's source (shallow clone at `56d53583`; rendering it needs a
+  Keycloak, so pixel evidence is deferred to whenever the dev IdP is convenient — the palette values
+  suffice for the finding)
+- What happens: `easy-login.css` is built on greens `#3c9440`, `#41a045`, `#6cbf71` — a **fourth green
+  family**, matching neither the app's `#16a34a`, the manifest's `#43a047`, nor the theme's own dark
+  selected-state `rgba(76,175,80)`. The logo is a raster `logo.png` where the app ships a hand-tuned
+  `logo.svg`. There is no dark variant, so a user whose app is dark gets a white flash at every
+  sign-in. `doc/idp-setup.md` dates the theme to 2023: it is the previous design generation, serving as
+  the front door of the 2026 product.
+- Instead: a modest re-skin, not a rebuild — the Keycloak theme needs to borrow, not innovate: the
+  app's green (whichever X-012 settles on), the SVG logo, the radius vocabulary R-006 measured
+  (8px controls / 12px surfaces), and Roboto. A dark variant is desirable but secondary to matching at
+  all. Belongs in the `easy-kc-theme` repo, so it is an issue there rather than a web change.
+- Evidence: `easy-kc-theme` clone — `lahendus/login/resources/css/easy-login.css` colour census,
+  `logo.png`, no dark styles; `doc/idp-setup.md:81` ("last touched 2023")
+- Register: not previously filed
+
+### X-040 The app's only real visual identity is on the one page users leave immediately
+- Unit: V2 (with V1's verdict folded in)
+- Surface: `/landing` versus everything behind it
+- Norm: design judgement, argued (source 6, `frontend-design` loaded)
+- Class: design
+- Severity: medium
+- Reach: the product's entire visual impression — first contact versus daily use
+- Verdict: CONFIRMED
+- What happens: `LandingPage` (1,225 lines) has a designed identity — Fraunces display serif, Outfit,
+  JetBrains Mono, its own dark palette, 60 of the app's 119 responsive `sx` rules, real typographic
+  intent. The application behind it runs stock Roboto on MUI defaults with a green accent. **V1's
+  verdict on that app**: it is *competently neutral* rather than undesigned — the focus-ring work, the
+  scrollbar treatment, the radius vocabulary (R-006) and the grading screens show real care — but
+  nothing about it would be recognisable as Lahendus with the logo removed, and its one identity
+  carrier (the green) exists in four unreconciled families across landing, app, manifest and login
+  (X-012, X-039). So the product introduces itself in one voice and speaks in another forever after,
+  and JoinCard — the only app surface borrowing the landing's fonts — proves the two voices can mix.
+- Instead: not a redesign. Three transfers move most of the identity for little cost: **one green
+  family** everywhere (the X-012 decision, propagated to manifest and kc-theme); the landing's
+  **display face on the app's page titles** (h5 in 17 places — one theme line, and JoinCard already
+  demonstrates it); and the landing's warmth in the **empty states** (X-036's robot-with-action). The
+  full V-track direction table is for the triage session; anything more is taste spent without a
+  finding to justify it.
+- Evidence: the accumulated measurements — font census (S-track mapping), 4 green families
+  (S1/S2/S9), JoinCard as the existing crossover
+- Register: not previously filed
+
+### X-041 One heading size carries the whole application
+- Unit: V4
+- Surface: app-wide typography
+- Norm: hierarchy distinguishes what the content distinguishes (source 6); MUI's own scale exists and
+  is unconfigured for h1–h3 (source 2)
+- Class: design
+- Severity: medium
+- Reach: every page
+- Verdict: CONFIRMED
+- What happens: the theme configures h4–h6 only; nothing uses h1–h3; the page-title convention is
+  hand-rolled `h5` (1.5rem/400) in 17 places with `h4` in two — so a page title, a section title and a
+  dialog title sit within a step of each other, and the densest screens (TSL, participants) rely on
+  card borders rather than type to structure themselves. Meanwhile `text.secondary` carries 177 uses —
+  more than every other colour token combined — which is hierarchy delegated to greyness: when most
+  text is secondary, secondary means nothing. The two numbers are one decision: the type scale is not
+  doing structural work, so colour and borders are doing it badly.
+- Instead: a three-level working scale, stated in D2's guide and applied opportunistically: page title
+  (a real h4, possibly in the landing's display face per X-040), section/card title (current h6),
+  body. And a rule for `text.secondary`: metadata and captions only, never running text — with the
+  X-013 token fix making what remains legible.
+- Evidence: `theme.ts` typography block; the 17/2 title census (S-track mapping at `0cf2d952`,
+  re-checked pattern at `6edd169d`); `text.secondary` count (S1)
+- Register: not previously filed
+
+### X-042 Native browser dialogs do the confirming in a Material app
+- Unit: V3
+- Surface: `AutoAssessTab` (file add/remove via `window.prompt`/`window.confirm`), `ExercisePage`
+  save-conflict and cancel (`window.confirm`), TSL's unsaved-changes confirm
+- Norm: one dialog system per app (source 2 — 19 MUI dialogs are the majority); `window.prompt`
+  cannot be styled, translated by key, or themed, and blocks the thread
+- Class: consistency
+- Severity: low-medium
+- Reach: the library editing flows — teacher-facing, several times per session
+- Verdict: CONFIRMED (measured in T5/T7 runs: the native confirm's text is the raw string)
+- What happens: the app has nineteen styled, focus-trapped MUI dialogs, and then `window.confirm("Sul
+  on salvestamata muudatusi…")` and `window.prompt` for new-file names in the same flows — browser
+  chrome in the middle of a themed product, unthemed in dark mode, and unstylable.
+- Instead: the same `ConfirmDialog` C3 wants moved to `components/`, plus the existing single-field
+  dialog pattern (`CreateDirDialog`) for the prompt case. **V3's other candidates close without
+  numbers**: `ParticipantsPage`'s shape held at fixture size (J7), the reveal animation is X-007, the
+  sidebar settings-dialog and articles' edit-URL are recorded as V3 observations for the triage
+  session rather than findings — each works, and the argument for reshaping either did not survive
+  the "what does it cost the user" test
+- Evidence: T5's measured native confirm; `window.prompt` sites in `AutoAssessTab` (T7 note); dialog
+  census (mapping pass)
 - Register: not previously filed
 
 ---
