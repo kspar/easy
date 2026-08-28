@@ -178,9 +178,38 @@ export function compareStudents(
 
 const CSV_SEPARATOR = ';'
 
-/** Every field is quoted and its own quotes doubled — RFC 4180, and what a spreadsheet expects. */
+/**
+ * Characters a spreadsheet reads as the start of a formula rather than of text.
+ *
+ * `-` is on the list for the same reason as `=`, and is the one most likely to be argued about: a name
+ * beginning with a hyphen is entirely plausible and is still evaluated. Tab and CR are here because
+ * they read as leading whitespace to a person and as a formula lead-in to the parser.
+ */
+const FORMULA_LEADS = ['=', '+', '-', '@', '\t', '\r']
+
+/**
+ * Every field is quoted and its own quotes doubled — RFC 4180, and what a spreadsheet expects — and a
+ * field that would otherwise be evaluated gets a leading apostrophe.
+ *
+ * **The two do different jobs, which is why quoting alone was not enough.** Quoting solves parsing: a
+ * name containing `;` stays one field instead of splitting one student across two columns. The
+ * spreadsheet then strips those quotes and evaluates any cell starting with one of [FORMULA_LEADS] —
+ * so the quotes never reach the evaluator and cannot protect anything from it.
+ *
+ * That matters here because the name column is controlled by the person whose grade it is:
+ * `AccountSettingsPage` links to Keycloak's account console, where a user edits their own first and
+ * last name, and `account_checkin` copies the name out of the token on every login. A student sets
+ * their family name to a `HYPERLINK` or `WEBSERVICE` call, the teacher opens
+ * `grades-<courseId>-<ts>.csv`, and it runs — in a file that came from this application and therefore
+ * looks trustworthy. Exercise titles reach the header row through this same function, so a
+ * teacher-authored title is covered too.
+ *
+ * An apostrophe rather than stripping the character: the cell still reads as what the person typed,
+ * which a gradebook needs, and every spreadsheet treats a leading `'` as "this is text".
+ */
 function csvCell(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`
+  const guarded = FORMULA_LEADS.some((lead) => value.startsWith(lead)) ? `'${value}` : value
+  return `"${guarded.replace(/"/g, '""')}"`
 }
 
 /**

@@ -307,6 +307,83 @@ describe('toCsv', () => {
   test('no students gives a header and nothing else', () => {
     expect(toCsv([], model.sortedExercises, false, labels)).toBe('"Name";"Loops";"Recursion"')
   })
+
+  /**
+   * Formula injection, which quoting does not address and was never meant to.
+   *
+   * Quoting solves the *parsing* problem — a name with a `;` in it stays one field. A spreadsheet
+   * then strips those quotes and evaluates any cell whose first character is `=`, `+`, `-`, `@`, tab
+   * or CR. So the two controls answer different questions and the file needs both.
+   *
+   * The name column is the reachable one, and it is reachable by the person whose grade it is:
+   * `AccountSettingsPage` links to Keycloak's account console where a user edits their own first and
+   * last name, and `account_checkin` copies the name out of the token on every login. A student sets
+   * their family name to a `HYPERLINK` or `WEBSERVICE` call and it evaluates in the teacher's
+   * spreadsheet — from a file that arrived from this application and therefore looks trustworthy.
+   *
+   * Exercise titles run through the same function into the header row, so a teacher-authored title is
+   * covered by the same fix.
+   */
+  test('a cell that a spreadsheet would evaluate is neutralised', () => {
+    // The payload is the *given* name, and that detail is the whole exploitability question — see the
+    // test below. The exercise title is the other reachable field and lands in the header row.
+    const attack = buildRows([
+      exercise('1', 0, '=cmd|calc', [
+        {
+          ...sub('s1', 'Maasikas', { grade: 5, status: 'COMPLETED' }),
+          given_name: '=HYPERLINK("https://evil.example","grade")',
+        },
+      ]),
+    ])
+    const lines = toCsv(attack.students, attack.sortedExercises, false, labels).split('\n')
+
+    // A leading apostrophe inside the quotes: the spreadsheet reads the cell as text and shows the
+    // original characters, so the gradebook stays legible.
+    expect(lines[0]).toBe(`"Name";"'=cmd|calc"`)
+    expect(lines[1]).toBe(`"'=HYPERLINK(""https://evil.example"",""grade"") Maasikas";"5"`)
+  })
+
+  /**
+   * Only the first character of the *cell* decides, and the cell is `"<given> <family>"`.
+   *
+   * So a payload in the family name is never evaluated — it sits after the given name and a space,
+   * and a spreadsheet only treats a cell as a formula when the leading character is one. Worth a test
+   * rather than a comment because the finding this fix came from described the attack as setting the
+   * *family* name, and that version does not work. Getting it wrong in the other direction would be
+   * worse: someone "simplifying" the guard to check each name part separately would start prefixing
+   * ordinary surnames.
+   */
+  test('a payload that is not at the start of the cell is left alone', () => {
+    const rows = buildRows([
+      exercise('1', 0, 'Ex', [
+        { ...sub('s1', '=HYPERLINK("https://evil.example","x")', { grade: 1, status: 'COMPLETED' }), given_name: 'Mari' },
+      ]),
+    ])
+    const csv = toCsv(rows.students, rows.sortedExercises, false, labels)
+    expect(csv).toContain(`"Mari =HYPERLINK(""https://evil.example"",""x"")"`)
+    expect(csv).not.toContain("'")
+  })
+
+  test('every character a spreadsheet treats as a formula start is covered', () => {
+    // `-` matters as much as `=`: a given name beginning with a hyphen is both plausible and
+    // evaluated. Tab and CR are here because they read as leading whitespace to a person and as a
+    // formula lead-in to the parser — exactly the kind of entry a hand-written list forgets.
+    for (const lead of ['=', '+', '-', '@', '\t', '\r']) {
+      const rows = buildRows([
+        exercise('1', 0, 'Ex', [{ ...sub('s1', 'B', { grade: 1, status: 'COMPLETED' }), given_name: `${lead}payload` }]),
+      ])
+      const csv = toCsv(rows.students, rows.sortedExercises, false, labels)
+      expect(csv).toContain(`"'${lead}payload B"`)
+    }
+  })
+
+  test('an ordinary cell is left exactly as it was', () => {
+    // The other half. A fix that prefixed everything would put an apostrophe in front of every name
+    // and grade in the file, which is a worse gradebook than the one we started with.
+    const csv = toCsv(model.students, model.sortedExercises, false, labels)
+    expect(csv).toContain('"Givens1 Aab";"80";"0"')
+    expect(csv).not.toContain("'")
+  })
 })
 
 test('csvFilename carries the course and the moment, and takes the clock as an argument', () => {
