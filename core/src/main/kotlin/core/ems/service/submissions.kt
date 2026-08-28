@@ -60,38 +60,47 @@ data class GradeResp(
 
 
 /**
- * Return latest submissions for this exercise.
+ * The id of each student's latest submission on this course exercise, one per student.
+ *
+ * **This is [selectAllCourseExercisesLatestSubmissions]'s question asked a second time**, and the two
+ * answered it differently until now — the EZ-1763 fix reached one copy and not its sibling. This one
+ * resolved the winner in Kotlin with `lastSub.createdAt.isBefore(it.createdAt)`. `isBefore` is strict,
+ * so when two of a student's submissions shared a `created_at` **neither replaced the other** and the
+ * winner was whichever row Postgres emitted first, out of a query with no `ORDER BY` at all.
+ *
+ * `created_at` is millisecond-resolution and a tie is ordinary: a double-click, a retry, an autograde
+ * write landing beside a manual grade. EZ-1763 is the same tie found in the other implementation, as a
+ * test that failed four runs in five.
+ *
+ * It is worse here. The only caller is the Moodle grade push — a one-way write into the university's
+ * own gradebook. A grade that flickers in this application is visible and self-correcting; a wrong
+ * grade written to Moodle is neither.
+ *
+ * So the ordering now lives in SQL and is **total**, and matches the sibling query's exactly:
+ * `created_at`, then `number` — the per-student sequence, which is what "latest" is supposed to mean —
+ * then `id` as a backstop. Ascending, so that `associate` keeping the last value for a repeated key
+ * lands on the latest row per student, which is a documented stdlib guarantee rather than a hopeful
+ * one.
+ *
+ * Not routed through the sibling query instead, tempting as deleting a duplicate is: that one is built
+ * around a course, needs the whole student roster mapped up front, and returns grades, statuses and
+ * group memberships. This caller wants submission ids for one course exercise. The duplication is the
+ * two of them disagreeing, and pinning both against the same fixture is what fixes that — see
+ * `ValidateSelectAllCourseExercisesLatestSubmissions`.
  */
-fun selectLatestSubmissionsForExercise(courseExerciseId: Long): List<Long> {
-    data class SubmissionPartial(val id: Long, val studentId: String, val createdAt: DateTime)
-
-    // student_id -> submission
-    val latestSubmissions = HashMap<String, SubmissionPartial>()
-
+fun selectLatestSubmissionsForExercise(courseExerciseId: Long): List<Long> =
     Submission
-        .select(
-            Submission.id,
-            Submission.student,
-            Submission.createdAt,
-            Submission.courseExercise
-        )
+        .select(Submission.id, Submission.student)
         .where { Submission.courseExercise eq courseExerciseId }
-        .map {
-            SubmissionPartial(
-                it[Submission.id].value,
-                it[Submission.student].value,
-                it[Submission.createdAt]
-            )
-        }
-        .forEach {
-            val lastSub = latestSubmissions[it.studentId]
-            if (lastSub == null || lastSub.createdAt.isBefore(it.createdAt)) {
-                latestSubmissions[it.studentId] = it
-            }
-        }
-
-    return latestSubmissions.values.map { it.id }
-}
+        .orderBy(
+            Submission.student to SortOrder.ASC,
+            Submission.createdAt to SortOrder.ASC,
+            Submission.number to SortOrder.ASC,
+            Submission.id to SortOrder.ASC,
+        )
+        .associate { it[Submission.student].value to it[Submission.id].value }
+        .values
+        .toList()
 
 suspend fun autoAssessAsync(
     courseExId: Long,

@@ -5,7 +5,9 @@ import core.testing.IntegrationTest
 import core.testing.TestClock
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -188,6 +190,75 @@ class ValidateSelectAllCourseExercisesLatestSubmissions {
         assertEquals(20, latest!!.grade!!.grade) {
             "Expected the submission with the higher `number` to win a created_at tie. Getting 10 " +
                     "means the ordering in selectAllCourseExercisesLatestSubmissions is no longer total."
+        }
+    }
+
+    /**
+     * **The same tie, put to the other implementation of "latest submission per student".**
+     *
+     * [selectLatestSubmissionsForExercise] answers the same question as the query above and answered
+     * it differently, because the EZ-1763 fix went to one of the two copies and not to its sibling.
+     * It resolved the winner in Kotlin:
+     *
+     * ```kotlin
+     * if (lastSub == null || lastSub.createdAt.isBefore(it.createdAt)) { … }
+     * ```
+     *
+     * `isBefore` is strict, so on a tie **neither row replaces the other** and the winner is whichever
+     * one Postgres emitted first — out of a query that had no `ORDER BY` at all. This test lives here,
+     * next to its sibling, precisely because the two being apart is what let them diverge.
+     *
+     * It matters more here than there. The consumer is the Moodle grade push: a one-way write into the
+     * university's own gradebook. A grade that flickers in this application is visible and
+     * self-correcting; a wrong grade written to Moodle is neither.
+     *
+     * Note what this test can and cannot claim. The old behaviour was *unspecified*, not reliably
+     * wrong — on a small table Postgres returns rows in physical order, so it kept `number = 1`, and
+     * that is why this failed before the fix. The assertion worth having is not "the old code returned
+     * 1" but "the answer is now determined by the data".
+     */
+    @Test
+    fun `the Moodle sync resolves a created_at tie by number too, not by physical row order`() {
+        val tie = TestClock.fixed(500)
+        var first = 0L
+        var second = 0L
+        transaction {
+            first = Fixtures.submission(ce1Id, student2Id, number = 1, grade = 10, createdAt = tie)
+            second = Fixtures.submission(ce1Id, student2Id, number = 2, grade = 20, createdAt = tie)
+        }
+
+        val ids = transaction { selectLatestSubmissionsForExercise(ce1Id) }
+
+        assertTrue(second in ids) { "the higher submission number must win the tie" }
+        assertFalse(first in ids) { "and the lower one must not also be returned" }
+        // One row per student, still: student1 has two submissions on this exercise from populate().
+        assertEquals(2, ids.size) { "expected one latest submission each for student1 and student2" }
+    }
+
+    /**
+     * And the two implementations must agree, which is the property that was actually violated.
+     *
+     * Asserting each one's answer separately would let them drift apart again as long as both stayed
+     * internally consistent. This compares them on the same data.
+     */
+    @Test
+    fun `both implementations of latest-submission pick the same row`() {
+        val tie = TestClock.fixed(500)
+        transaction {
+            Fixtures.submission(ce1Id, student2Id, number = 1, grade = 10, createdAt = tie)
+            Fixtures.submission(ce1Id, student2Id, number = 2, grade = 20, createdAt = tie)
+        }
+
+        val viaMoodlePath = transaction { selectLatestSubmissionsForExercise(ce1Id) }.toSet()
+        val viaCoursesPath = selectAllCourseExercisesLatestSubmissions(courseId, ce1Id)
+            .single()
+            .latestSubmissions
+            .mapNotNull { it.latestSubmission?.submissionId?.toLong() }
+            .toSet()
+
+        assertEquals(viaCoursesPath, viaMoodlePath) {
+            "The two 'latest submission' implementations disagree. Whichever is wrong, a student's " +
+                    "Moodle grade and their grade in this application are now different numbers."
         }
     }
 }
