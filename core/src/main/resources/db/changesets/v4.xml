@@ -618,4 +618,62 @@
         <renameColumn tableName="feedback_snippet" oldColumnName="created_at" newColumnName="modified_at"/>
     </changeSet>
 
+    <!--
+        `submission.number` is assigned by reading the current maximum and writing max + 1, in one
+        transaction at READ COMMITTED, with nothing enforcing uniqueness. Two concurrent submissions
+        by one student to one course exercise therefore both read N and both write N + 1.
+
+        This has happened. There is one such pair in the dev database — two rows a millisecond apart
+        with consecutive ids, the same solution and the same grade, both autograded: a double-click.
+
+        Nothing crashes when it happens, which is why it went unnoticed. The consequences are
+        ordering ambiguities: `previousTeacherGrade` picks `orderBy(number DESC).limit(1)` and ties,
+        so the grade carried onto a resubmission becomes arbitrary, and the number is shown to the
+        student, who sees two submissions labelled the same. The grade table is already defended —
+        its ordering falls through `number` to `id`, and its comment says that is there in case
+        `number` is ever wrong.
+
+        The renumber runs first and touches only groups that actually contain a duplicate. Within
+        those it recomputes the whole sequence by `(created_at, id)`, which is what `number` means,
+        so the result is chronological and gapless rather than having the duplicate pushed to the
+        end. Measured against dev before writing this: five rows in the one affected group, of which
+        exactly one changes. Nothing is deleted, and no foreign key references `number` — it is read
+        for display and ordering only.
+
+        Then the constraint, which is the actual fix: the race becomes a failed insert instead of
+        silent corruption. The loser of a double-click gets an error while the first submission is
+        already saved, which is not lovely, but it beats two rows quietly claiming to be the same
+        attempt.
+    -->
+    <changeSet id="280826-1" author="kspar">
+        <sql>
+            <![CDATA[
+            WITH duplicated AS (
+                SELECT DISTINCT course_exercise_id, student_id
+                FROM (
+                    SELECT course_exercise_id, student_id, number
+                    FROM submission
+                    GROUP BY 1, 2, 3
+                    HAVING count(*) > 1
+                ) d
+            ), renumbered AS (
+                SELECT s.id,
+                       row_number() OVER (
+                           PARTITION BY s.course_exercise_id, s.student_id
+                           ORDER BY s.created_at, s.id
+                       ) AS new_number
+                FROM submission s
+                    JOIN duplicated USING (course_exercise_id, student_id)
+            )
+            UPDATE submission s
+            SET number = r.new_number
+            FROM renumbered r
+            WHERE s.id = r.id AND s.number <> r.new_number;
+            ]]>
+        </sql>
+        <addUniqueConstraint tableName="submission"
+                            columnNames="course_exercise_id, student_id, number"
+                            constraintName="uq_submission_number_per_student_per_course_exercise"/>
+    </changeSet>
+
 </databaseChangeLog>
