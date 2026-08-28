@@ -84,8 +84,37 @@ class FunctionScheduler<T>(private val function: KFunction<T>) {
             log.debug { "Job@${job.id}: Job finished (3/4)" }
             return result
         } finally {
-            log.debug { "Job@${job.id}: Job removed (4/4)" }
-            jobs.remove(job)
+            // **A started job stays in `jobs` until it actually completes.**
+            //
+            // This used to be an unconditional `jobs.remove(job)`. On the normal and the error paths
+            // that is right — the deferred is finished by the time `await()` returns or throws. But if
+            // the *awaiting* coroutine is cancelled while a started job is still in flight, removing it
+            // dropped a job that was still occupying a slot on the executor, and `jobs` is the
+            // admission control for the whole pipeline: `AutoGradeScheduler.grade` admits
+            // `min(waiting, maxLoad - countActive())`, `chooseOptimalExecutor` ranks by
+            // `size() / maxLoad`, and `deleteExecutor` refuses while `size()` is non-zero. An
+            // undercount there lets core push a grading host past the one limit that protects it.
+            //
+            // Cancelling on the way out — the obvious fix, and the one the review suggested — would not
+            // help, because the scheduled function is `callExecutor`: a synchronous `RestTemplate` POST
+            // whose read timeout defaults to an hour. Coroutine cancellation is cooperative, so the
+            // request runs to completion or timeout regardless, and the slot stays occupied whether or
+            // not the deferred says it is cancelled. Only continuing to count it tells the truth.
+            //
+            // `invokeOnCompletion` is what removes it afterwards, since by then there is no awaiter
+            // left to do it. It fires on cancellation too, so `killScheduler` still drains cleanly.
+            val deferred = job.jobDeferred
+            if (deferred.isActive) {
+                log.debug { "Job@${job.id}: Awaiter gone, still running — kept counted (4/4)" }
+                deferred.invokeOnCompletion { jobs.remove(job) }
+            } else {
+                // Completed, or lazy and never started. In the latter case nobody will ever await it,
+                // so cancel to release the coroutine — `startNext()` cannot reach it once it is out of
+                // `jobs` either way, so this is tidiness rather than a behaviour change.
+                if (!deferred.isCompleted) deferred.cancel()
+                log.debug { "Job@${job.id}: Job removed (4/4)" }
+                jobs.remove(job)
+            }
         }
     }
 

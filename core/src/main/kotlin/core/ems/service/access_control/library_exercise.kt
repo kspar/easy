@@ -5,7 +5,7 @@ import core.db.DirAccessLevel
 import core.db.Exercise
 import core.db.ExerciseVer
 import core.db.SolutionFileType
-import core.ems.service.getImplicitDirFromExercise
+import core.ems.service.getImplicitDirFromExerciseOrNull
 import core.ems.service.hasAccountDirAccess
 import core.exception.ForbiddenException
 import core.exception.InvalidRequestException
@@ -21,8 +21,16 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
  * Has the given access level to this exercise in the exercise library.
  */
 fun AccessChecksBuilder.libraryExercise(exerciseId: Long, accessLevel: DirAccessLevel) = add { caller: EasyUser ->
-    val dirId = getImplicitDirFromExercise(exerciseId)
-    if (!hasAccountDirAccess(caller, dirId, accessLevel)) {
+    // Nullable, and refused with the *same* error as a real exercise the caller cannot reach.
+    //
+    // Two reasons. The resolver used to end in `.single()`, so a nonexistent exercise id threw
+    // NoSuchElementException from inside the access check and became a 500 — and none of the seven
+    // callers of this rule checks existence before calling it, so that was the whole answer for a bad
+    // id. And answering 404-ish for "no such exercise" while answering 403 for "exists, not yours"
+    // would let a caller tell the two apart, which enumerates the library's ids. The audience here is
+    // teachers and admins, so this is a small leak, but it is one the code never meant to open.
+    val dirId = getImplicitDirFromExerciseOrNull(exerciseId)
+    if (dirId == null || !hasAccountDirAccess(caller, dirId, accessLevel)) {
         throw ForbiddenException(
             "User ${caller.id} does not have $accessLevel access to exercise $exerciseId",
             ReqError.NO_EXERCISE_ACCESS

@@ -138,18 +138,37 @@ fun libraryDirPutAccess(dirId: Long, groupId: Long?, level: DirAccessLevel) {
 }
 
 
-fun getImplicitDirFromExercise(exerciseId: Long): Long = transaction {
+/**
+ * The implicit dir of an exercise, or null if there is no such exercise.
+ *
+ * Nullable because the *access check* calls this first, before anything has established that the
+ * exercise exists — see `libraryExercise`. It ended in `.single()`, which throws
+ * `NoSuchElementException`, so a nonexistent exercise id produced a 500 from inside the access rule
+ * rather than the refusal the caller should get.
+ *
+ * Note the resolution is by **name string equality** with the exercise id rather than by a foreign key
+ * (see `Fixtures.exercise`, which renames the dir for exactly this reason). That is the deeper
+ * fragility here and changing it is a schema question, not this one.
+ */
+fun getImplicitDirFromExerciseOrNull(exerciseId: Long): Long? = transaction {
     Dir
         .select(Dir.id)
         .where { Dir.name.eq(exerciseId.toString()) and Dir.isImplicit }.map {
             it[Dir.id]
         }
-        .single().value
+        .singleOrNull()?.value
 }
 
-fun getExerciseFromImplicitDir(implicitDirId: Long): Long = transaction {
-    TODO("Should it return exercise ID or more attrs like for groups?")
-}
+/**
+ * The implicit dir of an exercise that is already known to exist.
+ *
+ * For the callers that run *after* an access check has passed, where a missing dir is a broken
+ * invariant rather than a bad request. Use [getImplicitDirFromExerciseOrNull] anywhere the id is still
+ * caller-supplied and unvalidated.
+ */
+fun getImplicitDirFromExercise(exerciseId: Long): Long =
+    getImplicitDirFromExerciseOrNull(exerciseId)
+        ?: throw IllegalStateException("Exercise $exerciseId has no implicit dir")
 
 data class ExerciseDir(
     val id: Long,

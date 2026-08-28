@@ -407,4 +407,37 @@ class AccessControlRulesTest {
         transaction { Fixtures.giveDirAccess(otherTeacher, dirId, DirAccessLevel.PR) }
         asOtherTeacher().assertAccess { libraryExercise(exerciseId, DirAccessLevel.PR) }
     }
+
+    /**
+     * An exercise id that does not exist is refused the same way as one the caller cannot reach.
+     *
+     * The rule resolves the exercise's implicit dir first, and that resolver ended in `.single()`, which
+     * throws `NoSuchElementException` on an empty result. So a nonexistent id produced a **500** from
+     * inside the access check — before any of the seven callers (`ReadExercise`, `UpdateExercise`,
+     * `UpdateExercisePatch`, `DeleteExercise`, `AddExerciseToCourse`, `TeacherAutoassess`,
+     * `ReadAnonymousSubmissions`) got to say anything, none of which checks existence first.
+     *
+     * The second assertion is the one worth having and is why this is not merely a tidier status code:
+     * an *existing* exercise the caller cannot reach answered 403 while a *nonexistent* one answered
+     * 500, so the pair of them enumerated which library exercise ids exist. The audience is teachers and
+     * admins and an id is not sensitive on its own, so this is small — but it is a distinction the code
+     * did not mean to draw, and drawing it accidentally is how it stays undrawn on purpose.
+     */
+    @Test
+    fun `a nonexistent library exercise is refused, not crashed into, and reads the same as no access`() {
+        val nonexistent = exerciseId + 100_000
+
+        val missing = assertThrows(ForbiddenException::class.java) {
+            asTeacher().assertAccess { libraryExercise(nonexistent, DirAccessLevel.PR) }
+        }
+
+        val noAccess = assertThrows(ForbiddenException::class.java) {
+            asOtherTeacher().assertAccess { libraryExercise(exerciseId, DirAccessLevel.PR) }
+        }
+
+        assertEquals(noAccess.code, missing.code) {
+            "A nonexistent exercise and an unreachable one must give the caller the same error code, " +
+                    "or the difference between them tells the caller which ids exist."
+        }
+    }
 }
