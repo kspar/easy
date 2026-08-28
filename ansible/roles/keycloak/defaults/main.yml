@@ -13,14 +13,19 @@
 # Pinned, and verified by checksum rather than trusted. Keycloak upgrades change realm storage, so
 # "whatever is latest" is not a thing this role should ever install on its own.
 #
-# The checksum is the SHA-256 of the official release asset, confirmed on 2026-08-08 by downloading
-# it from GitHub on the host and comparing against the copy that was already sitting in ~kspar — they
-# matched, which is what makes that copy's provenance known rather than assumed.
-keycloak_version: 25.0.2
+# The checksum is the SHA-256 of the official release asset. Keycloak publishes no .sha256 alongside
+# the zip, so there is no upstream hash to compare against: this one was computed on 2026-08-24 from
+# the asset downloaded off the GitHub release. That makes it a pin rather than an independent
+# verification — the second opinion is that `get_url` below refuses any host whose download differs.
+#
+# 26.7.2 is not a routine bump. It carries CVE-2026-18963 (CVSS 9.1, unauthenticated account takeover
+# through the reset-credentials flow) and seven more; the version before it that anyone should run is
+# no version before it.
+keycloak_version: 26.7.2
 keycloak_zip_url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_version }}/keycloak-{{ keycloak_version }}.zip"
-keycloak_zip_sha256: 782860ef21cbdbef3c3b8203a35202e0ce7f0047e34a41406ba9b3201a6c2b8b
+keycloak_zip_sha256: 744ced2aee48932be2de935ff380085ebded737655c0986aa3512bbcec62f69b
 
-# Keycloak 25 runs on Java 17 or 21. 21 is the newer of the two it supports — deliberately NOT the
+# Keycloak 26.7 runs on Java 17 or 21. 21 is the newer of the two it supports — deliberately NOT the
 # Java 25 core runs on, because Quarkus in this release predates it and the failure mode is an
 # obscure startup crash rather than a version check.
 keycloak_jre_package: openjdk-21-jre-headless
@@ -77,20 +82,42 @@ keycloak_acme_webroot: /var/www/certbot
 keycloak_cert_dir: "/etc/letsencrypt/live/{{ keycloak_hostname }}"
 
 # --- the theme ------------------------------------------------------------------------------------
-# The lahendus login/account/email theme, so dev looks like production. Built in 2023 against
-# Keycloak 15 and never run on 25 — see doc/idp-setup.md for what to check if the login page renders
-# oddly. Installing it does not select it: that is a realm setting, deliberately, so a broken theme
-# can be switched off without a playbook run.
+# The lahendus login/account/email theme, so dev looks like production. Upstream now tests it against
+# current Keycloak, so the role installs the source verbatim — the stylesheet fixes this role used to
+# apply on the way in are gone, and a theme that renders wrongly is a bug to fix upstream rather than
+# in a lineinfile here. Installing it does not select it: that is a realm setting, deliberately, so a
+# broken theme can be switched off without a playbook run.
 keycloak_theme_install: true
 keycloak_theme_name: lahendus
 # Where the theme source is taken from on the host. It arrived with the home-directory restore rather
 # than from a repository, which is itself the reason this is a variable and not a hardcoded path.
 keycloak_theme_src: /home/kspar/easy-kc-theme
 
+# --- password denylists ---------------------------------------------------------------------------
+# A realm whose password policy contains passwordBlacklist(<file>) will not START if <file> is
+# missing — not a warning, not a disabled policy: the server exits, after Liquibase has already
+# migrated the schema. That failure mode is why this exists.
+#
+# Keycloak reads these from data/password-blacklists inside the install, which an upgrade replaces.
+# So the copy that matters lives here, outside the versioned tree, and the role stamps it into each
+# install — the same reasoning that keeps keycloak.conf in /etc.
+#
+# Empty by default: a realm with no such policy needs none of this, and the role skips it silently.
+# To adopt one, put the file in this directory on the host and re-run.
+keycloak_blacklists_dir: "{{ keycloak_conf_dir }}/password-blacklists"
+
 # --- JVM ------------------------------------------------------------------------------------------
 # Keycloak's own defaults, minus the container heap percentages that only make sense in a container.
 # 512m is comfortable for a dev realm with a handful of users; production wants more.
 keycloak_java_opts: "-Xms256m -Xmx768m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -XX:+ExitOnOutOfMemoryError -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom"
+
+# --- headers nginx adds -----------------------------------------------------------------------
+# form-action for the login page: the origins a form served by Keycloak may post to. `*.ut.ee`
+# covers this project's hostnames, `*.google.com` is there for the Google identity provider's flow,
+# and the loopback entry is what lets a developer run the SPA locally against a deployed IdP.
+#
+# Set to an empty string to add no header at all.
+keycloak_csp_form_action: "'self' *.ut.ee *.google.com http://127.0.0.1:*"
 
 # --- the admin-console gate ---------------------------------------------------------------------
 # A door in front of Keycloak's admin console. The console's own answer to "signed in, but not an
@@ -114,3 +141,18 @@ keycloak_gate_realm: "{{ keycloak_realm | default('master') }}"
 # /admin/master/console/*, and widening a built-in client to cover a page of ours would be a change
 # to Keycloak's own furniture for no benefit.
 keycloak_gate_client_id: idp-admin-gate
+
+# The JavaScript adapter, vendored next to the page rather than loaded from the server.
+#
+# Keycloak used to serve it at {{ keycloak_http_relative_path }}/js/keycloak.js. Keycloak 26 does
+# not: the adapter was split out into its own npm package on its own release cycle, and the endpoint
+# is simply gone — a 404, and a gate page that cannot run. The same release also removed the UMD
+# build, so it is no longer a `<script src>` that defines a global; it is an ES module and the page
+# imports it.
+#
+# Pinned and checksummed for the same reason the server is. The version tracks the adapter's own
+# releases, not the server's — 26.2.4 against a 26.7.2 server is expected, not drift — and it is the
+# same major.minor the SPA carries in web/package.json.
+keycloak_js_version: 26.2.4
+keycloak_js_url: "https://registry.npmjs.org/keycloak-js/-/keycloak-js-{{ keycloak_js_version }}.tgz"
+keycloak_js_sha256: 1e52998fd8f44dc15293df6af88f0bae57248e503617930067cb802ebe9665c9

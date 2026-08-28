@@ -573,7 +573,7 @@ what Keycloak's `hostname` is set to, which makes it the `issuer` in every token
 `doc/idp-setup.md` §5 has both halves, and §5.1 the order to apply such a change in — the issuer
 moving signs everyone out, and the SPA needs a deploy of its own before logins work again.
 
-What is running: Keycloak 25.0.2 behind nginx with a Let's Encrypt certificate, on its own postgres,
+What is running: Keycloak 26.7.2 behind nginx with a Let's Encrypt certificate, on its own postgres,
 built by `ansible/roles/keycloak` and applied with `./run.sh site.yml --limit easyidpdev`.
 
 The realm, as decided here and built there:

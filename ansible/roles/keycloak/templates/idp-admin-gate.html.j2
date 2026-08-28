@@ -55,8 +55,14 @@
   <p class="muted">Asking Keycloak whether this account may administer the realm.</p>
 </main>
 
-<script src="{{ keycloak_http_relative_path }}/js/keycloak.js"></script>
-<script>
+<!--
+  The adapter is imported from beside this page, not from the server. Keycloak 26 removed the
+  {{ keycloak_http_relative_path }}/js/keycloak.js endpoint and the UMD build along with it, so
+  there is no global `Keycloak` to wait for — this is a module, and the import is the load order.
+-->
+<script type="module">
+  import Keycloak from {{ (keycloak_gate_path ~ "/keycloak.js") | to_json }};
+
   var BASE = {{ (keycloak_http_relative_path) | to_json }};
   var CONSOLE_URL = BASE + "/admin/master/console/";
   var app = document.getElementById("app");

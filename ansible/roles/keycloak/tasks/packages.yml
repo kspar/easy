@@ -49,7 +49,7 @@
     keycloak_installed: "{{ keycloak_jvm_found.matched | int == 1 }}"
 
 - name: Check the runtime is one Keycloak {{ keycloak_version }} supports
-  # Keycloak 25 runs on 17 and 21 and nothing newer — Quarkus in this release predates Java 25, and
+  # Keycloak 26.7 runs on 17 and 21 and nothing newer — Quarkus in this release predates Java 25, and
   # the failure is an obscure startup crash rather than a version check. Cheaper to find here.
   ansible.builtin.command: "{{ keycloak_java_home }}/bin/java -version"
   register: keycloak_java_version

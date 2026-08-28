@@ -1,7 +1,7 @@
 # Setting up the dev IdP
 
 `dev.idp.lahendus.ut.ee` — a CNAME to `easy-idp-dev.cloud.ut.ee`, the VM's own name (193.40.11.153,
-OpenStack, Ubuntu 24.04.4 LTS) — Keycloak 25.0.2 serving the realm that every login on dev goes
+OpenStack, Ubuntu 24.04.4 LTS) — Keycloak 26.7.2 serving the realm that every login on dev goes
 through. Both names reach it; the `lahendus.ut.ee` one is what the configs use and what the tokens
 say, and §5 is why that took two attempts.
 
@@ -94,10 +94,19 @@ core, for the same reasons.
 `/etc/keycloak/keycloak.env` is 0640 root:keycloak and holds three values:
 
 ```
-KC_DB_PASSWORD             generated on the host, never leaves it
-KEYCLOAK_ADMIN             admin
-KEYCLOAK_ADMIN_PASSWORD    generated on the host — this is how you first log in
+KC_DB_PASSWORD                 generated on the host, never leaves it
+KC_BOOTSTRAP_ADMIN_USERNAME    admin
+KC_BOOTSTRAP_ADMIN_PASSWORD    generated on the host — this is how you first log in
 ```
+
+Keycloak 25 called the last two `KEYCLOAK_ADMIN` and `KEYCLOAK_ADMIN_PASSWORD`; 26 renamed them and
+ignores the old spelling without saying so. The role renames them in place on a host it set up
+earlier, keeping the values — the password in that file is the one the database was bootstrapped
+with, and a freshly generated one would open nothing.
+
+**Bootstrap means bootstrap.** Keycloak reads these only against an empty database. On a host whose
+database was migrated from an older Keycloak — production — the admin account is whatever it already
+was, and these values name an account that does not exist. Log in with the real one.
 
 The role creates the file if it is missing, generates what it can, and afterwards only ever `stat`s
 it — it checks the mode and the owner, never the contents. So no credential reaches the controller,
@@ -109,7 +118,7 @@ account running Keycloak never needs read access to the file itself.
 Read the admin password when you need it:
 
 ```sh
-ssh easyidpdev 'sudo grep KEYCLOAK_ADMIN_PASSWORD /etc/keycloak/keycloak.env'
+ssh easyidpdev 'sudo grep KC_BOOTSTRAP_ADMIN_PASSWORD /etc/keycloak/keycloak.env'
 ```
 
 **The cost, stated plainly:** rebuilding this host from nothing needs these from somewhere else, and
@@ -138,18 +147,22 @@ reasoning for each value; what follows is only what does not fit in a comment.
 
 ### 3.1 The version is pinned and checksummed
 
-`keycloak_version: 25.0.2`, downloaded from GitHub and verified against a SHA-256 in the role.
+`keycloak_version: 26.7.2`, downloaded from GitHub and verified against a SHA-256 in the role.
 
-That checksum was not taken on trust. The copy already sitting in `~kspar` was compared against a
-fresh download of the official release asset on the host, and they matched — which is what turned
-that file's provenance from "presumably fine" into a known quantity. Keycloak upgrades change realm
-storage, so "whatever is latest" is not something this role should ever install by itself.
+Keycloak publishes no `.sha256` next to the zip, so that hash is one this project computed off the
+release asset rather than an upstream figure it agrees with. What it buys is not "this is the real
+Keycloak" but "every host installs the same bytes, and one that does not gets a failure instead of a
+surprise". Keycloak upgrades change realm storage, so "whatever is latest" is not something this
+role should ever install by itself.
 
 If the download ever fails on a checksum mismatch, **do not fix it by updating the hash.**
 
+26.7.2 arrived here as a security upgrade, not a routine bump: it fixes CVE-2026-18963, an
+unauthenticated account takeover through the reset-credentials flow, and seven others.
+
 ### 3.2 Java 21, not Java 25
 
-Keycloak 25 runs on Java 17 and 21. Core runs on 25 — a different host, and deliberately not the same
+Keycloak 26.7 runs on Java 17 and 21. Core runs on 25 — a different host, and deliberately not the same
 runtime. The role asserts the version, because the failure otherwise is a Quarkus startup crash that
 says nothing about Java.
 
@@ -222,8 +235,8 @@ export JAVA_HOME=$(ls -d /usr/lib/jvm/java-21-openjdk-* | head -1)
 export HOME=/root
 K=/opt/keycloak/bin/kcadm.sh
 $K config credentials --server http://127.0.0.1:8080/auth --realm master \
-  --user "$(grep '^KEYCLOAK_ADMIN=' /etc/keycloak/keycloak.env | cut -d= -f2-)" \
-  --password "$(grep '^KEYCLOAK_ADMIN_PASSWORD=' /etc/keycloak/keycloak.env | cut -d= -f2-)"
+  --user "$(grep '^KC_BOOTSTRAP_ADMIN_USERNAME=' /etc/keycloak/keycloak.env | cut -d= -f2-)" \
+  --password "$(grep '^KC_BOOTSTRAP_ADMIN_PASSWORD=' /etc/keycloak/keycloak.env | cut -d= -f2-)"
 ```
 
 ### 4.1 Why `master`, which is not best practice
@@ -350,27 +363,26 @@ $K get users/$SA/role-mappings/clients/$($K get clients -r master -q clientId=ma
 # expect exactly: view-users
 ```
 
-### 4.5 The theme, and what three years of Keycloak did to it
+### 4.5 The theme
 
 `lahendus` is installed from `~kspar/easy-kc-theme` into `/opt/keycloak/themes/`, as a directory
 rather than a jar so it can be edited and reloaded without a build step.
 
-It was written for Keycloak 15 and had never run on 25. It mostly works — the login form renders and
-there are no FreeMarker errors — but it asked for three stylesheets that Keycloak 25 does not ship,
-and a 404 stylesheet is an unstyled page rather than a visible error:
+It was written for Keycloak 15, and on 25 it asked for three stylesheets the Quarkus distributions do
+not ship — two PatternFly 4 paths under a `web_modules/` directory that no longer exists, and a
+`css/tile.css` that is in neither this theme nor its parent. A 404 stylesheet is an unstyled page
+rather than a visible error, so the role used to rewrite `styles` and `stylesCommon` on the way in.
 
-| Asked for | Reality on 25 |
-| --- | --- |
-| `web_modules/@patternfly/react-core/dist/styles/base.css` | No `web_modules` directory at all |
-| `web_modules/@patternfly/react-core/dist/styles/app.css` | Same |
-| `css/tile.css` | Not in this theme, not in its parent |
+Those rewrites are gone. Upstream `easy-kc-theme` is now tested against current Keycloak and ships
+the right paths, and a role that patches its source would hide the next such break instead of
+surfacing it. **If the login page comes up unstyled after a version bump, fix it in
+github.com/kspar/easy-kc-theme** — check the browser's network tab for 404s under
+`/auth/resources/`, then compare against the stock `keycloak/login/theme.properties` of the version
+you are on.
 
-The role rewrites `styles` and `stylesCommon` in the installed copy to the paths Keycloak 25's own
-`keycloak/login/theme.properties` uses. Both edits are idempotent. All eight assets now return 200.
-
-**The theme has no home, and that is the real problem.** It came from a home-directory restore, it is
-in no repository, and a rebuilt host gets the 2023 copy again. The role copies it only if it is not
-already installed, so to pick up an edited source: remove
+**The theme still has no home here, and that is the remaining problem.** The role copies it from a
+directory on the host, so a rebuilt host gets whatever that directory happens to hold. The copy
+happens only if it is not already installed, so to pick up an edited source: remove
 `/opt/keycloak/themes/lahendus` and re-run. **Vendoring it into this repo is outstanding work.**
 
 To fall back to the stock login page, no playbook run needed:
@@ -652,8 +664,9 @@ administrator, and gives no clue at all if you are not (§4.6).
 ## 8. Still to do
 
 - **Vendor the theme** — EZ-1744 (Vendor the lahendus Keycloak theme — it exists only in a home
-  directory on one VM). Also fold the Keycloak 25 stylesheet corrections into the source and delete
-  the two `lineinfile` tasks that currently apply them after the copy (§4.5).
+  directory on one VM). The stylesheet half of this is done: upstream fixed the paths, and the two
+  `lineinfile` tasks that used to correct them after the copy are gone (§4.5). What remains is that
+  the source is a directory on a VM rather than something this repo carries.
 - **Back up `cloakdb` and `/etc/keycloak/keycloak.env`** — EZ-1745 (Back up the IdP: cloakdb and
   /etc/keycloak/keycloak.env are both single copies). This document reproduces the realm; it does not
   reproduce the users in it, so today the IdP is rebuildable and logins are not (§2).
