@@ -5,4 +5,4 @@
 # Dependabot watches requirements.txt; this file is deliberately not pinned as tightly, because a
 # pytest release breaking CI is a five-minute fix and a pinned-and-forgotten test runner is not.
 -r requirements.txt
-pytest>=8,<10
+pytest>=9.1.1,<10
