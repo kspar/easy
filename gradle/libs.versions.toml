@@ -31,7 +31,7 @@ junit = "5.14.2"
 kaml = "0.104.0"
 kotlinLogging = "8.0.4"
 kotlinxSerializationJson = "1.11.0"
-liquibase = "4.31.1"
+liquibase = "5.0.4"
 picocli = "4.7.7"
 # Pinned rather than versionless: this project applies the Spring Boot plugin's dependency
 # management, which does not import testcontainers-bom, so an unversioned coordinate fails to
