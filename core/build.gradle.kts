@@ -9,7 +9,7 @@ buildscript {
         // liquibase version that cannot be read from gradle/libs.versions.toml. Keep it in sync
         // with `liquibase` there. Removing this block is not an option: the Liquibase tasks fail
         // with NoClassDefFoundError: liquibase/Scope without it.
-        classpath("org.liquibase:liquibase-core:4.31.1")
+        classpath("org.liquibase:liquibase-core:5.0.4")
     }
 }
 
