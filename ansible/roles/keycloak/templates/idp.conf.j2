@@ -77,6 +77,14 @@ server {
     location / {
         proxy_pass http://{{ keycloak_http_host }}:{{ keycloak_http_port }};
 
+{% if keycloak_csp_form_action %}
+        # Where a form on a Keycloak page may post. The login form is the most phishing-adjacent
+        # thing this host serves, and `form-action` is the directive that says a stolen page cannot
+        # post the password somewhere else. `always` because the interesting responses here are
+        # redirects and 4xx, which the bare form of this directive would skip.
+        add_header Content-Security-Policy "form-action {{ keycloak_csp_form_action }};" always;
+{% endif %}
+
         # These four are the security boundary for `proxy-headers=xforwarded` in keycloak.conf.
         # Keycloak trusts them to decide the scheme and host it builds redirects and the token
         # `issuer` from. Every one is SET, not appended and not passed through — a client sending its

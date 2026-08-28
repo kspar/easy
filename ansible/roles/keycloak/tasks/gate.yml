@@ -15,6 +15,47 @@
     mode: "0755"
   when: keycloak_gate_enabled | bool
 
+- name: Fetch the JavaScript adapter
+  # From npm, because Keycloak 26 no longer serves it. Verified by checksum and cached, so a run on a
+  # converged host neither downloads nor depends on the registry being reachable.
+  ansible.builtin.get_url:
+    url: "{{ keycloak_js_url }}"
+    dest: "/var/cache/keycloak-js-{{ keycloak_js_version }}.tgz"
+    checksum: "sha256:{{ keycloak_js_sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: keycloak_gate_enabled | bool
+
+- name: Find out whether the gate directory is really there
+  # In a dry run on a host that has never served this page, the directory above was only simulated
+  # and unarchive refuses a destination that does not exist. Same guard as install.yml's.
+  ansible.builtin.stat:
+    path: "{{ keycloak_gate_root }}"
+  register: keycloak_gate_root_stat
+  check_mode: false
+  when: keycloak_gate_enabled | bool
+
+- name: Put the adapter where the page can import it
+  # One file out of the tarball — the package's own ESM build, which has no dependencies and no
+  # imports of its own, so nothing else has to be unpacked or resolved at runtime.
+  ansible.builtin.unarchive:
+    src: "/var/cache/keycloak-js-{{ keycloak_js_version }}.tgz"
+    dest: "{{ keycloak_gate_root }}"
+    remote_src: true
+    include:
+      - package/lib/keycloak.js
+    extra_opts:
+      - --strip-components=2
+    owner: root
+    group: root
+    mode: "0644"
+  args:
+    creates: "{{ keycloak_gate_root }}/keycloak.js"
+  when:
+    - keycloak_gate_enabled | bool
+    - keycloak_gate_root_stat.stat.exists | default(false)
+
 - name: Write the gate page
   ansible.builtin.template:
     src: idp-admin-gate.html.j2

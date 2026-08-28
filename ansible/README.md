@@ -5,7 +5,7 @@ answer. `doc/dev-environment.md` §9 asks for this from the start — not becaus
 Ansible, but because it makes production's eventual rebuild a known quantity.
 
 As of 2026-08-08 this builds both dev hosts: the core host (hardening, postgres, core's config
-and systemd unit, nginx with TLS) and the **IdP host** (Keycloak 25 on its own postgres, behind its
+and systemd unit, nginx with TLS) and the **IdP host** (Keycloak 26 on its own postgres, behind its
 own nginx). What is missing is the executor and mailpit.
 
 The hardening role's reasoning, host by host, is in `doc/dev-hardening.md` — **which is
