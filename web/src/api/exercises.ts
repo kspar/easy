@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiFetch } from './client.ts'
+import { apiFetch, apiFetchKeepalive } from './client.ts'
 import type {
   CourseExercise,
   CourseInviteResp,
@@ -66,20 +66,26 @@ export function useSubmissions(
   })
 }
 
+/** The one spelling of the draft cache key — useDraft reads it, the editor's write-through writes it. */
+export function draftQueryKey(courseId: string, courseExerciseId: string) {
+  return ['student', 'courses', courseId, 'exercises', courseExerciseId, 'draft'] as const
+}
+
 export function useDraft(courseId: string, courseExerciseId: string) {
   return useQuery({
-    queryKey: [
-      'student',
-      'courses',
-      courseId,
-      'exercises',
-      courseExerciseId,
-      'draft',
-    ],
+    queryKey: draftQueryKey(courseId, courseExerciseId),
+    // No draft is a 204, which apiFetch surfaces as undefined — and react-query treats undefined
+    // query data as an error. Null is the honest cacheable value for "no draft".
     queryFn: () =>
       apiFetch<DraftResp | undefined>(
         `/student/courses/${courseId}/exercises/${courseExerciseId}/draft`,
-      ),
+      ).then((r) => r ?? null),
+    // Always re-read on mount: the editor seeds exactly once from this, and seeding from a cached
+    // copy would let the first autosave overwrite a newer draft written from another tab or
+    // device. It also keeps every restore decision on server-minted timestamps — the write-through
+    // entry, whose created_at is the client's clock, is never what a mount seeds from.
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 }
 
@@ -116,26 +122,34 @@ export function useSaveDraft(
   courseId: string,
   courseExerciseId: string,
 ) {
-  const queryClient = useQueryClient()
+  // No hook-level onSuccess: an in-flight mutation adopts the observer's *latest* options, so a
+  // save dispatched just before the route's exercise id changed would run its cache write under
+  // the new exercise's key. The caller does the write-through with ids captured at call time —
+  // see writeDraftCache in SolutionEditor.
   return useMutation({
     mutationFn: (solution: string) =>
       apiFetch(
         `/student/courses/${courseId}/exercises/${courseExerciseId}/draft`,
         { method: 'POST', body: { solution } },
       ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [
-          'student',
-          'courses',
-          courseId,
-          'exercises',
-          courseExerciseId,
-          'draft',
-        ],
-      })
-    },
   })
+}
+
+/**
+ * The last-chance draft save, fired from `visibilitychange`/unload paths where the page may be
+ * going away. Not a hook: there is no component left to observe a mutation, and the keepalive
+ * transport is what lets the request finish after the tab closes. Best-effort by contract —
+ * see [apiFetchKeepalive] for what it deliberately does not do.
+ */
+export function saveDraftKeepalive(
+  courseId: string,
+  courseExerciseId: string,
+  solution: string,
+): Promise<void> {
+  return apiFetchKeepalive(
+    `/student/courses/${courseId}/exercises/${courseExerciseId}/draft`,
+    { solution },
+  )
 }
 
 export function useTeacherActivities(

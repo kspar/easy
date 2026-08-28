@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type ReactNode, useEffect, useRef } from 'react'
 import config from '../config.ts'
-import { setTokenProvider } from './client.ts'
+import { setCachedTokenProvider, setTokenProvider } from './client.ts'
 import { useAuth } from '../auth/useAuth.ts'
 
 const queryClient = new QueryClient({
@@ -40,6 +40,10 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         return undefined
       }
       return kc.token
+    })
+    setCachedTokenProvider(() => {
+      const kc = keycloakRef.current
+      return kc?.authenticated ? kc.token : undefined
     })
   }, [])
 

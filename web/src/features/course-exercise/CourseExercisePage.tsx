@@ -35,6 +35,7 @@ import { et, enGB } from 'date-fns/locale'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth/useAuth.ts'
 import {
+  useDraft,
   useExerciseDetails,
   useTeacherExerciseDetails,
   useSubmissions,
@@ -360,7 +361,21 @@ function StudentExerciseView() {
     error,
   } = useExerciseDetails(courseId!, courseExerciseId!)
 
-  const { data: submissions } = useSubmissions(courseId!, courseExerciseId!)
+  const { data: submissions, isLoading: submissionsLoading } = useSubmissions(courseId!, courseExerciseId!)
+
+  // The draft matters only for seeding the editor, and the editor must not initialise before it
+  // arrives — a draft applied to an already-open editor would be silently ignored. `isSuccess`
+  // is tracked separately: a draft read that *failed* means the server may hold a draft this
+  // session never saw, and the editor must then not autosave over it.
+  const {
+    data: draft,
+    isLoading: draftLoading,
+    isSuccess: draftLoaded,
+    // A cached draft is not good enough to seed from — another tab or device may have written a
+    // newer one — so the editor waits for this mount's own refetch (useDraft sets
+    // refetchOnMount: 'always'), not just for any data to exist.
+    isFetchedAfterMount: draftFetchedThisMount,
+  } = useDraft(courseId!, courseExerciseId!)
 
   const editorRef = useRef<SolutionEditorHandle>(null)
   const queryClient = useQueryClient()
@@ -441,7 +456,19 @@ function StudentExerciseView() {
   if (error)
     return <Alert severity="error">{t('general.somethingWentWrong')}</Alert>
   if (!exercise) return null
+  // The statement renders as soon as the details arrive; only the editor side waits for the
+  // submissions and draft it seeds from, so a slow draft endpoint cannot blank the whole page.
+  const editorLoading = submissionsLoading || draftLoading || !draftFetchedThisMount
   const latestSubmission = submissions?.[0] ?? null
+
+  // A draft wins over the latest submission when it is the more recent act and actually differs —
+  // a draft autosaved moments before its own submission carries the same content and would only
+  // mislabel the editor as holding unsubmitted work.
+  const restoreDraft =
+    draft != null &&
+    (latestSubmission == null ||
+      (new Date(draft.created_at) > new Date(latestSubmission.submission_time) &&
+        draft.solution !== latestSubmission.solution))
 
   const leftPane = (
     <>
@@ -454,7 +481,11 @@ function StudentExerciseView() {
     </>
   )
 
-  const rightPane = (
+  const rightPane = editorLoading ? (
+    <Box display="flex" justifyContent="center" py={8}>
+      <CircularProgress />
+    </Box>
+  ) : (
     <>
       <GradeBanner
         submissions={autogradeStatus === 'idle' ? submissions : frozenSubmissionsRef.current}
@@ -466,7 +497,9 @@ function StudentExerciseView() {
         courseId={courseId!}
         courseExerciseId={courseExerciseId!}
         exercise={exercise}
-        initialSolution={latestSubmission?.solution}
+        initialSolution={restoreDraft ? draft.solution : latestSubmission?.solution}
+        initialIsDraft={restoreDraft}
+        autosaveEnabled={draftLoaded}
         onSubmitted={handleSubmitted}
         onAutogradeStart={handleAutogradeStart}
       />

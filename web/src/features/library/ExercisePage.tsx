@@ -5,6 +5,11 @@ import {
   Breadcrumbs,
   Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   IconButton,
   Link,
@@ -26,7 +31,7 @@ import {
   PlaylistAddOutlined,
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useBlocker, useNavigate, useParams } from 'react-router-dom'
 import {
   fetchLibraryExercise,
   useLibraryDirParents,
@@ -129,13 +134,32 @@ export default function ExercisePage() {
     return JSON.stringify(editedDraft) !== JSON.stringify(serverDraft)
   }, [serverDraft, editedDraft])
 
-  // Browser-level guard; the in-app Cancel path asks separately.
+  // Browser-level guard; the in-app exits ask through the same dialog below.
   useEffect(() => {
     if (!dirty) return
     const handler = (e: BeforeUnloadEvent) => e.preventDefault()
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [dirty])
+
+  // In-app navigation guard (audit X-017): the breadcrumb, the sidebar and the kebab's course
+  // links are all router navigations, and before this only Cancel and the tab close asked.
+  const blocker = useBlocker(dirty)
+  // True when the discard question came from the Cancel button rather than a blocked navigation.
+  const [cancelAsking, setCancelAsking] = useState(false)
+  const discardAsking = cancelAsking || blocker.state === 'blocked'
+
+  const keepEditing = () => {
+    setCancelAsking(false)
+    if (blocker.state === 'blocked') blocker.reset()
+  }
+
+  const discardEdits = () => {
+    setCancelAsking(false)
+    setEditedDraft(null)
+    setEditing(false)
+    if (blocker.state === 'blocked') blocker.proceed()
+  }
 
   const canWrite = exercise != null && hasAccess(exercise.effective_access, 'PRAW')
   const canManage = exercise != null && hasAccess(exercise.effective_access, 'PRAWM')
@@ -184,7 +208,10 @@ export default function ExercisePage() {
   }
 
   function cancelEditing() {
-    if (dirty && !window.confirm(t('library.unsavedChangesConfirm'))) return
+    if (dirty) {
+      setCancelAsking(true)
+      return
+    }
     setEditedDraft(null)
     setEditing(false)
   }
@@ -427,6 +454,20 @@ export default function ExercisePage() {
         onClose={() => setSnackbar(null)}
         message={snackbar}
       />
+
+      {/* One dialog for every exit from a dirty edit session: Cancel and blocked navigations. */}
+      <Dialog open={discardAsking} onClose={keepEditing}>
+        <DialogTitle>{t('library.unsavedChangesTitle')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{t('library.unsavedChangesConfirm')}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={keepEditing}>{t('library.keepEditing')}</Button>
+          <Button color="error" onClick={discardEdits}>
+            {t('library.discard')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }

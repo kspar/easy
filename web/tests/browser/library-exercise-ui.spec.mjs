@@ -176,16 +176,22 @@ test('library-exercise-ui', async ({ launch, check }) => {
   )
 
   // --- cancel with unsaved changes asks first ------------------------------------------------------
+  // Through the app's own dialog since the X-017 fix; window.confirm here would be a regression.
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByLabel('Exercise title').fill('Throwaway title')
-  confirmAnswers = [false] // decline the discard
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-  await waitUntil(() => confirmsSeen.length > 0)
+  check(
+    'the discard prompt was actually shown — as the app dialog, not window.confirm',
+    (await waitUntil(() => page.getByRole('heading', { name: 'Unsaved changes' }).isVisible())) && confirmsSeen.length === 0,
+    confirmsSeen.join(' | '),
+  )
+  await page.getByRole('button', { name: 'Keep editing' }).click()
+  await waitUntil(async () => (await page.getByRole('heading', { name: 'Unsaved changes' }).count()) === 0)
   check('declining the discard prompt stays in edit mode', await page.getByLabel('Exercise title').isEnabled())
-  check('the discard prompt was actually shown', confirmsSeen.some((m) => /unsaved/i.test(m)), confirmsSeen.join(' | '))
 
-  confirmAnswers = [true] // now accept
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await waitUntil(() => page.getByRole('heading', { name: 'Unsaved changes' }).isVisible())
+  await page.getByRole('button', { name: 'Discard', exact: true }).click()
   check(
     'accepting the discard reverts the title',
     await waitUntil(async () => (await page.getByRole('heading', { name: 'Sum of two numbers v2' }).count()) === 1),

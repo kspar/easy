@@ -45,6 +45,44 @@ export function setUnauthorizedHandler(handler: () => void) {
   onUnauthorized = handler
 }
 
+/**
+ * The token as Keycloak last minted it, with no refresh attempted. For requests that must be
+ * dispatched synchronously — see [apiFetchKeepalive]. Everything else goes through [getToken],
+ * whose refresh round-trip is the point.
+ */
+let getCachedToken: (() => string | undefined) | null = null
+
+export function setCachedTokenProvider(provider: () => string | undefined) {
+  getCachedToken = provider
+}
+
+/**
+ * A last-chance write, for the moment the page may be going away (`visibilitychange` → hidden,
+ * unload). Differs from [apiFetch] in exactly the ways that moment demands:
+ *
+ * - **Dispatches synchronously.** No awaited token refresh before `fetch` — a request that has
+ *   not been handed to the browser when the document dies is simply never sent, and `keepalive`
+ *   only protects a request that was. The cached token is used as-is; if it has expired the
+ *   request fails, which the caller treats as best-effort.
+ * - **`keepalive: true`**, so a dispatched request survives teardown. Browsers cap keepalive
+ *   bodies at ~64 KB — callers with bigger payloads must take the normal path instead.
+ * - **No 401 recovery.** The global handler navigates to the IdP, and this often runs in a tab
+ *   the user has switched away from — a hidden tab must never be navigated out from under them.
+ */
+export function apiFetchKeepalive(path: string, body: unknown, method = 'POST'): Promise<void> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const token = getCachedToken?.()
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return fetch(`${config.emsRoot}${path}`, {
+    method,
+    headers,
+    body: JSON.stringify(body),
+    keepalive: true,
+  }).then((response) => {
+    if (!response.ok) throw new ApiResponseError(response.status, null)
+  })
+}
+
 export async function apiFetch<T>(
   path: string,
   options: {
