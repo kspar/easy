@@ -142,6 +142,22 @@ object CourseExercise : LongIdTable("course_exercise") {
     val moodleExId = text("moodle_exercise_id").nullable()
 }
 
+/**
+ * The columns a student exception and a group exception have in common.
+ *
+ * Each field is two columns — an `is_exception_*` flag and a nullable value — because the model is
+ * three-state: no exception at all, an exception with a date, or an exception whose value is *nothing*
+ * (no deadline, or never visible). A single nullable column could only say two of those three.
+ *
+ * **The primary key is declared by each subclass, not here.** It used to be `PrimaryKey(courseExercise)`
+ * on this base, which both subclasses inherited — while changesets `190724-1` and `300724-1` give each
+ * of them a *composite* key. A declaration narrower than the database's is the dangerous direction:
+ * `upsert` derives its `ON CONFLICT` target from it, so an upsert written without explicit key columns
+ * would have conflicted on the course exercise alone and overwritten another student's or another
+ * group's exception. Both call sites in `PutCourseExerciseExceptions` pass the columns explicitly and
+ * were fine — by the author's care rather than by the model. `SchemaMatchesTablesTest` now compares
+ * declared keys against the live schema, so this cannot drift again unnoticed.
+ */
 abstract class CourseExerciseException(name: String) : Table(name) {
     val courseExercise = reference("course_exercise_id", CourseExercise)
     val isExceptionSoftDeadline = bool("is_exception_soft_deadline")
@@ -150,15 +166,16 @@ abstract class CourseExerciseException(name: String) : Table(name) {
     val hardDeadline = datetime("hard_deadline").nullable()
     val isExceptionStudentVisibleFrom = bool("is_exception_student_visible_from")
     val studentVisibleFrom = datetime("student_visible_from").nullable()
-    override val primaryKey = PrimaryKey(courseExercise)
 }
 
 object CourseExerciseExceptionStudent : CourseExerciseException("course_exercise_exception_student") {
     val student = reference("student_id", Account)
+    override val primaryKey = PrimaryKey(courseExercise, student)
 }
 
 object CourseExerciseExceptionGroup : CourseExerciseException("course_exercise_exception_group") {
     val courseGroup = reference("group_id", CourseGroup)
+    override val primaryKey = PrimaryKey(courseExercise, courseGroup)
 }
 
 
@@ -167,7 +184,10 @@ object TeacherCourseAccess : Table("teacher_course_access") {
     val course = reference("course_id", Course)
     val createdAt = datetime("created_at")
     val lastAccessed = datetime("last_accessed").clientDefault { DateTime.now() }
-    override val primaryKey = PrimaryKey(teacher, course)
+    // Course first, matching changeset 251119-1's `addPrimaryKey columnNames="course_id, teacher_id"`.
+    // The order is the database's, not a preference: it decides which prefix lookups the backing index
+    // can serve, and SchemaMatchesTablesTest compares it.
+    override val primaryKey = PrimaryKey(course, teacher)
 }
 
 object StudentCourseAccess : Table("student_course_access") {
@@ -176,14 +196,16 @@ object StudentCourseAccess : Table("student_course_access") {
     val createdAt = datetime("created_at")
     val moodleUsername = text("moodle_username").nullable()
     val lastAccessed = datetime("last_accessed").clientDefault { DateTime.now() }
-    override val primaryKey = PrimaryKey(student, course)
+    // Changesets 251119-1 and 191021-1: `columnNames="course_id, student_id"`.
+    override val primaryKey = PrimaryKey(course, student)
 }
 
 object StudentCourseGroup : Table("student_course_group_access") {
     val student = reference("student_id", Account)
     val course = reference("course_id", Course)
     val courseGroup = reference("group_id", CourseGroup)
-    override val primaryKey = PrimaryKey(student, course, courseGroup)
+    // Changeset 191021-1: `columnNames="course_id, student_id, group_id"`.
+    override val primaryKey = PrimaryKey(course, student, courseGroup)
 }
 
 object StudentMoodlePendingAccess : Table("student_moodle_pending_access") {
@@ -199,7 +221,8 @@ object StudentMoodlePendingCourseGroup : Table("student_moodle_pending_course_gr
     val moodleUsername = reference("moodle_username", StudentMoodlePendingAccess.moodleUsername)
     val course = reference("course_id", Course)
     val courseGroup = reference("group_id", CourseGroup)
-    override val primaryKey = PrimaryKey(moodleUsername, course, courseGroup)
+    // Changeset 201021-2: `columnNames="course_id, moodle_username, group_id"`.
+    override val primaryKey = PrimaryKey(course, moodleUsername, courseGroup)
 }
 
 object Submission : LongIdTable("submission") {

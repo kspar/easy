@@ -45,14 +45,31 @@ class RemoveCourseExerciseExceptions {
         caller.assertAccess { teacherOnCourse(courseId) }
         assertCourseExerciseIsOnCourse(courseExId, courseId)
 
-        insertOrUpdateCourseExerciseExceptions(
+        deleteCourseExerciseExceptions(
             courseExId,
             req.exceptionStudents ?: emptyList(),
             req.exceptionGroups ?: emptyList()
         )
     }
 
-    private fun insertOrUpdateCourseExerciseExceptions(
+    /**
+     * Deletes the named students' and the named groups' exceptions on this course exercise, and
+     * nothing else — an empty list means "none of these", never "all of them".
+     *
+     * **The group branch used to delete from the student table.** It read
+     * `CourseExerciseExceptionStudent.deleteWhere { CourseExerciseExceptionGroup.courseExercise … }`:
+     * the receiver naming one table and every column in the predicate naming the other. The SQL that
+     * came out was a `DELETE FROM course_exercise_exception_student` whose `WHERE` referred to a table
+     * not in the statement, so Postgres answered `missing FROM-clause entry`, the transaction rolled
+     * back, and removing a group's exception was a 500 every time. There was no test, and the failure
+     * is invisible from the other side of the API — the row is still there afterwards either way.
+     *
+     * It was a copy from [PutCourseExerciseExceptions], which this method was also named after until
+     * now: it was called `insertOrUpdateCourseExerciseExceptions` in a controller that only deletes.
+     * The two branches were meant to be the same shape and one of them was half-edited, which is the
+     * asymmetry `doc/review-plan.md` treats as a defect detector rather than a style question.
+     */
+    private fun deleteCourseExerciseExceptions(
         courseExId: Long,
         exceptionStudents: List<String>,
         exceptionGroups: List<Long>
@@ -65,7 +82,7 @@ class RemoveCourseExerciseExceptions {
             }
 
             if (exceptionGroups.isNotEmpty()) {
-                CourseExerciseExceptionStudent.deleteWhere {
+                CourseExerciseExceptionGroup.deleteWhere {
                     CourseExerciseExceptionGroup.courseExercise eq courseExId and (CourseExerciseExceptionGroup.courseGroup inList exceptionGroups)
                 }
             }

@@ -553,8 +553,37 @@ private fun CourseExerciseException.extractGroups(courseExId: Long): List<GroupE
     return this.groupExceptions[courseExId]
 }
 
-private fun List<ExceptionValue>?.farthestValueInFutureOrNull(): DateTime? =
-    this?.maxByOrNull { it.value ?: DateTime(0) }?.value
+/**
+ * The farthest-in-the-future value among a student's group exceptions — where **a null value is the
+ * farthest of all**, and therefore wins.
+ *
+ * `ExceptionValue(null)` is not a missing exception. A missing exception is `ExceptionValue?` being
+ * null, which the callers have already dealt with before getting here; this is an exception that *is*
+ * set and whose value is *nothing*, and every consumer reads that as the far end of the timeline:
+ *
+ * - a null hard deadline is no deadline, `value?.isAfterNow ?: true`;
+ * - a null soft deadline is no late marking;
+ * - a null `studentVisibleFrom` is never visible, `isHidden = visibleFrom == null || isAfterNow`.
+ *
+ * The two directions read oppositely in generosity — unbounded means *most permissive* for a deadline
+ * and *most restrictive* for visibility — and that is exactly why this function does not need to know
+ * which field it is aggregating. Both want positive infinity to win; only the consumer cares what
+ * winning implies.
+ *
+ * **This previously reduced a null to `DateTime(0)` before comparing**, ranking "unbounded" as 1970 —
+ * the far *past*, the precise opposite of its meaning. A null value could then never win a `max`, so
+ * for a student in two groups a teacher's most generous hard-deadline exception lost to any other
+ * group's dated one, including one that had already expired: unlimited time became locked out. On
+ * `studentVisibleFrom` the same line leaked the other way, showing withheld content because another
+ * group had a date in the past. Nothing threw in either direction.
+ */
+private fun List<ExceptionValue>?.farthestValueOrNull(): DateTime? {
+    if (this == null) return null
+    // Not a sentinel date. Joda has a largest representable instant, but reaching for one would put
+    // this function back in the business of encoding "unbounded" as a number, which is the bug.
+    if (any { it.value == null }) return null
+    return mapNotNull { it.value }.maxOrNull()
+}
 
 /**
  * Determines the soft deadline for a specific course exercise, prioritizing student and group exceptions
@@ -579,7 +608,7 @@ fun determineSoftDeadline(
 
     return when {
         studentException != null -> studentException.value
-        groupException != null -> groupException.farthestValueInFutureOrNull()
+        groupException != null -> groupException.farthestValueOrNull()
         else -> defaultSoftDeadline
     }
 }
@@ -607,7 +636,7 @@ fun determineCourseExerciseVisibleFrom(
 
     return when {
         studentException != null -> studentException.value
-        groupException != null -> groupException.farthestValueInFutureOrNull()
+        groupException != null -> groupException.farthestValueOrNull()
         else -> defaultVisibleFrom
     }
 }
@@ -624,7 +653,7 @@ fun isCourseExerciseOpenForSubmit(
 
     return when {
         studentException != null -> studentException.value?.isAfterNow ?: true
-        groupExceptions != null -> groupExceptions.farthestValueInFutureOrNull()?.isAfterNow ?: true
+        groupExceptions != null -> groupExceptions.farthestValueOrNull()?.isAfterNow ?: true
         else -> defaultHardDeadline?.isAfterNow ?: true
     }
 }

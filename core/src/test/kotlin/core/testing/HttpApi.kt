@@ -133,6 +133,19 @@ class HttpApi(private val mockMvc: MockMvc) {
         call(HttpMethod.GET, path, caller, headers = headers)
     fun delete(path: String, caller: RequestPostProcessor? = null) = call(HttpMethod.DELETE, path, caller)
 
+    /**
+     * A DELETE that carries a JSON body, which two endpoints need —
+     * `DELETE /courses/{id}/exercises/{id}/exception` and the group-removal calls take the list of
+     * things to remove in the body rather than in the path.
+     *
+     * A separate name rather than a `body` parameter on [delete], for the reason [getWithHeaders]
+     * gives: every existing caller passes the caller positionally as the second argument, so adding
+     * a body there would silently reinterpret an identity as a request body and each of those tests
+     * would start running as an anonymous request that happens to still pass.
+     */
+    fun deleteWithBody(path: String, body: String, caller: RequestPostProcessor? = null) =
+        call(HttpMethod.DELETE, path, caller, body)
+
     fun post(path: String, body: String? = null, caller: RequestPostProcessor? = null) =
         call(HttpMethod.POST, path, caller, body)
 

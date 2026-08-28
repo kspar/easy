@@ -215,4 +215,119 @@ class SchemaMatchesTablesTest {
                     "meaning what it says."
         }
     }
+
+    /**
+     * The primary-key columns the database actually has, per table, **in key order**.
+     *
+     * The ordering is `unnest(i.indkey) WITH ORDINALITY`, not `ORDER BY a.attnum`, and the difference
+     * is real: `attnum` is a column's position in the *table*, while `indkey` is its position in the
+     * *key*, and the two part company as soon as a key is (re)declared by `addPrimaryKey` rather than
+     * by `createTable`. Half this schema's composite keys are — changeset `251119-1` adds
+     * `columnNames="course_id, teacher_id"` to a table whose columns are declared teacher-first, and
+     * `191021-1` and `201021-2` do the same for three more.
+     *
+     * The first draft of this check used `a.attnum = ANY (i.indkey)` with `ORDER BY a.attnum`, which is
+     * self-consistent enough to look right: it reported five mismatches, all of them real. It was the
+     * *false negatives* that gave it away — `student_course_group_access` and
+     * `student_moodle_pending_course_group_access` passed, because for those two the table's column
+     * order happens to equal what Exposed declares, so the wrong ordering agreed with the wrong
+     * declaration. The changesets above are what settled which of the two queries to believe.
+     */
+    private fun livePrimaryKeys(): Map<String, List<String>> = transaction {
+        val out = mutableMapOf<String, MutableList<String>>()
+        exec(
+            """
+            SELECT c.relname AS table_name, a.attname AS column_name
+            FROM pg_index i
+                JOIN pg_class c ON c.oid = i.indrelid
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS k(attnum, ord)
+                JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = k.attnum
+            WHERE i.indisprimary AND n.nspname = 'public'
+            ORDER BY c.relname, k.ord
+            """
+        ) { rs ->
+            while (rs.next()) {
+                out.getOrPut(rs.getString(1)) { mutableListOf() }.add(rs.getString(2))
+            }
+        }
+        out
+    }
+
+    /**
+     * The declared primary key is the one the database enforces.
+     *
+     * **This was added because a drift of exactly this shape had been sitting in `Tables.kt`.** The
+     * abstract `CourseExerciseException` base declared `PrimaryKey(courseExercise)`, so both exception
+     * tables claimed a single-column key while changesets `190724-1` and `300724-1` give each of them a
+     * composite `(course_exercise_id, student_id)` / `(course_exercise_id, group_id)`. The three checks
+     * above could not see it: every column existed, with matching nullability, in both directions.
+     *
+     * What it costs is not nothing. `upsert` derives its `ON CONFLICT` target from the declared key
+     * unless the caller passes one, so an upsert written the short way would have conflicted on the
+     * course exercise alone and overwritten a different student's exception. Both existing call sites
+     * in `PutCourseExerciseExceptions` pass the key columns explicitly and were therefore correct — but
+     * they were correct by the author's care rather than by the model, and the next one would not be.
+     * `SchemaUtils.create` would also build the wrong constraint, which is why this check has to read
+     * the live schema rather than compare the model to itself.
+     *
+     * Order matters and is compared: a composite key's column order decides which prefix lookups the
+     * backing index can serve, so `(a, b)` and `(b, a)` are not the same declaration.
+     */
+    /**
+     * Key drifts that need a *migration* to close rather than a `Tables.kt` edit, each with why.
+     *
+     * Shrink-only, like [knownNullabilityDrift]: an entry that no longer disagrees fails the test
+     * below, so closing one forces deleting its line in the same commit.
+     */
+    private val knownPrimaryKeyDrift = mapOf(
+        // The database's key is (id, user_id); Exposed's LongIdTable says (id), and Exposed is the one
+        // describing the intent. `id` is a bigserial surrogate, so user_id in the key adds nothing but
+        // does mean the constraint never asserts that `id` alone is unique.
+        //
+        // Declaring the wider key here would be the wrong direction of fix — it would write the
+        // accident into the model. Narrowing the database is a changeset against a table that holds
+        // production rows, which is a decision, not a side effect of adding this check. Safe to leave:
+        // nothing upserts LogReport (insert, select and deleteWhere only), and a sequence does not
+        // hand out the same id twice, so the missing uniqueness is unreachable in practice.
+        "log_report" to "DB key is (id, user_id); the extra column is a 2019 changeset accident, and " +
+                "narrowing it is a migration decision. Nothing upserts this table.",
+    )
+
+    @Test
+    fun `every Exposed table declares the primary key the database enforces`() {
+        val live = livePrimaryKeys()
+
+        val drifted = ExposedTables.all().mapNotNull { table ->
+            val declared = table.primaryKey?.columns?.map { it.name.lowercase() } ?: return@mapNotNull null
+            val actual = live[table.tableName.lowercase()]?.map { it.lowercase() } ?: return@mapNotNull null
+            if (declared == actual) null
+            else table.tableName.lowercase() to
+                    "${table.tableName}: Exposed says (${declared.joinToString(", ")}), " +
+                    "database says (${actual.joinToString(", ")})"
+        }.toMap()
+
+        val unexplained = (drifted.keys - knownPrimaryKeyDrift.keys).sorted().map { drifted.getValue(it) }
+        assertTrue(unexplained.isEmpty()) {
+            "These tables declare a primary key the database does not have:\n" +
+                    unexplained.joinToString("\n") { "  $it" } +
+                    "\n\nA wrong key is not cosmetic. `upsert` derives its ON CONFLICT target from the " +
+                    "declared key, so one that is too narrow overwrites a row that should have been " +
+                    "inserted; column order decides which prefix lookups the backing index can serve; " +
+                    "and SchemaUtils would build the constraint wrong. Fix the declaration, or record " +
+                    "it in knownPrimaryKeyDrift with the reason it needs a migration instead."
+        }
+
+        val stale = (knownPrimaryKeyDrift.keys - drifted.keys).sorted()
+        assertTrue(stale.isEmpty()) {
+            "These entries in knownPrimaryKeyDrift no longer disagree with the database:\n" +
+                    stale.joinToString("\n") { "  $it" } +
+                    "\n\nDelete the entry, so the list keeps meaning what it says."
+        }
+
+        val unjustified = knownPrimaryKeyDrift.filterValues { it.isBlank() }.keys.sorted()
+        assertTrue(unjustified.isEmpty()) {
+            "These knownPrimaryKeyDrift entries have no reason recorded: $unjustified"
+        }
+    }
 }
