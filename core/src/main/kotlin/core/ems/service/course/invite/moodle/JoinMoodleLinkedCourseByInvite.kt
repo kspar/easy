@@ -10,7 +10,6 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.upperCase
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertIgnore
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -69,7 +68,20 @@ class JoinMoodleLinkedCourseByInvite {
             .where { (StudentMoodlePendingCourseGroup.course eq courseId) and (StudentMoodlePendingCourseGroup.moodleUsername eq moodleUsername) }
             .map { it[StudentMoodlePendingCourseGroup.courseGroup] }
             .forEach { group ->
-                StudentCourseGroup.insert {
+                // insertIgnore, matching the access insert above rather than differing from it two
+                // lines later. `StudentCourseGroup`'s key is (course, student, group), so a student
+                // who is *already* in a group this invite also names made a plain insert violate it
+                // and the whole request fail with a 500.
+                //
+                // That sequence is ordinary: the Moodle sync issues a personal invite naming group G,
+                // a teacher then adds the student to the course and to G by hand — which does not
+                // delete the pending row — and the student clicks the link in their email afterwards.
+                // The rollback meant the invite was not consumed, so the failure was safe and also
+                // permanent: nothing cleared the pending row, so every retry failed the same way.
+                //
+                // Already being in the group is the outcome this loop wants, so meeting it is not an
+                // error.
+                StudentCourseGroup.insertIgnore {
                     it[StudentCourseGroup.student] = studentId
                     it[StudentCourseGroup.course] = courseId
                     it[StudentCourseGroup.courseGroup] = group
