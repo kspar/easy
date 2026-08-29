@@ -32,7 +32,6 @@ class MoodleGradesSyncService(
     restTemplateBuilder: RestTemplateBuilder,
     private val courseAllowlist: MoodleCourseAllowlist,
 ) {
-    private val log = KotlinLogging.logger {}
     private val restTemplate = restTemplateBuilder.build()
 
     @Value($$"${easy.core.moodle-sync.grades.url}")
@@ -67,6 +66,67 @@ class MoodleGradesSyncService(
         @get:JsonProperty("username") val username: String,
         @get:JsonProperty("grade") val grade: Int
     )
+
+    companion object {
+        /**
+         * The request body, as Moodle's web-services layer wants it: bracketed form fields at the
+         * top level, no wrapper.
+         *
+         * **This used to be `data=<the whole thing as a JSON string>`** and that was a leftover from
+         * the protocol this one replaced. EZ-1688 (4c527f65) moved both syncs onto Moodle web
+         * services by adding `wstoken`/`wsfunction`/`moodlewsrestformat` to each request, but only
+         * the students side had its payload adapted — its `shortname` is a plain scalar and so was
+         * already valid. Grades kept a body shaped for the bespoke `/local/lahendus/import.php`
+         * script of 2019, which the web-service function rejects with `invalid_parameter_exception`.
+         * Nothing failed at build time, because the difference is entirely in how a form is encoded.
+         *
+         * Confirmed against the live function on 2026-08-29 by sending all three candidate shapes:
+         * this one answered `{"success": true}`; `data=<json>` and `data[exercises][0][...]` both
+         * answered `invalidparameter`.
+         *
+         * The DTOs keep their `@JsonProperty` names because the field names here must match them —
+         * writing the same names twice is the cost of Moodle not accepting the JSON we already know
+         * how to produce.
+         */
+        internal fun encodeGradeRequest(req: MoodleReq): MultiValueMap<String, String> {
+            val map: MultiValueMap<String, String> = LinkedMultiValueMap()
+            map.add("shortname", req.shortname)
+            req.exercises.forEachIndexed { i, exercise ->
+                map.add("exercises[$i][idnumber]", exercise.idnumber)
+                map.add("exercises[$i][title]", exercise.title)
+                exercise.grades.forEachIndexed { j, grade ->
+                    map.add("exercises[$i][grades][$j][username]", grade.username)
+                    map.add("exercises[$i][grades][$j][grade]", grade.grade.toString())
+                }
+            }
+            return map
+        }
+
+        /**
+         * Whether Moodle reported the grades as written.
+         *
+         * **This used to be `body.contains("done")`**, which is the other half of the same
+         * unmigrated protocol: the current function answers `{"success": true}`, so a sync that
+         * worked would have been reported as a failure. Two bugs in a row meant fixing the encoding
+         * alone would have looked like no progress at all.
+         *
+         * Parsed rather than substring-matched, because `"success"` appears in Moodle's *failure*
+         * bodies too — an error mentioning a function name containing it, say — and a grade sync
+         * that silently reports success it did not get is the one outcome worse than a false alarm.
+         */
+        internal fun isGradeSyncSuccess(body: String?): Boolean {
+            if (body == null) return false
+            val parsed = try {
+                jacksonObjectMapper().readValue(body, Map::class.java)
+            } catch (e: Exception) {
+                log.warn { "Could not parse Moodle grade sync response as JSON: $body. Error: $e" }
+                return false
+            }
+            return parsed["success"] == true
+        }
+
+        private val log = KotlinLogging.logger {}
+    }
 
     /**
      * Sync single submission grade to Moodle. If the submission has no link with the Moodle, then nothing is done. Is asynchronous.
@@ -133,7 +193,7 @@ class MoodleGradesSyncService(
 
 
     /**
-     * Send grade request to Moodle. Excepts response body from Moodle to contain 'done'.
+     * Send grade request to Moodle. Expects a JSON body of `{"success": true}`.
      */
     private fun sendMoodleGradeRequest(req: MoodleReq) {
         // The one that matters most: grades reach Moodle from ordinary grading, not from an
@@ -141,8 +201,7 @@ class MoodleGradesSyncService(
         courseAllowlist.assertAllowed(req.shortname)
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
-        val map: MultiValueMap<String, String> = LinkedMultiValueMap()
-        map.add("data", jacksonObjectMapper().writeValueAsString(req))
+        val map = encodeGradeRequest(req)
         map.add("wstoken", wstoken)
         map.add("wsfunction", wsfunction)
         map.add("moodlewsrestformat", moodlewsrestformat)
@@ -151,6 +210,8 @@ class MoodleGradesSyncService(
         val responseEntity: ResponseEntity<String> =
             restTemplate.postForEntity(moodleGradeUrl, request, String::class.java)
 
+        // Note that Moodle answers 200 for its own errors too, with the failure in the body — so
+        // this catches transport and proxy failures only, never a rejected request.
         if (responseEntity.statusCode.value() != 200) {
             log.error { "Moodle grade syncing error ${responseEntity.statusCode.value()} with data $req" }
             throw InvalidRequestException(
@@ -161,10 +222,10 @@ class MoodleGradesSyncService(
         }
 
         val body = responseEntity.body
-        if (body == null || !body.contains("done")) {
-            log.error { "Moodle grade syncing error. Grade syncing with Moodle failed due to response body from Moodle did not contain 'done': ${responseEntity.body}. Data: $req" }
+        if (!isGradeSyncSuccess(body)) {
+            log.error { "Moodle grade syncing error. Moodle did not report success: $body. Data: $req" }
             throw InvalidRequestException(
-                "Grade syncing with Moodle failed due to response body from Moodle did not contain 'done'.",
+                "Grade syncing with Moodle failed: Moodle did not report success.",
                 ReqError.MOODLE_GRADE_SYNC_ERROR,
                 notify = true
             )
