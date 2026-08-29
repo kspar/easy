@@ -1,0 +1,253 @@
+#!/usr/bin/env bash
+#
+# Probe every URL an OIDC client depends on, and fail if one of them moved.
+#
+#   bin/idp-client-check                 # dev
+#   bin/idp-client-check prod            # production
+#   bin/idp-client-check https://web.example.org https://idp.example.org my-client master
+#
+# ## Why this exists
+#
+# "Verify that login still works" has always meant the SPA, and the SPA is not the only client.
+#
+# When production's Keycloak was upgraded, the Thonny plugin stopped being able to log anyone in:
+# its login page loads `keycloak.js` *from the IdP*, and modern Keycloak does not serve that file
+# any more. The realm endpoints did not move an inch, so every check anyone ran passed, and the
+# outage surfaced days later as a student's `Uncaught ReferenceError: Keycloak is not defined`
+# (EZ-1803). The SPA was never affected — it bundles its own adapter — which is precisely why
+# nobody noticed.
+#
+# So this probes what the *clients* need rather than what the server offers, and it is deliberately
+# blunt about it: one line per URL, exit non-zero if any line is not what it should be.
+#
+# ## What it does not do
+#
+# No session, no login, no credentials, nobody's account is touched. Every request here is one an
+# anonymous browser could make, which is what makes it safe to point at production.
+#
+# It cannot prove a login works end to end. It proves that every door a client knocks on is still
+# there — which is the failure that actually happened, and the one nothing else was watching for.
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+# Environment addresses come from the ansible inventory, never from this file. `hosts.yml` and
+# production's `group_vars/` are gitignored because this repo is public and "how to approach three
+# named internet-facing machines" is the one thing the inventory withholds — see
+# inventories/production/hosts.example.yml, which argues it at length. A probe script with
+# production's hostnames baked in would have quietly undone that.
+#
+# So dev works from committed group_vars and production from the untracked ones, which is the same
+# asymmetry the rest of ansible/ already relies on. Ask kspar for the production inventory, or pass
+# the two URLs explicitly.
+# Override when running from a git worktree: the inventory's untracked files exist only in the main
+# checkout, so `EASY_INVENTORY_ROOT=~/IdeaProjects/easy/ansible/inventories bin/idp-client-check prod`
+# is how a worktree reaches production's addresses. Same trap as running ansible from a worktree.
+INVENTORY_ROOT="${EASY_INVENTORY_ROOT:-ansible/inventories}"
+
+# Strips surrounding quotes and any trailing `# comment`, because a YAML value is not the rest of
+# the line. `easy_core_web_base_url: "https://x"` is valid and would otherwise produce a URL with
+# quote characters in it, failing every curl for a reason nothing would explain.
+inventory_value() {
+  local env="$1" key="$2"
+  local file="$INVENTORY_ROOT/$env/group_vars/all/core.yml"
+  [ -f "$file" ] || return 1
+  sed -n "s|^$key: *||p" "$file" \
+    | head -1 \
+    | sed 's/[[:space:]]*#.*$//; s/^"\(.*\)"$/\1/; s/^'"'"'\(.*\)'"'"'$/\1/; s/[[:space:]]*$//'
+}
+
+arg="${1:-dev}"
+case "$arg" in
+  dev|prod)
+    env="$arg"
+    [ "$env" = "prod" ] && env="production"
+    WEB=$(inventory_value "$env" easy_core_web_base_url)
+    IDP=$(inventory_value "$env" easy_core_idp_base_url)
+    REALM="${REALM:-$(inventory_value "$env" easy_core_keycloak_realm)}"
+    # The prefix is configurable in the inventory (`easy_core_idp_path_prefix`) and separate from the
+    # origin, so read it rather than assuming. An environment that drops it — Keycloak's own default
+    # since 17, and the same class of upgrade change that produced EZ-1803 — should be reported as
+    # one thing that moved, not as every check failing at once.
+    PREFIX=$(inventory_value "$env" easy_core_idp_path_prefix)
+    if [ -z "$WEB" ] || [ -z "$IDP" ]; then
+      echo "No addresses for '$arg' in $INVENTORY_ROOT/$env/group_vars/all/core.yml." >&2
+      echo "In a worktree? The untracked inventory lives in the main checkout — set" >&2
+      echo "EASY_INVENTORY_ROOT to point at it." >&2
+      echo "Production's group_vars are gitignored — ask kspar, or pass the URLs:" >&2
+      echo "  $(basename "$0") <web-url> <idp-url> [client-id] [realm]" >&2
+      exit 2
+    fi
+    ;;
+  http*) WEB="$arg"; IDP="${2:?idp url required}"; CLIENT="${3:-${CLIENT:-}}"; REALM="${4:-${REALM:-}}" ;;
+  *) echo "usage: $(basename "$0") [dev|prod|<web-url> <idp-url> [client-id] [realm]]" >&2; exit 2 ;;
+esac
+
+# A trailing slash on either URL is one inventory edit away and nothing asserts its absence. Left in,
+# it produces `//auth/realms/…` and a `redirect_uri` of `…%2F%2F`, which Keycloak answers with 400 —
+# a false FAIL on a check that would look like a real one.
+WEB="${WEB%/}"
+IDP="${IDP%/}"
+# Same normalisation, for the same reason: `/auth/` or a bare `/` would build `//realms/…`. A prefix
+# of `/` means "no prefix", which is Keycloak's own default since 17 and therefore the value most
+# likely to be set here one day.
+PREFIX="${PREFIX:-/auth}"
+PREFIX="${PREFIX%/}"
+
+# Read the client id and realm out of the environment's own config.json rather than hardcoding a
+# guess. The deployed SPA boots from that file (EZ-1726), so this tests what the app is actually
+# configured to do — and the first version of this script got it wrong precisely by guessing that
+# each environment's client id would match its own hostname. It does not: the environments share
+# one client id, so a per-environment guess is wrong somewhere and wrong silently.
+#
+# Falls back to defaults where there is no config.json to read: production still serves the old
+# Kotlin/JS frontend until v4.0 ships, and that build has no such file.
+# `-L` here and nowhere else: an http→https redirect would otherwise return an empty body, and the
+# run would silently fall through to the guesses below and present them as configuration. The status
+# probes must NOT follow redirects — there, the redirect is the answer.
+conf=$(curl -sL --max-time 15 "$WEB/config.json")
+conf_value() { printf '%s' "$conf" | python3 -c "
+import json, sys
+try:
+    print(json.load(sys.stdin)['keycloak']['$1'])
+except Exception:
+    pass" 2>/dev/null; }
+
+# Record where each value actually came from rather than assuming config.json. An explicit argument
+# or an exported CLIENT reaches here too, and printing 'from config.json' for a value that never was
+# would be misleading in exactly the case the comment above says went wrong the first time.
+CLIENT_SOURCE="explicit argument"
+if [ -z "${CLIENT:-}" ]; then
+  CLIENT="$(conf_value clientId)"
+  CLIENT_SOURCE="$WEB/config.json"
+fi
+REALM_SOURCE="explicit argument or inventory"
+if [ -z "${REALM:-}" ]; then
+  REALM="$(conf_value realm)"
+  REALM_SOURCE="$WEB/config.json"
+fi
+CONF_SOURCE="$CLIENT_SOURCE"
+if [ -z "$CLIENT" ]; then
+  # No config.json to read — production still serves the pre-v4.0 frontend, which has none. Guess
+  # the client id from the web origin's hostname, which is the convention this realm follows, and
+  # say that it is a guess. Do not hardcode one: dev's client id is not dev's hostname, so a
+  # hardcoded value would be wrong somewhere and silently.
+  CLIENT=$(printf '%s' "$WEB" | sed 's|^https\{0,1\}://||; s|/.*||')
+  CONF_SOURCE="guessed from the web origin — no config.json (pre-v4.0 frontend?)"
+fi
+
+# Guard the realm the way WEB, IDP and CLIENT are guarded. Without this an empty realm builds
+# `$IDP$PREFIX/realms/`, which the IdP answers with 400 — so the control below fails and the script
+# blames a captive portal for what is actually an unset variable.
+if [ -z "$REALM" ]; then
+  echo "Realm unknown: not in the inventory (easy_core_keycloak_realm), not in $WEB/config.json," >&2
+  echo "and not given as an argument. Pass it explicitly:" >&2
+  echo "  $(basename "$0") <web-url> <idp-url> <client-id> <realm>" >&2
+  exit 2
+fi
+
+REALM_BASE="$IDP$PREFIX/realms/$REALM"
+failures=0
+checks=0
+
+# Print one result line. Returns non-zero on failure so callers can react, and counts as it goes so
+# the summary cannot disagree with the lines above it.
+check() {
+  local label="$1" expected="$2" actual="$3"
+  checks=$((checks + 1))
+  if [ "$actual" = "$expected" ]; then
+    printf '  ok    %-34s %s\n' "$label" "$actual"
+    return 0
+  fi
+  printf '  FAIL  %-34s got %s, expected %s\n' "$label" "$actual" "$expected"
+  failures=$((failures + 1))
+  return 1
+}
+
+status() { curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$1"; }
+
+echo "Web:    $WEB"
+echo "IdP:    $IDP$PREFIX"
+echo "Realm:  $REALM   (from $REALM_SOURCE)"
+echo "Client: $CLIENT   (from $CONF_SOURCE)"
+echo
+
+# --- The control ------------------------------------------------------------------------------
+#
+# A probe script that cannot detect a failure passes exactly like one where nothing is wrong. So
+# ask for something that must not exist: if this comes back 200, the run is meaningless and the
+# script says so rather than reporting a clean sheet.
+echo "Control (a path that must not exist)"
+control=$(status "$REALM_BASE/protocol/openid-connect/definitely-not-here")
+if ! check "bogus path 404s" 404 "$control"; then
+  echo
+  # The control asserts one thing and can fail for several reasons. Since this is the script someone
+  # points at production mid-incident, name the code we got and separate "cannot reach it" from
+  # "answers everything" — a diagnosis that covers three causes is worse than none.
+  case "$control" in
+    000) echo "Control failed with 000: the IdP was not reachable at all — DNS, TLS or a timeout." ;;
+    200) echo "Control failed with 200: something answers everything, so no result below would mean"
+         echo "anything. Look for a captive portal, a proxy, or an SPA fallback serving index.html." ;;
+    400) echo "Control failed with 400: the realm path is probably wrong rather than the network."
+         echo "Check the realm ('$REALM') and the IdP path prefix ('$PREFIX') against the IdP." ;;
+    *)   echo "Control failed with $control, expected 404. Something between here and the realm is"
+         echo "answering for it — a WAF or a proxy is the usual cause. Do not trust checks below." ;;
+  esac
+  exit 3
+fi
+echo
+
+# --- What every client needs ------------------------------------------------------------------
+echo "Realm endpoints"
+check "discovery document" 200 "$(status "$REALM_BASE/.well-known/openid-configuration")"
+check "JWKS" 200 "$(status "$REALM_BASE/protocol/openid-connect/certs")"
+
+# The discovery document is the server's own statement of where things are. Comparing it against the
+# paths clients have hardcoded is the check that would have caught EZ-1803's near neighbours: a
+# relative-path change moves all of these at once, and core's issuer-uri with them.
+discovery=$(curl -s --max-time 15 "$REALM_BASE/.well-known/openid-configuration")
+advertised() { printf '%s' "$discovery" | python3 -c "import json,sys; print(json.load(sys.stdin).get('$1',''))" 2>/dev/null; }
+
+check "issuer is where we think"  "$REALM_BASE" "$(advertised issuer)"
+check "token endpoint unmoved"    "$REALM_BASE/protocol/openid-connect/token"  "$(advertised token_endpoint)"
+check "logout endpoint unmoved"   "$REALM_BASE/protocol/openid-connect/logout" "$(advertised end_session_endpoint)"
+echo
+
+# --- What the SPA needs -------------------------------------------------------------------------
+#
+# The real authorization request, with the real client id and redirect. 200 means the server
+# accepted the client, the redirect and PKCE; it renders the login page rather than an error.
+echo "SPA (keycloak-js, bundled)"
+redirect=$(printf '%s/' "$WEB" | sed 's|:|%3A|g; s|/|%2F|g')
+auth_url="$REALM_BASE/protocol/openid-connect/auth?client_id=$CLIENT&response_type=code&scope=openid&redirect_uri=$redirect&code_challenge_method=S256&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+check "authorization request" 200 "$(status "$auth_url")"
+
+# Control for the check above: an off-site redirect_uri must be refused, or the 200 proves only that
+# the endpoint answers, not that the client's registered URIs are doing anything.
+off_site="$REALM_BASE/protocol/openid-connect/auth?client_id=$CLIENT&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Fexample.org%2F"
+check "off-site redirect refused" 400 "$(status "$off_site")"
+echo
+
+# --- What the Thonny plugin needs ---------------------------------------------------------------
+#
+# `easy-py` renders a login page that loads the adapter from the IdP and hardcodes the realm paths:
+#   easy/auth-templates/login.html  ->  {{ idp_url }}/auth/js/keycloak.js
+#   easy/ez.py:116                  ->  /auth/realms/master/protocol/openid-connect/token
+#   easy/ez.py:486                  ->  /auth/realms/master/protocol/openid-connect/logout
+#
+# The token and logout paths are covered above. This is the one that broke.
+echo "Thonny plugin (adapter fetched from the IdP)"
+js_status=$(status "$IDP$PREFIX/js/keycloak.js")
+if ! check "keycloak.js served" 200 "$js_status"; then
+  cat <<'EOF'
+
+    This is EZ-1803. Keycloak stopped shipping the JS adapter at this path, so the plugin's login
+    page dies on `Uncaught ReferenceError: Keycloak is not defined` before it can redirect. The fix
+    is to vendor keycloak-js into the plugin rather than fetch it; until that ships, no student can
+    log in from Thonny. Nothing on the server side needs changing.
+EOF
+fi
+echo
+
+echo "$((checks - failures))/$checks checks passed"
+[ "$failures" -eq 0 ] || echo "FAILED: $failures check(s) — a client that depends on these is broken now."
+exit $((failures > 0))
