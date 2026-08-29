@@ -121,3 +121,10 @@ doc/review-log.md
 # The diff works on local files and needs no committed baseline: `bin/env-audit --diff dev prod`
 # reads the newest report for each from this directory.
 doc/env-audit/
+
+# The exercise-identity half of the August 2026 beta-feedback triage. The analysis in
+# doc/beta-feedback-2026-08.md is committed — it is about our code and names no exercise. This
+# companion maps its findings onto specific exercises, and the ids come from the corpus snapshots
+# that doc/core/tsl-migration/.gitignore already keeps out of git for exactly the same reason:
+# dev is production's data, and this repository is public.
+doc/beta-feedback-2026-08-exercises.md
