@@ -26,8 +26,13 @@
 #
 # Columns are inventory aliases (`core`, `idp`, `executor`), never hostnames, addresses or
 # certificate subjects. That is deliberate: `hosts.yml` and production's `group_vars/` are gitignored
-# because this repo is public, and a report that undid that would be worse than no report. It is why
-# the output can be committed as a baseline and pasted into an issue.
+# because this repo is public, and a report that undid that would be worse than no report. It is
+# what makes a report safe to paste into an issue when one is worth quoting.
+#
+# **No result is ever committed, dev's included** (kspar, 2026-08-29). `doc/env-audit/` is gitignored
+# whole. A committed result is a description of a live host that is stale the moment it lands, which
+# is the exact failure this playbook was written to end — re-run it instead. The diff needs no
+# committed baseline; it reads the newest local report for each environment.
 - name: Collect what each host is
   hosts: all
   # Needed for the config file, `ufw status` and the systemd unit properties — all reads, none of

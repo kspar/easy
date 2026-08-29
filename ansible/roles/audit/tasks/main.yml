@@ -11,8 +11,9 @@
 # - **Never fail the play.** `failed_when: false` throughout: one unreadable path on one host must
 #   not cost the report for every other host. Anything that could not be read says so in the table.
 # - **Nothing here identifies a host.** No FQDN, no address, no certificate subject. The report is
-#   keyed by inventory alias so that it can be committed, diffed and pasted into a public issue —
-#   which is the same reason `hosts.yml` and production's `group_vars/` are gitignored.
+#   keyed by inventory alias so that a row can be quoted in a public issue — the same reason
+#   `hosts.yml` and production's `group_vars/` are gitignored. The report file itself is never
+#   committed, dev's included; `doc/env-audit/` is gitignored whole.
 
 - name: Read the pending-reboot marker
   ansible.builtin.stat:

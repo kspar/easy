@@ -108,9 +108,16 @@ playwright-report/
 doc/review-plan.md
 doc/review-log.md
 
-# Generated environment audits (bin/env-audit, ansible/audit.yml). Ignored to start with, not
-# because the reports are sensitive — the report is keyed by inventory alias and prints no hostname,
-# address or certificate subject precisely so that it can be published — but because that property
-# should be verified in practice before a production report is committed. Once it has held for a
-# couple of runs, commit a dev baseline deliberately and diff against it; see EZ-1809.
+# Generated environment audits (bin/env-audit, ansible/audit.yml). **No audit result is ever
+# committed — dev's included.** kspar's decision, 2026-08-29.
+#
+# The report is keyed by inventory alias and prints no hostname, address or certificate subject, so
+# an individual one would usually be safe. That is not the point. A committed result is a
+# description of a live host that goes stale the moment it lands, and this whole tool exists because
+# a stale description of a live host was believed for weeks. Ignoring the directory whole also means
+# no per-file judgement from whoever generates the next one — the same reasoning as deploy/prod/ and
+# the review programme's notes above.
+#
+# The diff works on local files and needs no committed baseline: `bin/env-audit --diff dev prod`
+# reads the newest report for each from this directory.
 doc/env-audit/
