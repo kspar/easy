@@ -1,0 +1,40 @@
+---
+# What the audit looks for. Everything here is read-only: this role describes, it never converges and
+# it never asserts. `smoke.yml` is the one that decides whether a host is healthy — keep the two
+# apart, so an environment that has drifted but works does not fail a health check, and so this
+# output stays readable as a table rather than a verdict.
+
+# Units to report on, whether or not they exist. The list being fixed is the point: a service that
+# quietly stopped existing is invisible unless something was expecting it, and "absent" is exactly
+# the finding that `easy-db-backup.timer` on production would have produced months ago.
+audit_units:
+  - easy-core
+  - easy-executor
+  - keycloak
+  - nginx
+  - apache2
+  - postgresql
+  - fail2ban
+  - easy-db-backup.timer
+  - easy-core-autodeploy.timer
+
+# Where the deployed backend configuration lives. Only the **key names** are ever read out of it —
+# never a value. The file holds the database password and the Keycloak client secret, and this
+# report is meant to be safe to paste into an issue.
+#
+# Pairs with the table in doc/release-procedure.md, which lists the keys each release adds: an audit
+# that names the keys present turns "did every environment get the new one" into a lookup instead of
+# a failed deploy.
+audit_core_config_path: /srv/easy/conf/application.yaml
+
+# Where a deployed build records what it is. `deploy/` writes both; either may be absent on a host
+# that has never been deployed to by this repo's tooling, which is itself worth seeing.
+audit_version_paths:
+  - /srv/easy/VERSION
+  - /srv/easy/COMMIT
+  - /srv/easy/current-sha
+
+# Certificate directories to report expiry for. Days remaining only — never the subject or the
+# issuer's account, because those name the host and this report is keyed by inventory alias on
+# purpose.
+audit_cert_glob: /etc/letsencrypt/live/*/cert.pem

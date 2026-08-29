@@ -107,3 +107,10 @@ playwright-report/
 # This comment is deliberately short on detail for the same reason the files are ignored. Ask kspar.
 doc/review-plan.md
 doc/review-log.md
+
+# Generated environment audits (bin/env-audit, ansible/audit.yml). Ignored to start with, not
+# because the reports are sensitive — the report is keyed by inventory alias and prints no hostname,
+# address or certificate subject precisely so that it can be published — but because that property
+# should be verified in practice before a production report is committed. Once it has held for a
+# couple of runs, commit a dev baseline deliberately and diff against it; see EZ-1809.
+doc/env-audit/

@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+#
+# Print what an environment actually is, and diff two of them.
+#
+#   bin/env-audit dev                 # audit dev, write doc/env-audit/dev-<date>.md, print it
+#   bin/env-audit prod                # same for production — interactive, see below
+#   bin/env-audit --diff dev prod     # only the rows where the two environments differ
+#
+# ## Why the diff is the point
+#
+# The v4.0 programme's second goal is that production ends up built by the same `ansible/` and
+# deployed by the same `deploy/` as dev, so that the next update is a command rather than a project.
+# That goal has never had a measurement. This is the measurement: **a nearly-empty diff is the only
+# honest definition of "converged"**, and today every line of it is a to-do.
+#
+# ## Production is interactive, by design
+#
+# `ansible/run.sh` reads the sudo password from the keychain and refuses the production inventory on
+# purpose. So `bin/env-audit prod` calls `ansible-playbook --ask-become-pass` directly and needs a
+# human at a terminal. Read-only or not, that asymmetry is the same one every other production
+# playbook has, and this script is not the place to make an exception to it.
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+OUT_DIR="doc/env-audit"
+
+usage() {
+  echo "usage: $(basename "$0") <dev|prod>" >&2
+  echo "       $(basename "$0") --diff <env-a> <env-b>" >&2
+  exit 2
+}
+
+# Newest report for an environment, so --diff can work from what is already on disk rather than
+# insisting on two fresh runs — production's needs a human, and requiring one to see a diff would
+# mean the diff never gets looked at.
+latest_report() {
+  ls -1t "$OUT_DIR/$1"-*.md 2>/dev/null | head -1
+}
+
+run_audit() {
+  local env="$1" inventory out
+  case "$env" in
+    dev)  inventory="inventories/dev" ;;
+    prod) inventory="inventories/production" ;;
+    *) usage ;;
+  esac
+
+  mkdir -p "$OUT_DIR"
+  out="$OUT_DIR/$env-$(date -u +%Y-%m-%d).md"
+
+  # The playbook writes the file itself, so the path has to be absolute — ansible's `dest` is
+  # resolved on the controller, but from the playbook's own directory.
+  local abs_out="$PWD/$out"
+
+  if [ "$env" = "dev" ]; then
+    (cd ansible && ./run.sh audit.yml \
+      -e "audit_env_name=$env" -e "audit_output_path=$abs_out")
+  else
+    echo "Production: ansible runs interactively here, and you will be asked for the become password."
+    (cd ansible && ansible-playbook -i "$inventory" audit.yml --ask-become-pass \
+      -e "audit_env_name=$env" -e "audit_output_path=$abs_out")
+  fi
+
+  local status=$?
+  if [ ! -s "$out" ]; then
+    echo "No report written to $out — the play did not reach the render step." >&2
+    return "${status:-1}"
+  fi
+
+  echo
+  cat "$out"
+  echo
+  echo "Written to $out"
+}
+
+diff_envs() {
+  local a b fa fb
+  a="$1"; b="$2"
+  fa=$(latest_report "$a"); fb=$(latest_report "$b")
+  for pair in "$a:$fa" "$b:$fb"; do
+    if [ -z "${pair#*:}" ]; then
+      echo "No report for '${pair%%:*}' in $OUT_DIR — run '$(basename "$0") ${pair%%:*}' first." >&2
+      exit 2
+    fi
+  done
+
+  echo "Comparing $fa"
+  echo "     with $fb"
+  echo
+
+  # Compare row by row on the label, so a differing value prints as one line per environment rather
+  # than as a diff hunk nobody can read across two tables with different column counts.
+  python3 - "$fa" "$fb" "$a" "$b" <<'PY'
+import sys
+
+def rows(path):
+    out = {}
+    for line in open(path, encoding="utf-8"):
+        if not line.startswith("|") or line.startswith("| ---"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 2 or not cells[0]:
+            continue
+        out[cells[0]] = " / ".join(c for c in cells[1:] if c)
+    return out
+
+fa, fb, na, nb = sys.argv[1:5]
+a, b = rows(fa), rows(fb)
+same = differing = 0
+for label in [k for k in a if k in b]:
+    if a[label] == b[label]:
+        same += 1
+        continue
+    differing += 1
+    print(f"~ {label}")
+    print(f"    {na}: {a[label]}")
+    print(f"    {nb}: {b[label]}")
+
+only_a = [k for k in a if k not in b]
+only_b = [k for k in b if k not in a]
+for label in only_a:
+    print(f"- {label}: only in {na}")
+for label in only_b:
+    print(f"+ {label}: only in {nb}")
+
+print()
+summary = f"{same} rows identical, {differing} differing"
+if only_a or only_b:
+    summary += f", {len(only_a) + len(only_b)} present in only one report"
+print(summary)
+print()
+print("An almost-empty diff is what 'converged' means. Every line above is a difference between")
+print("the environment that is built by ansible/ and the one that is not yet.")
+PY
+}
+
+case "${1:-}" in
+  --diff) [ $# -eq 3 ] || usage; diff_envs "$2" "$3" ;;
+  dev|prod) run_audit "$1" ;;
+  *) usage ;;
+esac

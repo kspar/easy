@@ -1,0 +1,246 @@
+---
+# Describe a host. Every task reads; none asserts and none converges, so this is safe to point at
+# production and is the intended way to answer "what is this environment actually running" without
+# an SSH session per host and a hand-typed table afterwards.
+#
+# Three rules it is built around:
+#
+# - **Absent is a value.** A missing unit, an unreadable config file and a host with no backup timer
+#   all report as such. The failure this role exists to prevent is a confident wrong answer, so
+#   "not installed" must be distinguishable from "not checked".
+# - **Never fail the play.** `failed_when: false` throughout: one unreadable path on one host must
+#   not cost the report for every other host. Anything that could not be read says so in the table.
+# - **Nothing here identifies a host.** No FQDN, no address, no certificate subject. The report is
+#   keyed by inventory alias so that it can be committed, diffed and pasted into a public issue —
+#   which is the same reason `hosts.yml` and production's `group_vars/` are gitignored.
+
+- name: Read the pending-reboot marker
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: audit_reboot
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Measure root filesystem usage
+  ansible.builtin.shell:
+    cmd: "set -o pipefail; df -h --output=size,avail,pcent / | tail -1"
+    executable: /bin/bash
+  register: audit_disk
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Ask each unit what it is doing
+  # `systemctl show` rather than `is-active`, because one call answers both questions and reports
+  # `LoadState=not-found` for a unit that does not exist — which is the case that matters and the one
+  # `is-active` renders indistinguishable from "installed but stopped".
+  ansible.builtin.command: "systemctl show {{ item }} --property=LoadState,ActiveState,UnitFileState --no-pager"
+  register: audit_units_raw
+  loop: "{{ audit_units }}"
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: List PostgreSQL clusters
+  # An old cluster left on disk after an upgrade is not a curiosity: on the IdP host the stopped 14
+  # cluster is currently the only copy of the realm database from before Keycloak was upgraded.
+  ansible.builtin.command: pg_lsclusters --no-header
+  register: audit_pg
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read the default java version
+  ansible.builtin.shell:
+    cmd: "set -o pipefail; java -version 2>&1 | head -1"
+    executable: /bin/bash
+  register: audit_java
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Find which java each service is pinned to
+  # These differ from the default and from each other, and a service running on a JVM nobody chose is
+  # the kind of thing that bites once, months later, on one code path.
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail;
+      systemctl show {{ item }} --property=Environment --no-pager 2>/dev/null
+      | grep -o 'JAVA_HOME=[^ "]*' | head -1 | cut -d= -f2-
+    executable: /bin/bash
+  register: audit_service_java
+  loop:
+    - easy-core
+    - keycloak
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Resolve the Keycloak install
+  # The version is not in the discovery document — it has to come off the host, which is worth
+  # recording because the obvious probe cannot answer the obvious question.
+  ansible.builtin.shell:
+    # `readlink -f` resolves a path whether or not it exists, so without the -e test a host with no
+    # Keycloak reports the string "keycloak" — a value that looks like an answer and is not one.
+    cmd: "set -o pipefail; [ -e /opt/keycloak ] && readlink -f /opt/keycloak | xargs -r basename"
+    executable: /bin/bash
+  register: audit_keycloak
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read the firewall state
+  ansible.builtin.shell:
+    cmd: "set -o pipefail; ufw status | head -1 | sed 's/^Status: //'"
+    executable: /bin/bash
+  register: audit_ufw
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: List ports listening on a non-loopback address
+  # Same filter as roles/smoke, including the IPv4-mapped IPv6 form a JVM reports for a loopback
+  # bind. Ports, never addresses: a port number describes the shape of the host, an address names it.
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail;
+      ss -Hltn | awk '{print $4}'
+      | grep -vE '^(127\.|\[::1\]|\[::ffff:127\.)' | sed 's/.*://' | sort -un | paste -sd, -
+    executable: /bin/bash
+  register: audit_listening
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Measure certificate lifetimes
+  # Days remaining only. The subject would name the host, and this report is keyed by alias so that
+  # it can be published.
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail;
+      for c in {{ audit_cert_glob }}; do
+        [ -e "$c" ] || continue;
+        end=$(openssl x509 -enddate -noout -in "$c" | cut -d= -f2);
+        echo $(( ( $(date -d "$end" +%s) - $(date +%s) ) / 86400 ));
+      done | sort -n | paste -sd, -
+    executable: /bin/bash
+  register: audit_certs
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read the deployed version markers
+  ansible.builtin.shell:
+    cmd: "cat {{ item }} 2>/dev/null | head -1"
+    executable: /bin/bash
+  register: audit_versions
+  loop: "{{ audit_version_paths }}"
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read the backup timer's last run
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail;
+      systemctl show easy-db-backup.timer --property=LastTriggerUSec --value --no-pager 2>/dev/null
+    executable: /bin/bash
+  register: audit_backup
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: List the configuration keys that are set
+  # **Key names only, never values.** This file holds the database password and the Keycloak client
+  # secret; the whole point of the report is that it can be read by anyone who needs to know whether
+  # an environment has a key, which is a different question from what the key says.
+  #
+  # Flattened to dotted leaf paths — `easy.core.cors.allowed-origins`, not `easy` — because the
+  # top-level names answer nothing. doc/release-procedure.md's table names the keys each release
+  # adds, at full depth, and matching against it is the whole use for this row.
+  #
+  # Indentation-tracking awk rather than a YAML parser: the host is not guaranteed to have PyYAML,
+  # and the question is only which keys carry a value. Anything with a value on the same line is a
+  # leaf; a key that opens a block is a path segment.
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail;
+      awk '
+        /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
+        {
+          match($0, /^[[:space:]]*/); ind = RLENGTH;
+          line = $0; sub(/^[[:space:]]+/, "", line);
+          if (line !~ /^[A-Za-z0-9_.-]+:/) next;
+          key = line; sub(/:.*/, "", key);
+          rest = line; sub(/^[^:]*:[[:space:]]*/, "", rest);
+          while (n > 0 && inds[n] >= ind) n--;
+          n++; inds[n] = ind; keys[n] = key;
+          path = keys[1];
+          for (i = 2; i <= n; i++) path = path "." keys[i];
+          if (rest != "") print path;
+        }' {{ audit_core_config_path }} 2>/dev/null | sort -u
+    executable: /bin/bash
+  register: audit_config_keys
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+# --- assemble -----------------------------------------------------------------------------------
+#
+# One fact per host, so the rendering play can read `hostvars` without knowing how any of it was
+# gathered. Kept as a flat dict of strings: the template's job is layout, not interpretation.
+
+- name: Summarise the units
+  # `not-found` becomes "absent" rather than a state, because a unit that does not exist and one that
+  # exists and is stopped are different facts and the table must not blur them.
+  ansible.builtin.set_fact:
+    audit_units_summary: >-
+      {% for r in audit_units_raw.results -%}
+      {%- set lines = (r.stdout | default('')).splitlines() -%}
+      {%- set load = (lines | select('match', 'LoadState=') | first | default('LoadState=?')).split('=', 1)[1] -%}
+      {%- set act = (lines | select('match', 'ActiveState=') | first | default('ActiveState=?')).split('=', 1)[1] -%}
+      {%- set enab = (lines | select('match', 'UnitFileState=') | first | default('UnitFileState=-')).split('=', 1)[1] -%}
+      {{ r.item }}={% if load == 'not-found' %}absent{% else %}{{ act }}/{{ enab | default('-', true) }}{% endif %}
+      {%- if not loop.last %}, {% endif -%}
+      {%- endfor %}
+
+- name: Summarise the per-service JVMs and version markers
+  ansible.builtin.set_fact:
+    audit_service_java_summary: >-
+      {% for r in audit_service_java.results -%}
+      {{ r.item }}={{ (r.stdout | default('') | trim) | default('default', true) }}
+      {%- if not loop.last %}, {% endif -%}
+      {%- endfor %}
+    audit_versions_summary: >-
+      {% for r in audit_versions.results -%}
+      {{ r.item | basename }}={{ (r.stdout | default('') | trim) | default('absent', true) }}
+      {%- if not loop.last %}, {% endif -%}
+      {%- endfor %}
+
+- name: Assemble this host's row
+  ansible.builtin.set_fact:
+    audit_row:
+      os: "{{ ansible_distribution | default('?') }} {{ ansible_distribution_version | default('') }}"
+      kernel: "{{ ansible_kernel | default('?') }}"
+      cpu_ram: "{{ ansible_processor_vcpus | default('?') }}c / {{ ((ansible_memtotal_mb | default(0)) / 1024) | round(1) }} GB"
+      uptime: "{{ ((ansible_uptime_seconds | default(0)) / 86400) | round | int }} days"
+      reboot: "{{ 'REQUIRED' if audit_reboot.stat.exists | default(false) else 'no' }}"
+      disk: "{{ audit_disk.stdout | default('?') | trim }}"
+      java: "{{ audit_java.stdout | default('?') | trim | default('absent', true) }}"
+      keycloak: "{{ audit_keycloak.stdout | default('') | trim | default('absent', true) }}"
+      postgres: "{{ audit_pg.stdout_lines | default([]) | map('regex_replace', '\\s+', ' ') | map('trim') | join('; ') | default('absent', true) }}"
+      ufw: "{{ audit_ufw.stdout | default('?') | trim }}"
+      listening: "{{ audit_listening.stdout | default('') | trim | default('none', true) }}"
+      certs_days: "{{ audit_certs.stdout | default('') | trim | default('none', true) }}"
+      backup_last: "{{ audit_backup.stdout | default('') | trim | default('n/a', true) }}"
+      # The count goes in the table; the names go in their own section below it, because a list this
+      # long inside a cell destroys the table it is meant to inform.
+      config_keys: >-
+        {{ (audit_config_keys.stdout_lines | default([]) | length) ~ ' keys'
+           if (audit_config_keys.stdout | default('') | trim | length) > 0
+           else 'unreadable or absent' }}
+      config_key_list: "{{ audit_config_keys.stdout_lines | default([]) }}"
+      units: "{{ audit_units_summary | trim }}"
+      service_java: "{{ audit_service_java_summary | trim }}"
+      versions: "{{ audit_versions_summary | trim }}"

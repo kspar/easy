@@ -1,0 +1,61 @@
+---
+# Print what an environment actually is, as a table, from the hosts themselves.
+#
+#   ./run.sh audit.yml                                            # dev
+#   ansible-playbook -i inventories/production audit.yml --ask-become-pass
+#   bin/env-audit dev                                             # the wrapper, which also writes the file
+#
+# ## Why this exists
+#
+# `doc/production-update.md` §0 was a hand-typed table of what production is. Weeks later it still
+# said Keycloak 15.1.1 on WildFly, Apache 2.4.52, PostgreSQL 14, and "core is the one host left,
+# still 22.04". By then all three hosts were on 24.04, the IdP was running Keycloak 26.7.2 from /opt
+# under its own user with nginx in front, and both hosts were serving PostgreSQL 16. Every one of
+# those facts was wrong, none of them looked wrong, and finding out cost an SSH session per host.
+#
+# A measured value written into prose is a rumour with a timestamp. So this is the command, in the
+# same spirit as bin/testcounts: the table is generated or it is not trusted.
+#
+# ## Read-only, and it never asserts
+#
+# `smoke.yml` decides whether a host is healthy. This one only describes it. Keeping them apart
+# means an environment that has drifted but works does not fail a health check, and it means this
+# output stays a table rather than a verdict — which is what makes two of them diffable.
+#
+# ## It names no hosts
+#
+# Columns are inventory aliases (`core`, `idp`, `executor`), never hostnames, addresses or
+# certificate subjects. That is deliberate: `hosts.yml` and production's `group_vars/` are gitignored
+# because this repo is public, and a report that undid that would be worse than no report. It is why
+# the output can be committed as a baseline and pasted into an issue.
+- name: Collect what each host is
+  hosts: all
+  # Needed for the config file, `ufw status` and the systemd unit properties — all reads, none of
+  # which an unprivileged user can perform. Same bargain as smoke.yml, and the same reason
+  # production runs this interactively.
+  become: true
+  gather_facts: true
+  roles:
+    - audit
+
+- name: Render the report
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    # Which inventory this was, for the report header. The wrapper passes it; a bare
+    # ansible-playbook run gets a sensible guess rather than an error.
+    audit_env: "{{ audit_env_name | default('unnamed') }}"
+    audit_out: "{{ audit_output_path | default('') }}"
+  tasks:
+    - name: Build the report
+      ansible.builtin.template:
+        src: report.md.j2
+        dest: "{{ audit_out | default('/dev/stdout', true) }}"
+        mode: "0644"
+      when: audit_out | length > 0
+
+    - name: Show the report
+      ansible.builtin.debug:
+        msg: "{{ lookup('ansible.builtin.template', 'report.md.j2').split('\n') }}"
+      when: audit_out | length == 0
