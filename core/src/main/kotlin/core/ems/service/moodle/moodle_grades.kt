@@ -183,9 +183,48 @@ class MoodleGradesSyncService(
                 val exercises = selectExercisesOnCourse(courseId)
                 val batches = batchGrades(shortname, exercises)
 
-                batches.forEach {
-                    log.debug { "Sending grade batch: $it" }
-                    sendMoodleGradeRequest(it)
+                // Every batch is attempted, and one failure no longer takes the rest with it. This
+                // was `batches.forEach { sendMoodleGradeRequest(it) }`, so the first throw abandoned
+                // the loop — and the batches are ordered by exercise, not by likelihood of working,
+                // so a single unsendable exercise near the front silently cost every course grade
+                // behind it.
+                //
+                // The two kinds of failure are not the same and are not treated the same:
+                //
+                //  - a batch that carries grades and fails is a real problem, so those are collected
+                //    and thrown at the end, after the rest have had their turn;
+                //  - a batch with no grades is the row-creation call, and Moodle currently refuses
+                //    every one of them. That is not our bug and there is nothing to fix here: the
+                //    grades key cannot be sent empty over form encoding, and the function requires
+                //    it. Sending them anyway is deliberate — the day the plugin accepts a missing
+                //    key as an empty list, rows start being created again with no change here.
+                val failures = mutableListOf<String>()
+                batches.forEach { batch ->
+                    log.debug { "Sending grade batch: $batch" }
+                    try {
+                        sendMoodleGradeRequest(batch)
+                    } catch (e: InvalidRequestException) {
+                        if (batch.exercises.any { it.grades.isNotEmpty() }) {
+                            failures += batch.exercises.map { it.idnumber }.joinToString(",")
+                            log.error { "Grade batch failed for course $courseId: $batch. Error: $e" }
+                        } else {
+                            log.warn {
+                                "Moodle refused the row-creation call for exercise(s) " +
+                                        "${batch.exercises.map { it.idnumber }} on course $courseId. " +
+                                        "Expected until the Moodle plugin accepts an absent 'grades' " +
+                                        "key as an empty list; grades themselves are unaffected."
+                            }
+                        }
+                    }
+                }
+
+                if (failures.isNotEmpty()) {
+                    throw InvalidRequestException(
+                        "Grade syncing with Moodle failed for ${failures.size} of ${batches.size} batches.",
+                        ReqError.MOODLE_GRADE_SYNC_ERROR,
+                        "Failed exercises" to failures.joinToString(";"),
+                        notify = true
+                    )
                 }
             }
         }

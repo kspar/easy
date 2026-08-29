@@ -92,8 +92,21 @@ class MoodleGradeRequestTest {
 
     @Test
     fun `an exercise with no grades still carries its identity`() {
-        // batchGrades emits these deliberately — "sync exercises with no grades" — so an exercise
-        // with an empty grade list has to survive encoding rather than vanish.
+        // batchGrades emits these deliberately — "sync exercises with no grades" — because that call
+        // is what creates the row in Moodle's gradebook. So the exercise has to survive encoding
+        // rather than vanish.
+        //
+        // **Moodle currently rejects exactly this request**, and that is a plugin-side gap rather
+        // than something to fix here: form encoding cannot express an empty array — the key simply
+        // disappears, as asserted below — and the function requires `grades` to be present. Nine
+        // spellings were tried against the live function on 2026-08-29, including `grades=`,
+        // `grades[]=`, `grades=[]`, a JSON body, and batching the ungraded exercise together with a
+        // graded one; all were refused with `invalidparameter`, while the same exercise carrying a
+        // grade succeeded. The old JSON-body protocol could say `"grades": []`; this one cannot.
+        //
+        // We keep sending them anyway. syncCourseGradesToMoodle tolerates the refusal without
+        // failing the sync, so the day the plugin accepts an absent key as an empty list, rows start
+        // being created again with no change to this code.
         val empty = MoodleReq("C", listOf(MoodleReqExercise("9", "Untouched", emptyList())))
         val form = encodeGradeRequest(empty)
 
