@@ -1097,6 +1097,18 @@ Template:
   through the real student view. Shot `t7-not-ok-v3-raw-container-output.png`
 - Register: not previously filed on the web side. Related to review **F-019**, which found raw
   container output entering student-visible feedback; this is the other end of that pipe
+- **Correction (2026-08-29, found by the fix's code review):** two of this finding's premises were
+  wrong, both traced to fixture-driven evidence that never met the real producers.
+  (1) **Non-OK_V3 feedback is usually legitimate**, not an outage: every legacy grader
+  (pygrader, imgrec, silmused) answers in plain text via aae's `grade:` parse, and aae's own
+  time/memory/something-failed verdicts are plain Estonian strings — several explicitly *student*-fault.
+  (2) **`pre_evaluate_error` is the student's own pre-check failure** (their solution file missing,
+  empty, or unparseable — core's own test data carries `SyntaxError … (solution.py …)`), not the
+  teacher's generated script; the `generated_0.py` filename in the evidence came from the test
+  harness's `exec(compile(...))`, not from a real run. The one honest outage signal is
+  `autograde_status: FAILED`, which core sets with no assessment attached and which the UI read
+  nowhere — the shipped fix keys on that instead, and the durable improvement (mapping
+  garbage-in-feedback to FAILED at the source) belongs to core/aae, tracked in EZ-1794
 
 ### X-027 "Required" in the TSL builder is decoration — nothing enforces it, and a student finds out
 - Unit: T2

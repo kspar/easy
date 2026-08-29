@@ -53,6 +53,7 @@ import type {
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import SolutionEditor, { type SolutionEditorHandle } from './SolutionEditor.tsx'
 import AutoTestResults from './AutoTestResults.tsx'
+import { isGraderFailed } from './okV3.ts'
 import TeacherFeedback from './TeacherFeedback.tsx'
 import PreviousSubmissions from './PreviousSubmissions.tsx'
 import ExerciseSettingsDialog from './ExerciseSettingsDialog.tsx'
@@ -450,6 +451,19 @@ function StudentExerciseView() {
     }, 600)
   }, [queryClient, courseId])
 
+  // When grading failed outright, there is nothing for the typewriter to reveal and
+  // onStaggerDone would never fire, leaving the banner and sidebar frozen — so complete the
+  // sequence by hand, cutting the celebration short as soon as the refetch says FAILED. Keyed on
+  // the status, not on the assessment being absent: an absent assessment is also just "the
+  // refetch has not landed yet" on a perfectly healthy run.
+  const latestSubmission = submissions?.[0] ?? null
+  useEffect(() => {
+    if (autogradeStatus === 'idle' || autogradeStatus === 'grading') return
+    if (latestSubmission != null && isGraderFailed(latestSubmission)) {
+      handleStaggerDone()
+    }
+  }, [autogradeStatus, latestSubmission, handleStaggerDone])
+
   usePageTitle(exercise?.effective_title)
 
   if (isLoading) return <CircularProgress />
@@ -459,7 +473,7 @@ function StudentExerciseView() {
   // The statement renders as soon as the details arrive; only the editor side waits for the
   // submissions and draft it seeds from, so a slow draft endpoint cannot blank the whole page.
   const editorLoading = submissionsLoading || draftLoading || !draftFetchedThisMount
-  const latestSubmission = submissions?.[0] ?? null
+  const animationPlaying = autogradeStatus === 'grading' || autogradeStatus === 'completed'
 
   // A draft wins over the latest submission when it is the more recent act and actually differs —
   // a draft autosaved moments before its own submission carries the same content and would only
@@ -504,7 +518,7 @@ function StudentExerciseView() {
         onAutogradeStart={handleAutogradeStart}
       />
 
-      {(autogradeStatus === 'grading' || autogradeStatus === 'completed') && (
+      {animationPlaying && (
         <Box sx={{ my: 2 }}>
           <AutogradeAnimation
             status={autogradeStatus}
@@ -513,7 +527,7 @@ function StudentExerciseView() {
         </Box>
       )}
 
-      {latestSubmission?.auto_assessment && autogradeStatus !== 'grading' && autogradeStatus !== 'completed' && (
+      {latestSubmission?.auto_assessment && !animationPlaying && (
         <>
           <Divider sx={{ my: 3 }} />
           <AutoTestResults
@@ -523,6 +537,20 @@ function StudentExerciseView() {
           />
         </>
       )}
+
+      {/* The one honest infrastructure-outage signal (audit X-026): without this the student
+          gets pure silence — no results, no grade, no explanation. Shown even when an older
+          assessment is still on screen (a failed retry leaves the stale one in place), and
+          retired once a teacher has graded the submission by hand — the message asks them to
+          contact a teacher who by then has already handled it. */}
+      {latestSubmission != null &&
+        isGraderFailed(latestSubmission) &&
+        !animationPlaying &&
+        latestSubmission.grade?.is_graded_directly !== true && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            {t('submission.graderFailedStudent')}
+          </Alert>
+        )}
 
       <TeacherFeedback
         courseId={courseId!}

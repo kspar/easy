@@ -21,6 +21,7 @@ import { basicSetup } from 'codemirror'
 import { useTranslation } from 'react-i18next'
 import RelativeTime from '../../components/RelativeTime.tsx'
 import AutoTestResults from './AutoTestResults.tsx'
+import { isGraderFailed } from './okV3.ts'
 import { useSubmissions } from '../../api/exercises.ts'
 import type { AutomaticAssessmentResp } from '../../api/types.ts'
 
@@ -171,6 +172,17 @@ function SubmissionItem({
           )}
           {submission.autograde_status === 'IN_PROGRESS' && (
             <CircularProgress size={16} />
+          )}
+          {/* Without a label a FAILED row just looks unfinished forever (audit X-026). Shown
+              even beside a grade chip: a failed retry leaves the previous run's assessment and
+              grade in place, and they are then stale, not current. */}
+          {isGraderFailed(submission) && (
+            <Chip
+              label={t('submission.graderFailedShort')}
+              size="small"
+              color="warning"
+              variant="outlined"
+            />
           )}
         </Box>
       </Box>

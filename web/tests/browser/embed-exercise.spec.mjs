@@ -49,6 +49,8 @@ test('embed-exercise', async ({ launch, check }) => {
         ({ route, body }) => {
           authHeaders.push(route.request().headers()['authorization'] ?? null)
           lastSolution = body.solution
+          // Plain text, deliberately: this is the legacy graders' real answer shape (aae's
+          // 'grade:' format) and mock-executor's, and it must keep rendering as an assessment.
           return { grade: 100, feedback: 'All tests passed.' }
         },
       ],

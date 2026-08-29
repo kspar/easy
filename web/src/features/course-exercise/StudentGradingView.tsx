@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Box,
+  Button,
   ButtonBase,
   Chip,
   CircularProgress,
@@ -43,6 +44,7 @@ import {
 import { useAuth } from '../../auth/useAuth.ts'
 import useSavedGroup from '../../hooks/useSavedGroup.ts'
 import AutoTestResults from './AutoTestResults.tsx'
+import { isGraderFailed } from './okV3.ts'
 import ActivityFeed from './ActivityFeed.tsx'
 import SubmissionSelector from './SubmissionSelector.tsx'
 import AnnotatedCodeEditor, { type NewCommentData } from './AnnotatedCodeEditor.tsx'
@@ -478,6 +480,40 @@ export default function StudentGradingView({
               onDeleteComment={handleDeleteComment}
             />
           </Box>
+
+          {/* Grading itself failed: without this the teacher a student was told to contact sees
+              nothing at all — no failure label, and the retry affordance below is gated behind an
+              assessment a FAILED run does not produce (audit X-026). */}
+          {isGraderFailed(subDetail) && (
+            <Alert
+              severity="warning"
+              sx={{ mb: 2 }}
+              action={
+                exercise.grader_type === 'AUTO' ? (
+                  <Button
+                    color="inherit"
+                    size="small"
+                    disabled={retryAutoassess.isPending}
+                    startIcon={
+                      retryAutoassess.isPending
+                        ? <CircularProgress size={14} color="inherit" />
+                        : <RefreshOutlined fontSize="small" />
+                    }
+                    onClick={() => {
+                      retryAutoassess.mutate(subDetail.id, {
+                        onSuccess: () => setRetryDone(true),
+                      })
+                    }}
+                  >
+                    {t('submission.retryAutoassess')}
+                  </Button>
+                ) : undefined
+              }
+            >
+              {t('submission.graderFailedTeacherView')}
+              {retryAutoassess.isError && ` ${t('submission.retryAutoassessFailed')}`}
+            </Alert>
+          )}
 
           {/* Auto test results */}
           {subDetail.auto_assessment && (

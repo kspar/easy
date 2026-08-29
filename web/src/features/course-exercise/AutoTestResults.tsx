@@ -19,51 +19,7 @@ import {
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { AutomaticAssessmentResp } from '../../api/types.ts'
-
-type V3Status = 'PASS' | 'FAIL' | 'SKIP'
-
-interface OkV3Check {
-  title: string
-  status: V3Status
-  feedback: string | null
-}
-
-interface OkV3File {
-  name: string
-  content: string
-}
-
-interface OkV3Test {
-  title: string
-  status: V3Status
-  user_inputs: string[]
-  created_files: OkV3File[]
-  converted_submission: string | null
-  actual_output: string | null
-  exception_message: string | null
-  checks: OkV3Check[]
-}
-
-interface OkV3Feedback {
-  result_type: 'OK_V3'
-  producer: string
-  pre_evaluate_error: string | null
-  points: number
-  tests: OkV3Test[]
-}
-
-function parseOkV3(feedback: string | null): OkV3Feedback | null {
-  if (!feedback) return null
-  try {
-    const parsed = JSON.parse(feedback)
-    if (parsed?.result_type === 'OK_V3' && Array.isArray(parsed.tests)) {
-      return parsed as OkV3Feedback
-    }
-    return null
-  } catch {
-    return null
-  }
-}
+import { parseOkV3, type OkV3Test, type V3Status } from './okV3.ts'
 
 function StatusIcon({ status }: { status: V3Status }) {
   if (status === 'PASS') return <CheckCircle color="success" fontSize="small" />
@@ -334,6 +290,9 @@ export default function AutoTestResults({
       )}
       {v3 ? (
         <>
+          {/* The student's own pre-check failure — a missing, empty or unparseable solution
+              file, reported by tiivad before any test ran. Their error, shown verbatim: a
+              SyntaxError naming their own file is exactly what they need to fix it. */}
           {v3.pre_evaluate_error && (
             <Alert severity="error" sx={{ mb: 2, ...headerSx }}>
               <Box component="pre" sx={{ m: 0, fontFamily: 'monospace', fontSize: '0.8rem', whiteSpace: 'pre-wrap' }}>
@@ -407,6 +366,10 @@ export default function AutoTestResults({
           )}
         </>
       ) : autoAssessment.feedback ? (
+        // Not OK_V3, and legitimately so: the legacy graders (pygrader, imgrec, silmused) and
+        // aae's own verdicts (time/memory exceeded) answer in plain text. Render it as the
+        // assessment it is — a genuine infrastructure failure never reaches this component,
+        // because core records it as autograde_status FAILED with no assessment at all.
         <Paper
           variant="outlined"
           sx={{ ...monoSx, maxHeight: 'none', ...headerSx }}
