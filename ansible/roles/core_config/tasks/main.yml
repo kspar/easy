@@ -116,6 +116,31 @@
     - easy_core_moodle_allow_real | bool
     - not easy_core_allow_real_outbound | bool
 
+- name: Refuse a real-Moodle opt-in that did not actually reach the URLs
+  # The mirror of the loopback assertion above, and it exists because that one stops checking the
+  # moment `easy_core_moodle_allow_real` is set — so "I opted in and the URLs stayed dead" is the one
+  # shape nothing was looking at. It is not a hypothetical: on 2026-08-29 the opt-in and the two URLs
+  # went into the inventory file's group `vars:` block together, and Ansible ranks those BELOW
+  # `group_vars/*` — which sets both URLs to the discard port. The opt-in landed, the URLs did not,
+  # every assertion passed, and the rendered config still read `moodle-disabled-on-dev`. A run that
+  # says it configured a real Moodle and configured nothing is worse than one that fails.
+  #
+  # The fix in the inventory is host vars, which outrank group_vars. This is what says so out loud.
+  ansible.builtin.assert:
+    that: not (item is search('://(127\.0\.0\.1|localhost|\[::1\])(:|/|$)'))
+    fail_msg: >-
+      easy_core_moodle_allow_real is true, but {{ item }} is still a loopback address — so this host
+      has opted into a real Moodle and would not reach one. The usual cause is precedence: vars set
+      in the inventory file for a *group* lose to group_vars/, which pins these URLs to the discard
+      port. Set them as host vars instead.
+    quiet: true
+  loop:
+    - "{{ easy_core_moodle_users_url }}"
+    - "{{ easy_core_moodle_grades_url }}"
+  when:
+    - easy_core_moodle_allow_real | bool
+    - not easy_core_allow_real_outbound | bool
+
 - name: Refuse an unpinned student-sync cron on a host pointed at a real Moodle
   # The allowlist bounds *which* course can be reached; this bounds *when*. Without it the roster
   # sync is the one Moodle operation that happens with nobody pressing anything — and it is not a

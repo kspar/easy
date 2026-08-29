@@ -479,32 +479,55 @@ Have a throwaway Moodle course first — one whose roster and gradebook may be r
 run, with test users in it. This procedure writes to both, and neither write is undone by putting
 the config back.
 
-1. **Fill in the four variables** in `inventories/dev/hosts.yml` (gitignored). The block is
-   commented out in `hosts.example.yml` with the reasoning; briefly, it is
-   `easy_core_moodle_allow_real: true`, `easy_core_moodle_course_allowlist` set to the one
-   shortname, and the two URLs. `easy_core_allow_real_outbound` stays false — it is the wider
-   switch, and it also unpins account deletion and lets mail out.
+1. **Fill in the four variables** in `inventories/dev/hosts.yml` (gitignored), **as host vars** —
+   under the host entry, not the group's `vars:` block. The block is commented out in
+   `hosts.example.yml` with the reasoning; briefly, it is `easy_core_moodle_allow_real: true`,
+   `easy_core_moodle_course_allowlist` set to the one shortname, and the two URLs.
+   `easy_core_allow_real_outbound` stays false — it is the wider switch, and it also unpins account
+   deletion and lets mail out.
+
+   **Host vars, and this is the step that goes wrong.** `group_vars/all/core.yml` pins both Moodle
+   URLs to the discard port, and Ansible ranks vars written in an inventory *file* for a group
+   **below** `group_vars/*`. Put the four in the group `vars:` block and the opt-in lands while the
+   URLs do not: the play succeeds, every assertion passes, and the rendered config still reads
+   `moodle-disabled-on-dev`. That happened on 2026-08-29 and was caught only by reading the config
+   back off the host. The role now asserts against it — "refuse a real-Moodle opt-in that did not
+   actually reach the URLs" — but the fix is the placement.
+
+   Note which variables this does *not* bite: the allowlist and `moodle_allow_real` have no entry in
+   `group_vars`, so at group level they beat only the role default and land fine. It is exactly the
+   two that group_vars pins that vanish, which is why the mistake looks like a partial success.
 2. **Put the real `wstoken`** in `/srv/easy/conf/secrets.yaml` on the host, replacing
    `CHANGEME-no-moodle-token`. Ansible never writes that file; the role now refuses to run while the
    token is a placeholder and Moodle is real.
-3. **Apply**, and read the assertions rather than skipping past them. Three exist for this exact
-   configuration — the allowlist must name a course, the students cron must stay pinned, and the
-   token must not be a placeholder — and a run that fails one is the guard working. Note which one
-   does *not* fire: the "Moodle URL must be loopback" assertion is skipped by
-   `easy_core_moodle_allow_real` itself, which is the whole point of that variable.
-4. **Link one course as admin**: `PUT /v2/courses/{courseId}/moodle` with that shortname and the
+3. **Apply**, and read the assertions rather than skipping past them. Four exist for this exact
+   configuration — the allowlist must name a course, the URLs must have actually left loopback, the
+   students cron must stay pinned, and the token must not be a placeholder — and a run that fails
+   one is the guard working. The plain "Moodle URL must be loopback" assertion is the one that stops
+   applying here, skipped by `easy_core_moodle_allow_real` itself; the second above is its mirror,
+   and exists because that gap is precisely where step 1's mistake used to live unnoticed.
+
+   Scope the apply to core's config — a one-play file with just the `core_config` role, run with
+   `--limit easycoredev` — rather than the whole of `site.yml`, unless you also want whatever
+   unrelated drift a full converge has accumulated. The role's handler restarts core, which is what
+   makes the new config take effect.
+4. **Read the config back off the host.** `grep` the `moodle-sync` block in
+   `/srv/easy/conf/application.yaml`: it holds no credential by design — the token is imported from
+   the secrets file — so it is safe to look at, and it is the only thing that actually proves the
+   variables resolved the way you meant. A green play does not; that is the whole lesson of step 1.
+5. **Link one course as admin**: `PUT /v2/courses/{courseId}/moodle` with that shortname and the
    sync flags. Admin-only, and note the allowlist does *not* gate linking — an admin can link any
    shortname, and the refusal comes later, when a request would be built. That is deliberate but it
-   means step 4 succeeding tells you nothing about step 1 having worked.
-5. **Pull the roster**: `POST /v2/courses/{courseId}/moodle/students`. This **wipes and rebuilds**
+   means step 5 succeeding tells you nothing about step 1 having worked.
+6. **Pull the roster**: `POST /v2/courses/{courseId}/moodle/students`. This **wipes and rebuilds**
    `student_course_access` and `student_course_group` for the course, creates and deletes
    `course_group` rows to match Moodle, and **emails invitations** to students it considers new. On a
    dev host restored from a production dump, check where mail is pointed before pressing this.
-6. **Push grades**: `POST /v2/courses/{courseId}/moodle/grades` — but the more honest test is
+7. **Push grades**: `POST /v2/courses/{courseId}/moodle/grades` — but the more honest test is
    submitting or grading a solution on that course, because that is the path that reaches Moodle in
    normal use (`submissions.kt:147`, `TeacherPostGrade.kt:63`, `TeacherRetryAutoassess.kt:105`). An
    endpoint-only test exercises the one caller that was never the risk.
-7. **Then test the refusal**, which is the step worth not skipping. Link a *second* course to some
+8. **Then test the refusal**, which is the step worth not skipping. Link a *second* course to some
    other shortname and run the **students** sync on it: core must refuse with
    `MOODLE_LINKING_ERROR` and log `Refusing to contact Moodle about course '…'`.
 
@@ -519,8 +542,9 @@ the config back.
    mode is silent success against a real gradebook. `MoodleCourseAllowlistTest` covers the same
    branch in the suite, but it cannot tell you that *this host's* rendered config parsed the way you
    think it did.
-8. **Put it back**: re-comment the four variables, re-apply, and unlink the courses. Leaving dev in
-   this state means the next tester's ordinary submission writes to a real gradebook.
+9. **Put it back**: re-comment the four variables, re-apply, and unlink the courses. Leaving dev in
+   this state means the next tester's ordinary submission writes to a real gradebook. Re-reading the
+   config off the host applies here too — putting it back deserves the same proof as turning it on.
 
 ---
 
