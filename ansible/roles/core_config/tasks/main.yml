@@ -95,12 +95,43 @@
   # The pairing is the point. An environment that may reach a real Moodle but may reach ALL of it is
   # the configuration this whole guard exists to prevent — and it is the one that looks fine, because
   # nothing fails until a tester submits a solution and a real gradebook changes.
+  #
+  # The condition parses the value the way core does rather than measuring the string, and that is
+  # not pedantry: `MoodleCourseAllowlist` splits on commas, trims, and drops empty fragments, so
+  # `" "` and `","` parse to an empty set and mean *unrestricted* — while both have length > 0 and
+  # passed the length check this used to be. That combination cleared every assertion in this role
+  # and produced the exact host it exists to prevent: real Moodle, no bound. The two parses have to
+  # agree, so if the Kotlin one changes, change this with it.
   ansible.builtin.assert:
-    that: easy_core_moodle_course_allowlist | length > 0
+    that: >-
+      easy_core_moodle_course_allowlist.split(',') | map('trim')
+      | reject('equalto', '') | list | length > 0
     fail_msg: >-
-      easy_core_moodle_allow_real is true but easy_core_moodle_course_allowlist is empty, which means
-      unrestricted. Name the course shortnames this environment may touch — in the environment's
+      easy_core_moodle_allow_real is true but easy_core_moodle_course_allowlist names no course —
+      it is '{{ easy_core_moodle_course_allowlist }}', which core parses as an empty set and treats
+      as UNRESTRICTED. Name the course shortnames this environment may touch — in the environment's
       gitignored inventory, since a real course name does not belong in a public repository.
+    quiet: true
+  when:
+    - easy_core_moodle_allow_real | bool
+    - not easy_core_allow_real_outbound | bool
+
+- name: Refuse an unpinned student-sync cron on a host pointed at a real Moodle
+  # The allowlist bounds *which* course can be reached; this bounds *when*. Without it the roster
+  # sync is the one Moodle operation that happens with nobody pressing anything — and it is not a
+  # read: it rewrites `student_course_access` and emails invitations to everyone it considers new.
+  # An operator testing the integration expects to cause each request, and a timer firing at 04:05
+  # against a course they linked yesterday is the opposite of that.
+  #
+  # Unlike the account-deletion cron above this is asserted only when Moodle is real, because the
+  # never-date is merely the default elsewhere and an environment with a dead URL may run it freely.
+  ansible.builtin.assert:
+    that: easy_core_moodle_users_cron == easy_core_never_cron
+    fail_msg: >-
+      easy_core_moodle_users_cron is '{{ easy_core_moodle_users_cron }}' rather than the never-date
+      '{{ easy_core_never_cron }}', and this host is pointed at a real Moodle. That cron syncs every
+      linked course's roster on a timer and emails invitations to students it sees as new. Pin it and
+      drive the sync from the endpoint instead.
     quiet: true
   when:
     - easy_core_moodle_allow_real | bool
@@ -374,6 +405,52 @@
   when:
     - not ansible_check_mode
     - easy_core_allow_real_outbound | bool
+
+- name: See whether the Moodle token is still the placeholder
+  # Only ever matches the sentinel, and returns a count, so no part of a real token can reach the
+  # controller or this run's output even if the grep is wrong.
+  #
+  # The optional quote matters. `yaml.safe_dump` writes a plain scalar today, so an unquoted pattern
+  # matches what this role itself creates — but a hand-edit that quotes the value is the likeliest
+  # way this file is ever touched, and the pattern would then find nothing and report the placeholder
+  # as a real token. Failing to match must not be the same as passing.
+  ansible.builtin.command:
+    cmd: >-
+      grep -cE '^[[:space:]]*wstoken:[[:space:]]*['\''"]?CHANGEME'
+      {{ easy_core_secrets_path | quote }}
+  register: easy_core_moodle_token_placeholder
+  changed_when: false
+  # 0 is "found", 1 is "not found", and anything above is grep failing — a missing file, a path typo,
+  # no permission. A blanket `failed_when: false` turned all three into empty stdout, which the
+  # assertion below reads as 0 and passes: the guard would fail open in exactly the cases where it
+  # could not see the file it is supposed to be checking.
+  failed_when: easy_core_moodle_token_placeholder.rc >= 2
+  check_mode: false
+  when:
+    - not ansible_check_mode
+    - easy_core_moodle_allow_real | bool
+
+- name: Refuse a real Moodle with a placeholder token
+  # The assertion above this one covers `allow_real_outbound`, and an environment testing Moodle sync
+  # deliberately does not set that — so without this task the combination "real Moodle URL, CHANGEME
+  # token" writes cleanly and nothing says a word. What follows is a run of authentication failures
+  # from Moodle, which read as a problem at their end: the request left, the URL was right, the token
+  # was the one thing wrong and it is the one thing not in any file Ansible manages.
+  #
+  # Not folded into the placeholder count above, because that one is a total across the file. A
+  # half-configured dev host legitimately has a CHANGEME Keycloak secret while testing Moodle, and
+  # blocking on that would make this check impossible to satisfy for the environment that needs it.
+  ansible.builtin.assert:
+    that: (easy_core_moodle_token_placeholder.stdout | default('0') | int) == 0
+    fail_msg: >-
+      easy_core_moodle_allow_real is true, so this host will POST to a real Moodle — but
+      easy.core.moodle-sync.wstoken in {{ easy_core_secrets_path }} is still CHANGEME. Ansible does
+      not write that file: put the real token there on the host. Every sync would otherwise fail
+      with a Moodle authentication error that looks like a fault at Moodle's end.
+    quiet: true
+  when:
+    - not ansible_check_mode
+    - easy_core_moodle_allow_real | bool
 
 - name: Refuse to leave the secrets readable by everyone
   ansible.builtin.stat:

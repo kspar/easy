@@ -450,7 +450,7 @@ This list is the actual "non-destructive" work — a separate database is the ea
 
 | Risk | Path | Treatment |
 | --- | --- | --- |
-| **Grades written into real Moodle** | **There is no grades cron.** `syncSingleGradeToMoodle` is called from ordinary grading — `submissions.kt:138`, `TeacherPostGrade.kt:63`, `TeacherRetryAutoassess.kt:105` — as well as the manual `POST /courses/{id}/moodle/grades` | Pinning crons does **nothing** here, and neither does guarding the endpoint: any tester submitting or grading anything would write to the gradebook. Three locks, none sufficient alone — a dead `grades.url`; `easy.core.moodle-sync.course-allowlist`, enforced immediately before the request is built so it covers the grading paths; and anonymisation clearing every `moodle_short_name`, so no course is linked at all |
+| **Grades written into real Moodle** | **There is no grades cron.** `syncSingleGradeToMoodle` is called from ordinary grading — `submissions.kt:147`, `TeacherPostGrade.kt:63`, `TeacherRetryAutoassess.kt:105` — as well as the manual `POST /courses/{id}/moodle/grades` | Pinning crons does **nothing** here, and neither does guarding the endpoint: any tester submitting or grading anything would write to the gradebook. Three locks, none sufficient alone — a dead `grades.url`; `easy.core.moodle-sync.course-allowlist`, enforced immediately before the request is built so it covers the grading paths; and anonymisation clearing every `moodle_short_name`, so no course is linked at all |
 | **Real Moodle read + student invites** | `SyncMoodleAllStudents.kt:22`, `moodle-sync.users.url`, and a cron that iterates **every** course with a shortname — on a restored dump, every real course | Dead URL, pinned cron, allowlist, and cleared shortnames as above. A read is not harmless: it writes real names and usernames back into a database we deliberately anonymised |
 | **Mass account deletion, in the DB and in Keycloak** | `DeleteInactiveUsers` (`core/src/main/kotlin/core/ems/cron/delete_inactive_users.kt`) deletes students idle 2y / teachers 5y, then deletes them from Keycloak via the admin API | Imported `last_seen` values are historical, so the **first cron run would delete a large slice of the imported data and hit the configured Keycloak**. Pin `easy.core.keycloak.cron` to the never-date, and give dev's Keycloak client a service account **without** user-delete permission |
 | **Email to real people** | `SendMailService`, `easy.core.mail.*` | Run a local catch-all (mailpit) and point `spring.mail` at it, so email stays testable but cannot escape. Simpler alternative: `mail.user.enabled: false` and `mail.sys.enabled: false` |
@@ -466,6 +466,61 @@ Leave the *internal* crons on (`pending-access.clean`, `exercise-index-normalisa
 
 Set `easy.core.auth-enabled: true` (real auth) and `easy.web.base-url: https://dev.lahendus.ut.ee`
 so email links point at dev.
+
+### 5.1 Testing Moodle sync against a real course
+
+The locks above are not a way of saying Moodle sync is untestable on dev — they are what makes it
+testable *deliberately*, one course at a time, instead of by accident on all of them. The whole
+integration is unexercised until it has run against a real Moodle: nothing in the repo talks to
+`local_ut_custom_get_course_groups_users`, and a fake would only prove we agree with ourselves about
+the shape of a response we do not control.
+
+Have a throwaway Moodle course first — one whose roster and gradebook may be rewritten by a test
+run, with test users in it. This procedure writes to both, and neither write is undone by putting
+the config back.
+
+1. **Fill in the four variables** in `inventories/dev/hosts.yml` (gitignored). The block is
+   commented out in `hosts.example.yml` with the reasoning; briefly, it is
+   `easy_core_moodle_allow_real: true`, `easy_core_moodle_course_allowlist` set to the one
+   shortname, and the two URLs. `easy_core_allow_real_outbound` stays false — it is the wider
+   switch, and it also unpins account deletion and lets mail out.
+2. **Put the real `wstoken`** in `/srv/easy/conf/secrets.yaml` on the host, replacing
+   `CHANGEME-no-moodle-token`. Ansible never writes that file; the role now refuses to run while the
+   token is a placeholder and Moodle is real.
+3. **Apply**, and read the assertions rather than skipping past them. Three exist for this exact
+   configuration — the allowlist must name a course, the students cron must stay pinned, and the
+   token must not be a placeholder — and a run that fails one is the guard working. Note which one
+   does *not* fire: the "Moodle URL must be loopback" assertion is skipped by
+   `easy_core_moodle_allow_real` itself, which is the whole point of that variable.
+4. **Link one course as admin**: `PUT /v2/courses/{courseId}/moodle` with that shortname and the
+   sync flags. Admin-only, and note the allowlist does *not* gate linking — an admin can link any
+   shortname, and the refusal comes later, when a request would be built. That is deliberate but it
+   means step 4 succeeding tells you nothing about step 1 having worked.
+5. **Pull the roster**: `POST /v2/courses/{courseId}/moodle/students`. This **wipes and rebuilds**
+   `student_course_access` and `student_course_group` for the course, creates and deletes
+   `course_group` rows to match Moodle, and **emails invitations** to students it considers new. On a
+   dev host restored from a production dump, check where mail is pointed before pressing this.
+6. **Push grades**: `POST /v2/courses/{courseId}/moodle/grades` — but the more honest test is
+   submitting or grading a solution on that course, because that is the path that reaches Moodle in
+   normal use (`submissions.kt:147`, `TeacherPostGrade.kt:63`, `TeacherRetryAutoassess.kt:105`). An
+   endpoint-only test exercises the one caller that was never the risk.
+7. **Then test the refusal**, which is the step worth not skipping. Link a *second* course to some
+   other shortname and run the **students** sync on it: core must refuse with
+   `MOODLE_LINKING_ERROR` and log `Refusing to contact Moodle about course '…'`.
+
+   Use the students endpoint and not grades, because the grades path can pass without ever reaching
+   the check. `sendMoodleGradeRequest` holds the `assertAllowed`, and `batchGrades`
+   (`moodle_grades.kt:177`) returns an empty list for a course with no exercises — so a freshly
+   created second course builds no request at all and the sync returns success. Reading that as "the
+   allowlist let it through" is the wrong conclusion from a correct-looking run. `queryStudents`
+   (`moodle_students.kt:95`) calls `assertAllowed` before it does anything else.
+
+   A checker that has never been seen to say no has not been shown to work, and here the failure
+   mode is silent success against a real gradebook. `MoodleCourseAllowlistTest` covers the same
+   branch in the suite, but it cannot tell you that *this host's* rendered config parsed the way you
+   think it did.
+8. **Put it back**: re-comment the four variables, re-apply, and unlink the courses. Leaving dev in
+   this state means the next tester's ordinary submission writes to a real gradebook.
 
 ---
 

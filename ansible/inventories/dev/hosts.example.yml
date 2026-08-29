@@ -24,3 +24,34 @@ dev:
     hardening_ssh_users:
       - your-login
       - the-break-glass-account
+
+    # --- testing Moodle sync against a real course (temporary) ---------------------------------
+    # Uncomment all four together and re-run the core_config play. They belong here rather than in
+    # group_vars because a real Moodle hostname and a real course shortname are facts about a system
+    # that is not ours, and group_vars is committed to a public repository — this file is not.
+    #
+    # Four, and not fewer. `moodle_allow_real` is what lets the URLs past the role's "must be
+    # loopback" assertion; the allowlist is the condition attached to it, and the role refuses the
+    # pair without it. Uncommenting the URLs alone fails the run, which is the intent.
+    #
+    # `easy_core_allow_real_outbound` stays false. It is a different, wider switch — it would also
+    # unpin the Keycloak account-deletion cron and let mail out to real students — and nothing about
+    # testing Moodle needs either. Do not reach for it when an assertion about Moodle fails.
+    #
+    # The shortname must match Moodle's exactly: the check is a trimmed, case-sensitive comparison
+    # against `course.moodle_short_name`, so a case difference reads as "not allowed" rather than as
+    # a typo. Comma-separated if you genuinely need more than one, but one is the point.
+    #
+    # Also required, and not settable from here: the real `wstoken` in /srv/easy/conf/secrets.yaml
+    # on the host, replacing `CHANGEME-no-moodle-token`. Ansible never writes that file. The role
+    # now refuses to continue while it is still the placeholder and Moodle is real — otherwise every
+    # sync fails with a Moodle-side auth error that looks like a problem at their end.
+    #
+    # Put it back when you are done. This is not a state dev should sit in: with these set, any
+    # tester submitting or grading anything on the linked course writes to that gradebook, and the
+    # students sync rewrites the course roster and emails invitations to people who did not ask.
+    #
+    # easy_core_moodle_allow_real: true
+    # easy_core_moodle_course_allowlist: "the-throwaway-course-shortname"
+    # easy_core_moodle_users_url: https://moodle.example/webservice/rest/server.php
+    # easy_core_moodle_grades_url: https://moodle.example/webservice/rest/server.php
