@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""Say what each local branch actually is, so a survey is one command instead of an afternoon.
+
+    bin/branch-status              # every local branch
+    bin/branch-status --deletable  # only the ones holding nothing unique, for piping into xargs
+
+## Why this exists
+
+`git branch --no-merged` is close to useless here. Branches get rebased before they land, so their
+commits reach master as twins with different shas, and the branch goes on reporting as unmerged for
+the rest of its life. On 2026-08-28 a survey of sixteen local branches took twenty minutes of
+`git cherry` and `git patch-id` to establish that fifteen held nothing that was not already
+upstream — and that the sixteenth held work which had been deliberately abandoned (EZ-1792, Won't
+implement), a fact git cannot express at all.
+
+So this prints the two things that actually decide what to do with a branch:
+
+  * how many of its commits have **no upstream equivalent by patch-id** (`git cherry`), rather than
+    ahead/behind counts, which rebasing makes meaningless; and
+  * the **EZ ids** in those commits, because `git cherry` says a branch is *absent* from master and
+    only the issue says whether it is *wanted*.
+
+It refuses to call a branch deletable while a worktree is sitting on it, which is the one way a
+tidy-up can destroy someone's afternoon.
+
+## The abandoned/ convention
+
+When a branch is abandoned rather than merged, rename it `abandoned/EZ-1792-rerender-md`. Recording
+the decision only in YouTrack works exactly until somebody reads the repo without reading the
+tracker, which is how EZ-1792 came within one command of being merged after it had been closed.
+"""
+
+import collections
+import re
+import signal
+import subprocess
+import sys
+
+# Die quietly on `| head` instead of spraying a BrokenPipeError traceback over the output. A survey
+# tool that cannot be piped is a survey tool nobody pipes.
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+UPSTREAM = "origin/master"
+PROTECTED = {"master", "main"}
+EZ_ID = re.compile(r"\bEZ-\d+\b")
+
+
+def git(*args):
+    return subprocess.run(
+        ["git", *args], capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+def worktrees():
+    """Map branch -> (path, locked). `git worktree list --porcelain` is the only stable source."""
+    out, current, found = git("worktree", "list", "--porcelain"), {}, {}
+    for line in out.split("\n") + [""]:
+        if not line:
+            if "branch" in current:
+                found[current["branch"].replace("refs/heads/", "")] = (
+                    current.get("worktree", "?"),
+                    "locked" in current,
+                )
+            current = {}
+        elif " " in line:
+            key, value = line.split(" ", 1)
+            current[key] = value
+        else:
+            current[line] = True
+    return found
+
+
+def dirty(path):
+    """Whether a worktree has uncommitted changes. Never guess this — it decides 'safe to delete'."""
+    try:
+        r = subprocess.run(
+            ["git", "-C", path, "status", "--porcelain"],
+            capture_output=True, text=True, timeout=30,
+        )
+        return bool(r.stdout.strip()) if r.returncode == 0 else None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def main():
+    only_deletable = "--deletable" in sys.argv
+    try:
+        git("rev-parse", "--verify", UPSTREAM)
+    except subprocess.CalledProcessError:
+        sys.exit(f"{UPSTREAM} not found — run `git fetch origin` first.")
+
+    wts = worktrees()
+    branches = git("for-each-ref", "--format=%(refname:short)", "refs/heads").split("\n")
+    rows, verdicts = [], collections.Counter()
+
+    for branch in filter(None, branches):
+        # `-` means an equivalent patch is already upstream, `+` means it is genuinely absent.
+        cherry = git("cherry", UPSTREAM, branch).split("\n")
+        unique = [c[2:] for c in cherry if c.startswith("+")]
+        twins = sum(1 for c in cherry if c.startswith("-"))
+
+        ez = []
+        for sha in unique:
+            subject = git("log", "-1", "--format=%s", sha)
+            ez += [i for i in EZ_ID.findall(subject) if i not in ez]
+
+        path, locked = wts.get(branch, (None, False))
+        if branch in PROTECTED:
+            verdict = "trunk"
+        elif branch.startswith("abandoned/"):
+            verdict = "ABANDONED"
+        elif unique:
+            verdict = "UNMERGED"
+        elif path:
+            verdict = "in-worktree"
+        else:
+            verdict = "DELETABLE"
+        verdicts[verdict] += 1
+
+        if only_deletable:
+            if verdict == "DELETABLE":
+                print(branch)
+            continue
+
+        rows.append((branch, verdict, len(unique), twins, ez, path, locked))
+
+    if only_deletable:
+        return
+
+    width = max((len(r[0]) for r in rows), default=10)
+    print(f"Against {UPSTREAM} ({git('log', '-1', '--format=%h %s', UPSTREAM)})\n")
+    for branch, verdict, n_unique, twins, ez, path, locked in sorted(
+        rows, key=lambda r: (r[1] != "UNMERGED", r[0])
+    ):
+        note = []
+        if n_unique:
+            note.append(f"{n_unique} commit(s) not upstream")
+        if twins:
+            note.append(f"{twins} already upstream")
+        if ez:
+            note.append("check " + ", ".join(ez))
+        if verdict == "trunk":
+            note.append("level with origin" if not n_unique else f"{n_unique} unpushed — push it")
+        elif verdict == "in-worktree" and not n_unique:
+            # The commonest state in this repo, and the one worth naming: work that landed, with
+            # its worktree still sitting there. Nothing is at risk in removing either.
+            note.append("nothing unique — worktree and branch can both go")
+        print(f"  {branch:<{width}}  {verdict:<12} {'; '.join(note)}")
+        if path:
+            if locked:
+                state = "locked"
+            else:
+                # dirty() returns None for "could not determine" — a worktree removed with rm -rf but
+                # never pruned, or a checkout too slow to answer in 30s. Rendering that as "clean"
+                # would be the script guessing on the one question that decides whether deleting is
+                # safe, which is exactly what dirty() refuses to do.
+                is_dirty = dirty(path)
+                state = "unknown" if is_dirty is None else ("dirty" if is_dirty else "clean")
+            print(f"  {'':<{width}}  {'':<12} worktree {path} ({state})")
+
+    print()
+    print("  ".join(f"{v}: {n}" for v, n in sorted(verdicts.items())))
+    if verdicts["UNMERGED"]:
+        print(
+            "\nUNMERGED means absent from master, not wanted. Read each EZ issue before merging —\n"
+            "a branch closed Won't implement looks identical to one waiting to land."
+        )
+
+
+if __name__ == "__main__":
+    main()
