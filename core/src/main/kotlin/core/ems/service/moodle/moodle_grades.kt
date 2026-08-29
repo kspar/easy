@@ -11,6 +11,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -46,6 +47,12 @@ class MoodleGradesSyncService(
     @Value($$"${easy.core.moodle-sync.grades.wsfunction}")
     private lateinit var wsfunction: String
 
+    // Fallback for naming somebody in a row-creation call when the course has no Moodle-linked
+    // students of its own. Empty means there is no fallback. See rowCreationUsername().
+    @Value($$"${easy.core.moodle-sync.grades.row-creation-fallback-username:}")
+    private lateinit var rowCreationFallbackUsername: String
+
+
 
     val syncGradesLock = DBBackedLock(Course, Course.moodleSyncGradesInProgress)
 
@@ -62,9 +69,13 @@ class MoodleGradesSyncService(
     )
 
 
+    /**
+     * A grade for one student, or — with a null [grade] — a way of naming a student and asking for
+     * nothing to be written about them. See [rowCreationGrades].
+     */
     data class MoodleReqGrade(
         @get:JsonProperty("username") val username: String,
-        @get:JsonProperty("grade") val grade: Int
+        @get:JsonProperty("grade") val grade: Int?
     )
 
     companion object {
@@ -96,7 +107,10 @@ class MoodleGradesSyncService(
                 map.add("exercises[$i][title]", exercise.title)
                 exercise.grades.forEachIndexed { j, grade ->
                     map.add("exercises[$i][grades][$j][username]", grade.username)
-                    map.add("exercises[$i][grades][$j][grade]", grade.grade.toString())
+                    // A null grade omits the key rather than sending it empty, and the difference is
+                    // the whole of rowCreationGrades(): `grade=` is refused, an absent `grade` is
+                    // accepted and writes nothing.
+                    grade.grade?.let { map.add("exercises[$i][grades][$j][grade]", it.toString()) }
                 }
             }
             return map
@@ -181,7 +195,8 @@ class MoodleGradesSyncService(
             } else {
                 // Send grades in batches of 200
                 val exercises = selectExercisesOnCourse(courseId)
-                val batches = batchGrades(shortname, exercises)
+                val rowCreationUsername = rowCreationUsername(courseId)
+                val batches = batchGrades(shortname, exercises, rowCreationUsername)
 
                 // Every batch is attempted, and one failure no longer takes the rest with it. This
                 // was `batches.forEach { sendMoodleGradeRequest(it) }`, so the first throw abandoned
@@ -224,6 +239,28 @@ class MoodleGradesSyncService(
                         ReqError.MOODLE_GRADE_SYNC_ERROR,
                         "Failed exercises" to failures.joinToString(";"),
                         notify = true
+                    )
+                }
+
+                // Last, and only after the grades that could be sent have been. Creating a gradebook
+                // row means naming somebody on the course, and here there is nobody to name — so the
+                // grades synced but the rows for unattempted exercises did not appear, and saying so
+                // is better than a sync that silently does three-quarters of its job.
+                //
+                // notify = false: this is a course that needs a student, not an incident.
+                val ungraded = exercises.count { it.grades.isEmpty() }
+                if (rowCreationUsername == null && ungraded > 0) {
+                    log.warn {
+                        "Course $courseId has $ungraded exercise(s) with no grades and no Moodle " +
+                                "username to create their gradebook rows with."
+                    }
+                    throw InvalidRequestException(
+                        "Grades were synced, but $ungraded exercise(s) with no grades could not get " +
+                                "a Moodle gradebook row. Creating one requires naming a student who " +
+                                "is on the course in Moodle, and this course has none with a Moodle " +
+                                "username. Add at least one active student and sync again.",
+                        ReqError.MOODLE_GRADE_SYNC_ERROR,
+                        notify = false
                     )
                 }
             }
@@ -275,18 +312,86 @@ class MoodleGradesSyncService(
     /**
      * Helper function to generate grade batches of 200.
      */
-    private fun batchGrades(courseShortName: String, exercises: List<MoodleReqExercise>): List<MoodleReq> =
+    private fun batchGrades(
+        courseShortName: String,
+        exercises: List<MoodleReqExercise>,
+        rowCreationUsername: String?
+    ): List<MoodleReq> =
         exercises.flatMap {
             val chunks = it.grades.chunked(200) { grades ->
                 MoodleReq(courseShortName, listOf(MoodleReqExercise(it.idnumber, it.title, grades.toMutableList())))
             }
-            if (chunks.isNotEmpty()) {
-                chunks
-            } else {
-                // Sync exercises with no grades
-                listOf(MoodleReq(courseShortName, listOf(MoodleReqExercise(it.idnumber, it.title, emptyList()))))
+            when {
+                chunks.isNotEmpty() -> chunks
+
+                // Sync exercises with no grades — this is what creates the row in Moodle's gradebook,
+                // confirmed on 2026-08-29 by sending an idnumber Moodle had never seen and watching
+                // the row appear. See rowCreationGrades() for why it cannot be an empty list.
+                rowCreationUsername != null -> listOf(
+                    MoodleReq(
+                        courseShortName,
+                        listOf(MoodleReqExercise(it.idnumber, it.title, rowCreationGrades(rowCreationUsername)))
+                    )
+                )
+
+                // Nobody to name, so the request could only be refused. Dropped rather than sent and
+                // failed, and reported once by syncCourseGradesToMoodle instead of once per exercise.
+                else -> emptyList()
             }
         }
+
+    /**
+     * How an exercise nobody has a grade for still gets its gradebook row created.
+     *
+     * `grades` must be present and non-empty — an empty list cannot even be expressed over form
+     * encoding — but **`grade` inside an entry is optional**. So one entry naming any enrolled
+     * student, with no `grade` key at all, satisfies the parameter and asks for nothing to be
+     * written: Moodle creates the row and the student's cell stays blank. Verified against the live
+     * function on 2026-08-29 with an idnumber it had never seen.
+     *
+     * That asymmetry is almost certainly an oversight in the plugin rather than a design, which is
+     * why this is written as a workaround with its reasoning attached rather than as the obvious way
+     * to do it. If `grades` is ever given `VALUE_DEFAULT([])`, delete this and send the empty list.
+     *
+     * Everything else was refused: an unknown username (usernames are resolved against real
+     * accounts), `grade=` empty, `grade=null`, and every spelling of an empty list. A *numeric*
+     * grade does work — but Moodle clamps it to the item's minimum, so it shows as a `0` somebody
+     * did not earn. Which is the trap this avoids: the obvious fix writes a visible zero, and only
+     * omitting the key does not.
+     *
+     * The username is any student on the course, and which one is immaterial precisely because
+     * nothing is written about them. A course with no Moodle-linked students yields an empty list,
+     * the request is refused, and [syncCourseGradesToMoodle] tolerates it — no row, no harm.
+     */
+    private fun rowCreationGrades(username: String): List<MoodleReqGrade> =
+        listOf(MoodleReqGrade(username, null))
+
+    /**
+     * Who to name in the row-creation call, in order of preference.
+     *
+     * 1. **A student on the course, picked at random.** Random rather than first because nothing is
+     *    written about them and there is no reason for one student to appear in every such request
+     *    for the life of a course — if this ever does leak into a log or an export, it should not
+     *    always be the same person.
+     * 2. **The configured fallback**, for a course whose students are not Moodle-linked yet. It has
+     *    to be a real Moodle account, and — established the hard way on 2026-08-29 — **enrolled on
+     *    the course**: a username that merely exists is refused. So the fallback only helps where
+     *    that one account happens to be on the course, which is why it is second and not first.
+     * 3. **Nobody**, and then rows cannot be created at all. [syncCourseGradesToMoodle] says so
+     *    rather than failing quietly.
+     */
+    private fun rowCreationUsername(courseId: Long): String? =
+        selectRandomMoodleUsernameOnCourse(courseId)
+            ?: rowCreationFallbackUsername.trim().ifBlank { null }
+
+    /** A random Moodle username from the course's students, or null if it has none. */
+    private fun selectRandomMoodleUsernameOnCourse(courseId: Long): String? = transaction {
+        StudentCourseAccess
+            .select(StudentCourseAccess.moodleUsername)
+            .where { StudentCourseAccess.course eq courseId and StudentCourseAccess.moodleUsername.isNotNull() }
+            .mapNotNull { it[StudentCourseAccess.moodleUsername] }
+            .randomOrNull()
+    }
 
 
     private fun selectSingleCourseExerciseSubmission(

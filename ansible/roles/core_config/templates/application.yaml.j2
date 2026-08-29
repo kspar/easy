@@ -114,6 +114,11 @@ easy:
         ## grading anything writes to that gradebook. The allowlist below is the thing that bounds it.
         url: "{{ easy_core_moodle_grades_url }}"
         wsfunction: "{{ easy_core_moodle_grades_wsfunction }}"
+        ## Temporary, and a workaround: an exercise with no grades cannot be expressed over web
+        ## services, so creating its gradebook row means naming somebody on the course — with no
+        ## grade, so nothing is written about them. Used only when the course has no Moodle-linked
+        ## students of its own. Empty means no fallback.
+        row-creation-fallback-username: "{{ easy_core_moodle_grades_row_creation_fallback_username }}"
       ## Comma-separated course shortnames, empty meaning unrestricted. Enforced immediately before
       ## the request is built, so it covers the grading paths above and not just the endpoints.
       course-allowlist: "{{ easy_core_moodle_course_allowlist }}"

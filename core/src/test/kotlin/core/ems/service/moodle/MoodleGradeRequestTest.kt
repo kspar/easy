@@ -96,23 +96,48 @@ class MoodleGradeRequestTest {
         // is what creates the row in Moodle's gradebook. So the exercise has to survive encoding
         // rather than vanish.
         //
-        // **Moodle currently rejects exactly this request**, and that is a plugin-side gap rather
-        // than something to fix here: form encoding cannot express an empty array — the key simply
-        // disappears, as asserted below — and the function requires `grades` to be present. Nine
-        // spellings were tried against the live function on 2026-08-29, including `grades=`,
-        // `grades[]=`, `grades=[]`, a JSON body, and batching the ungraded exercise together with a
-        // graded one; all were refused with `invalidparameter`, while the same exercise carrying a
-        // grade succeeded. The old JSON-body protocol could say `"grades": []`; this one cannot.
+        // **Moodle rejects exactly this request**, and it is not fixable here: form encoding cannot
+        // express an empty array — the key simply disappears, as asserted below — and the function
+        // requires `grades` to be present. Nine spellings were tried against the live function on
+        // 2026-08-29, including `grades=`, `grades[]=`, `grades=[]`, a JSON body, and batching the
+        // ungraded exercise with a graded one; all refused. The old JSON-body protocol could say
+        // `"grades": []`; this one cannot.
         //
-        // We keep sending them anyway. syncCourseGradesToMoodle tolerates the refusal without
-        // failing the sync, so the day the plugin accepts an absent key as an empty list, rows start
-        // being created again with no change to this code.
+        // So this shape is now only the fallback, for a course with no Moodle-linked students to
+        // name. Where there is one, batchGrades sends a single entry with a null grade instead —
+        // see the test above — which Moodle accepts and which creates the row.
+        //
+        // syncCourseGradesToMoodle tolerates the refusal either way rather than failing the sync.
         val empty = MoodleReq("C", listOf(MoodleReqExercise("9", "Untouched", emptyList())))
         val form = encodeGradeRequest(empty)
 
         assertEquals(listOf("9"), form["exercises[0][idnumber]"])
         assertEquals(listOf("Untouched"), form["exercises[0][title]"])
         assertTrue(form.keys.none { it.contains("[grades]") }, "form was: ${form.keys}")
+    }
+
+    @Test
+    fun `a null grade names the student and omits the grade key`() {
+        // How an exercise nobody has a grade for still gets its gradebook row created. `grades` must
+        // be non-empty, but `grade` inside an entry is optional — so this entry satisfies the
+        // parameter and asks for nothing to be written, and Moodle leaves the cell blank.
+        //
+        // The distinction is the entire trick and it is one character wide: `grade=` (empty) is
+        // refused, an absent `grade` is accepted. A number would be accepted too and then clamped to
+        // the item's minimum, putting a visible 0 on somebody who did not earn it — which is what
+        // makes the obvious version of this workaround worse than useless.
+        val form = encodeGradeRequest(
+            MoodleReq("C", listOf(MoodleReqExercise("7", "Nobody has done this", listOf(
+                MoodleReqGrade("some_student", null)
+            ))))
+        )
+
+        assertEquals(listOf("7"), form["exercises[0][idnumber]"])
+        assertEquals(listOf("some_student"), form["exercises[0][grades][0][username]"])
+        assertFalse(
+            form.keys.any { it == "exercises[0][grades][0][grade]" },
+            "the grade key must be absent, not empty; form was: ${form.keys}"
+        )
     }
 
     @Test

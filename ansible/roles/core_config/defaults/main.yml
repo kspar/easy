@@ -167,6 +167,22 @@ easy_core_moodle_allow_real: false
 # which is committed to a public repository.
 easy_core_moodle_course_allowlist: ""
 
+# A Moodle username to name when a course has no Moodle-linked students of its own, so that
+# exercises nobody has attempted still get a gradebook row. Nothing is ever written about them —
+# the request carries a username and deliberately no grade. Empty means there is no fallback, and
+# such a course simply gets no rows, with the sync saying so.
+#
+# It must be a real account AND enrolled on the course in question: a username that merely exists is
+# refused. So this helps only where one account happens to be on the course, which is why the
+# course's own students are preferred over it.
+#
+# A real username belongs in the environment's gitignored inventory, not here — same rule as the
+# course allowlist. This is a person, and this repository is public.
+#
+# Temporary. Delete it, and everything around it, once the Moodle plugin accepts an absent `grades`
+# key as an empty list.
+easy_core_moodle_grades_row_creation_fallback_username: ""
+
 easy_core_moodle_users_cron: "{{ easy_core_never_cron }}"
 easy_core_moodle_users_wsfunction: local_ut_custom_get_course_groups_users
 easy_core_moodle_grades_wsfunction: local_ut_custom_update_manual_grades
