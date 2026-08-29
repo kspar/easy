@@ -21,6 +21,7 @@ import type { SolutionFileType } from '../../api/types.ts'
 import { AUTO_EVAL_TYPES, autoEvalTypeOf, isTslContainer } from './autoEvalTypes.ts'
 import { assetsToMap, mapToAssets, TSL_SPEC_FILENAME, type AutoAssessDraft } from './exerciseDraft.ts'
 import TslEditor from './tsl/TslEditor.tsx'
+import { emptySpec, parseSpec, serializeSpec } from './tsl/tslModel.ts'
 
 const EVAL_SCRIPT_TAB = '__eval__'
 
@@ -92,17 +93,33 @@ export default function AutoAssessTab({
     }
     const oldType = autoEvalTypeOf(draft.containerImage)
     // Same editor kind and the scripts were already customised → keep them. Otherwise the new
-    // template wins, same rule wui used.
+    // template wins, same rule wui used. Note for the day a second editor:'TSL' entry exists:
+    // a TSL draft's assets always contain the seeded tsl.json while the static template's never
+    // do, so this comparison would classify every TSL exercise as customised — switching between
+    // two TSL-family types would then keep the old container's script instead of re-templating.
     const keepScripts =
       oldType != null &&
       oldType.editor === newType.editor &&
       (draft.gradingScript !== oldType.evaluateScript ||
         JSON.stringify(assetsToMap(draft.assets)) !== JSON.stringify(oldType.assets))
 
+    // A fresh TSL choice seeds a *valid empty* tsl.json (audit X-015): without it the first
+    // compile is of the empty string, and the teacher's first sight of the deepest feature in
+    // the app is a kotlinx parse error with Save disabled — on a screen that simultaneously,
+    // correctly, says there are no tests yet. Seeded from the real solution file name so
+    // requiredFiles and the field two inputs above cannot start out disagreeing.
+    const freshAssets =
+      newType.editor === 'TSL'
+        ? [
+            { file_name: TSL_SPEC_FILENAME, file_content: serializeSpec(emptySpec(draft.solutionFileName)) },
+            ...mapToAssets(newType.assets),
+          ]
+        : mapToAssets(newType.assets)
+
     patch({
       containerImage: container,
       gradingScript: keepScripts ? draft.gradingScript : newType.evaluateScript,
-      assets: keepScripts ? draft.assets : mapToAssets(newType.assets),
+      assets: keepScripts ? draft.assets : freshAssets,
       maxTimeSec:
         oldType != null && draft.maxTimeSec !== oldType.allowedTime
           ? draft.maxTimeSec
@@ -113,6 +130,35 @@ export default function AutoAssessTab({
           : newType.allowedMemory,
     })
     setActiveFile(EVAL_SCRIPT_TAB)
+  }
+
+  /**
+   * The TSL spec's requiredFiles follows a rename for as long as the two still agree — the
+   * seeding in changeType promises they cannot *start out* disagreeing, and without this a
+   * rename one keystroke later would break that promise silently, failing every submission at
+   * file validation. A hand-customised requiredFiles list is left alone.
+   */
+  function renameSolutionFile(next: string) {
+    if (isTslContainer(draft.containerImage)) {
+      const asset = draft.assets.find((a) => a.file_name === TSL_SPEC_FILENAME)
+      const r = asset ? parseSpec(asset.file_content) : null
+      if (
+        r?.spec &&
+        Array.isArray(r.spec.requiredFiles) &&
+        r.spec.requiredFiles.length === 1 &&
+        r.spec.requiredFiles[0] === draft.solutionFileName
+      ) {
+        const spec = { ...r.spec, requiredFiles: [next] }
+        patch({
+          solutionFileName: next,
+          assets: draft.assets.map((a) =>
+            a.file_name === TSL_SPEC_FILENAME ? { ...a, file_content: serializeSpec(spec) } : a,
+          ),
+        })
+        return
+      }
+    }
+    patch({ solutionFileName: next })
   }
 
   function setActiveContent(content: string) {
@@ -208,7 +254,7 @@ export default function AutoAssessTab({
             <TextField
               label={t('library.solutionFileName')}
               value={draft.solutionFileName}
-              onChange={(e) => patch({ solutionFileName: e.target.value })}
+              onChange={(e) => renameSolutionFile(e.target.value)}
               size="small"
               sx={{ minWidth: 200 }}
             />
@@ -283,6 +329,7 @@ export default function AutoAssessTab({
         <TslEditor
           value={draft.assets.find((a) => a.file_name === TSL_SPEC_FILENAME)?.file_content ?? ''}
           editing={editing}
+          solutionFileName={draft.solutionFileName}
           onValidChange={onTslValidChange}
           onChange={(text) => {
             const others = draft.assets.filter((a) => a.file_name !== TSL_SPEC_FILENAME)

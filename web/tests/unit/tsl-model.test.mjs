@@ -21,6 +21,7 @@ import { describe, expect, test } from 'vitest'
 import {
   TEST_TYPES,
   createTest,
+  emptySpec,
   isEditableType,
   nextId,
   pointsWeightField,
@@ -29,6 +30,9 @@ import {
   quantifierUsesValues,
   setOrDefault,
   setOrUnset,
+  specTestProblems,
+  testBlankRequired,
+  testChecksNothing,
   visibleToUserField,
 } from '../../src/features/library/tsl/tslModel.ts'
 
@@ -210,5 +214,100 @@ describe('quantifiers decide which fields the form shows', () => {
   ])('%s: values=%s nothingElse=%s', (checkType, usesValues, usesNothingElse) => {
     expect(quantifierUsesValues(checkType)).toBe(usesValues)
     expect(quantifierUsesNothingElse(checkType)).toBe(usesNothingElse)
+  })
+})
+
+/**
+ * Audit X-027 / X-023: the gate and warn tiers over a test.
+ *
+ * `testBlankRequired` must mirror exactly the conditions the forms paint red — it is what turns
+ * the red outline from decoration into a Save gate. `testChecksNothing` must be true for every
+ * shape the audit proved compiles cleanly and passes every student, and false the moment any
+ * check exists, because a false positive here nags a teacher about a working test.
+ */
+describe('blank required fields gate, checkless tests warn', () => {
+  test.each([
+    ['function_execution_test', 'functionName'],
+    ['function_is_test', 'functionName'],
+    ['class_instance_test', 'className'],
+  ])('%s: blank %s gates, filled does not', (type, field) => {
+    const fresh = createTest(type, nextId())
+    expect(testBlankRequired(fresh)).toBe(true)
+    expect(testBlankRequired({ ...fresh, [field]: 'f' })).toBe(false)
+  })
+
+  test.each([
+    ['contains_test', 'scope'],
+    ['calls_test', 'scope'],
+    ['definition_test', 'scopeType'],
+  ])('%s: the name is required exactly when the scope implies one', (type, scopeKey) => {
+    const fresh = createTest(type, nextId())
+    // PROGRAM scope implies no name at all.
+    expect(testBlankRequired(fresh)).toBe(false)
+    expect(testBlankRequired({ ...fresh, [scopeKey]: 'FUNCTION', functionName: '' })).toBe(true)
+    expect(testBlankRequired({ ...fresh, [scopeKey]: 'FUNCTION', functionName: 'f' })).toBe(false)
+    expect(testBlankRequired({ ...fresh, [scopeKey]: 'CLASS', className: '' })).toBe(true)
+    expect(testBlankRequired({ ...fresh, [scopeKey]: 'CLASS', className: 'K' })).toBe(false)
+  })
+
+  test('a fresh program_execution_test — the first preset — checks nothing', () => {
+    expect(testChecksNothing(createTest('program_execution_test', nextId()))).toBe(true)
+  })
+
+  test('any single check stops the warning', () => {
+    const fresh = createTest('program_execution_test', nextId())
+    expect(testChecksNothing({ ...fresh, genericChecks: [{ id: 1 }] })).toBe(false)
+    expect(testChecksNothing({ ...fresh, outputFileChecks: [{ fileName: 'f' }] })).toBe(false)
+    expect(testChecksNothing({ ...fresh, exceptionCheck: { mustThrow: true } })).toBe(false)
+  })
+
+  test('a value-quantified static check with no values checks nothing; ANY does not', () => {
+    const fresh = createTest('contains_test', nextId())
+    // ALL_OF_THESE with an empty expectedValue.
+    expect(testChecksNothing(fresh)).toBe(true)
+    expect(
+      testChecksNothing({ ...fresh, genericCheck: { ...fresh.genericCheck, checkType: 'ANY' } }),
+    ).toBe(false)
+    expect(
+      testChecksNothing({ ...fresh, genericCheck: { ...fresh.genericCheck, expectedValue: ['x'] } }),
+    ).toBe(false)
+  })
+
+  test('function_is and placeholder are exempt from the warning', () => {
+    // function_is always carries its property check; placeholder is checkless by declaration.
+    expect(testChecksNothing(createTest('function_is_test', nextId()))).toBe(false)
+    expect(testChecksNothing(createTest('placeholder_test', nextId()))).toBe(false)
+  })
+
+  test('a blank file name gates on every form that paints it red', () => {
+    const base = createTest('program_execution_test', nextId())
+    expect(
+      testBlankRequired({ ...base, outputFileChecks: [{ fileName: '', checkType: 'ALL_OF_THESE', expectedValue: ['x'], beforeMessage: '', passedMessage: '', failedMessage: '' }] }),
+    ).toBe(true)
+    expect(testBlankRequired({ ...base, inputFiles: [{ fileName: ' ', fileContent: 'data' }] })).toBe(true)
+    expect(testBlankRequired({ ...base, inputFiles: [{ fileName: 'in.txt', fileContent: 'data' }] })).toBe(false)
+  })
+
+  test('a class-instance check with both compare boxes off is the no-op its own caption warns about', () => {
+    const fresh = createTest('class_instance_test', nextId())
+    const noop = { fieldsFinal: [], checkName: false, checkValue: false, nothingElse: false, beforeMessage: '', passedMessage: '', failedMessage: '' }
+    expect(testChecksNothing({ ...fresh, classInstanceChecks: [noop] })).toBe(true)
+    expect(testChecksNothing({ ...fresh, classInstanceChecks: [{ ...noop, checkName: true }] })).toBe(false)
+  })
+
+  test('emptySpec never seeds a blank required file', () => {
+    expect(emptySpec('').requiredFiles).toEqual(['lahendus.py'])
+    expect(emptySpec('  ').requiredFiles).toEqual(['lahendus.py'])
+    expect(emptySpec('ristsumma.py').requiredFiles).toEqual(['ristsumma.py'])
+    expect(emptySpec().requiredFiles).toEqual(['lahendus.py'])
+  })
+
+  test('specTestProblems counts both tiers independently', () => {
+    // A fresh function_execution_test is blank-required AND checkless at once.
+    const both = createTest('function_execution_test', nextId())
+    const contains = createTest('contains_test', nextId())
+    const fine = { ...contains, genericCheck: { ...contains.genericCheck, expectedValue: ['x'] } }
+    const spec = { validateFiles: true, requiredFiles: ['lahendus.py'], tslVersion: '1.0', tests: [both, fine] }
+    expect(specTestProblems(spec)).toEqual({ blankRequired: 1, checksNothing: 1 })
   })
 })

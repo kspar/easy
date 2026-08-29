@@ -38,6 +38,8 @@ import {
   pointsWeightField,
   setOrDefault,
   TEST_TYPE_GROUPS,
+  testBlankRequired,
+  testChecksNothing,
   testDefaultName,
   visibleToUserField,
   type TslTest,
@@ -144,6 +146,15 @@ export default function TslTestCard({
                   label={t('tsl.hiddenChip')}
                   variant="outlined"
                 />
+              )}
+              {/* Worth surfacing collapsed, like the hidden chip: a required name left blank
+                  gates Save (audit X-027), and a test that checks nothing passes for every
+                  student while the exercise looks configured (audit X-023). */}
+              {editing && testBlankRequired(test) && (
+                <Chip size="small" color="error" label={t('tsl.blankRequiredChip')} variant="outlined" />
+              )}
+              {editing && testChecksNothing(test) && (
+                <Chip size="small" color="warning" label={t('tsl.checksNothingChip')} variant="outlined" />
               )}
               {editing && (
                 <Tooltip title={t('tsl.editTitle')}>

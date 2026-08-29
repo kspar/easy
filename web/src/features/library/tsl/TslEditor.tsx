@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Box,
@@ -18,7 +18,7 @@ import CodeEditor from '../../../components/CodeEditor.tsx'
 import { languageFromFilename } from '../../course-exercise/editorLanguage.ts'
 import TslTestCard from './TslTestCard.tsx'
 import { useTslSpec } from './useTslSpec.ts'
-import { duplicateTest, type TslTest } from './tslModel.ts'
+import { duplicateTest, specTestProblems, type TslTest } from './tslModel.ts'
 import { PRESET_GROUPS } from './tslPresets.ts'
 
 type TslTab = 'tests' | 'spec' | 'generated'
@@ -34,12 +34,15 @@ let jsonExtension: Extension | undefined
 export default function TslEditor({
   value,
   editing,
+  solutionFileName,
   onChange,
   onValidChange,
 }: {
   /** Content of `tsl.json`. */
   value: string
   editing: boolean
+  /** Seeds requiredFiles when the spec text is empty — see useTslSpec. */
+  solutionFileName?: string
   onChange: (text: string) => void
   /** Reports whether the spec parses and compiles, so the page can gate Save. */
   onValidChange?: (valid: boolean) => void
@@ -50,12 +53,18 @@ export default function TslEditor({
   const [lang, setLang] = useState<Extension | undefined>(jsonExtension)
   const [addAnchor, setAddAnchor] = useState<HTMLElement | null>(null)
 
-  const store = useTslSpec({ value, onChange })
+  const store = useTslSpec({ value, onChange, solutionFileName })
   const { spec, parseError, compileFeedback, compiling, scripts, isValid } = store
 
+  // Reports parse+compile validity only — the blank-required Save gate (audit X-027) is derived
+  // by ExercisePage from the draft itself, so it holds even when this editor never mounts.
   useEffect(() => {
     onValidChange?.(isValid)
   }, [isValid, onValidChange])
+
+  // The same counts the page gates on, surfaced where the teacher is looking. Warn tier
+  // (checks nothing, audit X-023) never blocks; gate tier explains why Save is off.
+  const problems = useMemo(() => specTestProblems(spec), [spec])
 
   useEffect(() => {
     if (jsonExtension) return
@@ -105,6 +114,19 @@ export default function TslEditor({
         </Tabs>
         {compiling && <CircularProgress size={16} />}
       </Box>
+
+      {/* Hidden while the JSON does not parse: `spec` is then the last good one, and counting
+          its tests next to a parse error about different text describes two different specs. */}
+      {editing && !parseError && problems.blankRequired > 0 && (
+        <Typography variant="caption" color="error.main" display="block" mt={1}>
+          {t('tsl.blankRequiredSummary', { count: problems.blankRequired })}
+        </Typography>
+      )}
+      {editing && !parseError && problems.checksNothing > 0 && (
+        <Typography variant="caption" color="warning.main" display="block" mt={1}>
+          {t('tsl.checksNothingSummary', { count: problems.checksNothing })}
+        </Typography>
+      )}
 
       <Box mt={2}>
         {tab === 'tests' && (

@@ -233,7 +233,8 @@ export type EditableTestType =
  *
  * Extending the editor to another TSL test means adding it here, giving `createTest` a blank
  * instance, adding a case to `TslTestBody`, and — for the collapsed static tests — a case to
- * `testDefaultName`.
+ * `testDefaultName`. Also a case each in `testBlankRequired` and `testChecksNothing`: both
+ * default to false for unknown types, so a new type silently skips the Save gate otherwise.
  */
 export const TEST_TYPE_GROUPS: { labelKey: string; types: EditableTestType[] }[] = [
   {
@@ -262,11 +263,21 @@ export function nextId(): number {
   return Math.floor(Math.random() * 2 ** 48)
 }
 
-export function emptySpec(): TslSpec {
+/**
+ * The valid spec of no tests — what a freshly TSL-configured exercise starts from. It compiles
+ * cleanly (verified against the real compiler in the EZ-1791 audit, X-015), so the teacher's
+ * first sight of the builder is its empty state rather than a parser diagnostic.
+ *
+ * `solutionFileName` comes from the exercise rather than defaulting silently: `requiredFiles`
+ * and the solution-file field on the same panel disagreeing is a grading-time surprise.
+ */
+export function emptySpec(solutionFileName = 'lahendus.py'): TslSpec {
   return {
     language: 'python3',
     validateFiles: true,
-    requiredFiles: ['lahendus.py'],
+    // The default parameter only covers `undefined` — a caller holding a cleared text field
+    // would otherwise seed requiredFiles [''], which no submission can satisfy.
+    requiredFiles: [solutionFileName.trim() || 'lahendus.py'],
     tslVersion: '1.0',
     tests: [],
   }
@@ -580,6 +591,96 @@ export function scopeNameField(scope: Scope): 'functionName' | 'className' | nul
   if (scope === 'FUNCTION') return 'functionName'
   if (scope === 'CLASS') return 'className'
   return null
+}
+
+/**
+ * Whether a field the form marks required is blank — the same conditions the forms' `error`
+ * props paint red, collected at model level so Save can refuse what the form already objects to
+ * (audit X-027). This is the *gate* tier: without these names the test cannot address anything,
+ * the compiler accepts the empty string anyway, and the person who would find out is a student
+ * at grading time.
+ */
+export function testBlankRequired(test: TslTest): boolean {
+  // File names are red-marked on every form that has them: an input file with no name cannot be
+  // written, and an output-file check against '' matches no file any submission can produce.
+  const blankFileNames =
+    outputFileChecksField(test).some((c) => (c.fileName ?? '').trim() === '') ||
+    fileListField(test, 'inputFiles').some((f) => (f.fileName ?? '').trim() === '')
+  if (blankFileNames) return true
+
+  switch (test.type) {
+    case 'function_execution_test':
+    case 'function_is_test':
+      return strField(test, 'functionName').trim() === ''
+    case 'class_instance_test':
+      return strField(test, 'className').trim() === ''
+    case 'contains_test':
+    case 'calls_test': {
+      const field = scopeNameField(enumField<Scope>(test, 'scope', 'PROGRAM'))
+      return field !== null && strField(test, field).trim() === ''
+    }
+    case 'definition_test': {
+      // This one type names the scope field differently (EZ-1742).
+      const field = scopeNameField(enumField<Scope>(test, 'scopeType', 'PROGRAM'))
+      return field !== null && strField(test, field).trim() === ''
+    }
+    default:
+      return false
+  }
+}
+
+/**
+ * Whether this test can never fail — it examines nothing, so every student passes it and the
+ * exercise still looks configured (audit X-023). The *warn* tier: a teacher may be mid-build, so
+ * this never blocks Save; it gets the orange caption the class-instance case already has.
+ * `placeholder_test` is exempt — being checkless is its declared purpose.
+ */
+export function testChecksNothing(test: TslTest): boolean {
+  switch (test.type) {
+    case 'program_execution_test':
+      return (
+        checkListField(test, 'genericChecks').length === 0 &&
+        outputFileChecksField(test).length === 0 &&
+        exceptionCheckField(test) === null
+      )
+    case 'function_execution_test':
+      return (
+        checkListField(test, 'genericChecks').length === 0 &&
+        outputFileChecksField(test).length === 0 &&
+        paramChecksField(test).length === 0 &&
+        returnCheckField(test) === null
+      )
+    case 'class_instance_test':
+      // An instance check with both compare boxes off is the no-op the form's own caption warns
+      // about — counting it as a check here would contradict that caption two lines away.
+      return (
+        instanceChecksField(test).filter((c) => c.checkName === true || c.checkValue === true)
+          .length === 0 &&
+        checkListField(test, 'genericChecks').length === 0 &&
+        outputFileChecksField(test).length === 0
+      )
+    case 'contains_test':
+    case 'calls_test':
+    case 'definition_test': {
+      // ANY/NONE quantifiers ask only whether the target set is non-empty and read no values, so
+      // they check something even with an empty list; the value-driven quantifiers do not.
+      const check = genericCheckField(test)
+      return quantifierUsesValues(check.checkType) && (check.expectedValue ?? []).length === 0
+    }
+    default:
+      return false
+  }
+}
+
+/** Both problem counts over a whole spec, for the summary beside the tabs. */
+export function specTestProblems(spec: TslSpec): { blankRequired: number; checksNothing: number } {
+  let blankRequired = 0
+  let checksNothing = 0
+  for (const test of spec.tests) {
+    if (testBlankRequired(test)) blankRequired++
+    if (testChecksNothing(test)) checksNothing++
+  }
+  return { blankRequired, checksNothing }
 }
 
 export function serializeSpec(spec: TslSpec): string {

@@ -41,13 +41,26 @@ export interface TslSpecStore {
 export function useTslSpec({
   value,
   onChange,
+  solutionFileName,
 }: {
   value: string
   onChange: (text: string) => void
+  /**
+   * Seeds requiredFiles when the text is empty — a pre-existing TSL exercise saved without a
+   * tsl.json lands here, and the first visual edit serializes the empty spec out. Without the
+   * real name that write carries `requiredFiles: ['lahendus.py']` beside a solution-file field
+   * that says otherwise, and every submission fails file validation.
+   */
+  solutionFileName?: string
 }): TslSpecStore {
+  const parse = (text: string) =>
+    text.trim() === ''
+      ? { spec: emptySpec(solutionFileName), error: null }
+      : parseSpec(text)
+
   const [parsed, setParsed] = useState(() => {
-    const r = parseSpec(value)
-    return { spec: r.spec ?? emptySpec(), error: r.error }
+    const r = parse(value)
+    return { spec: r.spec ?? emptySpec(solutionFileName), error: r.error }
   })
   const { spec, error: parseError } = parsed
   const [compileFeedback, setCompileFeedback] = useState<string | null>(null)
@@ -80,11 +93,14 @@ export function useTslSpec({
   useEffect(() => {
     if (value === specTextRef.current) return
     const timer = setTimeout(() => {
-      const r = parseSpec(value)
+      const r = parse(value)
       if (r.spec) specTextRef.current = value
       setParsed((prev) => ({ spec: r.spec ?? prev.spec, error: r.error }))
     }, PARSE_DEBOUNCE_MS)
     return () => clearTimeout(timer)
+    // `parse` closes over solutionFileName only; a changed name matters for the next empty-text
+    // parse, not retroactively.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
   // Text → compiler. Runs for both directions of edit, since either can produce a spec the
@@ -93,10 +109,19 @@ export function useTslSpec({
   useEffect(() => {
     // Don't ask the compiler to judge something that isn't JSON yet; the parse error is the
     // more useful message and is already on screen.
-    if (parseSpec(value).error !== null) return
+    if (value.trim() !== '' && parseSpec(value).error !== null) return
 
     const seq = ++compileSeq.current
     const timer = setTimeout(async () => {
+      // Nor the empty string (audit X-015): it stands for the empty spec, and kotlinx answers
+      // it with a parser diagnostic in English. Clear any stale rejection instead.
+      if (value.trim() === '') {
+        if (seq === compileSeq.current) {
+          setCompileFeedback(null)
+          setScripts({})
+        }
+        return
+      }
       setCompiling(true)
       let resp: TslCompileResp
       try {

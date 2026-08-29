@@ -55,9 +55,12 @@ import {
   isAutoAssessValid,
   isExerciseTextValid,
   mergeField,
+  TSL_SPEC_FILENAME,
   type AutoAssessDraft,
 } from './exerciseDraft.ts'
 import TeacherTestingTab from '../course-exercise/TeacherTestingTab.tsx'
+import { parseSpec, specTestProblems } from './tsl/tslModel.ts'
+import { isTslContainer } from './autoEvalTypes.ts'
 import { dirLink, hasAccess, spaLinkProps } from './links.ts'
 
 type TabId = 'text' | 'autoassess' | 'testing'
@@ -158,11 +161,25 @@ export default function ExercisePage() {
     setCancelAsking(false)
     setEditedDraft(null)
     setEditing(false)
+    // The edit session that wrote this flag is over; a stale false would wedge the next one, and
+    // a stale value would even carry to another exercise, since the route reuses this component.
+    setTslValid(true)
+    // Discarding can remove the Testimine tab from the strip (a TSL choice thrown away on a
+    // teacher-graded exercise); leave its state with it or it snaps back on the next TSL choice.
+    if (tab === 'testing' && exercise?.grader_type !== 'AUTO') setTab('autoassess')
     if (blocker.state === 'blocked') blocker.proceed()
   }
 
   const canWrite = exercise != null && hasAccess(exercise.effective_access, 'PRAW')
   const canManage = exercise != null && hasAccess(exercise.effective_access, 'PRAWM')
+
+  // If editing switches the container away from auto-assessment while the Testimine tab is open,
+  // the tab disappears from the strip; follow it out rather than leaving a blank pane. Derived
+  // rather than corrected in an effect — there is no state to keep, only a fallback to render.
+  const autoAssessableNow = editing
+    ? (draft?.containerImage ?? null) !== null
+    : exercise?.grader_type === 'AUTO'
+  const shownTab: TabId = tab === 'testing' && !autoAssessableNow ? 'autoassess' : tab
 
   /**
    * Rendered text, but no Markdown source — everything authored before EZ-1731's migration is
@@ -172,11 +189,28 @@ export default function ExercisePage() {
   const legacyNoMarkdown =
     exercise != null && exercise.text_md == null && (exercise.text_html ?? '') !== ''
 
+  // The parts of TSL validity derivable from the draft alone: the spec parses and no test has a
+  // blank required field (audit X-027). Derived here rather than trusted from TslEditor's report,
+  // because the editor only reports while mounted — an exercise edited entirely from the Text tab
+  // would otherwise save a spec the gate exists to refuse.
+  const tslDraftValid = useMemo(() => {
+    if (!draft || !isTslContainer(draft.containerImage)) return true
+    const text = draft.assets.find((a) => a.file_name === TSL_SPEC_FILENAME)?.file_content ?? ''
+    const r = parseSpec(text)
+    if (!r.spec) return false
+    return specTestProblems(r.spec).blankRequired === 0
+  }, [draft])
+
   const isValid =
     draft != null &&
     isExerciseTextValid(draft.title) &&
     isAutoAssessValid(draft) &&
-    tslValid &&
+    tslDraftValid &&
+    // Compile validity only TslEditor knows, and only while the container is actually TSL: the
+    // flag is written only by TslEditor, so switching the auto-assessment away from TSL unmounts
+    // its writer and a stale `false` would otherwise keep Save disabled on an exercise that no
+    // longer has a TSL spec at all (audit X-022).
+    (isTslContainer(draft.containerImage) ? tslValid : true) &&
     // A save writes text_html from text_md, so saving one of these with the box still empty
     // deletes the exercise text — and renaming the exercise was enough to do it, since nothing
     // else here depends on the text being touched. Refuse instead.
@@ -204,6 +238,7 @@ export default function ExercisePage() {
     }
     baseRef.current = current
     setDraft(draftFrom(current))
+    setTslValid(true)
     setEditing(true)
   }
 
@@ -214,6 +249,7 @@ export default function ExercisePage() {
     }
     setEditedDraft(null)
     setEditing(false)
+    setTslValid(true)
   }
 
   async function save() {
@@ -239,6 +275,9 @@ export default function ExercisePage() {
       await updateExercise.mutateAsync(toUpdate(merged as unknown as Draft))
       setEditing(false)
       setEditedDraft(null)
+      setTslValid(true)
+      // Saving with the container cleared removes the Testimine tab; see discardEdits.
+      if (tab === 'testing' && (merged as unknown as Draft).containerImage === null) setTab('autoassess')
       setSnackbar(t('library.exerciseSaved'))
       const fresh = await refetch()
       if (fresh.data) baseRef.current = fresh.data
@@ -261,7 +300,11 @@ export default function ExercisePage() {
     return <Alert severity="error">{t('general.noPermission')}</Alert>
   }
 
-  const isAutoAssessable = exercise.grader_type === 'AUTO'
+  // While editing, `autoAssessableNow` (above) follows the *edited* grader type (audit X-016):
+  // a teacher who has just chosen TSL should not have to save and go hunting for a tab that
+  // appeared. What the runs execute is still the saved version — the alerts inside the tab say
+  // which, and until a version with auto-assessment has been saved there is nothing to run.
+  const savedAuto = exercise.grader_type === 'AUTO'
 
   return (
     <>
@@ -372,16 +415,16 @@ export default function ExercisePage() {
 
         <Box minWidth={0}>
           <Tabs
-            value={tab}
+            value={shownTab}
             onChange={(_, v) => setTab(v)}
             sx={{ mb: 2, '& .MuiTab-root': { textTransform: 'none' } }}
           >
             <Tab value="text" label={t('library.tabExercise')} />
             <Tab value="autoassess" label={t('library.tabAutoAssess')} />
-            {isAutoAssessable && <Tab value="testing" label={t('library.tabTesting')} />}
+            {autoAssessableNow && <Tab value="testing" label={t('library.tabTesting')} />}
           </Tabs>
 
-          {tab === 'text' && (
+          {shownTab === 'text' && (
             <ExerciseTextTab
               title={draft.title}
               textMd={draft.textMd}
@@ -392,7 +435,7 @@ export default function ExercisePage() {
             />
           )}
 
-          {tab === 'autoassess' && (
+          {shownTab === 'autoassess' && (
             <AutoAssessTab
               draft={draft}
               editing={editing}
@@ -401,20 +444,27 @@ export default function ExercisePage() {
             />
           )}
 
-          {tab === 'testing' && isAutoAssessable && (
-            <>
-              {editing && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  {t('library.testingWhileEditing')}
-                </Alert>
-              )}
-              <TeacherTestingTab
-                exerciseId={exerciseId}
-                solutionFileName={exercise.solution_file_name}
-                graderType={exercise.grader_type}
-              />
-            </>
-          )}
+          {shownTab === 'testing' &&
+            (savedAuto ? (
+              <>
+                {editing && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    {t('library.testingWhileEditing')}
+                  </Alert>
+                )}
+                <TeacherTestingTab
+                  exerciseId={exerciseId}
+                  solutionFileName={exercise.solution_file_name}
+                  graderType="AUTO"
+                />
+              </>
+            ) : (
+              // Reachable only while editing (audit X-016): the tab exists because the *draft*
+              // has auto-assessment, but runs execute the saved version, which has none yet.
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                {t('library.testingNeedsSave')}
+              </Alert>
+            ))}
         </Box>
       </Box>
 
