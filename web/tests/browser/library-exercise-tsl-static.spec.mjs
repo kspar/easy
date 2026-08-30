@@ -608,7 +608,7 @@ test('library-exercise-tsl-static', async ({ launch, check }) => {
   // These have non-empty Kotlin defaults, so the key must disappear when the box is emptied rather
   // than being saved as "" — otherwise clearing it silently replaces the default with no message.
   await page.getByRole('button', { name: 'Add test' }).click()
-  await page.getByRole('menuitem', { name: 'Call a function' }).click()
+  await page.getByRole('menuitem', { name: 'Run a function' }).click()
   await page.getByRole('button', { name: /Error messages/ }).click()
   const set = lastTest(await afterEdit(() => page.getByLabel('Function not defined').fill('Kirjuta funktsioon')))
   check(

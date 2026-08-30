@@ -164,7 +164,7 @@ test('library-exercise-tsl-live', async ({ launch, check }) => {
   // --- add a function execution test --------------------------------------------------------------
   await page.getByRole('tab', { name: 'Tests' }).click()
   await page.getByRole('button', { name: 'Add test' }).click()
-  await page.getByRole('menuitem', { name: 'Call a function' }).click()
+  await page.getByRole('menuitem', { name: 'Run a function' }).click()
   await settle()
 
   await page.getByLabel('Function name').fill('liida')
