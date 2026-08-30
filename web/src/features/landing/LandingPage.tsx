@@ -8,7 +8,7 @@ import {
   LibraryBooksOutlined,
   SyncOutlined,
   ScheduleOutlined,
-  RateReviewOutlined,
+  CloudDoneOutlined,
   CodeOutlined,
   BoltOutlined,
   TrendingUpOutlined,
@@ -377,7 +377,7 @@ function StatsStrip() {
         >
           <StatItem
             value={stats.totalSubmissions}
-            label={t('landing.statSubmissions')}
+            label={t('about.statsSubmissions')}
             isLoading={stats.isLoading}
           />
           <Box
@@ -390,7 +390,7 @@ function StatsStrip() {
           />
           <StatItem
             value={stats.totalUsers}
-            label={t('landing.statAccounts')}
+            label={t('about.statsAccounts')}
             isLoading={stats.isLoading}
           />
           <Box
@@ -403,7 +403,7 @@ function StatsStrip() {
           />
           <StatItem
             value={stats.inAutoAssessing}
-            label={t('landing.statGrading')}
+            label={t('about.statsAutograding')}
             isLoading={stats.isLoading}
             live
           />
@@ -421,7 +421,7 @@ const TEACHER_FEATURES = [
   { icon: <LibraryBooksOutlined />, key: 'library' },
   { icon: <SyncOutlined />, key: 'moodle' },
   { icon: <ScheduleOutlined />, key: 'deadlines' },
-  { icon: <RateReviewOutlined />, key: 'snippets' },
+  { icon: <CloudDoneOutlined />, key: 'noSetup' },
 ]
 
 // ─── Student Features ───────────────────────────────────────────────────────────

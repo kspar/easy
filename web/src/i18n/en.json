@@ -959,9 +959,6 @@
     "terminalCaption": "lahendus — auto-grader",
     "heroTitle": "Grading code is a <hl>solved</hl> problem.",
     "heroBody": "Lahendus automatically tests and grades programming solutions, so teachers can focus on teaching and students get instant feedback.",
-    "statSubmissions": "Submissions graded",
-    "statAccounts": "User accounts",
-    "statGrading": "Grading right now",
     "forTeachers": "For teachers",
     "teachersHeading": "Everything you need to run a programming course",
     "teachersBody": "From automatic assessment to grade management, Lahendus handles the tedious parts so you can focus on curriculum and mentoring.",
@@ -981,9 +978,9 @@
       "moodleTitle": "Moodle integration",
       "moodleDesc": "Link your course to Moodle and student lists sync automatically. Grades push back to Moodle too.",
       "deadlinesTitle": "Flexible deadlines",
-      "deadlinesDesc": "Set soft and hard deadlines with per-student and per-group exceptions. Control exercise visibility with scheduling.",
-      "snippetsTitle": "Feedback snippets",
-      "snippetsDesc": "Save common feedback as reusable snippets. Insert with one click while grading to speed up reviews."
+      "deadlinesDesc": "Set a deadline and a closing time, with per-student and per-group exceptions. Control exercise visibility with scheduling.",
+      "noSetupTitle": "Nothing to install",
+      "noSetupDesc": "Students write and run code in the browser. The first lesson is about programming rather than about getting Python working on thirty laptops."
     },
     "student": {
       "editorTitle": "In-browser code editor",

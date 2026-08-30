@@ -561,7 +561,7 @@
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",
     "s2": "Tartu Ülikooli arvutiteaduse instituut",
-    "s3": "Lahendus põhineb vabavaralisel rakendusel",
+    "s3": "Lahendus põhineb avatud lähtekoodiga rakendusel",
     "discord": "Kui sul on Lahenduse kasutamise või arenduse kohta küsimusi, või kui leidsid kuskilt vea, siis tule räägi sellest",
     "discordLink": "Lahenduse Discordi serveris",
     "statsAutograding": "Hetkel kontrollimisel",
@@ -958,32 +958,29 @@
     "seeFeatures": "Vaata võimalusi",
     "terminalCaption": "lahendus — automaatkontroll",
     "heroTitle": "Koodi hindamine on <hl>lahendatud</hl> probleem.",
-    "heroBody": "Lahendus testib ja hindab programmeerimislahendusi automaatselt, nii et õpetaja saab keskenduda õpetamisele ja õpilane saab tagasisidet kohe.",
-    "statSubmissions": "Hinnatud esitust",
-    "statAccounts": "Kasutajakontot",
-    "statGrading": "Hindamisel praegu",
+    "heroBody": "Lahendus testib ja hindab programmeerimisülesannete lahendusi automaatselt, nii et õpetaja saab keskenduda õpetamisele ja õpilane saab tagasisidet kohe.",
     "forTeachers": "Õpetajale",
     "teachersHeading": "Kõik, mida on vaja programmeerimiskursuse läbiviimiseks",
     "teachersBody": "Automaatsest hindamisest hinnetetabelini võtab Lahendus enda peale tüütu osa, et sina saaksid tegeleda õppekava ja juhendamisega.",
     "forStudents": "Õpilasele",
     "studentsHeading": "Esita, testi, paranda — ilma ootamiseta",
     "openSourceHeading": "Avatud lähtekood, loodud Tartu Ülikoolis",
-    "openSourceBody": "Lahendust arendab arvutiteaduse instituut ja see põhineb avatud lähtekoodiga rakendusel easy. Panus ja tagasiside on teretulnud.",
+    "openSourceBody": "Lahendust arendab Tartu Ülikooli arvutiteaduse instituut ja see põhineb avatud lähtekoodiga rakendusel easy. Panus ja tagasiside on teretulnud.",
     "supportedBy": "Toetajad",
     "footerAbout": "Lahendusest",
     "teacher": {
       "gradingTitle": "Automaatne hindamine",
-      "gradingDesc": "Lahendusi testitakse sinu testide vastu ja hinnatakse kohe. Õpilane saab tagasisidet ilma igasuguse käsitsi tööta.",
+      "gradingDesc": "Lahendusi testitakse sinu testidega ja hinnatakse kohe. Õpilane saab tagasisidet ilma käsitsi tööta.",
       "gradeTableTitle": "Hinnetetabel",
       "gradeTableDesc": "Näed iga õpilase edenemist ühe pilguga tabelivaates. Sorteeri, filtreeri rühma järgi ja ekspordi CSV-sse.",
-      "libraryTitle": "Ülesannete kogu",
+      "libraryTitle": "Ülesandekogu",
       "libraryDesc": "Koosta ülesanne korra ja kasuta seda mitmel kursusel. Korralda kaustadesse ja jaga kolleegidega.",
       "moodleTitle": "Moodle’i liidestus",
       "moodleDesc": "Seo kursus Moodle’iga ja õpilaste nimekirjad sünkroniseeruvad automaatselt. Ka hinded liiguvad Moodle’isse tagasi.",
       "deadlinesTitle": "Paindlikud tähtajad",
-      "deadlinesDesc": "Määra pehmed ja kõvad tähtajad ning erandid õpilase või rühma kaupa. Ajasta ülesannete nähtavust.",
-      "snippetsTitle": "Tagasiside mallid",
-      "snippetsDesc": "Salvesta sageli kasutatav tagasiside mallina. Lisa see hindamise ajal ühe klõpsuga."
+      "deadlinesDesc": "Määra tähtaeg ja sulgemise aeg ning erandid õpilase või rühma kaupa. Ajasta ülesannete nähtavust.",
+      "noSetupTitle": "Midagi pole vaja paigaldada",
+      "noSetupDesc": "Õpilased kirjutavad ja käivitavad koodi brauseris. Esimene tund kulub programmeerimisele, mitte Pythoni käimasaamisele kolmekümnel arvutil."
     },
     "student": {
       "editorTitle": "Koodiredaktor brauseris",
@@ -993,7 +990,7 @@
       "progressTitle": "Edenemise jälgimine",
       "progressDesc": "Märgid näitavad, kui kaugel sa iga ülesandega oled. Tead alati, kus sa parasjagu oled.",
       "anywhereTitle": "Esita kõikjalt",
-      "anywhereDesc": "Kasuta veebiredaktorit, laadi fail üles, esita Thonny IDE-st või käsurealt."
+      "anywhereDesc": "Kasuta veebiredaktorit, lae fail üles, esita Thonny IDE-st või käsurealt."
     },
     "integration": {
       "moodle": "Õpilaste ja hinnete sünkroonimine",
