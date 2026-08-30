@@ -46,7 +46,8 @@
     "reportIt": "Report it"
   },
   "auth": {
-    "failed": "Authentication failed"
+    "failed": "Authentication failed",
+    "unavailable": "Couldn't reach the login service, so there is no way to tell who you are right now. This is usually temporary — refreshing the page tries again."
   },
   "join": {
     "eyebrow": "You've been invited to join",
@@ -954,6 +955,7 @@
     "navOpenSource": "Open source",
     "openApp": "Open Lahendus",
     "logIn": "Log in",
+    "logInUnavailable": "Login unavailable",
     "getStarted": "Get started",
     "goToCourses": "Go to courses",
     "seeFeatures": "See features",

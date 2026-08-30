@@ -1,7 +1,13 @@
 import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import Keycloak from 'keycloak-js'
 import config from '../config.ts'
-import { AuthContext, type Role, type AuthState, type LoginOptions } from './auth-context.ts'
+import {
+  AuthContext,
+  returnUri,
+  type Role,
+  type AuthState,
+  type LoginOptions,
+} from './auth-context.ts'
 import { apiFetch, setUnauthorizedHandler } from '../api/client.ts'
 
 // Type-only re-export, so the many existing `import { type Role } from './AuthContext.tsx'`
@@ -64,6 +70,8 @@ const keycloak = new Keycloak(config.keycloak)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     initialized: false,
+    initFailed: false,
+    authFailed: false,
     authenticated: false,
     token: undefined,
     firstName: undefined,
@@ -88,11 +96,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * happens or this tab is gone.
    */
   const recoveringRef = useRef(false)
+  /**
+   * Set once the session is known to be unrecoverable *by redirecting* — either flavour, see
+   * `AuthState.initFailed` and `AuthState.authFailed`.
+   *
+   * A ref rather than the state itself because [recoverSession] is a `useCallback` over no
+   * dependencies and so cannot read the state it closes over, and its stability is what keeps the
+   * init effect below running exactly once.
+   */
+  const noRedirectRef = useRef(false)
   const recoverSession = useCallback((reason: string) => {
     if (recoveringRef.current) return
+    // Nothing a redirect can recover. Either the IdP could not be reached — in which case a 401 is
+    // a symptom of that rather than a separate problem — or it answered and the session it gave
+    // back was unusable, in which case asking again returns the same one.
+    if (noRedirectRef.current) return
     recoveringRef.current = true
     console.warn(`Session lost (${reason}); returning to the identity provider`)
-    keycloak.login()
+    keycloak.login({ redirectUri: returnUri() })
   }, [])
 
   useEffect(() => {
@@ -116,40 +137,81 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .init({
         onLoad: 'check-sso',
         pkceMethod: 'S256',
+        // Pinned here as well as passed at every login() below, and the belt-and-braces is
+        // deliberate: `this.redirectUri` is what keycloak-js's own internal `doLogin` falls back
+        // on when `check-sso` finds no session, so pinning it means no code path anywhere — ours
+        // or the library's — can hand Keycloak a URL with a fragment on it. It also rescues
+        // anyone still holding a URL poisoned by EZ-1825, whose fragment would otherwise be
+        // carried straight back into the next redirect.
+        redirectUri: returnUri(),
+        // Turning the session-status iframe off also skips the probe that runs *before* the
+        // callback is processed: keycloak-js only builds its 3rd-party-cookie iframe when this is
+        // enabled. That probe is what made EZ-1825 possible — it waits up to `messageReceiveTimeout`
+        // (10s) for a postMessage from a hidden iframe at the IdP and **rejects** on timeout rather
+        // than degrading, taking `init()` down before it ever looks at the `code` in the URL.
+        //
+        // Nothing is lost. The iframe's job is noticing a logout in another tab, nothing here
+        // listens for `onAuthLogout`, and any browser that blocks third-party cookies disables it
+        // a moment later anyway. A dead session is still caught — by core answering 401, which is
+        // the path `setUnauthorizedHandler` below exists for.
+        checkLoginIframe: false,
       })
-      .then((authenticated) => {
-        if (authenticated) {
-          const roles = getRolesFromToken(keycloak)
-          const activeRole = getPersistedRole(roles) ?? getMainRole(roles)
-          localStorage.setItem(ROLE_STORAGE_KEY, activeRole)
+      .then(
+        (authenticated) => {
+          if (authenticated) {
+            const roles = getRolesFromToken(keycloak)
+            const activeRole = getPersistedRole(roles) ?? getMainRole(roles)
+            localStorage.setItem(ROLE_STORAGE_KEY, activeRole)
 
-          setState({
-            initialized: true,
-            authenticated: true,
-            token: keycloak.token,
-            firstName: keycloak.tokenParsed?.given_name as string | undefined,
-            lastName: keycloak.tokenParsed?.family_name as string | undefined,
-            email: keycloak.tokenParsed?.email as string | undefined,
-            username: keycloak.tokenParsed?.preferred_username as string | undefined,
-            activeRole,
-            availableRoles: roles,
-            checkedIn: false,
-            checkinFailed: false,
-          })
-
-          checkin(keycloak)
-            .then(() => setState((prev) => ({ ...prev, checkedIn: true })))
-            .catch((err) => {
-              console.error('Account checkin failed', err)
-              setState((prev) => ({ ...prev, checkinFailed: true }))
+            setState({
+              initialized: true,
+              initFailed: false,
+              authFailed: false,
+              authenticated: true,
+              token: keycloak.token,
+              firstName: keycloak.tokenParsed?.given_name as string | undefined,
+              lastName: keycloak.tokenParsed?.family_name as string | undefined,
+              email: keycloak.tokenParsed?.email as string | undefined,
+              username: keycloak.tokenParsed?.preferred_username as string | undefined,
+              activeRole,
+              availableRoles: roles,
+              checkedIn: false,
+              checkinFailed: false,
             })
-        } else {
-          setState((prev) => ({ ...prev, initialized: true }))
-        }
-      })
+
+            checkin(keycloak)
+              .then(() => setState((prev) => ({ ...prev, checkedIn: true })))
+              .catch((err) => {
+                console.error('Account checkin failed', err)
+                setState((prev) => ({ ...prev, checkinFailed: true }))
+              })
+          } else {
+            setState((prev) => ({ ...prev, initialized: true }))
+          }
+        },
+        // Rejection handler as `then`'s second argument rather than a `.catch` on the end, and the
+        // difference is not stylistic. A trailing `.catch` also catches whatever the success
+        // handler above throws — and it can throw: `getMainRole()` does, for a token whose
+        // `easy_role` claim names nothing this app knows. That was being reported as "the IdP is
+        // unreachable" to someone who had just successfully signed in, and it disabled 401 recovery
+        // for the rest of the page besides. Only an `init()` that actually rejected reaches here.
+        (err) => {
+          console.error('Keycloak init failed', err)
+          // `initFailed`, not just `initialized`. Reporting a failed init as "initialised, no
+          // session" told RequireAuth to send the user to the IdP — the very thing that had just
+          // failed — and the answer came back to an init that failed the same way, forever. See
+          // AuthState.initFailed.
+          noRedirectRef.current = true
+          setState((prev) => ({ ...prev, initialized: true, initFailed: true }))
+        },
+      )
+      // What the success handler throws, landing here and nowhere else. Reached with a valid token
+      // in hand, so the IdP is not the problem and going back to it would only fetch the same token
+      // again — see AuthState.authFailed for why that loops rather than recovers.
       .catch((err) => {
-        console.error('Keycloak init failed', err)
-        setState((prev) => ({ ...prev, initialized: true }))
+        console.error('Signed in, but the session could not be used', err)
+        noRedirectRef.current = true
+        setState((prev) => ({ ...prev, initialized: true, authFailed: true }))
       })
 
     keycloak.onTokenExpired = () => {
@@ -188,19 +250,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     (options?: LoginOptions) => {
+      // The adapter is not in a state to build a login URL, and saying so beats the alternative:
+      // when `init()` failed inside `#loadConfig`, `keycloak.endpoints` is still undefined and
+      // `createLoginUrl` throws inside a promise — a button that does nothing, reports nothing, and
+      // leaves an unhandled rejection in the console. Callers outside RequireAuth (the landing
+      // page's call to action, chiefly) can still reach this.
+      if (noRedirectRef.current) {
+        console.warn('Ignoring login(): the identity provider could not be reached')
+        return
+      }
       keycloak.login({
         locale: options?.locale ?? 'et',
-        // Passed through only when a caller asked for it. keycloak-js otherwise defaults to
-        // location.href, which is what RequireAuth wants — it is invoked from the protected page
-        // the user was trying to reach, so "back where you started" is the correct destination.
-        ...(options?.redirectUri ? { redirectUri: options.redirectUri } : {}),
+        // Always sent, never left to keycloak-js's own default. Its default is `location.href`,
+        // which is the same page `returnUri()` names but with the fragment still attached — and a
+        // fragment attached to a redirect URI is what Keycloak appends the next callback's params
+        // to, one group per bounce, until it refuses the request (EZ-1825).
+        //
+        // The destination is otherwise unchanged: RequireAuth is invoked from the protected page
+        // the user was trying to reach, so "back where you started" remains correct there, and the
+        // landing page still overrides it to land in the app instead.
+        redirectUri: options?.redirectUri ?? returnUri(),
       })
     },
     [],
   )
 
   const logout = useCallback(() => {
-    keycloak.logout()
+    // Same guard as login(), same reason — `createLogoutUrl` reads the same endpoints.
+    if (noRedirectRef.current) {
+      console.warn('Ignoring logout(): the identity provider could not be reached')
+      return
+    }
+    // Explicit for the same reason as login(), and it keeps the destination where it already was:
+    // the default is `this.redirectUri`, which `init()` now pins to the page the bundle loaded on,
+    // and coming back to *that* page after logging out from somewhere else would be a change.
+    keycloak.logout({ redirectUri: returnUri() })
   }, [])
 
   const refreshToken = useCallback(async () => {

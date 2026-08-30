@@ -450,7 +450,7 @@ export default function LandingPage() {
   usePageTitle(t('landing.pageTitle'))
 
   const navigate = useNavigate()
-  const { initialized, authenticated, firstName, login } = useAuth()
+  const { initialized, initFailed, authenticated, firstName, login } = useAuth()
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -465,6 +465,12 @@ export default function LandingPage() {
   // sends them on a pointless round trip through the IdP.
   const authKnown = initialized
   const initials = firstName?.charAt(0)?.toUpperCase() ?? '?'
+
+  // A fourth state, and the one this page is the last to hear about: the IdP could not be reached
+  // at all (EZ-1825). This page sits outside RequireAuth, so nothing else here would notice — the
+  // call to action would read "Log in", and pressing it would do nothing at all, because `login()`
+  // refuses to build a URL from an adapter that never came up. Say so on the button instead.
+  const loginUnavailable = initFailed
 
   const handleCta = () => {
     if (authenticated) {
@@ -637,7 +643,7 @@ export default function LandingPage() {
                 onClick={handleCta}
                 // Not clickable until the answer is in, so the button cannot perform the wrong
                 // action during the window where it does not yet know which action it is.
-                disabled={!authKnown}
+                disabled={!authKnown || loginUnavailable}
                 endIcon={
                   authKnown && authenticated ? (
                     <ArrowForwardOutlined sx={{ fontSize: '1rem !important' }} />
@@ -668,6 +674,8 @@ export default function LandingPage() {
               >
                 {!authKnown ? (
                   <CircularProgress size={16} sx={{ color: GREEN_BRIGHT, opacity: 0.8 }} />
+                ) : loginUnavailable ? (
+                  t('landing.logInUnavailable')
                 ) : authenticated ? (
                   t('landing.openApp')
                 ) : (
@@ -766,7 +774,7 @@ export default function LandingPage() {
                   variant="contained"
                   size="large"
                   onClick={handleCta}
-                  disabled={!authKnown}
+                  disabled={!authKnown || loginUnavailable}
                   endIcon={<ArrowForwardOutlined />}
                   sx={{
                     fontFamily: F.body,
@@ -790,7 +798,11 @@ export default function LandingPage() {
                     },
                   }}
                 >
-                  {authKnown && authenticated ? t('landing.goToCourses') : t('landing.getStarted')}
+                  {loginUnavailable
+                    ? t('landing.logInUnavailable')
+                    : authKnown && authenticated
+                      ? t('landing.goToCourses')
+                      : t('landing.getStarted')}
                 </Button>
                 <Button
                   variant="outlined"

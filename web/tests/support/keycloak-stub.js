@@ -38,11 +38,25 @@ export default class Keycloak {
    * render: between page load and this promise settling, the answer is genuinely unknown, and
    * that window is long enough to see on a real network. Resolving instantly — as this stub did
    * originally — makes that third state untestable and easy to forget.
+   *
+   * Seed `stubAuthInit = 'fail'` for the fourth state: **the adapter never came up at all**. Real
+   * keycloak-js rejects here more readily than it looks — its 3rd-party-cookie probe runs before
+   * the callback is processed and rejects on a 10s timeout — and the app's response to that is
+   * the subject of EZ-1825. Without this, "init failed" was unreachable from a test and the app
+   * answered it by redirecting to the IdP that had just failed, forever.
    */
   init() {
     const delay = Number(localStorage.getItem('stubAuthDelayMs') ?? 0)
-    if (!delay) return Promise.resolve(this.authenticated)
-    return new Promise((resolve) => setTimeout(() => resolve(this.authenticated), delay))
+    const fails = localStorage.getItem('stubAuthInit') === 'fail'
+    // The real message, so a spec asserting on the console output is asserting on something the
+    // application will actually see.
+    const settle = fails
+      ? (resolve, reject) =>
+          reject(new Error('Timeout when waiting for 3rd party check iframe message.'))
+      : (resolve) => resolve(this.authenticated)
+
+    if (!delay) return new Promise(settle)
+    return new Promise((resolve, reject) => setTimeout(() => settle(resolve, reject), delay))
   }
 
   updateToken() { return Promise.resolve(false) }
@@ -60,7 +74,14 @@ export default class Keycloak {
   // Added after the settings page crashed here with "createAccountUrl is not a function": the stub
   // silently lags the real API surface as pages start using more of it, and each gap looks like an
   // application bug until you read the stack.
-  createAccountUrl() {
-    return 'https://idp.example/realms/stub/account'
+  //
+  // The referrer is echoed rather than dropped, because the page now passes one and the argument is
+  // the part worth checking: it becomes `referrer_uri`, which Keycloak validates against the
+  // client's redirect URIs exactly as it validates a login's, so a fragment on it is the same
+  // hazard as EZ-1825's. A stub that ignored the argument made that untestable.
+  createAccountUrl(options) {
+    const base = 'https://idp.example/realms/stub/account'
+    const referrer = options?.redirectUri
+    return referrer ? `${base}?referrer_uri=${encodeURIComponent(referrer)}` : base
   }
 }

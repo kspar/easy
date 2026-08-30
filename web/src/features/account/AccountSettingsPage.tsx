@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import { useAuth } from '../../auth/useAuth.ts'
+import { returnUri } from '../../auth/auth-context.ts'
 import { useThemeMode } from '../../theme/useThemeMode.ts'
 import { getToken } from '../../api/client.ts'
 import config from '../../config.ts'
@@ -87,7 +88,15 @@ export default function AccountSettingsPage() {
 
   // keycloak-js builds this URL itself — realm included, and a return link — so the account console
   // path is not hardcoded here and survives a Keycloak upgrade that moves it.
-  const accountUrl = keycloak?.createAccountUrl()
+  //
+  // The return link is named explicitly because it can no longer be left to the default: that is
+  // `keycloak.redirectUri`, which `init()` now pins to whichever page the bundle loaded on
+  // (EZ-1825), and the console's "back to the application" link should come back *here*.
+  //
+  // `returnUri()` rather than `location.href`, because this becomes `referrer_uri` and Keycloak
+  // validates it against the client's redirect URIs exactly as it validates a login's — so it is
+  // the same rule, and a URL still holding a callback fragment is the same hazard.
+  const accountUrl = keycloak?.createAccountUrl({ redirectUri: returnUri() })
 
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState(false)

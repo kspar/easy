@@ -46,7 +46,8 @@
     "reportIt": "Anna teada"
   },
   "auth": {
-    "failed": "Autentimine ebaõnnestus"
+    "failed": "Autentimine ebaõnnestus",
+    "unavailable": "Sisselogimisteenus ei vastanud, seega ei õnnestu praegu tuvastada, kes sa oled. Tavaliselt on see ajutine — lehe värskendamine proovib uuesti."
   },
   "join": {
     "eyebrow": "Sind on kutsutud liituma",
@@ -954,6 +955,7 @@
     "navOpenSource": "Avatud lähtekood",
     "openApp": "Ava Lahendus",
     "logIn": "Logi sisse",
+    "logInUnavailable": "Sisselogimine ei ole saadaval",
     "getStarted": "Alusta",
     "goToCourses": "Mine kursustele",
     "seeFeatures": "Vaata võimalusi",

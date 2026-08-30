@@ -85,6 +85,21 @@ test('account-settings', async ({ launch, check }) => {
     'security settings link at the identity provider, built by keycloak-js',
     typeof href === 'string' && href.includes('/account') && href.startsWith('http'),
   )
+  // The return link Keycloak validates against the client's redirect URIs, exactly as it validates
+  // a login's — so it must not carry a fragment either (EZ-1825). Read back out of the built URL
+  // rather than trusted, because the default it replaced is now *wrong* rather than merely
+  // different: `init()` pins `keycloak.redirectUri` to whichever page the bundle loaded on.
+  const referrer = new URL(href ?? 'https://x.invalid').searchParams.get('referrer_uri')
+  check(`the console gets a return link (got ${referrer})`, typeof referrer === 'string')
+  check(
+    `and it carries no fragment (got ${referrer})`,
+    typeof referrer === 'string' && !referrer.includes('#'),
+  )
+  check(
+    `and it points back at this page (got ${referrer})`,
+    typeof referrer === 'string' && referrer.endsWith('/account'),
+  )
+
   check('it opens in a new tab', (await securityLink.getAttribute('target')) === '_blank')
   check(
     'and does not hand the opener a window reference',
