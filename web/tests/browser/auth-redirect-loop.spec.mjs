@@ -158,6 +158,24 @@ test('auth-redirect-loop', async ({ launch, check }) => {
     return fn(ctx)
   }
 
+  /**
+   * Whether the sidebar heading turns up — the visible end of the chain this whole file is about:
+   * init settles, checkin answers, the gated queries are released, `/courses/:id/basic` is asked
+   * and returns.
+   *
+   * A `waitFor` and not a `waitForTimeout` followed by `isVisible`, which is what this was and
+   * which failed in CI while passing on a laptop every time. The chain is four round trips deep,
+   * the fixed sleeps below were measured against a local dev server, and CI runs the suite about
+   * three times slower — so the sleep expired mid-chain and a *slow* page was reported as a
+   * *missing* one. The sleeps that remain are all waits for something to **not** happen, which is
+   * the one thing a locator cannot express.
+   */
+  async function headingArrives() {
+    const heading = page.getByText('Programming 2026').first()
+    await heading.waitFor({ state: 'visible', timeout: 20000 }).catch(() => {})
+    return heading.isVisible().catch(() => false)
+  }
+
   // A second registration rather than an edit to the first: Playwright runs the most recently
   // added route handler first, so these win for the rest of the spec and sections 1-3 keep the
   // unauthenticated fixtures they were written against.
@@ -211,10 +229,7 @@ test('auth-redirect-loop', async ({ launch, check }) => {
 
   // The sidebar is the thing the ungated queries feed, so its heading is the proof they recovered
   // rather than being left failed and silent.
-  check(
-    'the sidebar course heading still loads',
-    await page.getByText('Programming 2026').first().isVisible().catch(() => false),
-  )
+  check('the sidebar course heading still loads', await headingArrives())
 
   await shot('04-course-deep-link')
 
@@ -243,10 +258,7 @@ test('auth-redirect-loop', async ({ launch, check }) => {
     `a slow identity provider does not turn a deep link into a redirect (saw ${slowInitCalls.length} login calls)`,
     slowInitCalls.length === 0,
   )
-  check(
-    'and the page still arrives once it settles',
-    await page.getByText('Programming 2026').first().isVisible().catch(() => false),
-  )
+  check('and the page still arrives once it settles', await headingArrives())
 
   await shot('04b-slow-init-deep-link')
 
@@ -291,7 +303,10 @@ test('auth-redirect-loop', async ({ launch, check }) => {
   })
   await page.goto(`${BASE_URL}/courses/${COURSE}/exercises`)
 
-  await waitUntil(async () => (await loginTotal()) > 0)
+  // 20s rather than the 8s default, because `waitUntil` *returns* on timeout instead of throwing:
+  // give up too early here and the count is read as 0, which is reported as "the app never went to
+  // the IdP" — the opposite of what happened, and a red build on CI where every step is slower.
+  await waitUntil(async () => (await loginTotal()) > 0, { timeout: 20000 })
   // Generous, and deliberately so: this is the window in which the broken version racks up bounces.
   // Each one is a full page load, so a couple of seconds is many, and the check below reports the
   // number it actually saw rather than just failing.
@@ -306,7 +321,7 @@ test('auth-redirect-loop', async ({ launch, check }) => {
   // The other half of the claim, and the reason stopping is not the same as giving up: stopping
   // silently would leave a spinner nobody can get past. `authFailed` puts ErrorAlert on screen.
   const failedAlert = page.locator('[role="alert"]')
-  await failedAlert.first().waitFor({ timeout: 10000 }).catch(() => {})
+  await failedAlert.first().waitFor({ state: 'visible', timeout: 20000 }).catch(() => {})
   check(
     'and says so, instead of leaving a page that never finishes loading',
     await failedAlert.first().isVisible().catch(() => false),
