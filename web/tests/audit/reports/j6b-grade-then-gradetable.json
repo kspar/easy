@@ -1,10 +1,11 @@
 {
   "cellBefore": "NIMI Σ (1) KAHE ARVU SUMMA Σ (1) 0 Anna Aare 0 -",
-  "cellAfter": "NIMI Σ (1) KAHE ARVU SUMMA Σ (1) 0 Anna Aare 0 -",
+  "cellAfter": "NIMI Σ (1) KAHE ARVU SUMMA Σ (1) 1 Anna Aare 1 77",
   "exercisesListCalls": [
     null,
     null,
-    null
+    null,
+    77
   ],
   "annaGrade": 77
 }

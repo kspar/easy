@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import AppLayout from '../layouts/AppLayout.tsx'
 import RequireAuth from './RequireAuth.tsx'
+import RouteCrash from './RouteCrash.tsx'
 import NotFoundPage from '../features/NotFoundPage.tsx'
 import CoursesPage from '../features/courses/CoursesPage.tsx'
 import CourseExercisesPage from '../features/course-exercises/CourseExercisesPage.tsx'
@@ -23,154 +24,173 @@ import ArticlePage from '../features/articles/ArticlePage.tsx'
 
 const router = createBrowserRouter([
   {
-    path: '/landing',
-    element: <LandingPage />,
-  },
-  {
-    // Outside AppLayout on purpose: no nav, no sidebar, no auth. `exercises` is plural and the
-    // trailing `*` swallows the title slug because that is the URL wui minted, and embeds carrying
-    // it are published on pages nobody here can edit. See EmbedExercisePage.
-    path: '/embed/exercises/:exerciseId/*',
-    element: <EmbedExercisePage />,
-  },
-  {
-    // Outside AppLayout and outside RequireAuth: it redirects straight out of the app, so rendering
-    // nav and a sidebar first would be a flash of chrome nobody sees on purpose — and reading the
-    // terms before having an account is the normal case, not an edge one.
-    path: '/tos',
-    element: <TermsRedirect />,
-  },
-  {
-    path: '/',
-    element: <AppLayout />,
+    // Pathless, existing only to carry the errorElement (audit X-009): every route — the
+    // standalone ones and AppLayout itself — inherits it, so the next standalone route cannot
+    // regress to React Router's default boundary by forgetting a line. Errors inside AppLayout's
+    // children are caught by the inner wrapper below, which keeps the shell; this one is the
+    // last resort for everything above that.
+    errorElement: <RouteCrash />,
     children: [
-      { index: true, element: <IndexRedirect /> },
-      {
-        path: 'account',
-        element: (
-          <RequireAuth>
-            <AccountSettingsPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        // Admin-only, and enforced here rather than only by hiding the menu entry: the endpoints
-        // behind it are @Secured to ROLE_ADMIN, so a teacher reaching this URL would otherwise get
-        // a page of failed requests instead of being sent somewhere sensible.
-        path: 'admin/messages',
-        element: (
-          <RequireAuth allowedRoles={['admin']}>
-            <SystemMessagesPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'courses',
-        element: (
-          <RequireAuth>
-            <CoursesPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'courses/:courseId/exercises',
-        element: (
-          <RequireAuth>
-            <CourseExercisesPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'courses/:courseId/exercises/:courseExerciseId',
-        element: (
-          <RequireAuth>
-            <CourseExercisePage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'courses/:courseId/participants',
-        element: (
-          <RequireAuth allowedRoles={['teacher', 'admin']}>
-            <ParticipantsPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'courses/:courseId/grades',
-        element: (
-          <RequireAuth allowedRoles={['teacher', 'admin']}>
-            <GradeTablePage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'courses/:courseId/similarity',
-        element: (
-          <RequireAuth allowedRoles={['teacher', 'admin']}>
-            <SimilarityPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'library',
-        element: <Navigate to="/library/dir/root" replace />,
-      },
-      {
-        path: 'library/dir/:dirId/*',
-        element: (
-          <RequireAuth allowedRoles={['teacher', 'admin']}>
-            <ExerciseLibraryPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'library/exercise/:exerciseId/*',
-        element: (
-          <RequireAuth allowedRoles={['teacher', 'admin']}>
-            <ExercisePage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'link/:inviteId',
-        element: (
-          <RequireAuth>
-            <JoinByLinkPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'moodle/link/:inviteId',
-        element: (
-          <RequireAuth>
-            <JoinByLinkPage isMoodle />
-          </RequireAuth>
-        ),
-      },
-      {
-        // Admin-only, and enforced here rather than only by hiding the nav entry: the list endpoint
-        // behind it is @Secured to ROLE_ADMIN, so anyone else reaching this URL would get a page of
-        // failed requests instead of being sent somewhere sensible.
-        path: 'articles',
-        element: (
-          <RequireAuth allowedRoles={['admin']}>
-            <ArticlesPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        // No RequireAuth, like `about` below: a published article is public, and the alias is short
-        // enough to write on a slide precisely so that someone without an account can follow it.
-        // Core serves those readers from /unauth/articles, which cannot return a draft.
-        path: 'a/:alias',
-        element: <ArticlePage />,
-      },
-      {
-        path: 'about',
-        element: <AboutPage />,
-      },
-      { path: '*', element: <NotFoundPage /> },
+    {
+      path: '/landing',
+      element: <LandingPage />,
+    },
+    {
+      // Outside AppLayout on purpose: no nav, no sidebar, no auth. `exercises` is plural and the
+      // trailing `*` swallows the title slug because that is the URL wui minted, and embeds carrying
+      // it are published on pages nobody here can edit. See EmbedExercisePage.
+      path: '/embed/exercises/:exerciseId/*',
+      element: <EmbedExercisePage />,
+    },
+    {
+      // Outside AppLayout and outside RequireAuth: it redirects straight out of the app, so rendering
+      // nav and a sidebar first would be a flash of chrome nobody sees on purpose — and reading the
+      // terms before having an account is the normal case, not an edge one.
+      path: '/tos',
+      element: <TermsRedirect />,
+    },
+    {
+      path: '/',
+      element: <AppLayout />,
+      children: [
+        {
+          // Pathless, existing only to carry the errorElement (audit X-009). On the child rather
+          // than on the layout route, so a page that throws is replaced by CrashScreen *inside*
+          // AppLayout's outlet — the nav and sidebar survive, and the bug-report dialog stays
+          // reachable. On the layout route itself the whole shell would vanish with the error.
+          errorElement: <RouteCrash />,
+          children: [
+            { index: true, element: <IndexRedirect /> },
+            {
+              path: 'account',
+              element: (
+                <RequireAuth>
+                  <AccountSettingsPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              // Admin-only, and enforced here rather than only by hiding the menu entry: the endpoints
+              // behind it are @Secured to ROLE_ADMIN, so a teacher reaching this URL would otherwise get
+              // a page of failed requests instead of being sent somewhere sensible.
+              path: 'admin/messages',
+              element: (
+                <RequireAuth allowedRoles={['admin']}>
+                  <SystemMessagesPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: 'courses',
+              element: (
+                <RequireAuth>
+                  <CoursesPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: 'courses/:courseId/exercises',
+              element: (
+                <RequireAuth>
+                  <CourseExercisesPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: 'courses/:courseId/exercises/:courseExerciseId',
+              element: (
+                <RequireAuth>
+                  <CourseExercisePage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: 'courses/:courseId/participants',
+              element: (
+                <RequireAuth allowedRoles={['teacher', 'admin']}>
+                  <ParticipantsPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: 'courses/:courseId/grades',
+              element: (
+                <RequireAuth allowedRoles={['teacher', 'admin']}>
+                  <GradeTablePage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: 'courses/:courseId/similarity',
+              element: (
+                <RequireAuth allowedRoles={['teacher', 'admin']}>
+                  <SimilarityPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: 'library',
+              element: <Navigate to="/library/dir/root" replace />,
+            },
+            {
+              path: 'library/dir/:dirId/*',
+              element: (
+                <RequireAuth allowedRoles={['teacher', 'admin']}>
+                  <ExerciseLibraryPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: 'library/exercise/:exerciseId/*',
+              element: (
+                <RequireAuth allowedRoles={['teacher', 'admin']}>
+                  <ExercisePage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: 'link/:inviteId',
+              element: (
+                <RequireAuth>
+                  <JoinByLinkPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: 'moodle/link/:inviteId',
+              element: (
+                <RequireAuth>
+                  <JoinByLinkPage isMoodle />
+                </RequireAuth>
+              ),
+            },
+            {
+              // Admin-only, and enforced here rather than only by hiding the nav entry: the list endpoint
+              // behind it is @Secured to ROLE_ADMIN, so anyone else reaching this URL would get a page of
+              // failed requests instead of being sent somewhere sensible.
+              path: 'articles',
+              element: (
+                <RequireAuth allowedRoles={['admin']}>
+                  <ArticlesPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              // No RequireAuth, like `about` below: a published article is public, and the alias is short
+              // enough to write on a slide precisely so that someone without an account can follow it.
+              // Core serves those readers from /unauth/articles, which cannot return a draft.
+              path: 'a/:alias',
+              element: <ArticlePage />,
+            },
+            {
+              path: 'about',
+              element: <AboutPage />,
+            },
+            { path: '*', element: <NotFoundPage /> },
+          ],
+        },
+      ],
+    },
     ],
   },
 ])

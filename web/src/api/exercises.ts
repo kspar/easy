@@ -490,10 +490,12 @@ export function useRetryAutoassess(courseId: string, courseExerciseId: string) {
         { method: 'POST' },
       ),
     onSuccess: () => {
-      // The whole exercise subtree: the assessment lands on the submission detail, the grade on the
-      // summaries the list reads, and a new entry in the activity feed.
+      // The whole exercises subtree of the course, not just this exercise: the assessment lands on
+      // the submission detail, the grade on the summaries — and on the grade table, whose key ends
+      // in `{groupId}` rather than the exercise id, so a narrower prefix never matches it
+      // (audit X-031 / review F-035).
       queryClient.invalidateQueries({
-        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+        queryKey: ['teacher', 'courses', courseId, 'exercises'],
       })
     },
   })
@@ -541,8 +543,12 @@ export function usePostGrade(
         { method: 'POST', body: { grade, notify_student: notifyStudent } },
       ),
     onSuccess: () => {
+      // The course-wide 'exercises' prefix, deliberately: the grade table (and the CSV built from
+      // it) reads `[..., 'exercises', {groupId}]`, which a key ending in the exercise id can never
+      // prefix-match — the teacher would grade, open Hinded seconds later, and see the old "–"
+      // (audit X-031 / review F-035).
       queryClient.invalidateQueries({
-        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+        queryKey: ['teacher', 'courses', courseId, 'exercises'],
       })
     },
   })
@@ -565,7 +571,7 @@ export function usePostFeedback(
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+        queryKey: ['teacher', 'courses', courseId, 'exercises'],
       })
     },
   })
@@ -589,7 +595,7 @@ export function useEditFeedback(
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+        queryKey: ['teacher', 'courses', courseId, 'exercises'],
       })
     },
   })
@@ -880,6 +886,10 @@ export function useAddStudentsToGroup(courseId: string) {
       queryClient.invalidateQueries({
         queryKey: ['courses', courseId, 'participants'],
       })
+      // Membership decides which rows a group-filtered grade table shows (same class as X-031).
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises'],
+      })
     },
   })
 }
@@ -908,6 +918,10 @@ export function useRemoveStudentFromGroup(courseId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['courses', courseId, 'participants'],
+      })
+      // Membership decides which rows a group-filtered grade table shows (same class as X-031).
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises'],
       })
     },
   })
