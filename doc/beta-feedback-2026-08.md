@@ -80,18 +80,28 @@ Asked by kspar after the triage, and recorded here because the issue list does n
 **1. The grader passes students it should fail.** Not one issue — one failure mode with four
 independent causes, and the only findings here that reach a *student*:
 
-| mechanism | filed |
-|---|---|
-| A test with no checks passes everyone — and the first preset in the menu makes one | X-023 / EZ-1795 |
-| Output checks cannot say "and nothing else", so a student printing 1, 2, 3, 4… passes | X-019 / EZ-1795 comment, B13 |
-| `outputCategory` defaults to `ALL_IO`, so a prompt containing the expected string passes a wrong answer | A12 / EZ-1795 + EZ-1742 comments |
-| A value starting with `"` silently loses its quotes, so the check compares the wrong string | B10′ / EZ-1810 |
+| mechanism | filed | state |
+|---|---|---|
+| A test with no checks passes everyone — and the first preset in the menu makes one | X-023 / EZ-1795 | **fixed** `83eade30` |
+| `outputCategory` defaults to `ALL_IO`, so a prompt containing the expected string passes a wrong answer | A12 / **EZ-1818** | open |
+| Output checks cannot say "and nothing else", so a student printing 1, 2, 3, 4… passes | B13 / **EZ-1818** | open |
+| A value starting with `"` silently loses its quotes, so the check compares the wrong string | B10′ / EZ-1810 | open |
+
+**EZ-1795 was resolved on 2026-08-29 and fixed the first row** (plus X-015, X-016, X-022, X-027). The
+two middle rows reached it only as a comment and did not travel with the fix — verified still live on
+master afterwards (`common.kt:117` unchanged; `nothingElse` absent from `TslSections.tsx`) — so they
+were refiled as **EZ-1818** rather than left inside a Resolved issue. That refiling is the lesson:
+**a finding added to an issue by comment does not get fixed with it.**
 
 Everything else in these 50 items is *teacher* friction — visible, annoying, workaroundable. This
 cluster is invisible from the authoring side and does not self-correct. It also holds the two cheapest
 fixes in the batch: the `ALL_IO` default is one word (and provably cannot disturb a stored exercise,
 since `encodeDefaults = true` means every saved spec already pins the value), and EZ-1810 is one line
 moved inside the `forceString` branch.
+
+One ordering constraint inside it: **`nothingElse` must not land before the `ALL_IO` default changes.**
+Against `ALL_IO`, "and nothing else" would count the program's own input prompts as "something else"
+and fail correct submissions — worse than not having it.
 
 **2. Run the TSL migration on production.** ~36 exercises there grade correctly and cannot be opened
 in the new editor; the migration fixes 31 as a side effect of re-serialising (D3–D5/D8). Decide the
