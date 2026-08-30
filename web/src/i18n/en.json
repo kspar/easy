@@ -83,7 +83,8 @@
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
     "accountMenu": "Account menu",
-    "openMenu": "Open menu"
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "environment": {
     "notProduction": "This is not the production environment — anything here can be changed or deleted at any time."
@@ -442,8 +443,8 @@
     "uploadFile": "Upload a file…",
     "imageByUrl": "By URL…",
     "uploadError": {
-      "tooLarge": "That file is too large. The limit is {{limit}} MB.",
-      "rejected": "That file was refused — it may be empty or too large.",
+      "tooLarge": "That file is far too large to upload.",
+      "rejected": "That file was refused — it may be empty, or larger than the {{limit}} MB your account may upload.",
       "unknown": "The upload failed. Please try again."
     }
   },

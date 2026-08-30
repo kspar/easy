@@ -20,12 +20,17 @@ export interface UploadedFile {
 export type UploadErrorKind = 'tooLarge' | 'rejected' | 'unknown'
 
 /**
- * The upload ceiling quoted to the user, in MB.
+ * The upload ceiling quoted to a teacher, in MB.
  *
- * Enforced by the reverse proxy (`client_max_body_size` in the nginx role), not by anything here —
- * the frontend never sees the real value, it only sees the 413. It lived inside a translated string
- * until EZ-1820, where it was a number two files away from the only place that could contradict it.
- * If the proxy's limit moves, this moves with it.
+ * This is **core's** per-role limit — `easy_core_upload_max_bytes_teacher`, 20 MiB in the
+ * `core_config` role — and core rejects an oversized file with a 400 `INVALID_PARAMETER_VALUE`,
+ * which arrives here as `'rejected'`. It is deliberately *not* attached to `'tooLarge'`: a 413
+ * comes from nginx, whose `easy_nginx_upload_max_body_size` for `/v2/files` is 1g, so a file that
+ * earns a 413 is over a gigabyte and 20 has nothing to do with it. EZ-1820 first put the number on
+ * that branch and told teachers their 30 MB image had failed a 20 MB limit it had not reached.
+ *
+ * Admins get `easy_core_upload_max_bytes_admin` (1 GiB) instead, so the string that renders this
+ * says "your account" rather than stating a limit as if it were everyone's.
  */
 export const UPLOAD_LIMIT_MB = 20
 

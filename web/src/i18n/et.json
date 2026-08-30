@@ -83,7 +83,8 @@
     "lightMode": "Hele režiim",
     "darkMode": "Tume režiim",
     "accountMenu": "Konto menüü",
-    "openMenu": "Ava menüü"
+    "openMenu": "Ava menüü",
+    "closeMenu": "Sulge menüü"
   },
   "environment": {
     "notProduction": "See on arenduskeskkond — siinseid andmeid võidakse igal ajal muuta või kustutada."
@@ -442,8 +443,8 @@
     "uploadFile": "Laadi fail üles…",
     "imageByUrl": "URL-i järgi…",
     "uploadError": {
-      "tooLarge": "Fail on liiga suur. Piir on {{limit}} MB.",
-      "rejected": "Faili ei aktsepteeritud — see võib olla tühi või liiga suur.",
+      "tooLarge": "See fail on üleslaadimiseks palju liiga suur.",
+      "rejected": "Fail lükati tagasi — see võib olla tühi või suurem kui {{limit}} MB, mida sinu konto üles laadida saab.",
       "unknown": "Üleslaadimine ebaõnnestus. Palun proovi uuesti."
     }
   },

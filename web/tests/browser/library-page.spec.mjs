@@ -99,7 +99,7 @@ test('library-page', async ({ launch, check }) => {
     (await page.locator('a[href*="/library/exercise/"]').allInnerTexts()).map((s) => s.split('\n')[0].trim())
 
   // The sort button is labelled with the *current* mode, so it is found by whatever that is.
-  const sortButton = () => page.getByRole('button', { name: /^(Name|Last modified|Popular)$/ })
+  const sortButton = () => page.getByRole('button', { name: /^(Name|Last modified|Most used)$/ })
   await sortButton().click()
   await page.getByRole('menuitem', { name: 'Name' }).click()
   const byName = await waitUntil(async () => {

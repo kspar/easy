@@ -864,7 +864,13 @@ export default function AppLayout() {
         >
           <Toolbar variant="dense" sx={{ minHeight: 48, gap: 0.5 }}>
             {isMobile && (
-              <IconButton edge="start" onClick={toggleDrawer} sx={{ mr: 0.5 }} aria-label={t('nav.openMenu')}>
+              <IconButton
+                edge="start"
+                onClick={toggleDrawer}
+                sx={{ mr: 0.5 }}
+                aria-label={t(drawerOpen ? 'nav.closeMenu' : 'nav.openMenu')}
+                aria-expanded={drawerOpen}
+              >
                 <MenuIcon />
               </IconButton>
             )}

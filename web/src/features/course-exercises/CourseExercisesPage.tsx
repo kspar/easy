@@ -916,7 +916,7 @@ function StudentExerciseRow({
         sx={{ borderRadius: 1, mb: 0.5 }}
       >
         <ListItemIcon sx={{ minWidth: 40 }}>
-          <ExerciseStatusIcon status={exercise.status} />
+          <ExerciseStatusIcon status={exercise.status} decorative />
         </ListItemIcon>
         <ListItemText
           primary={exercise.effective_title}

@@ -47,10 +47,10 @@ import { spaLinkProps } from '../../components/spaLink.ts'
  * students is 780 comparisons, 300 is nearly 45,000. The scaling problem is EZ-1667's to solve; this
  * page's job is to not let a teacher click a button that will appear to hang.
  */
+const PAIR_WARNING_THRESHOLD = 120
+
 /** How many pairs core returns at most. Its answer is truncated to this, highest score first. */
 const MAX_PAIRS = 100
-
-const PAIR_WARNING_THRESHOLD = 120
 
 export default function SimilarityPage() {
   const { courseId } = useParams<{ courseId: string }>()
