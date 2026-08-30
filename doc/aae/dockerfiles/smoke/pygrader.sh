@@ -14,10 +14,11 @@ set -eu
 python3 /easy-smoke-expect-versions.py
 
 # `grader.easy` and not just `grader`, because the difference is the whole bug this check missed.
-# `python3 -m grader.easy` is how every exercise here invokes the grader, and `easy.py` lives only on
-# python-grader's `easy` branch — so an image built from a master commit imports `grader` perfectly
-# well and then answers `No module named grader.easy` on the first submission. That is precisely what
-# dev did from 2026-08-20 to 2026-08-30, with this check green throughout.
+# `python3 -m grader.easy` is how every exercise here invokes the grader, and until 2026-08-30
+# `easy.py` lived only on a branch of python-grader called `easy` — so the image dev was built from,
+# pinned at a `master` commit, imported `grader` perfectly well and then answered
+# `No module named grader.easy` on every submission for ten days, with this check green throughout.
+# The branch has been merged and deleted, which removes the way in; this removes the way it hid.
 #
 # Run as a module rather than imported, because importing it is not what grading does: `easy.py` does
 # its work under `__main__`, and an import that succeeds proves less than the invocation the executor

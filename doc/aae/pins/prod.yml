@@ -51,11 +51,11 @@ tiivad.NUMPY_SPEC: "1.23.4"
 silmused.SILMUSED_VERSION: "1.7.11"
 silmused.PSYCOPG2_VERSION: "2.9.9"
 
-# Must be a commit on python-grader's `easy` branch: `grader/easy.py`, which every exercise runs as
-# `python3 -m grader.easy`, exists nowhere else. This said master's tip from 2026-08-20 to
-# 2026-08-30, which is what broke dev's Python assessment — production was untouched only because
-# its images predate CI and nothing has rebuilt them. See dev.yml for the whole story.
-pygrader.PYTHON_GRADER_REF: "95064f8bcaca8c3957903e63d0eda4b92e8b420a"
+# The commit that merged python-grader's `easy` branch into `master`. From 2026-08-20 to 2026-08-30
+# this named a master commit from before that merge, which has no `grader/easy.py` and so cannot
+# grade anything — production was untouched only because its images predate CI and nothing has
+# rebuilt them. See dev.yml for the whole story.
+pygrader.PYTHON_GRADER_REF: "2ab5427c791eed6bc123a417520a57a17caff4a3"
 pygrader.NUMPY_SPEC: "1.23.4"
 
 imgrec.PILLOW_VERSION: "12.3.0"
