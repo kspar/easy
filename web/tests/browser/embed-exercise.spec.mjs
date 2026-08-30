@@ -59,7 +59,9 @@ test('embed-exercise', async ({ launch, check }) => {
   )
 
   const embedUrl = (query = '') => `${BASE_URL}/embed/exercises/${ID}/Sum%20of%20two%20numbers${query}`
-  const container = page.locator('#root > div') // the page's own outer Box
+  // The page's own outer Box, which is a <main> since EZ-1799 gave the two shell-less routes a
+  // landmark — so this doubles as the assertion that the landmark is still there.
+  const container = page.locator('#root > main')
   const editor = page.locator('.cm-content')
 
   async function open(query = '') {

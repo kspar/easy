@@ -222,6 +222,7 @@ export default function TslEditor({
 
         {tab === 'spec' && (
           <CodeEditor
+            ariaLabel={t('tsl.tabSpec')}
             value={store.text}
             onChange={store.setFromText}
             language={lang}
@@ -347,7 +348,7 @@ function GeneratedScripts({ scripts }: { scripts: Record<string, string> }) {
           <Tab key={n} value={n} label={n} />
         ))}
       </Tabs>
-      <CodeEditor key={shown} value={scripts[shown] ?? ''} readOnly language={lang} minHeight="22rem" />
+      <CodeEditor ariaLabel={shown} key={shown} value={scripts[shown] ?? ''} readOnly language={lang} minHeight="22rem" />
     </Box>
   )
 }

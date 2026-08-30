@@ -214,6 +214,7 @@ export default function ArticlePage() {
               sx={{ mb: 2 }}
             />
             <MarkdownEditor
+              ariaLabel={t('articles.text')}
               value={textMd}
               onChange={setTextMd}
               placeholder={t('articles.textPlaceholder')}

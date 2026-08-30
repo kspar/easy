@@ -285,6 +285,10 @@ export default forwardRef<SolutionEditorHandle, {
         cmPlaceholder(t('submission.editorPlaceholder')),
         EditorView.lineWrapping,
         EditorView.theme({ '.cm-content': { paddingTop: '4px' } }),
+        // The student's primary input had no accessible name at all — a gate-level
+        // `aria-input-field-name` violation on the app's most-used surface (audit X-002). This
+        // editor builds its own view rather than using CodeEditor, so it needs its own.
+        EditorView.contentAttributes.of({ 'aria-label': t('submission.solutionEditorLabel') }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) scheduleDraftSaveRef.current()
         }),

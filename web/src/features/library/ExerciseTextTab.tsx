@@ -57,6 +57,7 @@ export default function ExerciseTextTab({
       )}
 
       <MarkdownEditor
+        ariaLabel={t('library.tabExercise')}
         value={textMd}
         onChange={onTextChange}
         readOnly={!editing}

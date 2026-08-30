@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Box, Button, Stack, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../auth/useAuth.ts'
 import BugReportDialog from '../features/bug-report/BugReportDialog.tsx'
 
 /**
@@ -17,6 +18,7 @@ import BugReportDialog from '../features/bug-report/BugReportDialog.tsx'
  */
 export default function CrashScreen({ error }: { error: Error }) {
   const { t } = useTranslation()
+  const { authenticated } = useAuth()
   const [reporting, setReporting] = useState(false)
 
   return (
@@ -30,11 +32,20 @@ export default function CrashScreen({ error }: { error: Error }) {
           Reporting first, reloading second, and that order is the decision. A reload makes the
           symptom go away and takes the reporter with it — the page comes back working-ish, they get
           on with their day, and the crash is never recorded. Recovery is still one click away.
+
+          Offered only to a signed-in visitor: `POST /v2/bug-reports` is @Secured, so on the routes
+          that render outside auth — an embed on someone else's wiki page, the landing page — the
+          button was a promise the endpoint refuses, and the reporter's writeup died in a generic
+          error. Reload is then the only honest action, and it becomes the primary one.
         */}
-        <Button variant="contained" onClick={() => setReporting(true)}>
-          {t('bugReport.reportThis')}
+        {authenticated && (
+          <Button variant="contained" onClick={() => setReporting(true)}>
+            {t('bugReport.reportThis')}
+          </Button>
+        )}
+        <Button variant={authenticated ? 'text' : 'contained'} onClick={() => window.location.reload()}>
+          {t('bugReport.reloadPage')}
         </Button>
-        <Button onClick={() => window.location.reload()}>{t('bugReport.reloadPage')}</Button>
       </Stack>
 
       {reporting && (

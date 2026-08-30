@@ -256,7 +256,7 @@ export default function StudentGradingView({
       {/* Student header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
         <Tooltip title={t('submission.backToList')}>
-          <IconButton size="small" onClick={onBack}>
+          <IconButton size="small" onClick={onBack} aria-label={t('general.back')}>
             <ArrowBackOutlined fontSize="small" />
           </IconButton>
         </Tooltip>
@@ -394,14 +394,26 @@ export default function StudentGradingView({
         {/* Prev/next arrows */}
         <Tooltip title={prevStudent ? `${prevStudent.given_name} ${prevStudent.family_name}` : ''}>
           <span>
-            <IconButton size="small" disabled={!prevStudent} onClick={() => prevStudent && onSelectStudent(prevStudent.student_id)}>
+            <IconButton
+              size="small"
+              disabled={!prevStudent}
+              // The tooltip names *who* is next; the label has to say what the button does — and
+              // every sibling icon button in this view already carries one (audit X-030).
+              aria-label={t('submission.previousStudent')}
+              onClick={() => prevStudent && onSelectStudent(prevStudent.student_id)}
+            >
               <ChevronLeftOutlined fontSize="small" />
             </IconButton>
           </span>
         </Tooltip>
         <Tooltip title={nextStudent ? `${nextStudent.given_name} ${nextStudent.family_name}` : ''}>
           <span>
-            <IconButton size="small" disabled={!nextStudent} onClick={() => nextStudent && onSelectStudent(nextStudent.student_id)}>
+            <IconButton
+              size="small"
+              disabled={!nextStudent}
+              aria-label={t('submission.nextStudent')}
+              onClick={() => nextStudent && onSelectStudent(nextStudent.student_id)}
+            >
               <ChevronRightOutlined fontSize="small" />
             </IconButton>
           </span>

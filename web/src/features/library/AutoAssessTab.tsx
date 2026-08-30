@@ -376,6 +376,7 @@ export default function AutoAssessTab({
           </Box>
           <Box mt={1}>
             <CodeEditor
+              ariaLabel={activeFile}
               key={activeFile}
               value={activeContent}
               onChange={setActiveContent}

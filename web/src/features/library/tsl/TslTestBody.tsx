@@ -183,6 +183,7 @@ function FunctionExecutionBody({ test, editing, onChange }: BodyProps) {
             {t('tsl.createObject')}
           </Typography>
           <CodeEditor
+            ariaLabel={t('tsl.createObject')}
             value={optStrField(test, 'createObject')}
             readOnly={!editing}
             minHeight="5rem"
@@ -324,6 +325,7 @@ function ClassInstanceBody({ test, editing, onChange }: BodyProps) {
       {/* A code body, not an expression: tiivad indents it into `def create_object_fun_auto_assess()`,
           so it must `return` the instance. A one-line field would misrepresent that. */}
       <CodeEditor
+        ariaLabel={t('tsl.createObject')}
         value={strField(test, 'createObject')}
         readOnly={!editing}
         minHeight="6rem"
@@ -665,6 +667,7 @@ function RawBody({ test, editing, onChange }: BodyProps) {
         {t('tsl.noFormForType', { type: test.type })}
       </Alert>
       <CodeEditor
+        ariaLabel={t('tsl.rawChip')}
         value={text}
         readOnly={!editing}
         minHeight="12rem"

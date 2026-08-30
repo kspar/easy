@@ -46,6 +46,7 @@ export default function MarkdownEditor({
   minHeight = '30rem',
   tools = FULL_TOOLS,
   allowUpload = true,
+  ariaLabel,
 }: {
   value: string
   onChange: (value: string) => void
@@ -55,6 +56,8 @@ export default function MarkdownEditor({
   tools?: MarkdownTool[]
   /** Set false where the caller does not want files accepted at all. */
   allowUpload?: boolean
+  /** Passed through to the editable surface — see CodeEditor's ariaLabel (audit X-002). */
+  ariaLabel: string
 }) {
   const [lang, setLang] = useState<Extension | undefined>(markdownExtension)
   const [view, setView] = useState<EditorView | null>(null)
@@ -144,6 +147,7 @@ export default function MarkdownEditor({
         }}
       >
         <CodeEditor
+          ariaLabel={ariaLabel}
           value={value}
           onChange={onChange}
           language={lang}

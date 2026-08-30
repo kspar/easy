@@ -8,6 +8,7 @@ import {
   Chip,
   Divider,
   List,
+  ListItem,
   ListItemButton,
   ListItemText,
   ListItemIcon,
@@ -902,7 +903,7 @@ function Header({ actions }: { actions?: React.ReactNode }) {
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-      <IconButton component={RouterLink} to="/courses" size="small">
+      <IconButton component={RouterLink} to="/courses" size="small" aria-label={t('general.back')}>
         <ArrowBackOutlined />
       </IconButton>
       <Typography variant="h5">{t('exercises.title')}</Typography>
@@ -937,42 +938,48 @@ function StudentExerciseRow({
   const isApproaching = deadline ? !isPastDeadline && differenceInHours(deadline, new Date()) < 24 : false
 
   return (
-    <ListItemButton
-      component={RouterLink}
-      to={href}
-      sx={{ borderRadius: 1, mb: 0.5 }}
-    >
-      <ListItemIcon sx={{ minWidth: 40 }}>
-        {statusIcon(exercise.status)}
-      </ListItemIcon>
-      <ListItemText
-        primary={exercise.effective_title}
-        secondary={
-          deadline
-            ? `${t('exercises.deadline')}: ${format(deadline, 'PPp', { locale: dateFnsLocale })}`
-            : undefined
-        }
-        secondaryTypographyProps={{
-          color: exercise.status === 'COMPLETED' || !exercise.is_open ? 'text.secondary' : isPastDeadline ? 'error' : isApproaching ? 'warning.main' : 'text.secondary',
-        }}
-      />
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        {exercise.grade && (
-          <Typography variant="body2" fontWeight={500}>
-            {exercise.grade.grade} / 100
-          </Typography>
-        )}
-        {exercise.status !== 'UNSTARTED' && (
-          <Chip
-            label={statusLabel(exercise.status, t)}
-            color={statusColor(exercise.status)}
-            size="small"
-            variant="outlined"
-            sx={{ display: { xs: 'none', sm: 'flex' } }}
-          />
-        )}
-      </Box>
-    </ListItemButton>
+    // Wrapped in ListItem, because `component={RouterLink}` makes the button an <a> and a <ul>
+    // may only contain <li> — axe's `list` rule, gate-level, and assistive tech reports an
+    // unreliable item count without it (audit X-010). disablePadding + disableGutters keep the
+    // rendered result identical to the bare ListItemButton.
+    <ListItem disablePadding disableGutters sx={{ display: 'block' }}>
+      <ListItemButton
+        component={RouterLink}
+        to={href}
+        sx={{ borderRadius: 1, mb: 0.5 }}
+      >
+        <ListItemIcon sx={{ minWidth: 40 }}>
+          {statusIcon(exercise.status)}
+        </ListItemIcon>
+        <ListItemText
+          primary={exercise.effective_title}
+          secondary={
+            deadline
+              ? `${t('exercises.deadline')}: ${format(deadline, 'PPp', { locale: dateFnsLocale })}`
+              : undefined
+          }
+          secondaryTypographyProps={{
+            color: exercise.status === 'COMPLETED' || !exercise.is_open ? 'text.secondary' : isPastDeadline ? 'error' : isApproaching ? 'warning.main' : 'text.secondary',
+          }}
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {exercise.grade && (
+            <Typography variant="body2" fontWeight={500}>
+              {exercise.grade.grade} / 100
+            </Typography>
+          )}
+          {exercise.status !== 'UNSTARTED' && (
+            <Chip
+              label={statusLabel(exercise.status, t)}
+              color={statusColor(exercise.status)}
+              size="small"
+              variant="outlined"
+              sx={{ display: { xs: 'none', sm: 'flex' } }}
+            />
+          )}
+        </Box>
+      </ListItemButton>
+    </ListItem>
   )
 }
 

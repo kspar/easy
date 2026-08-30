@@ -107,6 +107,9 @@ export default function EmbedExercisePage() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box
+        // An iframe fragment still gets a landmark: it costs one prop, and an embed opened
+        // directly (they are linkable) is a page like any other (audit X-011).
+        component="main"
         sx={{
           p: showBorder ? 2 : 0,
           border: showBorder ? 1 : 0,
@@ -152,6 +155,7 @@ export default function EmbedExercisePage() {
                 */}
                 <Box sx={{ position: 'relative' }}>
                   <CodeEditor
+                    ariaLabel={t('submission.solutionEditorLabel')}
                     value={solution}
                     onChange={setSolution}
                     minHeight="10rem"

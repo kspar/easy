@@ -27,6 +27,7 @@ export default function CodeEditor({
   // Aliased: the local `extensions` array below is what actually gets handed to CodeMirror.
   extensions: extra,
   onViewReady,
+  ariaLabel,
 }: {
   value: string
   onChange?: (value: string) => void
@@ -48,6 +49,14 @@ export default function CodeEditor({
    * editor themselves — the markdown toolbar being the reason this exists.
    */
   onViewReady?: (view: EditorView | null) => void
+  /**
+   * The accessible name of the editable surface (audit X-002). CodeMirror renders a
+   * `contenteditable` with `role="textbox"`, which axe's `aria-input-field-name` requires a name
+   * for — without it a screen-reader user tabbing into the student's primary input is told
+   * nothing about what it is. Required rather than optional: every instance is *some* named
+   * field on screen, and a default would just be a silent way to skip naming it.
+   */
+  ariaLabel: string
 }) {
   const theme = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -63,6 +72,13 @@ export default function CodeEditor({
   useEffect(() => {
     onViewReadyRef.current = onViewReady
   }, [onViewReady])
+
+  // Read through a ref for the same reason as the handlers: the label is baked into the editor's
+  // extensions at construction, and a changed label must not rebuild the editor under the cursor.
+  const ariaLabelRef = useRef(ariaLabel)
+  useEffect(() => {
+    ariaLabelRef.current = ariaLabel
+  }, [ariaLabel])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -81,6 +97,8 @@ export default function CodeEditor({
         '.cm-content': { paddingTop: '4px' },
         ...(lineNumbers ? {} : { '.cm-gutters': { display: 'none' } }),
       }),
+      // On `.cm-content` itself, which is the element carrying role=textbox.
+      EditorView.contentAttributes.of({ 'aria-label': ariaLabelRef.current }),
     ]
     if (language) extensions.push(language)
     if (placeholder) extensions.push(cmPlaceholder(placeholder))

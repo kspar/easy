@@ -132,7 +132,7 @@ export default function AccountSettingsPage() {
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <IconButton onClick={() => navigate(-1)} size="small">
+        <IconButton onClick={() => navigate(-1)} size="small" aria-label={t('general.back')}>
           <ArrowBackOutlined />
         </IconButton>
         <Typography variant="h5">{t('account.title')}</Typography>

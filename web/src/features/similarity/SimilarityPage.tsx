@@ -131,6 +131,7 @@ export default function SimilarityPage() {
           component={RouterLink}
           to={`/courses/${courseId}/exercises`}
           size="small"
+          aria-label={t('general.back')}
         >
           <ArrowBackOutlined />
         </IconButton>

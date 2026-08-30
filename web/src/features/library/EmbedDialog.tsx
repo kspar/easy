@@ -395,6 +395,7 @@ export default function EmbedDialog({
                   </Typography>
                 </Box>
                 <CodeEditor
+                  ariaLabel={t('library.embedTemplate')}
                   value={templateDraft}
                   onChange={setTemplateDraft}
                   readOnly={!canEdit}
@@ -418,7 +419,7 @@ export default function EmbedDialog({
               <Tab value="html" label="HTML" />
               <Tab value="pmwiki" label="PmWiki" />
             </Tabs>
-            <CodeEditor value={snippet} readOnly minHeight="8rem" lineNumbers={false} />
+            <CodeEditor ariaLabel={t('library.embedSnippet')} value={snippet} readOnly minHeight="8rem" lineNumbers={false} />
             {/* Directly under what it copies, at the start of the line the eye returns to after
                 reading the snippet — rather than in a footer, where it was easy to miss. */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>

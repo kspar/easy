@@ -347,7 +347,7 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {canGoBack && (
-          <IconButton size="small" onClick={goBack} sx={{ ml: -1 }}>
+          <IconButton size="small" onClick={goBack} sx={{ ml: -1 }} aria-label={t('general.back')}>
             <ArrowBackOutlined fontSize="small" />
           </IconButton>
         )}

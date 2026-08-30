@@ -693,6 +693,10 @@ export default function LandingPage() {
         </Container>
       </Box>
 
+      {/* Everything between the navbar and the footer is the page's main content. Without a
+          landmark there is nothing for a screen-reader user to skip the navbar with, and this is
+          the first page an unauthenticated visitor sees (audit X-011). */}
+      <Box component="main">
       {/* ─── Hero ────────────────────────────────────────────────────────── */}
       <Box
         sx={{
@@ -1121,6 +1125,8 @@ export default function LandingPage() {
             </Box>
           </Reveal>
         </Container>
+      </Box>
+
       </Box>
 
       {/* ─── Footer ──────────────────────────────────────────────────────── */}
