@@ -69,7 +69,6 @@
     "PATCH /v2/management/notifications/{notificationId}": { "request": "core.ems.service.management.AdminUpdateManagementNotificationsController.Req" },
     "POST /v2/account/checkin": { "request": "core.ems.service.register.UpdateAccountController.PersonalDataBody" },
     "POST /v2/admin/courses": { "request": "core.ems.service.course.CreateCourse.Req", "response": "core.ems.service.course.CreateCourse.Resp" },
-    "POST /v2/admin/exercises/markdown/rerender": { "request": "core.ems.service.exercise.AdminRerenderMarkdownController.Req", "response": "core.ems.service.exercise.AdminRerenderMarkdownController.Resp" },
     "POST /v2/admin/exercises/tsl/recompile": { "request": "core.ems.service.exercise.AdminRecompileTslController.Req", "response": "core.ems.service.exercise.AdminRecompileTslController.Resp" },
     "POST /v2/articles": { "request": "core.ems.service.article.CreateArticleController.Req", "response": "core.ems.service.article.CreateArticleController.Resp" },
     "POST /v2/articles/{articleId}/aliases": { "request": "core.ems.service.article.CreateArticleAliasController.Req" },
@@ -618,27 +617,6 @@
       "failed": { "kind": "number" },
       "not_found": { "kind": "array" },
       "results": { "kind": "array", "type": "core.ems.service.exercise.AdminRecompileTslController.ExerciseResp" },
-      "scanned": { "kind": "number" },
-      "skipped": { "kind": "number" },
-      "unchanged": { "kind": "number" }
-    },
-    "core.ems.service.exercise.AdminRerenderMarkdownController.ExerciseResp": {
-      "detail": { "kind": "string", "nullable": true },
-      "exercise_id": { "kind": "number" },
-      "outcome": { "kind": "enum", "values": ["CHANGED", "FAILED", "SKIPPED", "UNCHANGED"] },
-      "rendered_length": { "kind": "number", "nullable": true },
-      "stored_length": { "kind": "number", "nullable": true }
-    },
-    "core.ems.service.exercise.AdminRerenderMarkdownController.Req": {
-      "apply": { "kind": "boolean" },
-      "exercise_ids": { "kind": "array", "nullable": true }
-    },
-    "core.ems.service.exercise.AdminRerenderMarkdownController.Resp": {
-      "applied": { "kind": "boolean" },
-      "changed": { "kind": "number" },
-      "failed": { "kind": "number" },
-      "not_found": { "kind": "array" },
-      "results": { "kind": "array", "type": "core.ems.service.exercise.AdminRerenderMarkdownController.ExerciseResp" },
       "scanned": { "kind": "number" },
       "skipped": { "kind": "number" },
       "unchanged": { "kind": "number" }
