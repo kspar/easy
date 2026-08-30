@@ -126,7 +126,7 @@ test('library-exercise-tsl-live', async ({ launch, check }) => {
   await page.goto(`${BASE_URL}/library/exercise/${EXERCISE_ID}/sum`)
   await page.waitForSelector('text=Sum of two numbers')
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
-  await page.getByRole('tab', { name: 'Auto-assessment' }).click()
+  await page.getByRole('tab', { name: 'Tests' }).click()
   await settle()
 
   check('empty spec compiles on the real backend', (await compilerError()) === null, await compilerError())
@@ -204,7 +204,7 @@ test('library-exercise-tsl-live', async ({ launch, check }) => {
   await shot('03b-static-tests')
 
   // --- what the compiler was asked to build is what Save will send --------------------------------
-  await page.getByRole('tab', { name: 'TSL', exact: true }).click()
+  await page.getByRole('tab', { name: 'Spec', exact: true }).click()
   await settle(300)
   await shot('04-spec')
 

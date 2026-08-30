@@ -108,7 +108,7 @@ test('similarity-page', async ({ launch, check }) => {
   check(
     'the pair is listed with both scores labelled',
     await waitUntil(async () =>
-      (await page.getByText('Dice 91%').count()) > 0 && (await page.getByText('Levenshtein 78%').count()) > 0),
+      (await page.getByText('Shared text 91%').count()) > 0 && (await page.getByText('Edit distance 78%').count()) > 0),
   )
 
   // --- the diff, and the link to the student -----------------------------------------------------------
@@ -154,7 +154,7 @@ test('similarity-page', async ({ launch, check }) => {
   // real endpoint does when a pair falls outside the returned set — it must not crash the page.
   check(
     'a pair whose submissions are missing from the response is skipped rather than crashing',
-    (await page.getByText('Dice 20%').count()) === 0,
+    (await page.getByText('Shared text 20%').count()) === 0,
   )
 
   // --- the group filter narrows what gets sent ----------------------------------------------------------

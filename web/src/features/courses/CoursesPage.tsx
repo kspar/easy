@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Alert,
   Box,
   Chip,
   IconButton,
@@ -27,6 +26,7 @@ import { alpha } from '@mui/material/styles'
 import { GREEN } from '../../theme/theme.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import { COLOR_PALETTE, randomColor } from './course-colors.ts'
+import ErrorAlert from '../../components/ErrorAlert.tsx'
 
 
 type ViewMode = 'grid' | 'list'
@@ -153,7 +153,7 @@ function StudentCourses() {
       </Box>
 
       {isLoading && <CircularProgress />}
-      {error && <Alert severity="error">{t('general.somethingWentWrong')}</Alert>}
+      {error && <ErrorAlert />}
 
       <Box sx={viewMode === 'grid' ? gridSx : listSx}>
         {courses?.map((course) => {
@@ -308,7 +308,7 @@ function TeacherCourses() {
       {isAdmin && <CreateCourseDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />}
 
       {isLoading && <CircularProgress />}
-      {error && <Alert severity="error">{t('general.somethingWentWrong')}</Alert>}
+      {error && <ErrorAlert />}
 
       <Box sx={viewMode === 'grid' ? gridSx : listSx}>
         {courses?.map((course) => {

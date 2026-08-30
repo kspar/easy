@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { EditorView } from '@codemirror/view'
 import { useTranslation } from 'react-i18next'
-import { storedFileUrl, uploadErrorKind, useUploadFile } from '../../api/files.ts'
+import { storedFileUrl, UPLOAD_LIMIT_MB, uploadErrorKind, useUploadFile } from '../../api/files.ts'
 import { findPlaceholder, markdownForUpload, uploadPlaceholder } from './markdownActions.ts'
 
 /**
@@ -55,7 +55,7 @@ export function useMarkdownUpload() {
         setError(null)
       } catch (e) {
         replaceWith('')
-        setError(t(`markdown.uploadError.${uploadErrorKind(e)}`))
+        setError(t(`markdown.uploadError.${uploadErrorKind(e)}`, { limit: UPLOAD_LIMIT_MB }))
       } finally {
         setBusy((n) => n - 1)
       }

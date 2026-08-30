@@ -107,7 +107,7 @@ test('course-exercise-teacher-testing', async ({ launch, check }) => {
   async function openTestingTab() {
     await page.goto(`${BASE_URL}/courses/${COURSE}/exercises/${CE}`)
     await page.getByText('Sum of two numbers').first().waitFor()
-    await page.getByRole('tab', { name: 'Testing' }).click()
+    await page.getByRole('tab', { name: 'Try it' }).click()
   }
 
   // --- opens with the last attempt --------------------------------------------------------------

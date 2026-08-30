@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/useAuth.ts'
 import type { Role } from '../auth/auth-context.ts'
 import { Navigate } from 'react-router-dom'
-import { Alert, Box, CircularProgress, Typography } from '@mui/material'
+import { Box, CircularProgress, Typography } from '@mui/material'
+import ErrorAlert from '../components/ErrorAlert.tsx'
 
 interface Props {
   children: ReactNode
@@ -42,7 +43,7 @@ export default function RequireAuth({ children, allowedRoles }: Props) {
   }
 
   if (checkinFailed) {
-    return <Alert severity="error">{t('general.somethingWentWrong')}</Alert>
+    return <ErrorAlert />
   }
 
   // Nothing else can be requested before the account exists in core

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  Alert,
   Box,
   Button,
   Chip,
@@ -17,6 +16,7 @@ import RelativeTime from '../../components/RelativeTime.tsx'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import { spaLinkProps } from '../library/links.ts'
 import { articleLink, useArticles, useCreateArticle } from '../../api/articles.ts'
+import ErrorAlert from '../../components/ErrorAlert.tsx'
 
 /**
  * The admin index of articles, at `/articles`.
@@ -89,7 +89,7 @@ export default function ArticlesPage() {
         </Paper>
       )}
 
-      {create.isError && <Alert severity="error" sx={{ mb: 2 }}>{t('general.somethingWentWrong')}</Alert>}
+      {create.isError && <ErrorAlert sx={{ mb: 2 }} />}
 
       {isLoading && (
         <Box display="flex" justifyContent="center" py={4}>

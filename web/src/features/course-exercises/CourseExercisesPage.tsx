@@ -1,7 +1,6 @@
 import {
   Typography,
   CircularProgress,
-  Alert,
   Box,
   Button,
   Checkbox,
@@ -19,16 +18,12 @@ import {
   Tooltip,
 } from '@mui/material'
 import {
-  CheckCircle,
-  RadioButtonUnchecked,
-  HourglassEmptyOutlined,
-  CircleOutlined,
   AddOutlined,
   ArrowBackOutlined,
   ArrowDownwardOutlined,
   ArrowDropDownOutlined,
   ArrowUpwardOutlined,
-  DeleteOutlined,
+  DeleteOutlineOutlined,
   FilterAltOffOutlined,
   MoreVertOutlined,
   NoteAddOutlined,
@@ -43,7 +38,7 @@ import ExerciseProgressBar from '../../components/ExerciseProgressBar.tsx'
 import { RobotIcon, TeacherFaceIcon } from '../../components/icons.tsx'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useParams, useNavigate, useLocation, Link as RouterLink } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { format, isPast, differenceInHours, type Locale } from 'date-fns'
 import { et, enGB } from 'date-fns/locale'
 import { useAuth } from '../../auth/useAuth.ts'
@@ -64,51 +59,17 @@ import CourseExerciseSettingsDialog from './CourseExerciseSettingsDialog.tsx'
 import ReorderExerciseDialog from './ReorderExerciseDialog.tsx'
 import AddFromLibraryDialog from './AddFromLibraryDialog.tsx'
 import NewCourseExerciseDialog from './NewCourseExerciseDialog.tsx'
+import ExerciseStatusIcon from '../../components/ExerciseStatusIcon.tsx'
+import { STATUS_LABEL_KEY, statusColor } from '../../components/exerciseStatus.ts'
 import type {
   CourseExercise,
   StudentExerciseStatus,
   TeacherCourseExercise,
 } from '../../api/types.ts'
-
-function statusIcon(status: StudentExerciseStatus) {
-  switch (status) {
-    case 'COMPLETED':
-      return <CheckCircle color="success" />
-    case 'STARTED':
-      return <CircleOutlined color="warning" />
-    case 'UNGRADED':
-      return <HourglassEmptyOutlined color="info" />
-    case 'UNSTARTED':
-      return <RadioButtonUnchecked color="disabled" />
-  }
-}
+import ErrorAlert from '../../components/ErrorAlert.tsx'
 
 function statusLabel(status: StudentExerciseStatus, t: (k: string) => string) {
-  switch (status) {
-    case 'COMPLETED':
-      return t('exercises.completed')
-    case 'STARTED':
-      return t('exercises.started')
-    case 'UNGRADED':
-      return t('exercises.ungraded')
-    case 'UNSTARTED':
-      return t('exercises.unstarted')
-  }
-}
-
-function statusColor(
-  status: StudentExerciseStatus,
-): 'success' | 'warning' | 'info' | 'default' {
-  switch (status) {
-    case 'COMPLETED':
-      return 'success'
-    case 'STARTED':
-      return 'warning'
-    case 'UNGRADED':
-      return 'info'
-    case 'UNSTARTED':
-      return 'default'
-  }
+  return t(STATUS_LABEL_KEY[status])
 }
 
 export default function CourseExercisesPage() {
@@ -159,7 +120,7 @@ function StudentExercises() {
 
       {isLoading && <CircularProgress />}
       {error && (
-        <Alert severity="error">{t('general.somethingWentWrong')}</Alert>
+        <ErrorAlert />
       )}
 
       {exercises && exercises.length === 0 && (
@@ -410,7 +371,7 @@ function TeacherExercises() {
 
       {isLoading && <CircularProgress />}
       {error && (
-        <Alert severity="error">{t('general.somethingWentWrong')}</Alert>
+        <ErrorAlert />
       )}
 
       {exercises && exercises.length === 0 && (
@@ -465,7 +426,7 @@ function TeacherExercises() {
               <Button
                 size="small"
                 color="error"
-                startIcon={<DeleteOutlined />}
+                startIcon={<DeleteOutlineOutlined />}
                 disabled={isBusy}
                 onClick={() => setConfirmRemove(selected)}
               >
@@ -775,7 +736,7 @@ function TeacherExercises() {
             }}
           >
             <ListItemIcon>
-              <DeleteOutlined fontSize="small" />
+              <DeleteOutlineOutlined fontSize="small" />
             </ListItemIcon>
             <ListItemText>{t('exercises.removeFromCourse')}</ListItemText>
           </MenuItem>,
@@ -819,7 +780,13 @@ function TeacherExercises() {
         message={
           <>
             {confirmRemove?.length === 1
-              ? t('exercises.removeFromCourseConfirm', { name: confirmRemove[0].effective_title })
+              ? (
+                <Trans
+                  i18nKey="exercises.removeFromCourseConfirm"
+                  values={{ name: confirmRemove[0].effective_title }}
+                  components={{ bold: <strong /> }}
+                />
+              )
               : t('exercises.removeManyFromCourseConfirm', { count: confirmRemove?.length ?? 0 })}
             {removeSubmissionCount > 0 && (
               <Typography component="span" color="error" sx={{ display: 'block', mt: 1 }}>
@@ -949,7 +916,7 @@ function StudentExerciseRow({
         sx={{ borderRadius: 1, mb: 0.5 }}
       >
         <ListItemIcon sx={{ minWidth: 40 }}>
-          {statusIcon(exercise.status)}
+          <ExerciseStatusIcon status={exercise.status} />
         </ListItemIcon>
         <ListItemText
           primary={exercise.effective_title}

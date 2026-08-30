@@ -123,7 +123,7 @@ test('library-exercise-ui', async ({ launch, check }) => {
     await page.getByText('Programmeerimise alused').first().isVisible(),
   )
   check('courses with no access are counted', await page.getByText(/2 courses you have no access to/).isVisible())
-  check('testing tab is offered for an auto-graded exercise', await page.getByRole('tab', { name: 'Testing' }).isVisible())
+  check('testing tab is offered for an auto-graded exercise', await page.getByRole('tab', { name: 'Try it' }).isVisible())
   await shot('01-view')
 
   // --- edit mode ------------------------------------------------------------------------------------
@@ -414,10 +414,10 @@ test('library-exercise-ui', async ({ launch, check }) => {
   await waitUntil(async () => (await page.getByRole('dialog').count()) === 0)
 
   // --- non-TSL container keeps the file editor ------------------------------------------------------
-  await page.getByRole('tab', { name: 'Auto-assessment' }).click()
+  await page.getByRole('tab', { name: 'Tests' }).click()
   check('non-TSL exercise shows the eval script tab', await page.getByRole('tab', { name: 'evaluate.sh' }).isVisible())
   check('and its asset files', await page.getByRole('tab', { name: 'tester.py' }).isVisible())
-  check('no TSL builder for a non-TSL container', (await page.getByRole('tab', { name: 'Tests' }).count()) === 0)
+  check('no TSL builder for a non-TSL container', (await page.getByRole('tab', { name: 'TSL', exact: true }).count()) === 0)
   await shot('07-non-tsl-autoassess')
 
   // --- the settings are a summary until you edit -----------------------------------------------------
@@ -453,7 +453,7 @@ test('library-exercise-ui', async ({ launch, check }) => {
   // en.json silently reproduces the original bug, and a check for English text alone would still see
   // something plausible on screen.
   const helpText = await page.getByText(/Python Grader/).last().innerText()
-  check('the container note is translated', helpText.includes('not recommended for new auto-assessments'))
+  check('the container note is translated', helpText.includes('not recommended for new tests'))
   check('and does not fall back to Estonian', !helpText.includes('ei soovita'))
   check(
     'the summary steps aside rather than duplicating them',

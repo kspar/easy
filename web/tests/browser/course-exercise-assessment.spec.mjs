@@ -160,7 +160,7 @@ test('course-exercise-assessment', async ({ launch, check }) => {
   }
   check(
     'nor a type selector',
-    (await page.getByRole('combobox', { name: 'Auto-assessment type' }).count()) === 0,
+    (await page.getByRole('combobox', { name: 'Test framework' }).count()) === 0,
   )
 
   // The labels have to survive somewhere, or the line is five unexplained values.
@@ -198,7 +198,7 @@ test('course-exercise-assessment', async ({ launch, check }) => {
 
   check(
     'a teacher-graded exercise says so instead of showing an empty config',
-    await waitUntil(() => page.getByText(/no auto-assessment/).isVisible()),
+    await waitUntil(() => page.getByText(/no tests/).isVisible()),
   )
 
   await shot('teacher-graded')

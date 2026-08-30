@@ -19,6 +19,16 @@ export interface UploadedFile {
  */
 export type UploadErrorKind = 'tooLarge' | 'rejected' | 'unknown'
 
+/**
+ * The upload ceiling quoted to the user, in MB.
+ *
+ * Enforced by the reverse proxy (`client_max_body_size` in the nginx role), not by anything here —
+ * the frontend never sees the real value, it only sees the 413. It lived inside a translated string
+ * until EZ-1820, where it was a number two files away from the only place that could contradict it.
+ * If the proxy's limit moves, this moves with it.
+ */
+export const UPLOAD_LIMIT_MB = 20
+
 export function uploadErrorKind(e: unknown): UploadErrorKind {
   if (!(e instanceof ApiResponseError)) return 'unknown'
   // 413 without a body is the reverse proxy refusing the request before core ever saw it, so core's

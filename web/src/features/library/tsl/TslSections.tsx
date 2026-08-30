@@ -8,6 +8,7 @@ import {
   Paper,
   Select,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import {
@@ -365,15 +366,25 @@ export function TslDataChecksSection({
             </Box>
             {editing && (
               <Box display="flex" flexShrink={0}>
-                <IconButton size="small" disabled={i === 0} onClick={() => move(i, -1)}>
-                  <ArrowUpwardOutlined fontSize="small" />
-                </IconButton>
-                <IconButton size="small" disabled={i === checks.length - 1} onClick={() => move(i, 1)}>
-                  <ArrowDownwardOutlined fontSize="small" />
-                </IconButton>
-                <IconButton size="small" onClick={() => onChange(checks.filter((_, idx) => idx !== i))}>
-                  <DeleteOutlineOutlined fontSize="small" />
-                </IconButton>
+                <Tooltip title={t('general.moveUp')}>
+                  <span>
+                    <IconButton size="small" disabled={i === 0} onClick={() => move(i, -1)} aria-label={t('general.moveUp')}>
+                      <ArrowUpwardOutlined fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title={t('general.moveDown')}>
+                  <span>
+                    <IconButton size="small" disabled={i === checks.length - 1} onClick={() => move(i, 1)} aria-label={t('general.moveDown')}>
+                      <ArrowDownwardOutlined fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title={t('general.remove')}>
+                  <IconButton size="small" onClick={() => onChange(checks.filter((_, idx) => idx !== i))} aria-label={t('general.remove')}>
+                    <DeleteOutlineOutlined fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               </Box>
             )}
           </Box>

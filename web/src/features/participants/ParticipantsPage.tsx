@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Typography,
   CircularProgress,
-  Alert,
   Box,
   Tab,
   Tabs,
@@ -28,7 +27,7 @@ import {
 import {
   ArrowBackOutlined,
   AddOutlined,
-  DeleteOutlined,
+  DeleteOutlineOutlined,
   RemoveOutlined,
   ContentCopyOutlined,
   LinkOutlined,
@@ -80,6 +79,7 @@ import EditInviteDialog from './EditInviteDialog.tsx'
 import { useAuth } from '../../auth/useAuth.ts'
 import type { TeacherParticipant, GroupResp } from '../../api/types.ts'
 import logoSvg from '../../assets/logo.svg'
+import ErrorAlert from '../../components/ErrorAlert.tsx'
 
 interface StudentRow {
   id: string
@@ -762,6 +762,7 @@ export default function ParticipantsPage() {
                     setMoodleMenuAnchor(e.currentTarget)
                     setMoodleMenuStudent(s)
                   }}
+                  aria-label={t('general.moreOptions')}
                 >
                   <MoreVertOutlined fontSize="small" />
                 </IconButton>
@@ -775,6 +776,7 @@ export default function ParticipantsPage() {
                     setStudentMenuAnchor(e.currentTarget)
                     setStudentMenuId(s.id)
                   }}
+                  aria-label={t('general.moreOptions')}
                 >
                   <MoreVertOutlined fontSize="small" />
                 </IconButton>
@@ -808,6 +810,7 @@ export default function ParticipantsPage() {
               setTeacherMenuAnchor(e.currentTarget)
               setTeacherMenuId(row.original.id)
             }}
+            aria-label={t('general.moreOptions')}
           >
             <MoreVertOutlined fontSize="small" />
           </IconButton>
@@ -839,6 +842,7 @@ export default function ParticipantsPage() {
               setGroupMenuRowAnchor(e.currentTarget)
               setGroupMenuRowId(row.original.id)
             }}
+            aria-label={t('general.moreOptions')}
           >
             <MoreVertOutlined fontSize="small" />
           </IconButton>
@@ -864,7 +868,7 @@ export default function ParticipantsPage() {
 
       {isLoading && <CircularProgress />}
       {error && (
-        <Alert severity="error">{t('general.somethingWentWrong')}</Alert>
+        <ErrorAlert />
       )}
 
       {data && (
@@ -941,7 +945,7 @@ export default function ParticipantsPage() {
                         <Button
                           size="small"
                           color="error"
-                          startIcon={<DeleteOutlined />}
+                          startIcon={<DeleteOutlineOutlined />}
                           onClick={handleBulkRemoveStudents}
                         >
                           {t('participants.removeFromCourse')}
@@ -1031,7 +1035,7 @@ export default function ParticipantsPage() {
                             onClick={handleDeleteInvite}
                             color="error"
                           >
-                            <DeleteOutlined fontSize="small" />
+                            <DeleteOutlineOutlined fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       </Box>
@@ -1179,7 +1183,7 @@ export default function ParticipantsPage() {
                     <Button
                       size="small"
                       color="error"
-                      startIcon={<DeleteOutlined />}
+                      startIcon={<DeleteOutlineOutlined />}
                       onClick={handleBulkRemoveTeachers}
                     >
                       {t('participants.removeFromCourse')}
@@ -1223,7 +1227,7 @@ export default function ParticipantsPage() {
                     <Button
                       size="small"
                       color="error"
-                      startIcon={<DeleteOutlined />}
+                      startIcon={<DeleteOutlineOutlined />}
                       onClick={handleBulkDeleteGroups}
                     >
                       {t('general.delete')}
@@ -1616,7 +1620,7 @@ export default function ParticipantsPage() {
             if (id) handleRemoveStudent(id)
           }}
         >
-          <ListItemIcon><DeleteOutlined fontSize="small" color="error" /></ListItemIcon>
+          <ListItemIcon><DeleteOutlineOutlined fontSize="small" color="error" /></ListItemIcon>
           <ListItemText>{t('participants.removeFromCourse')}</ListItemText>
         </MenuItem>
       </Menu>
@@ -1657,7 +1661,7 @@ export default function ParticipantsPage() {
             if (id) handleRemoveTeacher(id)
           }}
         >
-          <ListItemIcon><DeleteOutlined fontSize="small" color="error" /></ListItemIcon>
+          <ListItemIcon><DeleteOutlineOutlined fontSize="small" color="error" /></ListItemIcon>
           <ListItemText>{t('participants.removeFromCourse')}</ListItemText>
         </MenuItem>
       </Menu>
@@ -1679,7 +1683,7 @@ export default function ParticipantsPage() {
             if (id) handleDeleteGroups([id])
           }}
         >
-          <ListItemIcon><DeleteOutlined fontSize="small" color="error" /></ListItemIcon>
+          <ListItemIcon><DeleteOutlineOutlined fontSize="small" color="error" /></ListItemIcon>
           <ListItemText>{t('general.delete')}</ListItemText>
         </MenuItem>
       </Menu>
@@ -1774,6 +1778,7 @@ export default function ParticipantsPage() {
             <IconButton
               onClick={() => setPresentLinkOpen(false)}
               sx={{ position: 'absolute', top: 24, right: 24 }}
+              aria-label={t('general.close')}
             >
               <CloseOutlined />
             </IconButton>

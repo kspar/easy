@@ -38,10 +38,16 @@ export default function ExerciseTextTab({
         fullWidth
         error={editing && (titleTooLong || titleEmpty)}
         helperText={
+          // Whole sentences with the field name interpolated, rather than a fragment glued to a
+          // label at the call site: Estonian needs a case ending on that noun, which string
+          // concatenation cannot give it.
           editing && titleTooLong
-            ? `${t('validation.tooLong')} ${TITLE_MAX_LENGTH}`
+            ? t('validation.tooLong', {
+                field: t('library.exerciseTitle'),
+                max: TITLE_MAX_LENGTH,
+              })
             : editing && titleEmpty
-              ? `${t('library.exerciseTitle')} ${t('validation.required')}`
+              ? t('validation.required', { field: t('library.exerciseTitle') })
               : ' '
         }
       />

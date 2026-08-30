@@ -22,7 +22,7 @@ import {
 } from '@mui/material'
 import {
   AddOutlined,
-  DeleteOutlined,
+  DeleteOutlineOutlined,
   EditOutlined,
   ScheduleOutlined,
 } from '@mui/icons-material'
@@ -323,7 +323,7 @@ export default function SystemMessagesPage() {
                         if (window.confirm(t('admin.messages.confirmDelete'))) remove.mutate(m.id)
                       }}
                     >
-                      <DeleteOutlined />
+                      <DeleteOutlineOutlined />
                     </IconButton>
                   </Tooltip>
                 </Stack>

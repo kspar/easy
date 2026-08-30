@@ -85,14 +85,14 @@ test('nav-bug-dashboard', async ({ launch, check }) => {
     // the section is that these four are together — an item quietly rendering somewhere else still
     // works and is still wrong.
     check(`there is an Administration heading (${r.heading})`, r.heading === 1)
-    for (const item of ['System messages', 'Reported bugs', 'Keycloak admin', 'Operating info']) {
+    for (const item of ['System messages', 'Reported bugs', 'Lahendus ID admin', 'Operating info']) {
       check(`${item} is in the nav`, r.navItems.some((t) => t.includes(item)))
     }
     // Last, so it never pushes the course someone is working in further down the page.
     const lastFour = r.navItems.slice(-4).join(' | ')
     check(
       `and the section is at the bottom (${lastFour})`,
-      ['System messages', 'Reported bugs', 'Keycloak admin', 'Operating info'].every((i) =>
+      ['System messages', 'Reported bugs', 'Lahendus ID admin', 'Operating info'].every((i) =>
         lastFour.includes(i),
       ),
     )

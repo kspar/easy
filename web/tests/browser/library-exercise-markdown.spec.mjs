@@ -111,7 +111,7 @@ test('library-exercise-markdown', async ({ launch, check }) => {
   await page.keyboard.type('Intro line')
   await toolbar.getByRole('button', { name: 'Table', exact: true }).click()
   const withTable = await docText()
-  check('table inserts a header row', withTable.includes('| Heading 1 | Heading 2 |'))
+  check('table inserts a header row', withTable.includes('| Header 1 | Header 2 |'))
   check('table inserts a delimiter row', withTable.includes('| --- | --- |'))
   check('table keeps the paragraph above it', withTable.includes('Intro line'))
 

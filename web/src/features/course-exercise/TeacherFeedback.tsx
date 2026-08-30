@@ -4,7 +4,6 @@ import {
   ButtonBase,
   Chip,
   CircularProgress,
-  Alert,
   Collapse,
   Divider,
   Paper,
@@ -21,6 +20,7 @@ import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import ReadOnlyCodeSnippet from './ReadOnlyCodeSnippet.tsx'
 import { useTeacherActivities, useStudentInlineComments } from '../../api/exercises.ts'
 import type { InlineCommentResp, SubmissionResp, TeacherActivityResp } from '../../api/types.ts'
+import ErrorAlert from '../../components/ErrorAlert.tsx'
 
 const CONTEXT_LINES = 3
 const MERGE_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
@@ -419,7 +419,7 @@ export default function TeacherFeedback({
 
   if (isLoading) return <CircularProgress size={24} />
   if (activitiesError)
-    return <Alert severity="error">{t('general.somethingWentWrong')}</Alert>
+    return <ErrorAlert />
   if ((!activities || activities.length === 0) && (!inlineComments || inlineComments.length === 0)) return null
 
   // Build a map of submission_id -> solution for quick lookup

@@ -15,7 +15,7 @@ import {
 import {
   ArrowBackOutlined,
   DarkModeOutlined,
-  DownloadOutlined,
+  FileDownloadOutlined,
   LanguageOutlined,
   OpenInNewOutlined,
   ShieldOutlined,
@@ -263,7 +263,7 @@ export default function AccountSettingsPage() {
             {t('account.yourData')}
           </Typography>
           <SettingRow
-            icon={<DownloadOutlined />}
+            icon={<FileDownloadOutlined />}
             title={t('account.exportData')}
             description={t('account.exportDataHint')}
             control={
@@ -272,7 +272,7 @@ export default function AccountSettingsPage() {
                 variant="outlined"
                 onClick={downloadData}
                 disabled={exporting}
-                startIcon={exporting ? <CircularProgress size={16} color="inherit" /> : <DownloadOutlined />}
+                startIcon={exporting ? <CircularProgress size={16} color="inherit" /> : <FileDownloadOutlined />}
               >
                 {t('account.download')}
               </Button>

@@ -130,7 +130,7 @@ test('course-exercise-retry-autoassess', async ({ launch, check }) => {
 
   await open()
 
-  const retryButton = page.getByRole('button', { name: /Re-run auto-assessment/i })
+  const retryButton = page.getByRole('button', { name: /Re-run tests/i })
   // Polled, not sampled: the title renders from one query and the button from another, so a one-shot
   // isVisible() here fails on timing rather than on behaviour. It did, on the first run of this script —
   // and the click below still passed, because Playwright's click auto-waits. A check that fails while
@@ -170,7 +170,7 @@ test('course-exercise-retry-autoassess', async ({ launch, check }) => {
   await open().catch(() => {})
   check(
     'the button is not offered when the exercise is teacher-graded',
-    await waitUntil(async () => (await page.getByRole('button', { name: /Re-run auto-assessment/i }).count()) === 0),
+    await waitUntil(async () => (await page.getByRole('button', { name: /Re-run tests/i }).count()) === 0),
   )
 
   await close()

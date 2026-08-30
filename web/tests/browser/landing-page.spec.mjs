@@ -35,9 +35,8 @@ test('landing-page', async ({ launch, check }) => {
   }
 
   // The navbar is a plain fixed Box, not a <header> or <nav>, and src/ deliberately carries no
-  // data-testid attributes — so target by text where there is text, and by DOM order where there
-  // is not. The navbar CTA is the first <button> on the page: the nav links above it render as
-  // anchors, not buttons.
+  // data-testid attributes — so target by text. Not by DOM order: the language toggle added in
+  // EZ-1820 sits to the left of the CTA, so the CTA is no longer the first <button> on the page.
   const ctaByText = (text) => page.getByRole('button', { name: text })
 
   /**
@@ -119,7 +118,13 @@ test('landing-page', async ({ launch, check }) => {
     `while checking: nothing says "Log in" (buttons: ${JSON.stringify(duringLabels)})`,
     !duringLabels.some((t) => t.includes('Log in')),
   )
-  check('while checking: navbar CTA is disabled', during[0]?.disabled === true)
+  // The navbar CTA is the one that renders a spinner rather than a word while the answer is
+  // pending, so it is the empty-labelled button — not `during[0]`, which was the CTA only until
+  // the language toggle moved in to its left (EZ-1820).
+  check(
+    `while checking: navbar CTA is disabled (buttons: ${JSON.stringify(duringLabels)})`,
+    during.some((b) => b.text === '' && b.disabled),
+  )
   check(
     'while checking: hero CTA is disabled',
     during.some((b) => b.text.includes('Get started') && b.disabled),

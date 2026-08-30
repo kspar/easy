@@ -16,6 +16,7 @@ import {
   MenuItem,
   Select,
   Slider,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import {
@@ -46,6 +47,9 @@ import { spaLinkProps } from '../../components/spaLink.ts'
  * students is 780 comparisons, 300 is nearly 45,000. The scaling problem is EZ-1667's to solve; this
  * page's job is to not let a teacher click a button that will appear to hang.
  */
+/** How many pairs core returns at most. Its answer is truncated to this, highest score first. */
+const MAX_PAIRS = 100
+
 const PAIR_WARNING_THRESHOLD = 120
 
 export default function SimilarityPage() {
@@ -197,7 +201,7 @@ export default function SimilarityPage() {
       {/* What is about to be compared, before committing to the wait. */}
       {selected && !rowsLoading && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-          {t('similarity.scope', { submissions: submitted.length, pairs: pairCount })}
+          {t('similarity.scope', { submissions: submitted.length, count: pairCount })}
         </Typography>
       )}
 
@@ -238,10 +242,10 @@ export default function SimilarityPage() {
             )}
           </Box>
 
-          {/* Core caps its answer at the 100 highest pairs. Silently showing 100 of 45,000 would
+          {/* Core caps its answer at the highest MAX_PAIRS. Silently showing 100 of 45,000 would
               read as "there are 100 suspicious pairs", so say which it is. */}
-          {result.scores.length >= 100 && (
-            <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.capped')}</Alert>
+          {result.scores.length >= MAX_PAIRS && (
+            <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.capped', { limit: MAX_PAIRS })}</Alert>
           )}
 
           {result.scores.length === 0 && (
@@ -269,13 +273,19 @@ export default function SimilarityPage() {
                     </Typography>
                     <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
                       {/* Labelled, because "84% · 61%" invites the question of which is which — and
-                          the two answer different questions. */}
-                      <Chip size="small" label={t('similarity.diceShort', { score: score.score_a })} />
-                      <Chip
-                        size="small"
-                        variant="outlined"
-                        label={t('similarity.levenshteinShort', { score: score.score_b })}
-                      />
+                          the two answer different questions. Named for what they measure rather
+                          than for the algorithm; the algorithm is in the tooltip, for the reader
+                          who wants to know how the number was arrived at. */}
+                      <Tooltip title={t('similarity.diceTooltip')}>
+                        <Chip size="small" label={t('similarity.diceShort', { score: score.score_a })} />
+                      </Tooltip>
+                      <Tooltip title={t('similarity.levenshteinTooltip')}>
+                        <Chip
+                          size="small"
+                          variant="outlined"
+                          label={t('similarity.levenshteinShort', { score: score.score_b })}
+                        />
+                      </Tooltip>
                     </Box>
                   </Box>
                 </AccordionSummary>

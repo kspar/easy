@@ -97,9 +97,9 @@ test('library-exercise-tsl', async ({ launch, check }) => {
 
   // --- enter edit mode and open the TSL builder -------------------------------------------------
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
-  await page.getByRole('tab', { name: 'Auto-assessment' }).click()
+  await page.getByRole('tab', { name: 'Tests' }).click()
 
-  check('TSL builder replaces the file editor', await page.getByRole('tab', { name: 'Tests' }).isVisible())
+  check('TSL builder replaces the file editor', await page.getByRole('tab', { name: 'TSL', exact: true }).isVisible())
   check(
     'existing test is listed by name',
     await page.getByText('Adds two numbers', { exact: true }).isVisible(),
@@ -114,7 +114,7 @@ test('library-exercise-tsl', async ({ launch, check }) => {
 
   // Poll rather than sleep: the model->text hop is debounced, and how long that takes on a
   // loaded runner is not something a fixed wait can predict.
-  await page.getByRole('tab', { name: 'TSL', exact: true }).click()
+  await page.getByRole('tab', { name: 'Spec', exact: true }).click()
   const sawEdit = await waitUntil(async () =>
     (await page.locator('.cm-content').first().innerText()).includes('"5"'),
   )
@@ -179,7 +179,7 @@ test('library-exercise-tsl', async ({ launch, check }) => {
   await page.locator('.cm-content').first().click()
   await page.keyboard.press('ControlOrMeta+a')
   await page.keyboard.insertText(JSON.stringify(edited, null, 4))
-  await page.getByRole('tab', { name: 'Tests' }).click()
+  await page.getByRole('tab', { name: 'TSL', exact: true }).click()
   check(
     'JSON edit renamed the test in the builder',
     await waitUntil(() => page.getByText('Renamed from JSON', { exact: true }).isVisible()),
@@ -223,7 +223,7 @@ test('library-exercise-tsl', async ({ launch, check }) => {
   await shot('04-generated-scripts')
 
   // --- a spec the compiler rejects blocks Save ---------------------------------------------------
-  await page.getByRole('tab', { name: 'TSL', exact: true }).click()
+  await page.getByRole('tab', { name: 'Spec', exact: true }).click()
   await page.locator('.cm-content').first().click()
   await page.keyboard.press('ControlOrMeta+a')
   await page.keyboard.insertText('{ this is not json')

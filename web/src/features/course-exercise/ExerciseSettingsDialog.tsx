@@ -21,7 +21,7 @@ import {
   FormControl,
 } from '@mui/material'
 import {
-  DeleteOutlined,
+  DeleteOutlineOutlined,
   ExpandMoreOutlined,
 } from '@mui/icons-material'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
@@ -595,8 +595,8 @@ function ExceptionRowUI({
     <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 1.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
         <Typography variant="subtitle2">{label}</Typography>
-        <IconButton size="small" onClick={onRemove}>
-          <DeleteOutlined fontSize="small" />
+        <IconButton size="small" onClick={onRemove} aria-label={t('general.remove')}>
+          <DeleteOutlineOutlined fontSize="small" />
         </IconButton>
       </Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>

@@ -15,10 +15,12 @@ import {
   DevicesOutlined,
   GitHub,
   ArrowForwardOutlined,
+  LanguageOutlined,
 } from '@mui/icons-material'
 import { useAuth } from '../../auth/useAuth.ts'
 import { useStatistics } from '../../api/statistics.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
+import { Trans, useTranslation } from 'react-i18next'
 import logoSvg from '../../assets/logo.svg'
 import harnoLogo from '../../assets/sponsors/harno.svg'
 import mkmLogo from '../../assets/sponsors/mkm.png'
@@ -134,6 +136,8 @@ const TERMINAL_LINES: TerminalLine[] = [
 ]
 
 function TerminalWindow() {
+  const { t } = useTranslation()
+
   return (
     <Box
       sx={{
@@ -169,7 +173,7 @@ function TerminalWindow() {
             letterSpacing: '0.03em',
           }}
         >
-          lahendus &mdash; auto-grader
+          {t('landing.terminalCaption')}
         </Typography>
       </Box>
 
@@ -222,15 +226,20 @@ function TerminalWindow() {
 
 function FeatureCard({
   icon,
-  title,
-  description,
+  group,
+  featureKey,
   dark,
 }: {
   icon: ReactNode
-  title: string
-  description: string
+  /** `landing.teacher` or `landing.student` — which half of the copy this card reads from. */
+  group: 'teacher' | 'student'
+  featureKey: string
   dark?: boolean
 }) {
+  const { t } = useTranslation()
+  const title = t(`landing.${group}.${featureKey}Title`)
+  const description = t(`landing.${group}.${featureKey}Desc`)
+
   return (
     <Box
       sx={{
@@ -344,6 +353,7 @@ function StatItem({
 }
 
 function StatsStrip() {
+  const { t } = useTranslation()
   const stats = useStatistics()
 
   return (
@@ -367,7 +377,7 @@ function StatsStrip() {
         >
           <StatItem
             value={stats.totalSubmissions}
-            label="Submissions graded"
+            label={t('landing.statSubmissions')}
             isLoading={stats.isLoading}
           />
           <Box
@@ -380,7 +390,7 @@ function StatsStrip() {
           />
           <StatItem
             value={stats.totalUsers}
-            label="User accounts"
+            label={t('landing.statAccounts')}
             isLoading={stats.isLoading}
           />
           <Box
@@ -393,7 +403,7 @@ function StatsStrip() {
           />
           <StatItem
             value={stats.inAutoAssessing}
-            label="Grading right now"
+            label={t('landing.statGrading')}
             isLoading={stats.isLoading}
             live
           />
@@ -406,86 +416,38 @@ function StatsStrip() {
 // ─── Teacher Features ───────────────────────────────────────────────────────────
 
 const TEACHER_FEATURES = [
-  {
-    icon: <AutoFixHighOutlined />,
-    title: 'Automatic grading',
-    description:
-      'Solutions are tested against your test cases and graded instantly. Students get immediate feedback without any manual work.',
-  },
-  {
-    icon: <TableChartOutlined />,
-    title: 'Grade table',
-    description:
-      "See every student's progress at a glance in a spreadsheet-style view. Sort, filter by group, and export to CSV.",
-  },
-  {
-    icon: <LibraryBooksOutlined />,
-    title: 'Exercise library',
-    description:
-      'Build exercises once, reuse across courses. Organize in directories and share with colleagues.',
-  },
-  {
-    icon: <SyncOutlined />,
-    title: 'Moodle integration',
-    description:
-      'Link your course to Moodle and student lists sync automatically. Grades push back to Moodle too.',
-  },
-  {
-    icon: <ScheduleOutlined />,
-    title: 'Flexible deadlines',
-    description:
-      'Set soft and hard deadlines with per-student and per-group exceptions. Control exercise visibility with scheduling.',
-  },
-  {
-    icon: <RateReviewOutlined />,
-    title: 'Feedback snippets',
-    description:
-      'Save common feedback as reusable snippets. Insert with one click while grading to speed up reviews.',
-  },
+  { icon: <AutoFixHighOutlined />, key: 'grading' },
+  { icon: <TableChartOutlined />, key: 'gradeTable' },
+  { icon: <LibraryBooksOutlined />, key: 'library' },
+  { icon: <SyncOutlined />, key: 'moodle' },
+  { icon: <ScheduleOutlined />, key: 'deadlines' },
+  { icon: <RateReviewOutlined />, key: 'snippets' },
 ]
 
 // ─── Student Features ───────────────────────────────────────────────────────────
 
 const STUDENT_FEATURES = [
-  {
-    icon: <CodeOutlined />,
-    title: 'In-browser code editor',
-    description:
-      'Write code directly in the browser with syntax highlighting. No setup needed — just open and code.',
-  },
-  {
-    icon: <BoltOutlined />,
-    title: 'Instant automated feedback',
-    description:
-      'See which tests pass and which fail immediately after submitting. Fix and resubmit as many times as needed.',
-  },
-  {
-    icon: <TrendingUpOutlined />,
-    title: 'Progress tracking',
-    description:
-      'Visual indicators show your completion status across all exercises. Always know where you stand.',
-  },
-  {
-    icon: <DevicesOutlined />,
-    title: 'Submit from anywhere',
-    description:
-      'Use the web editor, upload files, submit from Thonny IDE, or use the command-line tool.',
-  },
+  { icon: <CodeOutlined />, key: 'editor' },
+  { icon: <BoltOutlined />, key: 'feedback' },
+  { icon: <TrendingUpOutlined />, key: 'progress' },
+  { icon: <DevicesOutlined />, key: 'anywhere' },
 ]
 
 // ─── Integration Cards ──────────────────────────────────────────────────────────
 
+// The names are product names and stay put; only what each one does gets translated.
 const INTEGRATIONS = [
-  { name: 'Moodle', desc: 'Sync students & grades' },
-  { name: 'Thonny', desc: 'Submit from IDE' },
-  { name: 'CLI', desc: 'Command-line tool' },
-  { name: 'Python SDK', desc: 'Programmatic access' },
+  { name: 'Moodle', key: 'moodle' },
+  { name: 'Thonny', key: 'thonny' },
+  { name: 'CLI', key: 'cli' },
+  { name: 'Python SDK', key: 'sdk' },
 ]
 
 // ─── Main Component ─────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
-  usePageTitle('Lahendus \u2014 Automated Programming Assessment')
+  const { t, i18n } = useTranslation()
+  usePageTitle(t('landing.pageTitle'))
 
   const navigate = useNavigate()
   const { initialized, authenticated, firstName, login } = useAuth()
@@ -581,8 +543,8 @@ export default function LandingPage() {
               }}
             >
               {[
-                { label: 'Features', target: 'teachers' },
-                { label: 'Open source', target: 'open-source' },
+                { label: t('landing.navFeatures'), target: 'teachers' },
+                { label: t('landing.navOpenSource'), target: 'open-source' },
               ].map((link) => (
                 <Box
                   key={link.target}
@@ -645,6 +607,30 @@ export default function LandingPage() {
                 </Box>
               )}
 
+              {/*
+                The page a signed-out Estonian visitor is most likely to land on had no way to
+                switch language, because it had no other language to switch to (EZ-1820). Now it
+                does, so it needs the control the app shell has always had.
+              */}
+              <Button
+                size="small"
+                onClick={() => i18n.changeLanguage(i18n.language === 'et' ? 'en' : 'et')}
+                startIcon={<LanguageOutlined sx={{ fontSize: '1rem !important' }} />}
+                sx={{
+                  fontFamily: F.body,
+                  fontWeight: 500,
+                  fontSize: '0.82rem',
+                  color: 'rgba(255,255,255,0.6)',
+                  textTransform: 'none',
+                  minWidth: 0,
+                  px: 1.25,
+                  mr: 0.5,
+                  '&:hover': { color: GREEN_BRIGHT, bgcolor: 'rgba(74, 222, 128, 0.06)' },
+                }}
+              >
+                {t('general.otherLanguage')}
+              </Button>
+
               <Button
                 variant="outlined"
                 size="small"
@@ -683,9 +669,9 @@ export default function LandingPage() {
                 {!authKnown ? (
                   <CircularProgress size={16} sx={{ color: GREEN_BRIGHT, opacity: 0.8 }} />
                 ) : authenticated ? (
-                  'Open Lahendus'
+                  t('landing.openApp')
                 ) : (
-                  'Log in'
+                  t('landing.logIn')
                 )}
               </Button>
             </Box>
@@ -737,17 +723,19 @@ export default function LandingPage() {
                   fontVariationSettings: "'opsz' 72",
                 }}
               >
-                Grading code is a{' '}
-                <Box
-                  component="span"
-                  sx={{
-                    color: GREEN_BRIGHT,
-                    fontStyle: 'italic',
+                {/* One sentence, not three fragments: the highlighted word is not in the same
+                    place in every language, so the emphasis travels with the translation. */}
+                <Trans
+                  i18nKey="landing.heroTitle"
+                  components={{
+                    hl: (
+                      <Box
+                        component="span"
+                        sx={{ color: GREEN_BRIGHT, fontStyle: 'italic' }}
+                      />
+                    ),
                   }}
-                >
-                  solved
-                </Box>{' '}
-                problem.
+                />
               </Typography>
 
               <Typography
@@ -762,8 +750,7 @@ export default function LandingPage() {
                   animation: `${fadeUp} 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards`,
                 }}
               >
-                Lahendus automatically tests and grades programming solutions, so teachers can
-                focus on teaching and students get instant feedback.
+                {t('landing.heroBody')}
               </Typography>
 
               <Box
@@ -803,7 +790,7 @@ export default function LandingPage() {
                     },
                   }}
                 >
-                  {!authKnown ? 'Get started' : authenticated ? 'Go to courses' : 'Get started'}
+                  {authKnown && authenticated ? t('landing.goToCourses') : t('landing.getStarted')}
                 </Button>
                 <Button
                   variant="outlined"
@@ -825,7 +812,7 @@ export default function LandingPage() {
                     },
                   }}
                 >
-                  See features
+                  {t('landing.seeFeatures')}
                 </Button>
               </Box>
             </Box>
@@ -872,7 +859,7 @@ export default function LandingPage() {
                   mb: 1.5,
                 }}
               >
-                For teachers
+                {t('landing.forTeachers')}
               </Typography>
               <Typography
                 sx={{
@@ -885,7 +872,7 @@ export default function LandingPage() {
                   fontVariationSettings: "'opsz' 48",
                 }}
               >
-                Everything you need to run a programming course
+                {t('landing.teachersHeading')}
               </Typography>
               <Typography
                 sx={{
@@ -895,8 +882,7 @@ export default function LandingPage() {
                   color: '#666',
                 }}
               >
-                From automatic assessment to grade management, Lahendus handles the tedious parts
-                so you can focus on curriculum and mentoring.
+                {t('landing.teachersBody')}
               </Typography>
             </Box>
           </Reveal>
@@ -913,8 +899,8 @@ export default function LandingPage() {
             }}
           >
             {TEACHER_FEATURES.map((feature, i) => (
-              <Reveal key={feature.title} delay={0.06 * i}>
-                <FeatureCard {...feature} />
+              <Reveal key={feature.key} delay={0.06 * i}>
+                <FeatureCard icon={feature.icon} group="teacher" featureKey={feature.key} />
               </Reveal>
             ))}
           </Box>
@@ -943,7 +929,7 @@ export default function LandingPage() {
                   mb: 1.5,
                 }}
               >
-                For students
+                {t('landing.forStudents')}
               </Typography>
               <Typography
                 sx={{
@@ -956,7 +942,7 @@ export default function LandingPage() {
                   fontVariationSettings: "'opsz' 48",
                 }}
               >
-                Submit, test, improve &mdash; without waiting
+                {t('landing.studentsHeading')}
               </Typography>
             </Box>
           </Reveal>
@@ -973,8 +959,8 @@ export default function LandingPage() {
             }}
           >
             {STUDENT_FEATURES.map((feature, i) => (
-              <Reveal key={feature.title} delay={0.06 * i}>
-                <FeatureCard {...feature} />
+              <Reveal key={feature.key} delay={0.06 * i}>
+                <FeatureCard icon={feature.icon} group="student" featureKey={feature.key} />
               </Reveal>
             ))}
           </Box>
@@ -1013,7 +999,7 @@ export default function LandingPage() {
                     fontVariationSettings: "'opsz' 48",
                   }}
                 >
-                  Open source, built at the University of Tartu
+                  {t('landing.openSourceHeading')}
                 </Typography>
                 <Typography
                   sx={{
@@ -1025,8 +1011,7 @@ export default function LandingPage() {
                     maxWidth: 500,
                   }}
                 >
-                  Lahendus is developed by the Institute of Computer Science and is built on an
-                  open-source application called easy. Contributions and feedback are welcome.
+                  {t('landing.openSourceBody')}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   <Button
@@ -1117,7 +1102,7 @@ export default function LandingPage() {
                         color: '#6b8a6b',
                       }}
                     >
-                      {item.desc}
+                      {t(`landing.integration.${item.key}`)}
                     </Typography>
                   </Box>
                 ))}
@@ -1148,7 +1133,7 @@ export default function LandingPage() {
                 mb: 2,
               }}
             >
-              Supported by
+              {t('landing.supportedBy')}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', alignItems: 'center' }}>
               {[
@@ -1202,12 +1187,12 @@ export default function LandingPage() {
                   color: 'rgba(255,255,255,0.25)',
                 }}
               >
-                University of Tartu {new Date().getFullYear()}
+                {t('nav.university', { year: new Date().getFullYear() })}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 2.5 }}>
               {[
-                { label: 'About', href: '/about' },
+                { label: t('landing.footerAbout'), href: '/about' },
                 { label: 'GitHub', href: config.repoUrl, external: true },
                 { label: 'Discord', href: config.discordInviteUrl, external: true },
               ].map((link) => (

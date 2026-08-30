@@ -6,7 +6,6 @@ import {
   Box,
   Chip,
   CircularProgress,
-  Alert,
   Button,
   Divider,
   Typography,
@@ -24,6 +23,7 @@ import AutoTestResults from './AutoTestResults.tsx'
 import { isGraderFailed } from './okV3.ts'
 import { useSubmissions } from '../../api/exercises.ts'
 import type { AutomaticAssessmentResp } from '../../api/types.ts'
+import ErrorAlert from '../../components/ErrorAlert.tsx'
 
 export default function PreviousSubmissions({
   courseId,
@@ -65,7 +65,7 @@ export default function PreviousSubmissions({
 
   if (isLoading) return <CircularProgress size={24} />
   if (error)
-    return <Alert severity="error">{t('general.somethingWentWrong')}</Alert>
+    return <ErrorAlert />
   if (!submissions || submissions.length === 0) return null
 
   return (

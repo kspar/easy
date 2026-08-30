@@ -69,7 +69,7 @@ test('account-settings', async ({ launch, check }) => {
   check(
     'and it says where name and email are kept, without claiming they came from the university —' +
       ' plenty of accounts are created through the register link instead',
-    (await page.getByText(/kept in your Lahendus account/i).count()) > 0,
+    (await page.getByText(/kept in your Lahendus ID/i).count()) > 0,
   )
   check(
     'the profile section offers a way to edit them, at the identity provider',

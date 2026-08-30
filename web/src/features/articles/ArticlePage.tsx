@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  Alert,
   Box,
   Button,
   Chip,
@@ -34,6 +33,7 @@ import {
   useDeleteArticle,
   useUpdateArticle,
 } from '../../api/articles.ts'
+import ErrorAlert from '../../components/ErrorAlert.tsx'
 
 /**
  * One article, at `/a/<alias>`.
@@ -183,7 +183,7 @@ export default function ArticlePage() {
         )}
       </Stack>
 
-      {update.isError && <Alert severity="error" sx={{ mb: 2 }}>{t('general.somethingWentWrong')}</Alert>}
+      {update.isError && <ErrorAlert sx={{ mb: 2 }} />}
 
       <Box
         display="grid"

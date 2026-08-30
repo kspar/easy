@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, type MouseEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { spaLinkProps } from '../../components/spaLink.ts'
 import {
   Box,
@@ -28,7 +28,7 @@ import {
   SortOutlined,
   MoreVertOutlined,
   DriveFileRenameOutlineOutlined,
-  DeleteOutlined,
+  DeleteOutlineOutlined,
   PlaylistAddOutlined,
   ArrowDropDownOutlined,
   PersonAddOutlined,
@@ -313,7 +313,7 @@ export default function ExerciseLibraryPage() {
           <Button
             size="small"
             color="error"
-            startIcon={<DeleteOutlined />}
+            startIcon={<DeleteOutlineOutlined />}
             onClick={() => setConfirmDelete({
               type: 'bulk-exercise',
               id: '',
@@ -504,6 +504,7 @@ export default function ExerciseLibraryPage() {
                     <IconButton
                       size="small"
                       onClick={(e) => openRowMenu(e, { type: 'dir', dir })}
+                      aria-label={t('general.moreOptions')}
                     >
                       <MoreVertOutlined fontSize="small" />
                     </IconButton>
@@ -591,6 +592,7 @@ export default function ExerciseLibraryPage() {
                   <IconButton
                     size="small"
                     onClick={(e) => openRowMenu(e, { type: 'exercise', exercise: ex })}
+                    aria-label={t('general.moreOptions')}
                   >
                     <MoreVertOutlined fontSize="small" />
                   </IconButton>
@@ -647,7 +649,7 @@ export default function ExerciseLibraryPage() {
               closeRowMenu()
             }}
           >
-            <ListItemIcon><DeleteOutlined fontSize="small" /></ListItemIcon>
+            <ListItemIcon><DeleteOutlineOutlined fontSize="small" /></ListItemIcon>
             <ListItemText>{t('library.deleteDir')}</ListItemText>
           </MenuItem>,
         ]}
@@ -690,7 +692,7 @@ export default function ExerciseLibraryPage() {
               closeRowMenu()
             }}
           >
-            <ListItemIcon><DeleteOutlined fontSize="small" /></ListItemIcon>
+            <ListItemIcon><DeleteOutlineOutlined fontSize="small" /></ListItemIcon>
             <ListItemText>{t('library.deleteExercise')}</ListItemText>
           </MenuItem>,
         ]}
@@ -746,10 +748,22 @@ export default function ExerciseLibraryPage() {
         open={!!confirmDelete}
         message={
           confirmDelete?.type === 'dir'
-            ? t('library.deleteDirConfirm', { name: confirmDelete.name })
+            ? (
+              <Trans
+                i18nKey="library.deleteDirConfirm"
+                values={{ name: confirmDelete.name }}
+                components={{ bold: <strong /> }}
+              />
+            )
             : confirmDelete?.type === 'bulk-exercise'
               ? t('library.deleteExercisesConfirm', { count: selectedExIds.size })
-              : t('library.deleteExerciseConfirm', { name: confirmDelete?.name ?? '' })
+              : (
+                <Trans
+                  i18nKey="library.deleteExerciseConfirm"
+                  values={{ name: confirmDelete?.name ?? '' }}
+                  components={{ bold: <strong /> }}
+                />
+              )
         }
         confirmLabel={t('general.delete')}
         confirmColor="error"

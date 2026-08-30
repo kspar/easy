@@ -168,7 +168,7 @@ test('library-exercise-tsl-static', async ({ launch, check }) => {
   await page.goto(`${BASE_URL}/library/exercise/${EXERCISE_ID}/reads-a-file`)
   await page.waitForSelector('text=Reads a file')
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
-  await page.getByRole('tab', { name: 'Auto-assessment' }).click()
+  await page.getByRole('tab', { name: 'Tests' }).click()
 
   // --- the name is built from the fields, not the type ------------------------------------------
   // A type-level label would read "Code contains…" for every one of these, which is exactly what

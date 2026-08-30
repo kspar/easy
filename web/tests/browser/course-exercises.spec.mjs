@@ -378,7 +378,7 @@ test('course-exercises', async ({ launch, check }) => {
   await page.waitForSelector('a[href*="/exercises/"]', { timeout: 15000 })
   await page.waitForTimeout(500)
 
-  // ---- 4. Row menu: hide/reveal ----
+  // ---- 4. Row menu: hide/show ----
   console.log('\n4. Row action: hide')
   const firstRow = page.locator('a[href*="/exercises/"]').first()
   await firstRow.hover()
@@ -403,7 +403,7 @@ test('course-exercises', async ({ launch, check }) => {
   check('mass action bar appears', await page.locator('text=/1 selected/').isVisible())
   await tickRow(page.locator('a[href*="/exercises/"]').nth(2))
   check('2 selected', await page.locator('text=/2 selected/').isVisible())
-  check('Reveal button', await page.getByRole('button', { name: 'Reveal', exact: true }).isVisible())
+  check('Show button', await page.getByRole('button', { name: 'Show', exact: true }).isVisible())
   check('Hide button', await page.getByRole('button', { name: 'Hide', exact: true }).isVisible())
   await shot('05-mass-actions')
 
@@ -426,14 +426,14 @@ test('course-exercises', async ({ launch, check }) => {
   check('2 hidden selected', await page.locator('text=/2 selected/').isVisible())
   check('Hide disabled when every selection is already hidden',
     await page.getByRole('button', { name: 'Hide', exact: true }).isDisabled())
-  check('Reveal enabled when a selection is hidden',
-    await page.getByRole('button', { name: 'Reveal', exact: true }).isEnabled())
+  check('Show enabled when a selection is hidden',
+    await page.getByRole('button', { name: 'Show', exact: true }).isEnabled())
   await shot('05b-hide-disabled')
 
   await freshLoad()
   await selectRows([1]) // visible only
-  check('Reveal disabled when every selection is already visible',
-    await page.getByRole('button', { name: 'Reveal', exact: true }).isDisabled())
+  check('Show disabled when every selection is already visible',
+    await page.getByRole('button', { name: 'Show', exact: true }).isDisabled())
   check('Hide enabled when a selection is visible',
     await page.getByRole('button', { name: 'Hide', exact: true }).isEnabled())
 
@@ -449,7 +449,7 @@ test('course-exercises', async ({ launch, check }) => {
     patches.length === 1 && patches[0].body?.replace?.student_visible === false,
     JSON.stringify(patches))
 
-  // Row menu on a scheduled exercise offers both Reveal and Hide.
+  // Row menu on a scheduled exercise offers both Show and Hide.
   // The one above is now plain-hidden, so use a freshly scheduled row.
   exercises = exercises.map((e) => e.course_exercise_id === '4'
     ? { ...e, student_visible: false, student_visible_from: hoursFromNow(48) } : e)
@@ -459,19 +459,19 @@ test('course-exercises', async ({ launch, check }) => {
   await schedRow.locator('button[aria-label="More options"]').click()
   await page.waitForTimeout(300)
   const menuItems = await page.locator('[role="menuitem"]').allInnerTexts()
-  check('scheduled row menu has both Reveal and Hide',
-    menuItems.includes('Reveal') && menuItems.includes('Hide'), JSON.stringify(menuItems))
+  check('scheduled row menu has both Show and Hide',
+    menuItems.includes('Show') && menuItems.includes('Hide'), JSON.stringify(menuItems))
   await shot('05c-scheduled-row-menu')
   await page.keyboard.press('Escape')
   await page.waitForTimeout(300)
 
-  // Two rows for the mass-reveal assertion below
+  // Two rows for the mass-show assertion below
   await freshLoad()
   await selectRows([0, 2])
   patches.length = 0
-  await page.getByRole('button', { name: 'Reveal', exact: true }).click()
+  await page.getByRole('button', { name: 'Show', exact: true }).click()
   await page.waitForTimeout(700)
-  check('mass reveal PATCHed only the not-already-visible ones',
+  check('mass show PATCHed only the not-already-visible ones',
     patches.length > 0 && patches.every((p) => p.body?.replace?.student_visible === true),
     `${patches.length} patches: ${JSON.stringify(patches.map((p) => p.id))}`)
   check('selection cleared after mass action',

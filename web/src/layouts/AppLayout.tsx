@@ -43,11 +43,8 @@ import {
   LibraryBooksOutlined,
   DarkModeOutlined,
   LightModeOutlined,
-  TranslateOutlined,
+  LanguageOutlined,
   LogoutOutlined,
-  CheckCircle,
-  CircleOutlined,
-  RadioButtonUnchecked,
   AssignmentOutlined,
   GradingOutlined,
   PeopleOutlined,
@@ -62,7 +59,6 @@ import {
 import { useThemeMode } from '../theme/useThemeMode.ts'
 import { useCourseExercises } from '../api/exercises.ts'
 import { useCourse } from '../api/courses.ts'
-import type { StudentExerciseStatus } from '../api/types.ts'
 import EditCourseDialog from '../features/course-settings/EditCourseDialog.tsx'
 import BugReportDialog from '../features/bug-report/BugReportDialog.tsx'
 import { record } from '../features/bug-report/breadcrumbs.ts'
@@ -72,6 +68,7 @@ import logoSvg from '../assets/logo.svg'
 import SystemMessageBanner from '../components/SystemMessageBanner.tsx'
 import UpdateAvailableBanner from '../components/UpdateAvailableBanner.tsx'
 import EnvironmentBadge from '../components/EnvironmentBadge.tsx'
+import ExerciseStatusIcon from '../components/ExerciseStatusIcon.tsx'
 
 function slugify(s: string): string {
   return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u00C0-\u024F-]/g, '')
@@ -215,20 +212,6 @@ export default function AppLayout() {
       return courses?.some((c) => c.id === id) ?? false
     } catch {
       return false
-    }
-  }
-
-  const statusIcon = (status: StudentExerciseStatus) => {
-    switch (status) {
-      case 'COMPLETED':
-        return <CheckCircle sx={{ fontSize: 16, color: 'success.main' }} />
-      case 'STARTED':
-        return <CircleOutlined sx={{ fontSize: 16, color: 'warning.main' }} />
-      case 'UNGRADED':
-        return <CircleOutlined sx={{ fontSize: 16, color: 'info.main' }} />
-      case 'UNSTARTED':
-      default:
-        return <RadioButtonUnchecked sx={{ fontSize: 16, color: 'text.disabled' }} />
     }
   }
 
@@ -519,7 +502,7 @@ export default function AppLayout() {
                   sx={{ py: 0.5, minHeight: 36, pl: 3 }}
                 >
                   <ListItemIcon sx={{ minWidth: 28 }}>
-                    {statusIcon(ex.status)}
+                    <ExerciseStatusIcon status={ex.status} size={16} />
                   </ListItemIcon>
                   <ListItemText
                     primary={ex.effective_title}
@@ -881,7 +864,7 @@ export default function AppLayout() {
         >
           <Toolbar variant="dense" sx={{ minHeight: 48, gap: 0.5 }}>
             {isMobile && (
-              <IconButton edge="start" onClick={toggleDrawer} sx={{ mr: 0.5 }}>
+              <IconButton edge="start" onClick={toggleDrawer} sx={{ mr: 0.5 }} aria-label={t('nav.openMenu')}>
                 <MenuIcon />
               </IconButton>
             )}
@@ -1002,7 +985,7 @@ export default function AppLayout() {
                     }}
                   >
                     <ListItemIcon>
-                      <TranslateOutlined fontSize="small" />
+                      <LanguageOutlined fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>{t('general.otherLanguage')}</ListItemText>
                   </MenuItem>

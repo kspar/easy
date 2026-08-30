@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react'
 import {
   Typography,
   CircularProgress,
-  Alert,
   Box,
   IconButton,
   Table,
@@ -22,7 +21,7 @@ import {
 import {
   ArrowBackOutlined,
   ArrowDropDownOutlined,
-  DoneOutlined,
+  CheckOutlined,
   FileDownloadOutlined,
   FaceOutlined,
 } from '@mui/icons-material'
@@ -40,6 +39,7 @@ import {
   toCsv,
   type SortDir,
 } from './gradeTable.ts'
+import ErrorAlert from '../../components/ErrorAlert.tsx'
 
 function statusColor(status: StudentExerciseStatus): string | undefined {
   switch (status) {
@@ -178,7 +178,7 @@ export default function GradeTablePage() {
 
       {isLoading && <CircularProgress />}
       {error && (
-        <Alert severity="error">{t('general.somethingWentWrong')}</Alert>
+        <ErrorAlert />
       )}
 
       {!isLoading && !error && sortedExercises.length === 0 && (
@@ -237,7 +237,7 @@ export default function GradeTablePage() {
 
             {/* Submission count toggle */}
             <Chip
-              icon={showSubCount ? <DoneOutlined /> : undefined}
+              icon={showSubCount ? <CheckOutlined /> : undefined}
               label={t('grades.showSubmissionCount')}
               variant={showSubCount ? 'filled' : 'outlined'}
               color={showSubCount ? 'primary' : 'default'}

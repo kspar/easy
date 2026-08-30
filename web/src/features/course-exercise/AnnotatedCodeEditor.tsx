@@ -16,7 +16,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { DeleteOutlined, EditOutlined } from '@mui/icons-material'
+import { DeleteOutlineOutlined, EditOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import {
   EditorView,
@@ -677,7 +677,7 @@ function CommentCard({
             {canDelete && (
               <Tooltip title={t('submission.deleteComment')}>
                 <IconButton size="small" onClick={onDelete} sx={{ p: 0.25 }}>
-                  <DeleteOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  <DeleteOutlineOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
                 </IconButton>
               </Tooltip>
             )}

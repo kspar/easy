@@ -18,7 +18,7 @@ import {
 } from '@mui/material'
 import {
   CodeOutlined,
-  DeleteOutlined,
+  DeleteOutlineOutlined,
   EditOutlined,
   ExpandMoreOutlined,
   FormatBoldOutlined,
@@ -900,7 +900,7 @@ function TimelineEntryCard({
                     onClick={() => setConfirmDelete(true)}
                     sx={{ p: 0.25 }}
                   >
-                    <DeleteOutlined sx={{ fontSize: 15, color: 'text.secondary' }} />
+                    <DeleteOutlineOutlined sx={{ fontSize: 15, color: 'text.secondary' }} />
                   </IconButton>
                 </Tooltip>
               </Box>
