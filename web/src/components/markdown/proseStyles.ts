@@ -55,9 +55,16 @@ import type { SystemStyleObject } from '@mui/system'
  */
 export function proseStyles(theme: Theme): SystemStyleObject<Theme> {
   const isDark = theme.palette.mode === 'dark'
-  // `primary.dark` is legible on white but is the same near-black-green on a dark ground, so the
-  // link colour has to flip rather than being one token.
-  const linkColor = isDark ? theme.palette.primary.light : theme.palette.primary.dark
+  // The shade rule from EZ-1798, applied rather than reinvented: `primary.main` is the one green
+  // everywhere, except for small green text on a dark surface — the single pairing it cannot carry
+  // at AA — where `primary.light` stands in. Links and summary labels here are exactly that case,
+  // so they are the rule's subject rather than an exception to it.
+  //
+  // This deliberately does *not* use `primary.dark`. It was `primary.dark` while `main` was
+  // GREEN[600]; EZ-1798 moved `main` to GREEN[700] and `dark` to GREEN[800], which would leave the
+  // links in exercise text a shade darker than every other green in the app for no reason anyone
+  // could find later.
+  const linkColor = isDark ? theme.palette.primary.light : theme.palette.primary.main
 
   return {
     lineHeight: 1.65,
@@ -241,10 +248,10 @@ export function proseStyles(theme: Theme): SystemStyleObject<Theme> {
       px: 1.75,
       py: 1,
       fontWeight: 500,
-      // `primary.dark` rather than `primary.main`, and flipped for dark exactly as links are:
-      // `primary.main` (#16a34a) measures 3.3:1 on paper and 3.0:1 on the hover ground this rule
-      // paints, both under AA. This is the affordance on the most-used interactive element in the
-      // corpus, so it is the worst place to be hard to read.
+      // The same `linkColor` the links use, for the same reason: the green this started with
+      // measured 3.3:1 on paper and 3.0:1 on the hover ground this rule paints, both under AA.
+      // This is the affordance on the most-used interactive element in the corpus, so it is the
+      // worst place in the content to be hard to read.
       color: linkColor,
       userSelect: 'none',
       // The UA marker is replaced by the rotating chevron below. Both properties are needed:
@@ -282,6 +289,18 @@ export function proseStyles(theme: Theme): SystemStyleObject<Theme> {
     // children. (The old CSS styled `details > .content`, a class the Markdown pipeline never
     // emits — a rule that would have silently matched nothing.)
     '& details > :not(summary)': { mx: 1.75 },
+    // A gap between the summary and whatever opens below it. Without it the two run together the
+    // moment the pointer is over the header: the summary's hover state and a code block are both
+    // painted in `action.hover`, they meet with no seam, and the result reads as one shape whose
+    // top half happens to be clickable. The blocks that open a collapsible are usually exactly the
+    // ones that carry that background — an example or a snippet — so this is the common case, not
+    // an edge one.
+    //
+    // The selector is `details > summary + *` rather than `summary + *` deliberately: it scores
+    // (0,1,2) and so beats the `mt: 0` that `& pre` sets at (0,1,1) whatever order they end up in.
+    // The equivalent rule written as `& summary + *` would tie on specificity and depend on source
+    // order — which is the way the heading margins were silently lost once already.
+    '& details > summary + *': { mt: 1 },
 
     /* ── Quotes ───────────────────────────────────────────────────────── */
     // The UA gives this nothing but `margin: 16px 40px`, so it read as an accidentally indented
