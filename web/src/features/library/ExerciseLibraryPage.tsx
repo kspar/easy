@@ -43,7 +43,7 @@ import CreateExerciseDialog from './CreateExerciseDialog.tsx'
 import RenameDirDialog from './RenameDirDialog.tsx'
 import AddToCourseDialog from './AddToCourseDialog.tsx'
 import ShareDialog from './ShareDialog.tsx'
-import ConfirmDialog from '../participants/ConfirmDialog.tsx'
+import ConfirmDialog from '../../components/ConfirmDialog.tsx'
 
 type SortMode = 'name' | 'modified' | 'popularity'
 type VisibilityFilter = 'all' | 'shared' | 'private'

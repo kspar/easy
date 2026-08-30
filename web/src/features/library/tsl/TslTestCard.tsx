@@ -30,6 +30,7 @@ import {
   VisibilityOffOutlined,
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
+import ConfirmDialog from '../../../components/ConfirmDialog.tsx'
 import TslTestBody from './TslTestBody.tsx'
 import {
   createTest,
@@ -42,6 +43,7 @@ import {
   testChecksNothing,
   testDefaultName,
   visibleToUserField,
+  type EditableTestType,
   type TslTest,
 } from './tslModel.ts'
 
@@ -72,6 +74,8 @@ export default function TslTestCard({
   const { t } = useTranslation()
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
   const [renaming, setRenaming] = useState(false)
+  // A type switch waiting on the teacher's confirmation — set only when the body has content.
+  const [pendingType, setPendingType] = useState<EditableTestType | null>(null)
   // MUI only wires InputLabel to a Select when both carry ids; without them the control has no
   // accessible name at all.
   const typeLabelId = useId()
@@ -84,11 +88,49 @@ export default function TslTestCard({
    * Switching type replaces the body wholesale — the fields of one TSL test mean nothing to
    * another. The id and the name are what carry over.
    */
-  function changeType(type: string) {
-    if (!isEditableType(type)) return
+  function applyType(type: EditableTestType) {
     const fresh = createTest(type, test.id, t)
     const keptName = test.name?.trim() && test.name !== testDefaultName(test, t) ? test.name : null
-    actions.onChange({ ...fresh, name: keptName })
+    // The type-independent base-Test fields survive the switch, like the name: "the fields of
+    // one TSL test mean nothing to another" is about the body, and a hidden weight-3 test
+    // silently becoming a visible weight-1 test is not what the confirm's wording promised.
+    const carried: Partial<TslTest> = {}
+    if ('pointsWeight' in test) carried.pointsWeight = test.pointsWeight
+    if ('visibleToUser' in test) carried.visibleToUser = test.visibleToUser
+    actions.onChange({ ...fresh, ...carried, name: keptName })
+  }
+
+  /**
+   * Whether the body carries anything a type switch would destroy. Compared against a pristine
+   * test of the *current* type: a test the teacher has not touched switches silently, one they
+   * have filled in asks first (audit X-021). Content from a preset counts as content — it is
+   * exactly what would be lost.
+   *
+   * Canonicalised (sorted keys) and with the carried-over fields excluded — name, pointsWeight,
+   * visibleToUser survive the switch, so they are not "content the switch destroys". A raw
+   * stringify also broke on key order and on createTest baking the *current* UI language's
+   * check messages in: a pristine Estonian-authored test reopened in English would have asked.
+   * Still language-sensitive for preset messages, but only in the safe direction (over-asking).
+   */
+  function bodyHasContent(): boolean {
+    if (!isEditableType(test.type)) return true
+    const strip = (x: TslTest) => {
+      const rest = { ...x } as Record<string, unknown>
+      delete rest.name
+      delete rest.pointsWeight
+      delete rest.visibleToUser
+      return JSON.stringify(rest, Object.keys(rest).sort())
+    }
+    return strip(test) !== strip(createTest(test.type, test.id, t))
+  }
+
+  function changeType(type: string) {
+    if (!isEditableType(type) || type === test.type) return
+    if (bodyHasContent()) {
+      setPendingType(type)
+      return
+    }
+    applyType(type)
   }
 
   return (
@@ -309,6 +351,21 @@ export default function TslTestCard({
           <TslTestBody test={test} editing={editing} onChange={actions.onChange} />
         </Box>
       </Collapse>
+
+      {/* Asked only when the body has content (audit X-021): the fields of one TSL test mean
+          nothing to another, so a type switch rebuilds the body — silently was how a teacher who
+          picked the wrong type first lost their filled-in test. */}
+      <ConfirmDialog
+        open={pendingType !== null}
+        message={t('tsl.changeTypeConfirm')}
+        confirmLabel={t('tsl.changeTypeConfirmLabel')}
+        confirmColor="warning"
+        onClose={() => setPendingType(null)}
+        onConfirm={() => {
+          if (pendingType) applyType(pendingType)
+          setPendingType(null)
+        }}
+      />
     </Paper>
   )
 }

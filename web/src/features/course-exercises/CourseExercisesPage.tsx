@@ -58,7 +58,7 @@ import {
   useReorderCourseExercise,
 } from '../../api/exercises.ts'
 import { useUpdateLastAccess } from '../../api/courses.ts'
-import ConfirmDialog from '../participants/ConfirmDialog.tsx'
+import ConfirmDialog from '../../components/ConfirmDialog.tsx'
 import CourseExerciseSettingsDialog from './CourseExerciseSettingsDialog.tsx'
 import ReorderExerciseDialog from './ReorderExerciseDialog.tsx'
 import AddFromLibraryDialog from './AddFromLibraryDialog.tsx'

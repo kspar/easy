@@ -13,7 +13,8 @@ export default function ConfirmDialog({
   message,
   confirmLabel,
   confirmColor = 'error',
-  isPending,
+  isPending = false,
+  pendingLabel,
   onClose,
   onConfirm,
 }: {
@@ -21,7 +22,10 @@ export default function ConfirmDialog({
   message: React.ReactNode
   confirmLabel?: string
   confirmColor?: 'error' | 'primary' | 'warning'
-  isPending: boolean
+  /** For async confirms; a synchronous confirm simply omits it. */
+  isPending?: boolean
+  /** What the confirm button says while pending. Defaults to the remove-flavoured house label. */
+  pendingLabel?: string
   onClose: () => void
   onConfirm: () => void
 }) {
@@ -49,7 +53,7 @@ export default function ConfirmDialog({
           disabled={isPending}
         >
           {isPending
-            ? t('general.removing')
+            ? (pendingLabel ?? t('general.removing'))
             : (confirmLabel ?? t('general.remove'))}
         </Button>
       </DialogActions>

@@ -41,7 +41,7 @@ import { useTheme } from '@mui/material/styles'
 import { languageFromFilename } from './editorLanguage.ts'
 import { useMarkdownPreview } from '../../api/exercises.ts'
 import type { InlineCommentResp } from '../../api/types.ts'
-import ConfirmDialog from '../participants/ConfirmDialog.tsx'
+import ConfirmDialog from '../../components/ConfirmDialog.tsx'
 // Shared with the exercise text editor, which shows a superset of these buttons. Keeping one
 // implementation is what stops the two editors formatting the same document differently.
 import MarkdownToolbar from '../../components/markdown/MarkdownToolbar.tsx'

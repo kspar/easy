@@ -304,7 +304,22 @@ test('library-exercise-tsl-static', async ({ launch, check }) => {
   )
   await shot('08-preset-loop')
 
-  // Delete it again so the rest of the assertions keep counting one contains_test.
+  // Delete it again so the rest of the assertions keep counting one contains_test — and on the
+  // way through, assert the undo that replaced confirm-on-delete (X-021). Deleting is one click
+  // and the model has no history, so the snackbar is the only way back; nothing else in the CI
+  // suite covers it.
+  await page.getByRole('button', { name: 'More options' }).last().click()
+  await page.getByRole('menuitem', { name: 'Delete' }).click()
+  await waitUntil(async () => (await typeSelects.count()) === 1)
+
+  check('deleting a test offers an undo rather than asking first', await page.getByText('Test deleted').isVisible())
+  await page.getByRole('button', { name: 'Undo' }).click()
+  check(
+    'and the undo brings the test back',
+    await waitUntil(async () => (await typeSelects.count()) === 2),
+  )
+
+  // Then delete it for real, as the rest of the file expects.
   await page.getByRole('button', { name: 'More options' }).last().click()
   await page.getByRole('menuitem', { name: 'Delete' }).click()
   await waitUntil(async () => (await typeSelects.count()) === 1)
@@ -354,11 +369,23 @@ test('library-exercise-tsl-static', async ({ launch, check }) => {
   )
   await shot('04-created')
 
+
+  /**
+   * Since X-021, switching a filled test's type asks first — the silent rebuild was how a teacher
+   * who picked the wrong type lost their work. These switches are on deliberately filled bodies,
+   * so each one now answers the dialog.
+   */
+  async function confirmTypeChange() {
+    await page.getByRole('button', { name: 'Change type', exact: true }).click()
+  }
+
   // --- calls_test, which reuses both shared sections -------------------------------------------------
   // Switching the same card's type rather than adding a third: it also proves the type change rebuilds
   // the body cleanly instead of leaving contains_test's fields behind.
   await typeSelects.last().click()
   await page.getByRole('option', { name: 'Code calls…', exact: true }).click()
+  // No confirmTypeChange() here: the contains_test has not been edited since creation, and a
+  // pristine body switches silently — that asymmetry is X-021's design, asserted in its driver.
 
   check(
     'calls_test reuses the scope section',
@@ -412,6 +439,7 @@ test('library-exercise-tsl-static', async ({ launch, check }) => {
   // --- definition_test: the type with two absorbed model quirks ---------------------------------------
   await typeSelects.last().click()
   await page.getByRole('option', { name: 'Code defines…', exact: true }).click()
+  await confirmTypeChange()
 
   // It names its scope field `scopeType` while its two siblings use `scope` (EZ-1742). The section is
   // shared, so getting that wrong would write the scope into a field nothing reads and silently
@@ -485,6 +513,7 @@ test('library-exercise-tsl-static', async ({ launch, check }) => {
   const scopesBefore = await page.getByRole('combobox', { name: 'Scope' }).count()
   await typeSelects.last().click()
   await page.getByRole('option', { name: 'Function property', exact: true }).click()
+  await confirmTypeChange()
 
   check(
     'no scope selector, since the predicate needs a named function',
@@ -525,6 +554,7 @@ test('library-exercise-tsl-static', async ({ launch, check }) => {
     await afterEdit(async () => {
       await typeSelects.last().click()
       await page.getByRole('option', { name: 'Class instance test', exact: true }).click()
+      await confirmTypeChange()
     }),
   )
   check(

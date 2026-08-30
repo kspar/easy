@@ -45,7 +45,7 @@ import { useAuth } from '../../auth/useAuth.ts'
 import RelativeTime from '../../components/RelativeTime.tsx'
 import { RobotIcon, TeacherFaceIcon } from '../../components/icons.tsx'
 import type { InlineCommentResp, TeacherActivityResp } from '../../api/types.ts'
-import ConfirmDialog from '../participants/ConfirmDialog.tsx'
+import ConfirmDialog from '../../components/ConfirmDialog.tsx'
 import ReadOnlyCodeSnippet from './ReadOnlyCodeSnippet.tsx'
 import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.ts'
@@ -963,7 +963,6 @@ function TimelineEntryCard({
           message={t('submission.confirmDeleteComment')}
           confirmLabel={t('general.delete')}
           confirmColor="error"
-          isPending={false}
           onClose={() => setConfirmDelete(false)}
           onConfirm={() => {
             onDeleteFeedback(activity)

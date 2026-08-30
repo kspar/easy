@@ -10,6 +10,7 @@ import {
   ListSubheader,
   Menu,
   MenuItem,
+  Snackbar,
   Tab,
   Tabs,
   Typography,
@@ -21,7 +22,7 @@ import CodeEditor from '../../../components/CodeEditor.tsx'
 import { languageFromFilename } from '../../course-exercise/editorLanguage.ts'
 import TslTestCard from './TslTestCard.tsx'
 import { useTslSpec } from './useTslSpec.ts'
-import { duplicateTest, specTestProblems, type TslTest } from './tslModel.ts'
+import { duplicateTest, serializeSpec, specTestProblems, type TslTest } from './tslModel.ts'
 import { summarizeCompileError, summarizeParseError } from './tslErrors.ts'
 import { PRESET_GROUPS } from './tslPresets.ts'
 
@@ -54,6 +55,12 @@ export default function TslEditor({
   const { t } = useTranslation()
   const [tab, setTab] = useState<TslTab>('tests')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  // The last deleted test, held for undo (audit X-021): deleting is one click and the model has
+  // no history, so the snackbar's undo is the only way back. `textAfter` is the spec text the
+  // delete produced: any further change — spec-tab typing, a reorder, another edit — disarms the
+  // undo, because splicing the held test into a spec that has since moved on could overwrite the
+  // newer work or duplicate an id. Undo is for the immediate slip, not a merge tool.
+  const [deleted, setDeleted] = useState<{ test: TslTest; index: number; textAfter: string } | null>(null)
   const [lang, setLang] = useState<Extension | undefined>(jsonExtension)
   const [addAnchor, setAddAnchor] = useState<HTMLElement | null>(null)
 
@@ -69,6 +76,12 @@ export default function TslEditor({
   // The same counts the page gates on, surfaced where the teacher is looking. Warn tier
   // (checks nothing, audit X-023) never blocks; gate tier explains why Save is off.
   const problems = useMemo(() => specTestProblems(spec), [spec])
+
+  // Disarm the undo the moment the spec moves past the state the delete produced, and whenever
+  // the edit session ends — an undo clicked after Cancel would silently dirty a read-only view.
+  useEffect(() => {
+    if (deleted && (value !== deleted.textAfter || !editing)) setDeleted(null)
+  }, [value, editing, deleted])
 
   useEffect(() => {
     if (jsonExtension) return
@@ -158,7 +171,11 @@ export default function TslEditor({
                     const copy = duplicateTest(test, t('tsl.copySuffix'))
                     setTests([...tests.slice(0, i + 1), copy, ...tests.slice(i + 1)])
                   },
-                  onDelete: () => setTests(tests.filter((_, idx) => idx !== i)),
+                  onDelete: () => {
+                    const remaining = tests.filter((_, idx) => idx !== i)
+                    setDeleted({ test, index: i, textAfter: serializeSpec({ ...spec, tests: remaining }) })
+                    setTests(remaining)
+                  },
                   onMove: (delta) => {
                     const next = [...tests]
                     const [item] = next.splice(i, 1)
@@ -215,6 +232,35 @@ export default function TslEditor({
 
         {tab === 'generated' && <GeneratedScripts scripts={scripts} />}
       </Box>
+
+      {/* Undo rather than confirm, for deletion (audit X-021): a confirm would tax every
+          deliberate delete, while undo costs only the person who slipped. */}
+      <Snackbar
+        // Keyed so a second delete remounts the snackbar and restarts its timer — without this,
+        // MUI keeps the first delete's timer and the new undo window can be near zero.
+        key={deleted?.test.id}
+        open={editing && deleted !== null}
+        autoHideDuration={8000}
+        onClose={(_, reason) => {
+          if (reason !== 'clickaway') setDeleted(null)
+        }}
+        message={t('tsl.testDeleted')}
+        action={
+          <Button
+            size="small"
+            onClick={() => {
+              // The disarm effect guarantees the spec still is what the delete left, but a
+              // duplicate id would corrupt the spec, so the guard stays as a belt.
+              if (deleted && !tests.some((x) => x.id === deleted.test.id)) {
+                setTests([...tests.slice(0, deleted.index), deleted.test, ...tests.slice(deleted.index)])
+              }
+              setDeleted(null)
+            }}
+          >
+            {t('tsl.undoDelete')}
+          </Button>
+        }
+      />
     </Box>
   )
 }
