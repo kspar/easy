@@ -255,8 +255,10 @@ export default function SimilarityPage() {
               { sub: a, link: studentLink(score.sub_1) },
               { sub: b, link: studentLink(score.sub_2) },
             ]
+            // Outlined like every other surface: with the bespoke shadow scale gone (X-014), a
+            // bare Accordion would be the app's only elevated element.
             return (
-              <Accordion key={`${score.sub_1}-${score.sub_2}`} disableGutters>
+              <Accordion key={`${score.sub_1}-${score.sub_2}`} disableGutters variant="outlined">
                 <AccordionSummary expandIcon={<ExpandMoreOutlined />}>
                   <Box
                     sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%', pr: 2, flexWrap: 'wrap' }}

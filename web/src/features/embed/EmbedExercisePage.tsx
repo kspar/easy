@@ -216,7 +216,12 @@ export default function EmbedExercisePage() {
                     alignItems: 'center',
                     gap: 0.6,
                     fontWeight: 500,
-                    '&:hover': { color: 'primary.dark' },
+                    // primary.dark on dark paper is ~2.3:1 — the title would nearly vanish on
+                    // hover. The shade rule, per-mode.
+                    '&:hover': {
+                      color: (t) =>
+                        t.palette.mode === 'dark' ? t.palette.primary.light : t.palette.primary.dark,
+                    },
                   }}
                 >
                   {titleAlias ?? exercise.title}
@@ -319,7 +324,8 @@ export default function EmbedExercisePage() {
                   fontFamily: "'Sniglet', cursive",
                   fontSize: '0.85rem',
                   letterSpacing: '0.02em',
-                  color: 'primary.main',
+                  // No pinned primary.main: sx beats the theme's dark-mode link shade rule, and
+                  // GREEN[700] at 0.65 opacity over dark paper is ~2.1:1. The theme decides.
                   opacity: 0.65,
                   textDecoration: 'none',
                   '&:hover': { opacity: 1, textDecoration: 'underline' },

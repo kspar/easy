@@ -1,6 +1,11 @@
-import { createTheme, type PaletteMode } from '@mui/material/styles'
+import { alpha, createTheme, type PaletteMode } from '@mui/material/styles'
 
-const GREEN = {
+/**
+ * The one green (EZ-1798). Exported so call sites that genuinely need a ramp step — the courses
+ * activity dots, the autograde animation — take it from here instead of hand-copying hexes that
+ * strand on the next retune; pair with `alpha()` from '@mui/material/styles' for translucency.
+ */
+export const GREEN = {
   50: '#f0fdf4',
   100: '#dcfce7',
   200: '#bbf7d0',
@@ -13,44 +18,54 @@ const GREEN = {
   900: '#14532d',
 }
 
+/**
+ * The shade rule's one value (EZ-1798): what renders instead of primary when primary would be
+ * small text on a dark surface — GREEN[700] is 3.74:1 there, the one pairing one-green cannot
+ * carry. Applied below to tabs, text/outlined buttons, primary links and outlined primary chips.
+ */
+const PRIMARY_ON_DARK = GREEN[500]
+
 export function createAppTheme(mode: PaletteMode) {
   const isLight = mode === 'light'
 
   return createTheme({
     palette: {
       mode,
+      // One green (EZ-1798, decided 2026-08-28): GREEN[700] is the brand colour everywhere.
+      // The arithmetic behind the step down from GREEN[600] (X-012): white text on 700 is
+      // 5.02:1 in both modes, and 700 as text passes AA on the light backgrounds. Small green
+      // text on *dark* surfaces is the one pairing 700 cannot carry (3.74:1) — use
+      // `primary.light` there. A shade rule, not a second green.
+      //
+      // No `secondary` and no hand-set `*.light` tints: all six were mode-blind, near-white and
+      // unused (X-014) — each one a trap for whoever reaches for it next. MUI derives the
+      // missing shades itself.
       primary: {
-        main: GREEN[600],
+        main: GREEN[700],
         light: GREEN[500],
-        dark: GREEN[700],
+        dark: GREEN[800],
         contrastText: '#fff',
-      },
-      secondary: {
-        main: '#5c6bc0',
-        light: '#8e99a4',
-        dark: '#3949ab',
       },
       success: {
         main: GREEN[600],
-        light: GREEN[50],
       },
       warning: {
         main: '#f9a825',
-        light: '#fff8e1',
       },
       error: {
         main: '#e53935',
-        light: '#ffebee',
       },
       info: {
         main: '#1e88e5',
-        light: '#e3f2fd',
       },
       background: isLight
         ? { default: '#f5f5f5', paper: '#ffffff' }
         : { default: '#121212', paper: '#1e1e1e' },
       text: isLight
-        ? { primary: '#212121', secondary: '#757575' }
+        // #6b6b6b, not #757575: secondary text sits on the page background as often as on
+        // paper, and #757575 is 4.23:1 there — an AA fail across 177 use sites (X-013).
+        // #6b6b6b is 4.89:1 on the page background and better on paper.
+        ? { primary: '#212121', secondary: '#6b6b6b' }
         : { primary: '#e0e0e0', secondary: '#9e9e9e' },
       divider: isLight ? '#e0e0e0' : '#333',
     },
@@ -66,23 +81,10 @@ export function createAppTheme(mode: PaletteMode) {
       caption: { fontSize: '0.75rem', letterSpacing: '0.02em' },
       overline: { fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.08em' },
     },
+    // No bespoke shadow scale (X-014): the old 25-entry array was 16 copies of one value behind
+    // a type cast, and nothing in the app renders theme elevation — cards are outlined, buttons
+    // disable it. Menus and dialogs get MUI's own defaults, which is what they were designed on.
     shape: { borderRadius: 12 },
-    shadows: [
-      'none',
-      '0 1px 3px rgba(0,0,0,0.08)',
-      '0 2px 6px rgba(0,0,0,0.08)',
-      '0 3px 8px rgba(0,0,0,0.1)',
-      '0 4px 12px rgba(0,0,0,0.1)',
-      '0 6px 16px rgba(0,0,0,0.1)',
-      '0 8px 20px rgba(0,0,0,0.12)',
-      '0 10px 24px rgba(0,0,0,0.12)',
-      '0 12px 28px rgba(0,0,0,0.14)',
-      ...Array(16).fill('0 12px 28px rgba(0,0,0,0.14)'),
-    ] as unknown as typeof createTheme extends (o: infer O) => unknown
-      ? O extends { shadows?: infer S }
-        ? S
-        : never
-      : never,
     components: {
       MuiCssBaseline: {
         styleOverrides: {
@@ -151,9 +153,16 @@ export function createAppTheme(mode: PaletteMode) {
           },
           containedPrimary: {
             '&:hover': {
-              backgroundColor: GREEN[700],
+              backgroundColor: GREEN[800],
             },
           },
+          // The shade rule — see MuiTab.
+          ...(isLight
+            ? {}
+            : {
+                textPrimary: { color: PRIMARY_ON_DARK },
+                outlinedPrimary: { color: PRIMARY_ON_DARK },
+              }),
           outlined: {
             borderWidth: '1.5px',
             '&:hover': { borderWidth: '1.5px' },
@@ -166,11 +175,9 @@ export function createAppTheme(mode: PaletteMode) {
           root: {
             borderRadius: 12,
             borderColor: isLight ? '#e8e8e8' : '#333',
-            transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
-            '&:hover': {
-              borderColor: isLight ? '#d0d0d0' : '#444',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            },
+            // No default hover (X-014): most cards are not interactive, and animating them all
+            // implied an affordance that was not there. The one interactive Card (CoursesPage)
+            // carries its own hover in sx.
           },
         },
       },
@@ -178,6 +185,15 @@ export function createAppTheme(mode: PaletteMode) {
         styleOverrides: {
           root: { fontWeight: 500, borderRadius: 8 },
           sizeSmall: { height: 26 },
+          // The shade rule — see PRIMARY_ON_DARK. An outlined primary chip renders its label in
+          // primary.main, which on dark paper is the failing small-text pairing.
+          ...(isLight
+            ? {}
+            : {
+                colorPrimary: {
+                  '&.MuiChip-outlined': { color: PRIMARY_ON_DARK, borderColor: PRIMARY_ON_DARK },
+                },
+              }),
         },
       },
       MuiListItemButton: {
@@ -190,13 +206,11 @@ export function createAppTheme(mode: PaletteMode) {
             padding: '8px 12px',
             transition: 'background-color 0.15s ease',
             '&.Mui-selected': {
-              backgroundColor: isLight
-                ? `${GREEN[50]}`
-                : 'rgba(76, 175, 80, 0.12)',
+              // The ramp's own step at low alpha — not the Material green 500 that used to sit
+              // here as a third green family (EZ-1798).
+              backgroundColor: isLight ? `${GREEN[50]}` : alpha(GREEN[400], 0.12),
               '&:hover': {
-                backgroundColor: isLight
-                  ? `${GREEN[100]}`
-                  : 'rgba(76, 175, 80, 0.18)',
+                backgroundColor: isLight ? `${GREEN[100]}` : alpha(GREEN[400], 0.18),
               },
             },
           },
@@ -229,6 +243,11 @@ export function createAppTheme(mode: PaletteMode) {
             textTransform: 'none',
             fontWeight: 500,
             minHeight: 44,
+            // The shade rule (EZ-1798): GREEN[700] as small text on dark is 3.74:1 — the one
+            // pairing one-green cannot carry — so everything that renders primary as text on a
+            // dark surface steps up the ramp instead. Same below for text/outlined buttons and
+            // links.
+            ...(isLight ? {} : { '&.Mui-selected': { color: PRIMARY_ON_DARK } }),
           },
         },
       },
@@ -248,7 +267,7 @@ export function createAppTheme(mode: PaletteMode) {
               fontSize: '0.75rem',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: isLight ? '#757575' : '#9e9e9e',
+              color: isLight ? '#6b6b6b' : '#9e9e9e',
               borderBottom: `2px solid ${isLight ? '#e0e0e0' : '#333'}`,
             },
           },
@@ -282,6 +301,15 @@ export function createAppTheme(mode: PaletteMode) {
         styleOverrides: {
           root: { borderRadius: 8 },
         },
+      },
+      MuiLink: {
+        // A variant scoped to color="primary" (the default), not a bare root override: the bare
+        // form would also repaint a future <Link color="error"> green, since named palette
+        // colors arrive through styles this override would beat.
+        defaultProps: { color: 'primary' },
+        variants: isLight
+          ? []
+          : [{ props: { color: 'primary' }, style: { color: PRIMARY_ON_DARK } }],
       },
       MuiTooltip: {
         styleOverrides: {

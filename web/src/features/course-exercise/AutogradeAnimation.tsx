@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import { green } from '@mui/material/colors'
+import { alpha } from '@mui/material/styles'
+// The brand ramp, not Material green (EZ-1798, one green): this animation sat right beside
+// GREEN[700] buttons while glowing in a different family. Steps map by role, not by number —
+// Material's 300/600 midpoints land on the ramp's like-for-like lightness.
+import { GREEN } from '../../theme/theme.ts'
 import { useTranslation } from 'react-i18next'
 
 type Phase = 'compile' | 'test' | 'analyze'
@@ -52,7 +56,7 @@ function useAutogradePhase(active: boolean) {
 // --- SVG sub-animations ---
 
 function PrepareAnimation({ dark }: { dark: boolean }) {
-  const fill = dark ? green[300] : green[600]
+  const fill = dark ? GREEN[300] : GREEN[600]
 
   // Exact Lahendus logo shapes from logo.svg (24x24 viewBox),
   // scaled 3.2x and centered in the 200x100 animation viewBox.
@@ -99,7 +103,7 @@ function PrepareAnimation({ dark }: { dark: boolean }) {
 
 function TestAnimation({ dark, t }: { dark: boolean; t: (k: string, opts?: Record<string, unknown>) => string }) {
   const bgColor = dark ? '#1a1a2e' : '#1b2631'
-  const textColor = dark ? green[300] : green[400]
+  const textColor = dark ? GREEN[300] : GREEN[400]
   const dimColor = dark ? '#667' : '#8899aa'
 
   const lines = [
@@ -139,9 +143,9 @@ function TestAnimation({ dark, t }: { dark: boolean; t: (k: string, opts?: Recor
 }
 
 function AnalyzeAnimation({ dark }: { dark: boolean }) {
-  const classA = dark ? green[300] : green[600]
-  const classB = dark ? green[200] : green[400]
-  const lineColor = dark ? green[100] : green[800]
+  const classA = dark ? GREEN[300] : GREEN[600]
+  const classB = dark ? GREEN[200] : GREEN[400]
+  const lineColor = dark ? GREEN[100] : GREEN[800]
 
   // Two clusters with overlap near the boundary — a couple of points
   // are deliberately on the "wrong" side for realism
@@ -211,7 +215,7 @@ function AnalyzeAnimation({ dark }: { dark: boolean }) {
 }
 
 function CompletionCheckmark({ dark }: { dark: boolean }) {
-  const strokeColor = dark ? green[300] : green[600]
+  const strokeColor = dark ? GREEN[300] : GREEN[600]
 
   return (
     <svg viewBox="0 0 200 100" width="100%" height="100%" key="done">
@@ -270,10 +274,10 @@ function PhaseStepper({
   }
   const activeIdx = completed ? PHASES.length : PHASES.indexOf(activePhase)
 
-  const filledColor = dark ? green[400] : green[600]
-  const activeColor = dark ? green[300] : green[500]
+  const filledColor = dark ? GREEN[400] : GREEN[600]
+  const activeColor = dark ? GREEN[300] : GREEN[500]
   const inactiveColor = dark ? '#555' : '#ccc'
-  const textActive = dark ? green[200] : green[800]
+  const textActive = dark ? GREEN[200] : GREEN[800]
   const textInactive = dark ? '#888' : '#999'
 
   // Progress line: fraction of the track that should be filled
@@ -314,7 +318,7 @@ function PhaseStepper({
                   transition: 'all 0.3s',
                   zIndex: 1,
                   ...(isActive && {
-                    boxShadow: `0 0 0 4px ${dark ? 'rgba(76,175,80,0.25)' : 'rgba(76,175,80,0.2)'}`,
+                    boxShadow: `0 0 0 4px ${dark ? alpha(GREEN[500], 0.25) : alpha(GREEN[500], 0.2)}`,
                     animation: 'pulseRing 1.5s ease-in-out infinite',
                   }),
                 }}
@@ -351,8 +355,8 @@ function PhaseStepper({
       </Box>
       <style>{`
         @keyframes pulseRing {
-          0%, 100% { box-shadow: 0 0 0 4px ${dark ? 'rgba(76,175,80,0.25)' : 'rgba(76,175,80,0.2)'}; }
-          50% { box-shadow: 0 0 0 8px ${dark ? 'rgba(76,175,80,0.08)' : 'rgba(76,175,80,0.08)'}; }
+          0%, 100% { box-shadow: 0 0 0 4px ${dark ? alpha(GREEN[500], 0.25) : alpha(GREEN[500], 0.2)}; }
+          50% { box-shadow: 0 0 0 8px ${alpha(GREEN[500], 0.08)}; }
         }
       `}</style>
     </Box>
@@ -398,9 +402,9 @@ export default function AutogradeAnimation({
   const isCompleted = status === 'completed'
   const displayProgress = isCompleted ? 1 : progress
 
-  const bgColor = dark ? 'rgba(76,175,80,0.06)' : 'rgba(76,175,80,0.04)'
-  const borderColor = dark ? 'rgba(76,175,80,0.2)' : 'rgba(76,175,80,0.25)'
-  const progressBarColor = dark ? green[400] : green[500]
+  const bgColor = dark ? alpha(GREEN[500], 0.06) : alpha(GREEN[500], 0.04)
+  const borderColor = dark ? alpha(GREEN[500], 0.2) : alpha(GREEN[500], 0.25)
+  const progressBarColor = dark ? GREEN[400] : GREEN[500]
 
   return (
     <Box
@@ -439,7 +443,7 @@ export default function AutogradeAnimation({
           sx={{
             fontFamily: 'monospace',
             fontSize: '0.8rem',
-            color: dark ? green[300] : green[800],
+            color: dark ? GREEN[300] : GREEN[800],
             minHeight: '1.4em',
           }}
         >
@@ -465,7 +469,7 @@ export default function AutogradeAnimation({
           left: 0,
           right: 0,
           height: 3,
-          bgcolor: dark ? 'rgba(76,175,80,0.1)' : 'rgba(76,175,80,0.1)',
+          bgcolor: alpha(GREEN[500], 0.1),
         }}
       >
         <Box

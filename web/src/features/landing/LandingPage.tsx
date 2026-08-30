@@ -25,12 +25,17 @@ import mkmLogo from '../../assets/sponsors/mkm.png'
 import itaLogo from '../../assets/sponsors/ita.png'
 import config from '../../config.ts'
 import EnvironmentBadge from '../../components/EnvironmentBadge.tsx'
+import { GREEN as RAMP } from '../../theme/theme.ts'
 
 // ─── Design Tokens ──────────────────────────────────────────────────────────────
 
 const DARK = '#060b06'
-const GREEN = '#16a34a'
-const GREEN_BRIGHT = '#4ade80'
+// The app's own ramp (EZ-1798, one green): the landing page carried the *old* primary, so the
+// CTA reproduced the exact white-on-GREEN[600] AA failure (3.3:1) X-012 moved the app off, and
+// crossing from landing to app showed two brand greens. Imported, not copied, so a ramp retune
+// cannot strand this page again.
+const GREEN = RAMP[700]
+const GREEN_BRIGHT = RAMP[400]
 
 const F = {
   display: "'Fraunces', Georgia, serif",
@@ -784,7 +789,7 @@ export default function LandingPage() {
                     py: 1.5,
                     minWidth: 190,
                     boxShadow: '0 0 24px rgba(56, 125, 20, 0.3)',
-                    '&:hover': { bgcolor: '#2d6a11' },
+                    '&:hover': { bgcolor: '#166534' },
                     // Stays legible rather than greying out to near-invisible against the dark
                     // hero: this state lasts one round trip, and a button that vanishes and
                     // reappears reads as a glitch.

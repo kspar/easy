@@ -42,19 +42,23 @@ Each rule names the file that already does it right. **Copy that file.**
 What actually switches with mode: `background`, `text`, `divider`, and per-component borders. What
 does **not**: every semantic colour. Two consequences the audit measured:
 
-- **The green is decided: one green, `GREEN[700]` `#15803d`** (kspar, 2026-08-28 — X-012, two-green
-  proposal rejected). White-on-it passes AA in both modes (5.02:1); as text it passes light and is
-  large-text-only on dark surfaces (3.74/3.32) — so **small green text on dark uses a lighter ramp
-  step via `primary.light`**, a shade rule, not a second green. The same green propagates to the
-  manifest, `index.html` and `easy-kc-theme`, retiring the other three green families. Do not "fix"
-  green contrast locally — it is this token decision.
-- **`text.secondary` (`#757575`) passes on paper, fails on the page background** at small sizes
-  (4.23:1 — X-013). Use it for metadata and captions only, never running text.
-- Six palette entries are **dead**: the whole `secondary` triplet and all four `*.light` tints (R-001,
-  X-014). Do not reach for them; they are mode-blind near-whites.
+- **The green is decided and shipped: one green, `GREEN[700]` `#15803d`** (kspar, 2026-08-28 —
+  X-012, two-green proposal rejected; implemented in EZ-1798). White-on-it passes AA in both modes
+  (5.02:1); as text it passes light and is large-text-only on dark surfaces (3.74/3.32) — so
+  **small green text on dark uses a lighter ramp step**: the theme applies that shade rule itself
+  for selected tabs, text/outlined buttons and links (`GREEN[500]` on dark); anything new that
+  renders primary as small text on a dark surface must do the same via `primary.light`. The same
+  green propagates to the manifest and `index.html`; `easy-kc-theme`'s copy is X-039's half and
+  still pending. Do not "fix" green contrast locally — it is this token decision. Check:
+  `node web/tests/audit/ez1798-one-green-verify.mjs`.
+- **`text.secondary` is `#6b6b6b` in light** (4.89:1 on the page background — the old `#757575`
+  failed there at small sizes, X-013). Use it for metadata and captions only, never running text.
+- The former dead palette entries — the `secondary` triplet and the four `*.light` tints — are
+  **removed** (R-001, X-014). MUI derives missing shades; do not reintroduce hand-set tints.
 - The **radius vocabulary is intentional** (R-006): 8px interactive controls, 12px surfaces, 6px
   tooltips, 50% avatars. Follow it.
-- The `shadows` scale is dead — cards are outlined, nothing elevates (X-014). Do not start elevating.
+- The bespoke `shadows` scale is **removed** (X-014) — cards are outlined, nothing elevates; menus
+  and dialogs use MUI's defaults. Do not start elevating.
 - The doubled `:focus-visible:focus-visible` rule in `MuiCssBaseline` is load-bearing specificity —
   read its comment before touching it.
 

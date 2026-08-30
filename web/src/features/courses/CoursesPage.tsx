@@ -23,6 +23,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth.ts'
 import { useStudentCourses, useTeacherCourses, useCreateCourse } from '../../api/courses.ts'
 import { spaLinkProps } from '../../components/spaLink.ts'
+import { alpha } from '@mui/material/styles'
+import { GREEN } from '../../theme/theme.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import { COLOR_PALETTE, randomColor } from './course-colors.ts'
 
@@ -75,17 +77,20 @@ function hoverShadow(color: string | null) {
 // Activity level: 'active' = submissions in last 24h, 'recent' = last 7 days, 'dormant' = older/none
 type ActivityLevel = 'active' | 'recent' | 'dormant'
 
+// The GREEN ramp's own steps (EZ-1798, one green): the Material greens that used to sit here
+// were a separate family from the brand colour two pixels away. Taken from the exported ramp so
+// the next retune cannot strand a copy.
 const activityColors: Record<ActivityLevel, { color: string; glow?: string }> = {
-  active: { color: '#43a047', glow: '0 0 6px 2px rgba(67,160,71,0.45)' },
-  recent: { color: '#81c784' },
+  active: { color: GREEN[600], glow: `0 0 6px 2px ${alpha(GREEN[600], 0.45)}` },
+  recent: { color: GREEN[300] },
   dormant: { color: '#bdbdbd' },
 }
 
 const pulseKeyframes = {
   '@keyframes pulse': {
-    '0%': { boxShadow: '0 0 6px 2px rgba(67,160,71,0.45)' },
-    '50%': { boxShadow: '0 0 10px 4px rgba(67,160,71,0.25)' },
-    '100%': { boxShadow: '0 0 6px 2px rgba(67,160,71,0.45)' },
+    '0%': { boxShadow: `0 0 6px 2px ${alpha(GREEN[600], 0.45)}` },
+    '50%': { boxShadow: `0 0 10px 4px ${alpha(GREEN[600], 0.25)}` },
+    '100%': { boxShadow: `0 0 6px 2px ${alpha(GREEN[600], 0.45)}` },
   },
 }
 
