@@ -83,8 +83,8 @@ independent causes, and the only findings here that reach a *student*:
 | mechanism | filed | state |
 |---|---|---|
 | A test with no checks passes everyone — and the first preset in the menu makes one | X-023 / EZ-1795 | **fixed** `83eade30` |
-| `outputCategory` defaults to `ALL_IO`, so a prompt containing the expected string passes a wrong answer | A12 / **EZ-1818** | open |
-| Output checks cannot say "and nothing else", so a student printing 1, 2, 3, 4… passes | B13 / **EZ-1818** | open |
+| `outputCategory` defaults to `ALL_IO`, so a prompt containing the expected string passes a wrong answer | A12 / **EZ-1818** | **fixed** 2026-08-30 |
+| Output checks cannot say "and nothing else", so a student printing 1, 2, 3, 4… passes | B13 / **EZ-1818** | **fixed** 2026-08-30 |
 | A value starting with `"` silently loses its quotes, so the check compares the wrong string | B10′ / EZ-1810 | open |
 
 **EZ-1795 was resolved on 2026-08-29 and fixed the first row** (plus X-015, X-016, X-022, X-027). The
@@ -269,10 +269,13 @@ form only once someone decides what to call it in a teacher's words" — but cha
 `ALL_OUTPUT` needs no form and no vocabulary decision, and is right on their argument: a test should
 check what the program produced, not what the test itself fed in.
 
-Caveat for whoever does it: `encodeDefaults = true` means every saved spec already carries an explicit
-`outputCategory`, so changing the Kotlin default **cannot alter any existing exercise**. That makes it
-safe — and means it fixes nothing retroactively; the ~3081 stored checks stay `ALL_IO` until something
-rewrites them.
+Caveat for whoever does it — **and this paragraph originally got it backwards**: `encodeDefaults`
+governs what *kotlinx* writes, but the stored specs were written by the React editor and by
+`migrate.py`, both plain JSON. Measured directly on `after-dev.jsonl` (2026-08-30): **all 3081
+genericChecks omit the key**, so flipping the default changes what every one of them means on its
+next save or recompile. It was flipped anyway, as a decision (EZ-1818, kspar 2026-08-30) — the
+tester's argument won — with the known input-echo-dependent shape (KT2_jalgpall) needing an
+explicit `ALL_IO`.
 
 ### A13 — `elementsOrdered` on `GenericCheck` but not `GenericCheckLong` · **second opinion on EZ-1742 §7** → EZ-1811
 

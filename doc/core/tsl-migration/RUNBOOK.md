@@ -244,6 +244,12 @@ a spec **that strict JSON rejects** (a wui-era raw newline inside a string, EZ-1
 re-serialisation of what the compiler already reads, so the React editor can finally open it. A spec
 that parses strictly is never rewritten, whatever its formatting. See `doc/core/api-testing.md`.
 
+**Since 2026-08-30 a recompile is no longer semantics-neutral for every check** (EZ-1818): the
+`outputCategory` default flipped from `ALL_IO` to `ALL_OUTPUT`, and all 3081 genericChecks in the
+dev corpus omit the key — so a bulk recompile switches them from judging output+input-echo to
+output only. That is the decided behavior, not an accident; a check that deliberately leans on the
+input echo (the KT2_jalgpall shape) needs an explicit `"outputCategory": "ALL_IO"` first.
+
 Reach for this runbook when the **specs** change — a retired test type, a model migration — and for
 the recompile endpoint when only the **compiler** has.
 

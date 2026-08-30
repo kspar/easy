@@ -9,12 +9,11 @@
  * other side rejects — and kotlinx decodes with `ignoreUnknownKeys = false`, so that is a compile
  * error on save, not a warning.
  */
-import { Box, Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material'
+import { Box, FormControl, InputLabel, MenuItem, Paper, Select, TextField } from '@mui/material'
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TslFeedbackFields } from './TslSections.tsx'
+import { TslFeedbackFields, TslNothingElseCheckbox } from './TslSections.tsx'
 import {
-  quantifierUsesNothingElse,
   quantifierUsesValues,
   scopeNameField,
   type CheckTypeLong,
@@ -140,7 +139,6 @@ export function TslGenericCheckLongSection({
   const { t } = useTranslation()
   const labelId = useId()
   const showValues = quantifierUsesValues(check.checkType)
-  const showNothingElse = quantifierUsesNothingElse(check.checkType)
 
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
@@ -176,19 +174,12 @@ export function TslGenericCheckLongSection({
         />
       )}
 
-      {showNothingElse && (
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={check.nothingElse === true}
-              onChange={(e) => onChange({ ...check, nothingElse: e.target.checked })}
-              disabled={!editing}
-              size="small"
-            />
-          }
-          label={<Typography variant="body2">{t('tsl.nothingElse')}</Typography>}
-        />
-      )}
+      <TslNothingElseCheckbox
+        checkType={check.checkType}
+        nothingElse={check.nothingElse}
+        editing={editing}
+        onChange={(nothingElse) => onChange({ ...check, nothingElse })}
+      />
 
       <TslFeedbackFields
         passedMessage={check.passedMessage}

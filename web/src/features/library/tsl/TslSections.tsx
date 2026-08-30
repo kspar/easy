@@ -23,7 +23,9 @@ import {
   emptyGenericCheck,
   emptyOutputFileCheck,
   emptyParamValueCheck,
+  quantifierUsesNothingElse,
   type CheckType,
+  type CheckTypeLong,
   type DataCategory,
   type ExceptionCheck,
   type FileData,
@@ -83,6 +85,45 @@ export function TslFeedbackFields({
         />
       </Box>
     </Box>
+  )
+}
+
+/**
+ * The "and nothing else" checkbox, shared by every check section that carries the flag — three
+ * copies drifted before this existed. Rendered only under the quantifiers tiivad applies it to
+ * (X-019 / beta B13), and never on a check pinned to ALL_IO, where "nothing else" would count
+ * the program's own input echo as something else and fail correct submissions. Hidden rather
+ * than cleared when a gate closes, so flipping back does not eat the choice.
+ */
+export function TslNothingElseCheckbox({
+  checkType,
+  outputCategory,
+  nothingElse,
+  editing,
+  onChange,
+}: {
+  checkType: CheckType | CheckTypeLong
+  /** Absent on check shapes that have no such field (GenericCheckLong, OutputFileCheck). */
+  outputCategory?: string
+  nothingElse?: boolean | null
+  editing: boolean
+  onChange: (next: boolean) => void
+}) {
+  const { t } = useTranslation()
+  if (!quantifierUsesNothingElse(checkType as CheckTypeLong)) return null
+  if (outputCategory === 'ALL_IO') return null
+  return (
+    <FormControlLabel
+      control={
+        <Checkbox
+          checked={nothingElse === true}
+          onChange={(e) => onChange(e.target.checked)}
+          disabled={!editing}
+          size="small"
+        />
+      }
+      label={<Typography variant="body2">{t('tsl.nothingElse')}</Typography>}
+    />
   )
 }
 
@@ -361,6 +402,13 @@ export function TslDataChecksSection({
             }
             label={<Typography variant="body2">{t('tsl.ordered')}</Typography>}
           />
+          <TslNothingElseCheckbox
+            checkType={check.checkType}
+            outputCategory={check.outputCategory}
+            nothingElse={check.nothingElse}
+            editing={editing}
+            onChange={(nothingElse) => patch(i, { nothingElse })}
+          />
 
           <TslFeedbackFields
             passedMessage={check.passedMessage}
@@ -481,6 +529,12 @@ export function TslOutputFileChecksSection({
               />
             }
             label={<Typography variant="body2">{t('tsl.ordered')}</Typography>}
+          />
+          <TslNothingElseCheckbox
+            checkType={check.checkType}
+            nothingElse={check.nothingElse}
+            editing={editing}
+            onChange={(nothingElse) => patch(i, { nothingElse })}
           />
           <TslFeedbackFields
             passedMessage={check.passedMessage}

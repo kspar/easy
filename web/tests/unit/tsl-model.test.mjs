@@ -293,6 +293,25 @@ describe('blank required fields gate, checkless tests warn', () => {
     const noop = { fieldsFinal: [], checkName: false, checkValue: false, nothingElse: false, beforeMessage: '', passedMessage: '', failedMessage: '' }
     expect(testChecksNothing({ ...fresh, classInstanceChecks: [noop] })).toBe(true)
     expect(testChecksNothing({ ...fresh, classInstanceChecks: [{ ...noop, checkName: true }] })).toBe(false)
+    // Deliberately conservative: nothingElse alone has no expressible subject (the field inputs
+    // are disabled with both boxes off) and tiivad's handling is unverifiable in-repo — so it
+    // does NOT rescue the check from the warning.
+    expect(testChecksNothing({ ...fresh, classInstanceChecks: [{ ...noop, nothingElse: true }] })).toBe(true)
+  })
+
+  test('a static check asserting emptiness via nothingElse is not "checking nothing"', () => {
+    const fresh = createTest('contains_test', nextId())
+    // ALL_OF_THESE + no values + nothingElse = "the target set is empty" — an assertion.
+    expect(
+      testChecksNothing({ ...fresh, genericCheck: { ...fresh.genericCheck, nothingElse: true } }),
+    ).toBe(false)
+    // Under a quantifier tiivad ignores nothingElse for, the flag rescues nothing.
+    expect(
+      testChecksNothing({
+        ...fresh,
+        genericCheck: { ...fresh.genericCheck, checkType: 'NONE_OF_THESE', nothingElse: true },
+      }),
+    ).toBe(true)
   })
 
   test('emptySpec never seeds a blank required file', () => {

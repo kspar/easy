@@ -13,7 +13,7 @@ import { Box, Button, Checkbox, FormControlLabel, IconButton, Paper, TextField, 
 import { AddOutlined, DeleteOutlineOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { TslFeedbackFields } from './TslSections.tsx'
-import { emptyClassInstanceCheck, type ClassInstanceCheck, type FieldData } from './tslModel.ts'
+import { emptyClassInstanceCheck, instanceCheckAsserts, type ClassInstanceCheck, type FieldData } from './tslModel.ts'
 
 export function TslClassInstanceChecksSection({
   checks,
@@ -121,9 +121,11 @@ export function TslClassInstanceChecksSection({
               />
             ))}
           </Box>
-          {/* Turning both off leaves a check that compares nothing and passes for everyone —
-              cheap to say so, and impossible to see otherwise. */}
-          {!check.checkName && !check.checkValue && (
+          {/* A check that asserts nothing passes for everyone — cheap to say so, impossible to
+              see otherwise. The shared predicate keeps this caption and the tab summary count in
+              agreement; a lone nothingElse does not lift it, since with both compare boxes off
+              the field inputs are disabled and the assertion has no expressible subject. */}
+          {!instanceCheckAsserts(check) && (
             <Typography variant="caption" color="warning.main" display="block">
               {t('tsl.instanceChecksNothing')}
             </Typography>

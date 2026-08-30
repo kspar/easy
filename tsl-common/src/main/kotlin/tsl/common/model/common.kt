@@ -114,7 +114,16 @@ data class GenericCheck(
     val expectedValue: List<String>,
     val elementsOrdered: Boolean? = false,
     val dataCategory: DataCategory = DataCategory.EQUALS,
-    val outputCategory: OutputCategory = OutputCategory.ALL_IO,
+    // ALL_OUTPUT since 2026-08-30 (EZ-1742 / beta item B11): a check should judge what the
+    // program *produced*, not the input the test itself fed in — under ALL_IO a student who
+    // echoes every candidate answer passes. Deliberately a behavior change for stored checks
+    // too: measured directly on the dev corpus (doc/core/tsl-migration/after-dev.jsonl,
+    // 2026-08-30), all 3081 genericChecks omit this key — the editor and the migration write
+    // plain JSON, so encodeDefaults never applied to them — and each therefore adopts ALL_OUTPUT
+    // on its next save or recompile. That includes checks whose expectedValue leans on the input
+    // echo (KT2_jalgpall.YAML in this module's resources is the known shape); those want an
+    // explicit ALL_IO. Decision by kspar, 2026-08-30.
+    val outputCategory: OutputCategory = OutputCategory.ALL_OUTPUT,
     val ignoreCase: Boolean? = false,
     override val beforeMessage: String,
     override val passedMessage: String,

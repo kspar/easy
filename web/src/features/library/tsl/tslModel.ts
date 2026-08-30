@@ -587,6 +587,18 @@ export function enumField<T extends string>(test: TslTest, key: string, fallback
 }
 
 /** Which extra name field a scope implies, if any. */
+/**
+ * Whether a class-instance check asserts anything at all. One exported predicate, used by
+ * [testChecksNothing] and (negated) by the form's own caption, so the tab summary and the inline
+ * warning cannot disagree about the same check. `nothingElse` alone does NOT count: with both
+ * compare boxes off the field inputs are disabled, so whatever "no other fields" would mean, the
+ * form cannot express its subject — and tiivad's handling of that state is unverifiable in-repo
+ * (EZ-1775). Conservative reading: it checks nothing.
+ */
+export function instanceCheckAsserts(check: ClassInstanceCheck): boolean {
+  return check.checkName || check.checkValue
+}
+
 export function scopeNameField(scope: Scope): 'functionName' | 'className' | null {
   if (scope === 'FUNCTION') return 'functionName'
   if (scope === 'CLASS') return 'className'
@@ -652,10 +664,10 @@ export function testChecksNothing(test: TslTest): boolean {
       )
     case 'class_instance_test':
       // An instance check with both compare boxes off is the no-op the form's own caption warns
-      // about — counting it as a check here would contradict that caption two lines away.
+      // about — counting it as a check here would contradict that caption. One shared predicate,
+      // so the caption and this count cannot drift apart.
       return (
-        instanceChecksField(test).filter((c) => c.checkName === true || c.checkValue === true)
-          .length === 0 &&
+        instanceChecksField(test).filter(instanceCheckAsserts).length === 0 &&
         checkListField(test, 'genericChecks').length === 0 &&
         outputFileChecksField(test).length === 0
       )
@@ -663,9 +675,15 @@ export function testChecksNothing(test: TslTest): boolean {
     case 'calls_test':
     case 'definition_test': {
       // ANY/NONE quantifiers ask only whether the target set is non-empty and read no values, so
-      // they check something even with an empty list; the value-driven quantifiers do not.
+      // they check something even with an empty list; the value-driven quantifiers do not —
+      // unless nothingElse is on where tiivad honours it, which turns an empty ALL_OF_THESE into
+      // "the target set is empty": an assertion, not a no-op.
       const check = genericCheckField(test)
-      return quantifierUsesValues(check.checkType) && (check.expectedValue ?? []).length === 0
+      return (
+        quantifierUsesValues(check.checkType) &&
+        (check.expectedValue ?? []).length === 0 &&
+        !(quantifierUsesNothingElse(check.checkType) && check.nothingElse === true)
+      )
     }
     default:
       return false
