@@ -30,7 +30,7 @@
  *   HARNESS_PORT=5299 node tests/audit/c5-a11y-sweep.mjs
  */
 import { chromium } from '@playwright/test'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -88,6 +88,55 @@ export const VIEWPORTS = {
  */
 export const SPEC_TAB = /^(Spec|Spetsifikatsioon)$/i
 export const BUILDER_TAB = /^TSL$/i
+
+/**
+ * The exercise page's auto-assessment tab, the grader-type select beside it, and the try-it-out tab.
+ * EZ-1820's Estonian pass retired "Automaatkontroll", "Automaatkontrolli tüüp" and "Testimine".
+ *
+ * Anchored, and that matters more than it did: the old names were long and distinctive, the new ones
+ * are prefixes of the vocabulary around them — "Testidega", "Testide tulemus", "Testidega hinnatud".
+ * An unanchored `/Testid/` matches all of them. (The old matcher was loose in the same way —
+ * `/Automaatkontroll/` also matched "Automaatkontrolli tüüp" — it just got away with it.)
+ *
+ * **Read these off `src/i18n/et.json`, never off a description of it.** Every value here changed at
+ * least once between being agreed and being applied — `autoAssessType` went Testiraamistik →
+ * Kontrollija and `tabTesting` went Testimine → Proovi järele → Proovi → Katseta, both during
+ * review. The file is the truth; anything written down elsewhere is a snapshot of a moving target.
+ */
+export const AUTO_ASSESS_TAB = /^Testid$/
+export const AUTO_ASSESS_TYPE = /^Kontrollija$/i
+export const TESTING_TAB = /^Katseta$/i
+
+/**
+ * ...and here is the file being the truth, rather than a comment asking you to remember that it is.
+ *
+ * Each constant is checked against the `et.json` value it is supposed to match, at import, before
+ * any driver does anything. A rename now fails on the first line with the old and new strings side
+ * by side, instead of thirty seconds later as "tab not found" or — the case that actually cost us —
+ * not at all, because the stale matcher happened to still match something else.
+ *
+ * Only the label constants are covered. That is the whole point: they are the ones that live in two
+ * files at once.
+ */
+const I18N_ET = JSON.parse(readFileSync(join(HERE, '../../src/i18n/et.json'), 'utf8'))
+const LABEL_SOURCES = [
+  ['SPEC_TAB', SPEC_TAB, ['tsl', 'tabSpec']],
+  ['BUILDER_TAB', BUILDER_TAB, ['tsl', 'tabTests']],
+  ['AUTO_ASSESS_TAB', AUTO_ASSESS_TAB, ['library', 'tabAutoAssess']],
+  ['AUTO_ASSESS_TYPE', AUTO_ASSESS_TYPE, ['library', 'autoAssessType']],
+  ['TESTING_TAB', TESTING_TAB, ['library', 'tabTesting']],
+]
+const staleLabels = LABEL_SOURCES.flatMap(([name, re, path]) => {
+  const value = path.reduce((o, k) => o?.[k], I18N_ET)
+  if (typeof value !== 'string') return [`${name}: no such key in et.json — ${path.join('.')}`]
+  return re.test(value) ? [] : [`${name} (${re}) no longer matches ${path.join('.')} = ${JSON.stringify(value)}`]
+})
+if (staleLabels.length > 0) {
+  throw new Error(
+    `audit.mjs label constants are out of date with src/i18n/et.json:\n  ${staleLabels.join('\n  ')}\n` +
+    'Read the current values out of et.json and update the constants above.',
+  )
+}
 
 /**
  * Run `fn` with a browser and a `launch` built the way `spec.mjs` builds it.

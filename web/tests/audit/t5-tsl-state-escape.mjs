@@ -14,7 +14,7 @@
  *
  *   HARNESS_PORT=5299 node tests/audit/t5-tsl-state-escape.mjs
  */
-import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB, BUILDER_TAB } from './audit.mjs'
+import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB, BUILDER_TAB, AUTO_ASSESS_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -82,7 +82,7 @@ const handlers = () => [
   [/\/v2\//, () => ({ courses: [], exercises: [], dirs: [], count: 0 })],
 ]
 
-/** Open the exercise, enter edit mode, and land on the Automaatkontroll tab. */
+/** Open the exercise, enter edit mode, and land on the auto-assessment tab ("Testid"). */
 async function openEditing(launch) {
   const { page } = await launch({ role: 'teacher', language: 'et', viewport: VIEWPORTS.laptop })
   await fakeApi(page, handlers(), { log: false, contract: false })
@@ -90,7 +90,7 @@ async function openEditing(launch) {
   await waitUntil(async () => (await page.getByText('Kahe arvu summa').count()) > 0, { timeout: 15000 })
   await page.getByRole('button', { name: /^Muuda/i }).first().click()
   await page.waitForTimeout(700)
-  await page.getByRole('tab', { name: /Automaatkontroll/i }).first().click()
+  await page.getByRole('tab', { name: AUTO_ASSESS_TAB }).first().click()
   await page.waitForTimeout(1200)
   return page
 }

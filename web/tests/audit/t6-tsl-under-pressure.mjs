@@ -15,7 +15,7 @@
  */
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { withBrowser, fakeApi, shoot, REPORTS, VIEWPORTS, BASE_URL, waitUntil } from './audit.mjs'
+import { withBrowser, fakeApi, shoot, REPORTS, VIEWPORTS, BASE_URL, waitUntil, AUTO_ASSESS_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -122,7 +122,7 @@ for (const [vpName, viewport] of [
       await waitUntil(async () => (await page.getByText('Kahe arvu summa').count()) > 0, { timeout: 15000 })
       await page.getByRole('button', { name: /^Muuda/i }).first().click()
       await page.waitForTimeout(800)
-      const autoTab = page.getByRole('tab', { name: /Automaatkontroll/i }).first()
+      const autoTab = page.getByRole('tab', { name: AUTO_ASSESS_TAB }).first()
       if (await autoTab.count()) await autoTab.click()
       await page.waitForTimeout(1500)
 

@@ -13,7 +13,7 @@
  *
  *   HARNESS_PORT=5299 node tests/audit/t1-tsl-first-run.mjs
  */
-import { withBrowser, fakeApi, shoot, collectProblems, VIEWPORTS, BASE_URL, waitUntil } from './audit.mjs'
+import { withBrowser, fakeApi, shoot, collectProblems, VIEWPORTS, BASE_URL, waitUntil, AUTO_ASSESS_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -99,7 +99,7 @@ await withBrowser(async ({ launch }) => {
   // What does the read-only auto-assessment tab say before anything is configured?
   const tabs = await page.getByRole('tab').allInnerTexts()
   console.log(`tabs: ${JSON.stringify(tabs)}`)
-  const autoTab = page.getByRole('tab', { name: /Automaatkontroll|Auto/i }).first()
+  const autoTab = page.getByRole('tab', { name: AUTO_ASSESS_TAB }).first()
   if (await autoTab.count()) {
     await autoTab.click()
     await page.waitForTimeout(600)

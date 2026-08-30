@@ -7,7 +7,7 @@
  * *auto-assessment type* select by name, and a control: the same sequence without breaking the spec
  * first, so a stuck button can be told from a correctly disabled one.
  */
-import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB } from './audit.mjs'
+import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB, AUTO_ASSESS_TAB, AUTO_ASSESS_TYPE } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -35,7 +35,7 @@ const saveDisabled = (page) =>
 
 /** Change the auto-assessment type select, by its visible label, to the first non-TSL option. */
 async function leaveTsl(page) {
-  const select = page.getByLabel(/Automaatkontrolli tüüp/i).first()
+  const select = page.getByLabel(AUTO_ASSESS_TYPE).first()
   if (!(await select.count())) return { error: 'auto-assessment type select not found by label' }
   await select.click()
   await page.waitForTimeout(400)
@@ -75,7 +75,7 @@ for (const breakSpec of [true, false]) {
     await waitUntil(async () => (await page.getByText('Kahe arvu summa').count()) > 0, { timeout: 15000 })
     await page.getByRole('button', { name: /^Muuda/i }).first().click()
     await page.waitForTimeout(700)
-    await page.getByRole('tab', { name: /Automaatkontroll/i }).first().click()
+    await page.getByRole('tab', { name: AUTO_ASSESS_TAB }).first().click()
     await page.waitForTimeout(1500)
 
     const onArrival = await saveDisabled(page)

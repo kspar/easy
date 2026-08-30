@@ -14,7 +14,7 @@
  *   cd web && npx vite --config vite.stub.config.ts --port 5299 --strictPort &
  *   HARNESS_PORT=5299 node tests/audit/x-tsl-chain-verify.mjs
  */
-import { withBrowser, fakeApi, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB } from './audit.mjs'
+import { withBrowser, fakeApi, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB, AUTO_ASSESS_TAB, AUTO_ASSESS_TYPE, TESTING_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -114,7 +114,7 @@ async function open(launch, exercise, compileBodies) {
   await waitUntil(async () => (await page.getByText('Kahe arvu summa').count()) > 0, { timeout: 15000 })
   await page.getByRole('button', { name: /^Muuda/i }).first().click()
   await page.getByRole('button', { name: /^Salvesta/i }).waitFor({ timeout: 10000 })
-  await page.getByRole('tab', { name: /Automaatkontroll/i }).first().click()
+  await page.getByRole('tab', { name: AUTO_ASSESS_TAB }).first().click()
   await page.waitForTimeout(600)
   return page
 }
@@ -127,11 +127,11 @@ await withBrowser(async ({ launch }) => {
     const compileBodies = []
     const page = await open(launch, teacherExercise(), compileBodies)
 
-    await page.getByLabel(/Automaatkontrolli tüüp/i).click()
+    await page.getByLabel(AUTO_ASSESS_TYPE).click()
     await page.getByRole('option', { name: /^TSL$/i }).click()
     await page.waitForTimeout(1800) // past the 400ms parse + 800ms compile debounces
 
-    check((await page.getByText('Teste veel pole.').count()) > 0, 'the first render is the empty state')
+    check((await page.getByText('Teste veel pole').count()) > 0, 'the first render is the empty state')
     check((await page.getByRole('alert').count()) === 0, 'no error alert greets the teacher')
     check(await saveEnabled(page), 'Save is enabled on a fresh TSL choice')
     const lastCompile = compileBodies[compileBodies.length - 1]
@@ -141,16 +141,18 @@ await withBrowser(async ({ launch }) => {
     )
     check((await page.getByText(/Testid koostatakse allpool/).count()) > 0, 'the TSL choice now explains itself')
 
-    // X-016: the Testimine tab exists before saving, and says to save first.
-    const testingTab = page.getByRole('tab', { name: /Testimine/i })
-    check((await testingTab.count()) > 0, 'the Testimine tab appears without a round-trip through Save')
+    // X-016: the try-it-out tab exists before saving, and says to save first. EZ-1820 renamed it
+    // from "Testimine" to "Katseta"; "Testimine" still appears in the body copy underneath, so this
+    // has to be the tab role rather than a text search.
+    const testingTab = page.getByRole('tab', { name: TESTING_TAB })
+    check((await testingTab.count()) > 0, 'the try-it-out tab appears without a round-trip through Save')
     await testingTab.click()
     await page.waitForTimeout(400)
     check(
-      (await page.getByText(/pole veel automaatkontrolliga salvestatud/).count()) > 0,
+      (await page.getByText(/pole veel testidega salvestatud/).count()) > 0,
       'and explains that runs need a saved version first',
     )
-    await page.getByRole('tab', { name: /Automaatkontroll/i }).click()
+    await page.getByRole('tab', { name: AUTO_ASSESS_TAB }).click()
     await page.waitForTimeout(400)
 
     // ─── X-023: the first preset produces a test that checks nothing — now it says so ───────────
@@ -163,7 +165,12 @@ await withBrowser(async ({ launch }) => {
 
     // ─── X-027: a blank required field gates Save ────────────────────────────────────────────────
     await page.getByRole('button', { name: /Lisa test/i }).click()
-    await page.getByRole('menuitem', { name: /Kutsub välja funktsiooni/i }).first().click()
+    // "Käivitab funktsiooni" is `callFunction` → `function_execution_test`, which is the type this
+    // check is about — the sibling case below builds the same type by hand. Named exactly, because
+    // EZ-1820 split two presets that both used to read "Kutsub välja funktsiooni": that string
+    // still exists, on `callsFunction`, so the old matcher would now pick the wrong test type and
+    // go on passing.
+    await page.getByRole('menuitem', { name: /^Käivitab funktsiooni$/i }).first().click()
     await page.waitForTimeout(800)
     check((await page.getByText('Kohustuslik väli täitmata').count()) > 0, 'the blank functionName carries an error chip')
     check(!(await saveEnabled(page)), 'and Save is gated on it')
@@ -240,7 +247,7 @@ await withBrowser(async ({ launch }) => {
     await page.waitForTimeout(1200)
     check(!(await saveEnabled(page)), 'broken JSON disables Save while the container is TSL')
 
-    await page.getByLabel(/Automaatkontrolli tüüp/i).click()
+    await page.getByLabel(AUTO_ASSESS_TYPE).click()
     await page.getByRole('option', { name: /^–$/ }).click()
     await page.waitForTimeout(600)
     check(await saveEnabled(page), 'switching auto-assessment off re-enables Save — the stale flag no longer sticks')

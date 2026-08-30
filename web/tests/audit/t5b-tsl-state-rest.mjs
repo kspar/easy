@@ -13,7 +13,7 @@
  *
  *   HARNESS_PORT=5299 node tests/audit/t5b-tsl-state-rest.mjs
  */
-import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB } from './audit.mjs'
+import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB, AUTO_ASSESS_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -92,7 +92,7 @@ async function open(launch) {
   await waitUntil(async () => (await page.getByText('Kahe arvu summa').count()) > 0, { timeout: 15000 })
   await page.getByRole('button', { name: /^Muuda/i }).first().click()
   await page.waitForTimeout(700)
-  await page.getByRole('tab', { name: /Automaatkontroll/i }).first().click()
+  await page.getByRole('tab', { name: AUTO_ASSESS_TAB }).first().click()
   await page.waitForTimeout(1500)
   return { page, specs }
 }
@@ -128,7 +128,10 @@ await withBrowser(async ({ launch }) => {
   for (let i = 0; i < combosAfterExpand; i++) {
     await combos.nth(i).click()
     await page.waitForTimeout(350)
-    const opt = page.getByRole('option', { name: /Funktsiooni v.ljakutse|Klassi|Sisaldab|Defineerib/i }).first()
+    // Any type other than the one already selected will do; these are the current `tsl.defaultName`
+    // labels, and EZ-1820 rewrote several of them ("Funktsiooni väljakutse test" is now
+    // "Funktsiooni käivituse test", and "Väljakutse test" is a different type entirely).
+    const opt = page.getByRole('option', { name: /Funktsiooni käivituse|Klassi|Koodi sisu|Definitsiooni/i }).first()
     if (await opt.count()) {
       picked = (await opt.innerText()).trim()
       await opt.click()

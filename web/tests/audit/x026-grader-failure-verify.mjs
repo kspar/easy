@@ -177,10 +177,10 @@ await withBrowser(async ({ launch }) => {
     // The rows render only once the accordion has been opened.
     await page.getByText(/Varasemad esitused/).first().click()
     await waitUntil(
-      async () => (await page.getByText('Automaatkontroll ebaõnnestus').count()) > 0,
+      async () => (await page.getByText('Teste ei õnnestunud käivitada').count()) > 0,
       { timeout: 6000 },
     ).catch(() => {})
-    check((await page.getByText('Automaatkontroll ebaõnnestus').count()) > 0, 'the history row is labelled')
+    check((await page.getByText('Teste ei õnnestunud käivitada').count()) > 0, 'the history row is labelled')
     await page.close()
   }
 

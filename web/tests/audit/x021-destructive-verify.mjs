@@ -6,7 +6,7 @@
  *   cd web && npx vite --config vite.stub.config.ts --port 5299 --strictPort &
  *   HARNESS_PORT=5299 node tests/audit/x021-destructive-verify.mjs
  */
-import { withBrowser, fakeApi, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB, BUILDER_TAB } from './audit.mjs'
+import { withBrowser, fakeApi, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB, BUILDER_TAB, AUTO_ASSESS_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -99,7 +99,7 @@ async function openEditing(launch) {
   await waitUntil(async () => (await page.getByText('Kahe arvu summa').count()) > 0, { timeout: 15000 })
   await page.getByRole('button', { name: /^Muuda/i }).first().click()
   await page.getByRole('button', { name: /^Salvesta/i }).waitFor({ timeout: 10000 })
-  await page.getByRole('tab', { name: /Automaatkontroll/i }).first().click()
+  await page.getByRole('tab', { name: AUTO_ASSESS_TAB }).first().click()
   await page.waitForTimeout(800)
   return page
 }
@@ -150,7 +150,7 @@ await withBrowser(async ({ launch }) => {
     await page.getByText('Minu täidetud test').first().click()
     await page.waitForTimeout(600)
 
-    check(await pickType(page, /Funktsiooni v.ljakutse/i), 'found the type select')
+    check(await pickType(page, /^Funktsiooni käivituse test$/i), 'found the type select')
     await page.waitForTimeout(400)
     check((await page.getByText(/tühjendab kõik täidetud väljad/).count()) > 0, 'the filled body gets a confirm')
 
@@ -167,7 +167,7 @@ await withBrowser(async ({ launch }) => {
     // Back to tests; confirm path this time.
     await page.getByRole('tab', { name: BUILDER_TAB }).first().click()
     await page.waitForTimeout(400)
-    check(await pickType(page, /Funktsiooni v.ljakutse/i), 'found the type select again')
+    check(await pickType(page, /^Funktsiooni käivituse test$/i), 'found the type select again')
     await page.waitForTimeout(400)
     await page.getByRole('button', { name: /Vaheta tüüpi/ }).click()
     await page.waitForTimeout(600)
