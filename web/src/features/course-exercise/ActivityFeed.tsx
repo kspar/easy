@@ -536,8 +536,6 @@ export default function ActivityFeed({
                 borderColor: 'divider',
                 px: 2,
                 py: 1,
-                '& p:first-of-type': { mt: 0 },
-                '& p:last-of-type': { mb: 0 },
                 fontSize: '0.85rem',
               }}
               html={previewHtml}
@@ -754,8 +752,6 @@ function EditCommentEditor({
             borderColor: 'divider',
             px: 2,
             py: 1,
-            '& p:first-of-type': { mt: 0 },
-            '& p:last-of-type': { mb: 0 },
             fontSize: '0.85rem',
           }}
           html={previewHtml}
@@ -883,8 +879,6 @@ function TimelineEntryCard({
             <RenderedMarkdown
               sx={{
                 flex: 1,
-                '& p:first-of-type': { mt: 0 },
-                '& p:last-of-type': { mb: 0 },
                 fontSize: '0.85rem',
               }}
               html={activity.feedback_html}
@@ -952,8 +946,6 @@ function TimelineEntryCard({
                   <RenderedMarkdown
                     sx={{
                       mt: 0.25,
-                      '& p:first-of-type': { mt: 0 },
-                      '& p:last-of-type': { mb: 0 },
                       fontSize: '0.8rem',
                     }}
                     html={c.text_html}

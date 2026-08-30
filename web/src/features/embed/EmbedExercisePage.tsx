@@ -132,15 +132,7 @@ export default function EmbedExercisePage() {
             )}
 
             {exercise.text_html && (
-              <RenderedMarkdown
-                sx={{
-                  '& img': { maxWidth: '100%' },
-                  '& pre': { overflowX: 'auto' },
-                  '& table': { display: 'block', overflowX: 'auto' },
-                  '& p:first-of-type': { mt: 0 },
-                }}
-                html={exercise.text_html}
-              />
+              <RenderedMarkdown html={exercise.text_html} />
             )}
 
             {submitUnavailable && (

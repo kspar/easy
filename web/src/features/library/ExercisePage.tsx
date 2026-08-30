@@ -403,14 +403,7 @@ export default function ExercisePage() {
           <Typography variant="h5" gutterBottom>
             {shownTitle}
           </Typography>
-          <RenderedMarkdown
-            sx={{
-              '& img': { maxWidth: '100%' },
-              '& pre': { overflowX: 'auto' },
-              '& table': { display: 'block', overflowX: 'auto' },
-            }}
-            html={shownHtml}
-          />
+          <RenderedMarkdown html={shownHtml} />
         </Paper>
 
         <Box minWidth={0}>

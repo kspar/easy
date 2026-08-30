@@ -827,8 +827,6 @@ function CommentEditor({
             borderColor: 'divider',
             px: 2,
             py: 1,
-            '& p:first-of-type': { mt: 0 },
-            '& p:last-of-type': { mb: 0 },
             fontSize: '0.85rem',
           }}
           html={previewHtml}

@@ -111,6 +111,15 @@ export default defineConfig({
       // maths — so in dev the server meets it mid-session and answers the first request with a 504.
       // The import rejects, the catch swallows it, and the formula silently stays as `$x^2$`.
       'katex',
+      // And again for the highlighter, which `highlightCode.ts` imports only once a language-tagged
+      // block is on the page. The core and each language are separate entry points, so every one of
+      // them has to be listed: an unlisted mode is a 504 on first use, a swallowed rejection, and
+      // code that renders unhighlighted — which looks exactly like highlighting not being wired up.
+      'highlight.js/lib/core',
+      'highlight.js/lib/languages/python',
+      'highlight.js/lib/languages/sql',
+      'highlight.js/lib/languages/bash',
+      'highlight.js/lib/languages/xml',
     ],
   },
   server: {

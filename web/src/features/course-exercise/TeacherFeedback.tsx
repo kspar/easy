@@ -315,8 +315,6 @@ function InlineCommentCard({ comment }: { comment: InlineCommentResp }) {
       </Typography>
       <RenderedMarkdown
         sx={{
-          '& p:first-of-type': { mt: 0 },
-          '& p:last-of-type': { mb: 0 },
           fontSize: '0.85rem',
           fontFamily: 'inherit',
         }}
@@ -516,8 +514,6 @@ export default function TeacherFeedback({
             {activity?.feedback_html && (
               <RenderedMarkdown
                 sx={{
-                  '& p:first-of-type': { mt: 0 },
-                  '& p:last-of-type': { mb: 0 },
                   fontSize: '0.85rem',
                 }}
                 html={activity.feedback_html}
@@ -606,13 +602,7 @@ function InlineCommentFlatList({
                   firstLineNumber={comment.line_start}
                 />
               </Box>
-              <RenderedMarkdown
-                sx={{
-                  '& p:first-of-type': { mt: 0 },
-                  '& p:last-of-type': { mb: 0 },
-                }}
-                html={comment.text_html}
-              />
+              <RenderedMarkdown html={comment.text_html} />
               {comment.suggested_code && (
                 <Box sx={{ mt: 1 }}>
                   <Typography

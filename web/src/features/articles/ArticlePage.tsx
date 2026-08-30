@@ -200,14 +200,7 @@ export default function ArticlePage() {
               <Divider sx={{ mb: 2 }} />
             </>
           )}
-          <RenderedMarkdown
-            sx={{
-              '& img': { maxWidth: '100%' },
-              '& pre': { overflowX: 'auto' },
-              '& table': { display: 'block', overflowX: 'auto' },
-            }}
-            html={shownHtml}
-          />
+          <RenderedMarkdown html={shownHtml} />
         </Paper>
 
         {editing && (
