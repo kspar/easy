@@ -59,6 +59,12 @@ const listSx = {
 
 const cardSx = {
   cursor: 'pointer',
+  // The card *is* the anchor, so the browser's default link underline was being drawn under the
+  // course title and its code — the only place in the app where a link sat underlined at rest,
+  // because every other `component="a"` sets this and these two never did. Nothing is lost: the
+  // card already announces itself with the pointer, the lift and the shadow on hover, and it
+  // carries a real `href`, so the status bar, middle-click and the context menu all still work.
+  textDecoration: 'none',
   transition: 'box-shadow 0.2s, transform 0.2s, background-color 0.2s',
   '&:hover': {
     transform: 'translateY(-2px)',
