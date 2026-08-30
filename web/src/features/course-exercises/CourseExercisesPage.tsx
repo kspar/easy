@@ -922,7 +922,10 @@ function StudentExerciseRow({
           primary={exercise.effective_title}
           secondary={
             deadline
-              ? `${t('exercises.deadline')}: ${format(deadline, 'PPp', { locale: dateFnsLocale })}`
+              // The row already knew the deadline had passed and said so in red only — meaning
+              // carried by colour alone, which anyone who does not see the red does not get
+              // (audit X-029). The label now says which state it is; the colour still agrees.
+              ? `${isPastDeadline ? t('exercises.deadlinePassed') : t('exercises.deadline')}: ${format(deadline, 'PPp', { locale: dateFnsLocale })}`
               : undefined
           }
           secondaryTypographyProps={{

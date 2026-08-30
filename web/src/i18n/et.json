@@ -122,6 +122,7 @@
     "unstarted": "esitamata",
     "deadline": "Tähtaeg",
     "closingTime": "Sulgemise aeg",
+    "closingBeforeDeadline": "Sulgemise aeg ei saa olla tähtajast varem.",
     "visible": "Nähtav",
     "hidden": "Peidetud",
     "visibleFrom": "Muutub nähtavaks",

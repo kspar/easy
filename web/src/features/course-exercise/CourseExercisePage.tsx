@@ -30,7 +30,7 @@ import {
 } from '@mui/icons-material'
 import { useParams, useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { format, type Locale } from 'date-fns'
+import { format, isPast, type Locale } from 'date-fns'
 import { et, enGB } from 'date-fns/locale'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth/useAuth.ts'
@@ -544,6 +544,8 @@ function StudentExerciseView() {
     </>
   )
 
+  const deadlinePassed = exercise.deadline != null && isPast(new Date(exercise.deadline))
+
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
@@ -566,10 +568,14 @@ function StudentExerciseView() {
 
       <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
         {exercise.deadline && (
+          // A date on its own makes the student do the arithmetic (audit X-029): the page knew the
+          // deadline had gone and said only when it was. The label says which it is; the colour
+          // agrees but does not carry the meaning alone.
           <Chip
-            label={`${t('exercises.deadline')}: ${format(new Date(exercise.deadline), 'PPp', { locale: dateFnsLocale })}`}
+            label={`${deadlinePassed ? t('exercises.deadlinePassed') : t('exercises.deadline')}: ${format(new Date(exercise.deadline), 'PPp', { locale: dateFnsLocale })}`}
             size="small"
             variant="outlined"
+            color={deadlinePassed && exercise.is_open ? 'warning' : 'default'}
           />
         )}
         {!exercise.is_open && (

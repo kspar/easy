@@ -72,6 +72,28 @@ function getExceptionVisibility(
   return 'scheduled'
 }
 
+/**
+ * A picker's value is `null` when empty and an `Invalid Date` while the typed text is not yet a
+ * date — day 45, or a half-finished entry. Both have to be told apart from a real date, because
+ * `toISOString()` on the second throws `RangeError` out of the save handler, which the dialog has
+ * no handler for: the button does nothing and the teacher is told nothing.
+ */
+const isUsableDate = (d: Date | null): boolean => d == null || !isNaN(d.getTime())
+
+/**
+ * The closing time may not precede the deadline (audit X-037). Deliberately true while either side
+ * is unparseable: mid-typing, the *other* field is the one that is wrong, and reporting an ordering
+ * error on a field the teacher has not touched points at the wrong place.
+ */
+const deadlinesOrdered = (soft: Date | null, hard: Date | null): boolean =>
+  soft == null || hard == null || isNaN(soft.getTime()) || isNaN(hard.getTime()) ||
+  hard.getTime() >= soft.getTime()
+
+/** Every date an exception row carries has to be usable and ordered, exactly as the exercise's are. */
+const exceptionRowValid = (r: { softDeadline: Date | null; hardDeadline: Date | null; visibleFrom: Date | null }): boolean =>
+  isUsableDate(r.softDeadline) && isUsableDate(r.hardDeadline) && isUsableDate(r.visibleFrom) &&
+  deadlinesOrdered(r.softDeadline, r.hardDeadline)
+
 // Local state for an exception row
 interface ExceptionRow {
   softDeadline: Date | null
@@ -173,8 +195,23 @@ export default function ExerciseSettingsDialog({
 
   const thresholdNum = parseInt(threshold, 10)
   const thresholdValid = !isNaN(thresholdNum) && thresholdNum >= 0 && thresholdNum <= 100
-  const visibleFromValid = visibility !== 'scheduled' || visibleFrom != null
-  const canSave = thresholdValid && visibleFromValid
+  const visibleFromValid =
+    (visibility !== 'scheduled' || visibleFrom != null) && isUsableDate(visibleFrom)
+  // The closing time cannot precede the deadline (audit X-037). Saved that way it means
+  // submissions are refused before the deadline the student was given — a contradiction the
+  // student meets and the teacher cannot explain, and nothing anywhere caught it.
+  //
+  // The exceptions are checked on the same terms. An exception is where a teacher grants one
+  // student longer, so it is the likeliest place to invert the pair, and it was the half this
+  // fix originally missed.
+  const softDeadlineValid = isUsableDate(softDeadline)
+  const hardDeadlineValid = isUsableDate(hardDeadline)
+  const deadlineOrderValid = deadlinesOrdered(softDeadline, hardDeadline)
+  const exceptionsValid =
+    studentExceptions.every(exceptionRowValid) && groupExceptions.every(exceptionRowValid)
+  const canSave =
+    thresholdValid && visibleFromValid && softDeadlineValid && hardDeadlineValid &&
+    deadlineOrderValid && exceptionsValid
   const isSaving = updateExercise.isPending || putExceptions.isPending || deleteExceptions.isPending
 
   function handleSave() {
@@ -419,7 +456,7 @@ export default function ExerciseSettingsDialog({
             value={softDeadline}
             onChange={setSoftDeadline}
             slotProps={{
-              textField: { size: 'small' },
+              textField: { size: 'small', error: !softDeadlineValid },
               field: { clearable: true },
             }}
           />
@@ -429,7 +466,11 @@ export default function ExerciseSettingsDialog({
             value={hardDeadline}
             onChange={setHardDeadline}
             slotProps={{
-              textField: { size: 'small' },
+              textField: {
+                size: 'small',
+                error: !deadlineOrderValid || !hardDeadlineValid,
+                helperText: deadlineOrderValid ? undefined : t('exercises.closingBeforeDeadline'),
+              },
               field: { clearable: true },
             }}
           />
@@ -583,6 +624,8 @@ function ExceptionRowUI({
   onRemove: () => void
   t: (key: string) => string
 }) {
+  const exceptionOrdered = deadlinesOrdered(exception.softDeadline, exception.hardDeadline)
+
   function handleVisibilityChange(mode: ExceptionVisibility) {
     if (mode === 'default' || mode === 'visible' || mode === 'hidden') {
       onUpdate({ visibility: mode, visibleFrom: null })
@@ -619,7 +662,11 @@ function ExceptionRowUI({
             value={exception.visibleFrom}
             onChange={(v) => onUpdate({ visibleFrom: v })}
             slotProps={{
-              textField: { size: 'small', fullWidth: true },
+              textField: {
+                size: 'small',
+                fullWidth: true,
+                error: !isUsableDate(exception.visibleFrom),
+              },
             }}
           />
         )}
@@ -628,7 +675,11 @@ function ExceptionRowUI({
           value={exception.softDeadline}
           onChange={(v) => onUpdate({ softDeadline: v })}
           slotProps={{
-            textField: { size: 'small', fullWidth: true },
+            textField: {
+              size: 'small',
+              fullWidth: true,
+              error: !isUsableDate(exception.softDeadline),
+            },
             field: { clearable: true },
           }}
         />
@@ -637,7 +688,12 @@ function ExceptionRowUI({
           value={exception.hardDeadline}
           onChange={(v) => onUpdate({ hardDeadline: v })}
           slotProps={{
-            textField: { size: 'small', fullWidth: true },
+            textField: {
+              size: 'small',
+              fullWidth: true,
+              error: !isUsableDate(exception.hardDeadline) || !exceptionOrdered,
+              helperText: exceptionOrdered ? undefined : t('exercises.closingBeforeDeadline'),
+            },
             field: { clearable: true },
           }}
         />

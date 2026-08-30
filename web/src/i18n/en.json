@@ -122,6 +122,7 @@
     "unstarted": "not submitted",
     "deadline": "Deadline",
     "closingTime": "Closing time",
+    "closingBeforeDeadline": "The closing time cannot be earlier than the deadline.",
     "visible": "Visible",
     "hidden": "Hidden",
     "visibleFrom": "Visible from",
