@@ -16,6 +16,7 @@ import {
   AppBar,
   Avatar,
   Box,
+  Button,
   Toolbar,
   Typography,
   IconButton,
@@ -914,6 +915,37 @@ export default function AppLayout() {
 
             {authenticated && (
               <>
+                {/*
+                  The same dialog as the account-menu item further down, on purpose. A menu item is
+                  the right permanent home for something used once a month, and the wrong one for
+                  the weeks right after a release that rewrites the whole UI: the reports we want
+                  most are the ones from people who would never think to look in a menu. So the
+                  entry point comes out into the toolbar where it is visible on every page.
+
+                  Temporary. Deleting this block restores the previous arrangement exactly, because
+                  the menu item was left in place — nothing has to be put back.
+                */}
+                {isMobile ? (
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    aria-label={t('bugReport.title')}
+                    onClick={() => setBugReportOpen(true)}
+                  >
+                    <BugReportOutlined />
+                  </IconButton>
+                ) : (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<BugReportOutlined />}
+                    onClick={() => setBugReportOpen(true)}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    {t('bugReport.title')}
+                  </Button>
+                )}
                 <IconButton
                   size="small"
                   // Icon-only, so without this it has no accessible name at all: unreachable by
@@ -959,10 +991,11 @@ export default function AppLayout() {
                   </MenuItem>
                   {/*
                     For everyone, not gated on a role: the person who cannot use the page is the one
-                    with something to say, and most of them are students. In the account menu rather
-                    than as a floating button because that is where every other global action in this
-                    app lives, and a permanent button in the corner of every page is a lot of chrome
-                    to spend on something used once a month.
+                    with something to say, and most of them are students. This is the feature's
+                    permanent home — the account menu is where every other global action in this app
+                    lives, and once reporting is back to a monthly event a menu item is all the
+                    chrome it deserves. The toolbar button above is the loud version, and it is the
+                    one that goes away.
                   */}
                   <MenuItem
                     onClick={() => {

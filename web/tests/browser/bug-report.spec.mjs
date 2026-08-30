@@ -1,5 +1,5 @@
-// Reporting a bug from the account menu: the dialog, the consent checkbox, and the promise that
-// what the reporter is shown is what gets sent.
+// Reporting a bug, from the toolbar button and from the account menu: the dialog, the consent
+// checkbox, and the promise that what the reporter is shown is what gets sent.
 //
 //   cd web && npx playwright test bug-report
 import { test } from '../support/spec.mjs'
@@ -99,6 +99,24 @@ test('bug-report', async ({ launch, check }) => {
     await shot('01-dialog')
     await close()
     check('nothing was posted while just looking', posted.length === 0)
+  }
+
+  // --- and from the toolbar, which is the one people will actually see ------------------------------
+  //
+  // Temporary for the release window, so this block is expected to go with it. Worth a check while
+  // it is there: the toolbar button is now the path most reports will come in by, and a button that
+  // quietly stopped opening the dialog would leave the menu item green and the reports gone.
+  {
+    const { page, close } = await openApp()
+    await page.getByRole('button', { name: 'Report a bug' }).click()
+    await waitUntil(async () => (await page.locator('[role=dialog]').count()) > 0)
+    const dialog = page.locator('[role=dialog]')
+    check('the dialog opens from the toolbar button', (await dialog.count()) === 1)
+    check(
+      'and it is the same dialog',
+      (await dialog.innerText()).includes('What went wrong?'),
+    )
+    await close()
   }
 
   // --- consent starts on, and is visible ------------------------------------------------------------
