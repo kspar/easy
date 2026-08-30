@@ -491,29 +491,29 @@ export default function ActivityFeed({
             borderBottom: 1,
             borderColor: 'divider',
           }}>
-            <Tooltip title="Bold">
-              <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyFormat(viewRef.current, '**', '**', 'bold')}>
+            <Tooltip title={t('markdown.bold')}>
+              <IconButton size="small" sx={tbSx} aria-label={t('markdown.bold')} onClick={() => viewRef.current && applyFormat(viewRef.current, '**', '**', 'bold')}>
                 <FormatBoldOutlined sx={{ fontSize: 17 }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Italic">
-              <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyFormat(viewRef.current, '_', '_', 'italic')}>
+            <Tooltip title={t('markdown.italic')}>
+              <IconButton size="small" sx={tbSx} aria-label={t('markdown.italic')} onClick={() => viewRef.current && applyFormat(viewRef.current, '_', '_', 'italic')}>
                 <FormatItalicOutlined sx={{ fontSize: 17 }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Code">
-              <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyFormat(viewRef.current, '`', '`', 'code')}>
+            <Tooltip title={t('markdown.code')}>
+              <IconButton size="small" sx={tbSx} aria-label={t('markdown.code')} onClick={() => viewRef.current && applyFormat(viewRef.current, '`', '`', 'code')}>
                 <CodeOutlined sx={{ fontSize: 17 }} />
               </IconButton>
             </Tooltip>
             <Box sx={{ width: 8 }} />
-            <Tooltip title="Bullet list">
-              <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyLinePrefix(viewRef.current, '- ')}>
+            <Tooltip title={t('markdown.bulletList')}>
+              <IconButton size="small" sx={tbSx} aria-label={t('markdown.bulletList')} onClick={() => viewRef.current && applyLinePrefix(viewRef.current, '- ')}>
                 <FormatListBulletedOutlined sx={{ fontSize: 17 }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Numbered list">
-              <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyLinePrefix(viewRef.current, '1. ')}>
+            <Tooltip title={t('markdown.numberedList')}>
+              <IconButton size="small" sx={tbSx} aria-label={t('markdown.numberedList')} onClick={() => viewRef.current && applyLinePrefix(viewRef.current, '1. ')}>
                 <FormatListNumberedOutlined sx={{ fontSize: 17 }} />
               </IconButton>
             </Tooltip>
@@ -707,29 +707,29 @@ function EditCommentEditor({
       {/* Toolbar */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '2px', px: 0.75, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
         {uploading && <CircularProgress size={14} sx={{ mr: 0.5 }} />}
-        <Tooltip title="Bold">
-          <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyFormat(viewRef.current, '**', '**', 'bold')}>
+        <Tooltip title={t('markdown.bold')}>
+          <IconButton size="small" sx={tbSx} aria-label={t('markdown.bold')} onClick={() => viewRef.current && applyFormat(viewRef.current, '**', '**', 'bold')}>
             <FormatBoldOutlined sx={{ fontSize: 17 }} />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Italic">
-          <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyFormat(viewRef.current, '_', '_', 'italic')}>
+        <Tooltip title={t('markdown.italic')}>
+          <IconButton size="small" sx={tbSx} aria-label={t('markdown.italic')} onClick={() => viewRef.current && applyFormat(viewRef.current, '_', '_', 'italic')}>
             <FormatItalicOutlined sx={{ fontSize: 17 }} />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Code">
-          <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyFormat(viewRef.current, '`', '`', 'code')}>
+        <Tooltip title={t('markdown.code')}>
+          <IconButton size="small" sx={tbSx} aria-label={t('markdown.code')} onClick={() => viewRef.current && applyFormat(viewRef.current, '`', '`', 'code')}>
             <CodeOutlined sx={{ fontSize: 17 }} />
           </IconButton>
         </Tooltip>
         <Box sx={{ width: 8 }} />
-        <Tooltip title="Bullet list">
-          <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyLinePrefix(viewRef.current, '- ')}>
+        <Tooltip title={t('markdown.bulletList')}>
+          <IconButton size="small" sx={tbSx} aria-label={t('markdown.bulletList')} onClick={() => viewRef.current && applyLinePrefix(viewRef.current, '- ')}>
             <FormatListBulletedOutlined sx={{ fontSize: 17 }} />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Numbered list">
-          <IconButton size="small" sx={tbSx} onClick={() => viewRef.current && applyLinePrefix(viewRef.current, '1. ')}>
+        <Tooltip title={t('markdown.numberedList')}>
+          <IconButton size="small" sx={tbSx} aria-label={t('markdown.numberedList')} onClick={() => viewRef.current && applyLinePrefix(viewRef.current, '1. ')}>
             <FormatListNumberedOutlined sx={{ fontSize: 17 }} />
           </IconButton>
         </Tooltip>
