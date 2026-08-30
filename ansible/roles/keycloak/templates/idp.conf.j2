@@ -96,6 +96,21 @@ server {
         proxy_set_header X-Forwarded-Host  $host;
         proxy_set_header X-Forwarded-Port  443;
 
+        # Keycloak's response headers do not fit in nginx's default 4k proxy_buffer_size, and when
+        # they overflow it nginx does not truncate — it gives up and returns 502. The authorization
+        # endpoint is where this bites: KC_RESTART alone is a ~2.2k JWE because it encodes the whole
+        # redirect_uri, and an already-authenticated request adds KEYCLOAK_IDENTITY (a signed JWT),
+        # KEYCLOAK_SESSION, AUTH_SESSION_ID and a Location carrying the redirect_uri back again.
+        # Whether it clears 4k then depends on how long the redirect_uri is, which is why this
+        # presented as an intermittent 502 on reload and back-navigation rather than a broken login.
+        #
+        # 32k is not a measured ceiling, it is headroom: the header size scales with the token's
+        # claims and the client's redirect_uri, so a limit set just above today's observed size
+        # would be one extra role or one longer URL away from failing the same way again.
+        proxy_buffer_size       32k;
+        proxy_buffers         4 32k;
+        proxy_busy_buffers_size 64k;
+
         proxy_http_version 1.1;
         proxy_read_timeout 60s;
         proxy_send_timeout 60s;
