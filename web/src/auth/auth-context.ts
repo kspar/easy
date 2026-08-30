@@ -60,7 +60,17 @@ export interface AuthState {
   initFailed: boolean
   /**
    * Whether the IdP answered, said the visitor is signed in, and the session still could not be
-   * used — today that means [getMainRole] found no role this app recognises in the token.
+   * used. Two ways in:
+   *
+   * - [getMainRole] found no role this app recognises in the token; or
+   * - core answered 401 to a token minted moments earlier, and it did so *again* after a trip back
+   *   to the IdP to fetch a replacement (EZ-1828). Core has several routes to that — see
+   *   `EasyUserJwtConverter`, which raises `InvalidBearerTokenException` for a missing, empty or
+   *   unmappable `easy_role` — and every one of them describes an account the IdP is perfectly
+   *   happy with and this application cannot use.
+   *
+   * The two are the same situation reached from opposite ends, which is why they share a flag: the
+   * IdP is content and something between the token and this app is not.
    *
    * Separate from [initFailed] because the remedy differs: that one is "the IdP is unreachable,
    * try again", this one is "your account cannot use this application", and refreshing will not

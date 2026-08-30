@@ -85,6 +85,8 @@ export default function AppLayout() {
   const { t, i18n } = useTranslation()
   const {
     authenticated,
+    checkedIn,
+    checkinFailed,
     firstName,
     activeRole,
     availableRoles,
@@ -116,12 +118,33 @@ export default function AppLayout() {
 
   const { recent: recentExercises } = useRecentExercises()
 
+  /**
+   * The same course, but only once there is an account behind the request — what the sidebar's two
+   * queries are allowed to ask about, as opposed to what the URL says (EZ-1828).
+   *
+   * Separate from [courseId] because that one is a fact about the route: it decides which nav
+   * entries exist and where they point, and those must not blink out and back while the session
+   * settles.
+   *
+   * The gate is needed because this layout renders outside RequireAuth, so nothing else here waits
+   * for the session. Without it, both queries start in a mount effect on the very first render of
+   * a course URL — and effects run child-first, so that is before QueryProvider has registered a
+   * token provider and before AuthProvider has called `init()`. The requests went out carrying no
+   * `Authorization` header at all, core answered 401, and the 401 handler read that as a lost
+   * session and returned to the IdP, which sent back a good token to a page that did it all again.
+   *
+   * `checkedIn` rather than `authenticated`, because core will not answer for an account it has not
+   * been told about yet — checkin is what creates the row. QueryProvider invalidates every query
+   * when it flips, so there is nothing to refetch by hand here.
+   */
+  const loadableCourseId = checkedIn ? courseId : undefined
+
   // Student exercise sidebar
-  const studentCourseId = activeRole === 'student' ? courseId : undefined
+  const studentCourseId = activeRole === 'student' ? loadableCourseId : undefined
   const { data: exercises } = useCourseExercises(studentCourseId)
 
   // Course info for sidebar heading
-  const { data: courseInfo } = useCourse(courseId)
+  const { data: courseInfo } = useCourse(loadableCourseId)
   const courseTitle = courseInfo ? (courseInfo.alias || courseInfo.title) : undefined
 
   // Extract current exercise ID from route for highlighting
@@ -854,10 +877,19 @@ export default function AppLayout() {
       >
         {/* Above the AppBar and outside it, so an urgent notice sits at the very top of the page
             and pushes the chrome down rather than competing with it. Renders nothing when there is
-            nothing to say, so the ordinary case costs no layout. Gated on `authenticated` because
-            the endpoint requires a session — polling it while signed out is a guaranteed 401 once a
-            minute. */}
-        <SystemMessageBanner enabled={authenticated} />
+            nothing to say, so the ordinary case costs no layout.
+
+            Gated because the endpoint requires a session — polling it while signed out is a
+            guaranteed 401 once a minute — and no longer on bare `authenticated`, because core has
+            nothing to say to an account it has not been told about yet. This poll sets
+            `retry: false`, so on a first-ever login that 401 would be the first answer the app
+            received and would be read as a dead session (EZ-1828).
+
+            `|| checkinFailed` because the gate has to close only for the window before checkin
+            answers, not for the rest of the page when it answers badly. A maintenance notice is
+            precisely what a user should see when the backend is unwell enough to fail a checkin,
+            and there is no path back to a banner switched off for the life of the page. */}
+        <SystemMessageBanner enabled={checkedIn || checkinFailed} />
 
         {/* Under the system messages, because a maintenance notice outranks "there is a newer
             build". Not gated on `authenticated`: this reads a static file rather than the API, so
@@ -1089,9 +1121,13 @@ export default function AppLayout() {
         </Box>
       </Box>
 
-      {isTeacherOrAdmin && courseId && (
+      {/* `loadableCourseId`, not `courseId`, and the `open` prop is why it matters: this is mounted
+          whether or not the dialog is showing, and it calls `useCourse` on the same query key the
+          sidebar does. Handed the raw route id it would issue the very request the gate above
+          exists to hold back, from a component nobody has opened. */}
+      {isTeacherOrAdmin && loadableCourseId && (
         <EditCourseDialog
-          courseId={courseId}
+          courseId={loadableCourseId}
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
         />

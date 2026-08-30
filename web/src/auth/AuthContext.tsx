@@ -49,6 +49,60 @@ async function checkin(keycloak: Keycloak) {
   })
 }
 
+/**
+ * Marks that this tab has already been to the IdP once to recover a session, and has not had a
+ * working one since.
+ *
+ * In `sessionStorage` rather than a ref, and that is the entire point: `recoveringRef` limits the
+ * bounces to one *per page load*, and a redirect ends the page load. So it does not limit anything
+ * a loop cares about — one bounce per load, forever, is still forever.
+ *
+ * The case is real and core has code for it. `EasyUserJwtConverter` throws
+ * `InvalidBearerTokenException` — a 401, not a 403 — for a token whose `easy_role` claim is missing,
+ * empty, or names a role it cannot map, and an issuer or JWKS mismatch between the realm and core
+ * behaves the same way. Every one of those is a 401 answering a token Keycloak has just minted and
+ * will mint again, identically, as often as it is asked. Without a marker that outlives the
+ * navigation, the app asks forever and never says anything.
+ *
+ * Cleared by a successful checkin, which is the first authenticated call of every page load and so
+ * the earliest honest evidence that the session works. Anything that survives that is a session
+ * worth spending a redirect on next time.
+ *
+ * `sessionStorage` and not `localStorage`: it is scoped to the tab, like the problem, and it goes
+ * away on its own when the tab does.
+ */
+const RECOVERY_ATTEMPTED_KEY = 'easyAuthRecoveryAttempted'
+
+/**
+ * The three below all swallow their errors. Storage throws rather than degrading in a few real
+ * configurations (Safari's private mode historically, and anything with site data blocked), and
+ * the failure mode has to be the old behaviour — one redirect, which is what happens when
+ * [recoveryAttempted] answers false — rather than an exception thrown out of a 401 handler.
+ */
+function recoveryAttempted(): boolean {
+  try {
+    return sessionStorage.getItem(RECOVERY_ATTEMPTED_KEY) !== null
+  } catch {
+    return false
+  }
+}
+
+function markRecoveryAttempted() {
+  try {
+    sessionStorage.setItem(RECOVERY_ATTEMPTED_KEY, String(Date.now()))
+  } catch {
+    // Then the guard is off, and a loop is caught by nothing. Still better than throwing here.
+  }
+}
+
+function clearRecoveryAttempt() {
+  try {
+    sessionStorage.removeItem(RECOVERY_ATTEMPTED_KEY)
+  } catch {
+    // Nothing to clear if it could not be written in the first place.
+  }
+}
+
 function getPersistedRole(roles: Role[]): Role | null {
   const stored = localStorage.getItem(ROLE_STORAGE_KEY)
   if (!stored) return null
@@ -105,12 +159,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * init effect below running exactly once.
    */
   const noRedirectRef = useRef(false)
+  /**
+   * Whether `init()` has settled — either way, and the "either" is deliberate: this says the
+   * adapter has finished asking, not that it liked the answer.
+   *
+   * A ref for the same reason as [noRedirectRef]: [recoverSession] closes over no state.
+   */
+  const initializedRef = useRef(false)
   const recoverSession = useCallback((reason: string) => {
     if (recoveringRef.current) return
     // Nothing a redirect can recover. Either the IdP could not be reached — in which case a 401 is
     // a symptom of that rather than a separate problem — or it answered and the session it gave
     // back was unusable, in which case asking again returns the same one.
     if (noRedirectRef.current) return
+    // Nothing a redirect can recover *yet*, either — and this one is the loop of EZ-1828.
+    //
+    // Before `init()` settles, whether there is a session is genuinely unknown, so a 401 is not
+    // evidence that one was lost. It is usually evidence of the opposite: a request that went out
+    // before there was a token to put on it. That is not hypothetical — AppLayout's sidebar queries
+    // start in a mount effect, effects run child-first, so they fire before this component's own
+    // effect has called `init()` at all, and they used to go out with no `Authorization` header.
+    // Core answers 401, this handler concluded the session was gone, and the IdP handed back a
+    // perfectly good token to a page that immediately did it all again.
+    //
+    // Doing nothing is safe because every outcome of `init()` is already handled: authenticated
+    // refetches those queries once checkin completes (see QueryProvider), not authenticated is a
+    // redirect from RequireAuth, and a rejection is `initFailed` and the AuthUnavailable screen.
+    //
+    // Returning *before* `recoveringRef` is set, so a genuine 401 later in the page's life still
+    // gets its one attempt.
+    if (!initializedRef.current) {
+      console.warn(`Ignoring a 401 from before the session was known (${reason})`)
+      return
+    }
+    // Already tried, and here we are again with core still saying no — see
+    // [RECOVERY_ATTEMPTED_KEY]. The IdP has answered once and its answer did not help, so asking a
+    // second time fetches the identical token and the third time fetches it again. Stop, and say so:
+    // `authFailed` is exactly this state, and it puts an error with a bug reporter on the screen
+    // instead of a browser that never stops loading.
+    if (recoveryAttempted()) {
+      noRedirectRef.current = true
+      console.error(
+        `Signed in, but core still rejects the session after returning from the identity provider (${reason})`,
+      )
+      setState((prev) => ({ ...prev, authFailed: true }))
+      return
+    }
+    markRecoveryAttempted()
     recoveringRef.current = true
     console.warn(`Session lost (${reason}); returning to the identity provider`)
     keycloak.login({ redirectUri: returnUri() })
@@ -129,6 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Matched on the path rather than a prop because AuthProvider sits above the router in
     // App.tsx and so cannot be told which route it is about to render.
     if (window.location.pathname.startsWith('/embed/')) {
+      initializedRef.current = true
       setState((s) => ({ ...s, initialized: true, authenticated: false }))
       return
     }
@@ -158,6 +254,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .then(
         (authenticated) => {
+          // First line of both settle handlers, before anything below can throw. From here on a
+          // 401 means what it says, and [recoverSession] will act on one.
+          initializedRef.current = true
           if (authenticated) {
             const roles = getRolesFromToken(keycloak)
             const activeRole = getPersistedRole(roles) ?? getMainRole(roles)
@@ -180,7 +279,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             })
 
             checkin(keycloak)
-              .then(() => setState((prev) => ({ ...prev, checkedIn: true })))
+              .then(() => {
+                // The first authenticated call of the page load came back, so whatever was wrong
+                // last time is not wrong now and the next lost session gets its redirect. See
+                // [RECOVERY_ATTEMPTED_KEY].
+                clearRecoveryAttempt()
+                setState((prev) => ({ ...prev, checkedIn: true }))
+              })
               .catch((err) => {
                 console.error('Account checkin failed', err)
                 // The error too, not just the flag: check-in failing is the first thing a user
@@ -198,6 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // unreachable" to someone who had just successfully signed in, and it disabled 401 recovery
         // for the rest of the page besides. Only an `init()` that actually rejected reaches here.
         (err) => {
+          initializedRef.current = true
           console.error('Keycloak init failed', err)
           // `initFailed`, not just `initialized`. Reporting a failed init as "initialised, no
           // session" told RequireAuth to send the user to the IdP — the very thing that had just

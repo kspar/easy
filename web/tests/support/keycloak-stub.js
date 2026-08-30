@@ -32,6 +32,29 @@ export default class Keycloak {
   }
 
   /**
+   * The same count, but across page loads — which is the only scale at which a redirect *loop* is
+   * visible at all.
+   *
+   * `loginCalls` above is deliberately per page load, and every spec written against it depends on
+   * that. But a redirect ends the page load, so a bug that bounces once per load and does it
+   * forever produces the identical `loginCalls.length === 1` on every one of them. That is exactly
+   * the shape of EZ-1828's second loop, and nothing here could see it.
+   *
+   * Kept in `sessionStorage`, which survives a navigation within the tab and dies with it. Callers
+   * reset it themselves — see `resetTotal` — because "since when" is the spec's question, not this
+   * class's.
+   */
+  static TOTAL_KEY = 'easyStubLoginTotal'
+
+  static readTotal() {
+    try {
+      return Number(sessionStorage.getItem(Keycloak.TOTAL_KEY) ?? 0)
+    } catch {
+      return 0
+    }
+  }
+
+  /**
    * Resolves to the session state above, after `stubAuthDelayMs` if one is seeded.
    *
    * The delay exists because "signed in" and "signed out" are not the only states the UI has to
@@ -63,6 +86,23 @@ export default class Keycloak {
 
   login(options) {
     this.loginCalls.push(options ?? {})
+
+    try {
+      sessionStorage.setItem(Keycloak.TOTAL_KEY, String(Keycloak.readTotal() + 1))
+    } catch {
+      // Then a spec counting across loads sees nothing, and says so by failing. Nothing to do here.
+    }
+
+    // Off unless a spec asks for it, because following the redirect is a page navigation and every
+    // spec written before this one assumes login() is inert.
+    //
+    // Seeded, it models the round trip a live Keycloak makes when the SSO session is healthy: the
+    // browser goes to the redirect URI and comes back signed in, with a token as good as the last
+    // one. That is the arrangement in which a client that answers every 401 with another login()
+    // never stops, and it cannot be reproduced by a stub that only takes notes.
+    if (localStorage.getItem('stubLoginNavigates') === 'yes' && options?.redirectUri) {
+      window.location.assign(options.redirectUri)
+    }
   }
 
   logout() {}
