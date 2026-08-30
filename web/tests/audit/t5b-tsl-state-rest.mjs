@@ -204,7 +204,7 @@ await withBrowser(async ({ launch }) => {
   const before = await saveDisabled(page)
 
   // Break the spec in the TSL tab.
-  await page.getByRole('tab', { name: /^TSL$/i }).first().click()
+  await page.getByRole('tab', { name: /^Spec$/i }).first().click()
   await page.waitForTimeout(600)
   await page.locator('.cm-content').first().click()
   await page.keyboard.press('End')

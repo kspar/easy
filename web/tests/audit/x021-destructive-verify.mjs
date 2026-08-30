@@ -159,19 +159,22 @@ await withBrowser(async ({ launch }) => {
     const spec = await page.evaluate(() => document.body.innerText)
     check(!spec.includes('tühjendab kõik'), 'cancel closes the dialog')
     // The body survived: the stdin values are still in the spec tab.
-    await page.getByRole('tab', { name: /^TSL$/i }).first().click()
+    await page.getByRole('tab', { name: /^Spec$/i }).first().click()
     await page.waitForTimeout(400)
     const json = await page.locator('.cm-content').first().innerText()
     check(json.includes('"2"') && json.includes('program_execution_test'), 'cancel kept the body')
 
     // Back to tests; confirm path this time.
-    await page.getByRole('tab', { name: /Testid/i }).first().click()
+    // EZ-1820 renamed the inner tabs: the visual builder is now "TSL" and the raw JSON editor is
+    // "Spec". The name "TSL" survived the rename but moved panes, so these matchers are anchored —
+    // a substring match would find the wrong tab and quietly test the wrong thing.
+    await page.getByRole('tab', { name: /^TSL$/i }).first().click()
     await page.waitForTimeout(400)
     check(await pickType(page, /Funktsiooni v.ljakutse/i), 'found the type select again')
     await page.waitForTimeout(400)
     await page.getByRole('button', { name: /Vaheta tüüpi/ }).click()
     await page.waitForTimeout(600)
-    await page.getByRole('tab', { name: /^TSL$/i }).first().click()
+    await page.getByRole('tab', { name: /^Spec$/i }).first().click()
     await page.waitForTimeout(400)
     const json2 = await page.locator('.cm-content').first().innerText()
     check(

@@ -93,7 +93,7 @@ await withBrowser(async ({ launch }) => {
 
   // ─── 1. a compile rejection: one sentence naming the key, raw text behind the disclosure ────────
   rejectCompiles = true
-  await page.getByRole('tab', { name: /^TSL$/i }).first().click()
+  await page.getByRole('tab', { name: /^Spec$/i }).first().click()
   await page.waitForTimeout(400)
   await page.locator('.cm-content').first().click()
   await page.keyboard.press('End')

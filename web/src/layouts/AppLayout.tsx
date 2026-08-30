@@ -425,14 +425,13 @@ export default function AppLayout() {
             {recentExercises.map((ex) => {
               const href = exerciseLink(ex.id, ex.title)
               return (
-                <ListItem disablePadding>
+                <ListItem key={ex.id} disablePadding>
                   {/*
                     Was the one item in this sidebar that got it right, with `component="a"` and its
                     own copy of the modifier check. A RouterLink does the same thing without the
                     hand-rolled guard — react-router leaves modifier clicks to the browser itself.
                   */}
                   <ListItemButton
-                    key={ex.id}
                     component={RouterLink}
                     to={href}
                     selected={location.pathname.startsWith(`/library/exercise/${ex.id}`)}
@@ -492,9 +491,8 @@ export default function AppLayout() {
               </Box>
             </ListSubheader>
             {exercises.map((ex) => (
-              <ListItem disablePadding>
+              <ListItem key={ex.id} disablePadding>
                 <ListItemButton
-                  key={ex.id}
                   component={RouterLink}
                   to={`/courses/${studentCourseId}/exercises/${ex.id}`}
                   selected={activeExerciseId === ex.id}

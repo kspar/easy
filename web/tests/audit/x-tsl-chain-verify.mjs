@@ -232,7 +232,7 @@ await withBrowser(async ({ launch }) => {
     const compileBodies = []
     const page = await open(launch, tslExercise(), compileBodies)
 
-    await page.getByRole('tab', { name: /^TSL$/i }).first().click()
+    await page.getByRole('tab', { name: /^Spec$/i }).first().click()
     await page.waitForTimeout(600)
     await page.locator('.cm-content').first().click()
     await page.keyboard.press('End')
