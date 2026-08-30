@@ -73,6 +73,36 @@ Plus **B10′**, a confirmed High bug found by rechecking a stale item — not o
 | **EZ-1815** | Performance, core+web | E3 — the exercise list ships the grade table's payload |
 | **EZ-1816** | Usability, Low, web | E2 — course order is unexplained and unchangeable |
 
+### What to fix first
+
+Asked by kspar after the triage, and recorded here because the issue list does not carry an order.
+
+**1. The grader passes students it should fail.** Not one issue — one failure mode with four
+independent causes, and the only findings here that reach a *student*:
+
+| mechanism | filed |
+|---|---|
+| A test with no checks passes everyone — and the first preset in the menu makes one | X-023 / EZ-1795 |
+| Output checks cannot say "and nothing else", so a student printing 1, 2, 3, 4… passes | X-019 / EZ-1795 comment, B13 |
+| `outputCategory` defaults to `ALL_IO`, so a prompt containing the expected string passes a wrong answer | A12 / EZ-1795 + EZ-1742 comments |
+| A value starting with `"` silently loses its quotes, so the check compares the wrong string | B10′ / EZ-1810 |
+
+Everything else in these 50 items is *teacher* friction — visible, annoying, workaroundable. This
+cluster is invisible from the authoring side and does not self-correct. It also holds the two cheapest
+fixes in the batch: the `ALL_IO` default is one word (and provably cannot disturb a stored exercise,
+since `encodeDefaults = true` means every saved spec already pins the value), and EZ-1810 is one line
+moved inside the `forceString` branch.
+
+**2. Run the TSL migration on production.** ~36 exercises there grade correctly and cannot be opened
+in the new editor; the migration fixes 31 as a side effect of re-serialising (D3–D5/D8). Decide the
+one deliberately-skipped exercise first (D6).
+
+**3. EZ-1810's SyntaxError half**, if it has not already ridden along with §1 — cheap, and it kills a
+whole test set at grading time rather than corrupting one check.
+
+**Deprioritise EZ-1812** (naming, ordering, wording). Largest item count, lowest harm; worth one pass
+when someone is already in `et.json`.
+
 ### Comments added to existing issues
 
 **EZ-1742** (A2, A8, A10–A13, D1 — model review; extends §1 and §7, and corrects §12) ·
@@ -540,9 +570,18 @@ a `returnValue` — written with the newline **unescaped**. A short string makes
 messages.
 
 The producing bug is gone: the React editor serialises with `JSON.stringify` (`tslModel.ts:586`).
-This is wui-era data. Scale: **36 exercises before migration, 5 after** — the rewrite normalised 31 as
-a side effect. Re-serialising the remaining five server-side is enough, and §12 already asks whether
-to normalise on write; this is the argument for yes.
+This is wui-era data.
+
+**Scale, and it is bigger than five.** The five above are the *post*-migration count, measured on dev.
+**Production has not been migrated** (confirmed by kspar, 2026-08-29), so it still carries the
+pre-migration number: **36** such specs, per EZ-1742's comment of 2026-08-07, measured on the
+production export. So on production today, roughly 36 exercises grade correctly and cannot be opened
+in the new editor at all.
+
+**The migration is itself the fix for 31 of them**, as a side effect of re-serialising — which is a
+better argument for running it than anything in the runbook. Re-serialising the residual five
+server-side finishes the job, and EZ-1742 §12 already asks whether to normalise on write; this is the
+argument for yes.
 
 ### D6 — `program_imports_module_test` serializer error · **CONFIRMED, new** → EZ-1813
 
@@ -556,14 +595,32 @@ migration entirely.**
 
 All 11 of the survivor's tests are retired types: `program_imports_module_test`,
 `program_defines_function_test`, `function_calls_function_test`, `program_calls_function_test`.
-Nothing in it was migrated, and its `tsl.json` parses as valid JSON, so it was not skipped for being
-unreadable. **It is also one of §C's three exercises** — the same one is broken on both its text and
-its auto-assessment.
+Confirmed against the live compiler by pushing all 721 post-migration specs through
+`POST /v2/tsl/compile`: **720 compiled, 1 rejected**, with exactly the tester's error. **It is also one
+of §C's three exercises** — the same one is broken on both its text and its auto-assessment.
 
-That is what matters: `migrate.py` is documented to report anything unmapped and exit non-zero rather
-than guess, so a clean run should not have left this. Whatever the reason, **it should be established
-before the same migration is trusted against production**. The README's own framing is the standard:
-*"an exercise that opens fine today fails the moment it is saved."*
+**The migration tooling is not at fault.** This was first written up as "a clean run should not have
+left this", and that was wrong; the correction is recorded here and on EZ-1813 rather than quietly
+edited away, because the reasoning is the useful part.
+
+Running `migrate.py`'s own `MIGRATIONS`/`UNCHANGED` tables over the spec: `load_spec` parses it and
+**all 11 tests resolve to a mapping**, so `migrate.py` would have converted it cleanly and exited 0.
+The exercise was never *written back*. `from-dev/writeback.log` records **188 exercises written,
+spanning ids 287–1332**, with this one absent from the middle of that span — so it was not truncated
+by `--limit`, which breaks on an ascending sort and would leave a contiguous tail. The
+"already migrated" check cannot explain it either: that compares live against migrated, and this spec
+does change.
+
+That leaves `--skip`, documented as *"for the ones that need a decision rather than a migration"*.
+One exercise, mid-range, deliberately shaped. **The tooling worked; someone deferred this exercise.**
+
+Two smaller findings survive, neither a blocker:
+
+1. **The decision was never made or never recorded**, and the exercise is broken in the editor today.
+   It has to be made before the production run, or production inherits the same skip.
+2. **A `--skip`ped exercise leaves no durable trace.** `writeback.log` records writes, not exclusions;
+   the exclusion goes to stdout and dies with the terminal. For a 723-exercise production run, one
+   line appending skipped ids to the log makes "what did we defer, and why" answerable afterwards.
 
 ### D7 — one test is of type `placeholder_test` · **CONFIRMED, new, low** → EZ-1813
 
@@ -659,9 +716,10 @@ it.
   tiivad *behaves* as the codegen implies — in particular B10′'s silently-wrong `expected_value` — was
   not observed end to end, for the same reason the UX audit's Testimine round trip stayed open: the
   core on `:8080` has no TSL-capable executor.
-- **Whether production has the same migration residue as dev.** D6 is measured on dev. Since the two
-  corpora agree everywhere they overlap, the expectation is that production does too — but that is an
-  inference, and EZ-1813 asks for it to be established rather than assumed.
+- ~~**Whether production has the same migration residue as dev.**~~ **Answered, and the question was
+  malformed.** Production has not been migrated at all (kspar, 2026-08-29), so it has no *residue* —
+  it has the entire pre-migration state: ~189 exercises on retired types and ~36 unopenable specs.
+  The dev run is the rehearsal, not a partial production run. Corrected in D3–D5/D8 and D6 above.
 - **The tester's own `TSLi_struktuur.md`.** Not supplied with the feedback, and worth asking for: a
   lecturer's transcription of the model is the closest thing to teacher-facing TSL documentation that
   exists, and EZ-1785's leads section notes there is none.
