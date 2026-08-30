@@ -7,7 +7,7 @@
  * *auto-assessment type* select by name, and a control: the same sequence without breaking the spec
  * first, so a stuck button can be told from a correctly disabled one.
  */
-import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil } from './audit.mjs'
+import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -81,7 +81,7 @@ for (const breakSpec of [true, false]) {
     const onArrival = await saveDisabled(page)
 
     if (breakSpec) {
-      await page.getByRole('tab', { name: /^Spec$/i }).first().click()
+      await page.getByRole('tab', { name: SPEC_TAB }).first().click()
       await page.waitForTimeout(600)
       await page.locator('.cm-content').first().click()
       await page.keyboard.press('End')

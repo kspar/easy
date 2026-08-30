@@ -14,7 +14,7 @@
  *   cd web && npx vite --config vite.stub.config.ts --port 5299 --strictPort &
  *   HARNESS_PORT=5299 node tests/audit/x-tsl-chain-verify.mjs
  */
-import { withBrowser, fakeApi, VIEWPORTS, BASE_URL, waitUntil } from './audit.mjs'
+import { withBrowser, fakeApi, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -232,7 +232,7 @@ await withBrowser(async ({ launch }) => {
     const compileBodies = []
     const page = await open(launch, tslExercise(), compileBodies)
 
-    await page.getByRole('tab', { name: /^Spec$/i }).first().click()
+    await page.getByRole('tab', { name: SPEC_TAB }).first().click()
     await page.waitForTimeout(600)
     await page.locator('.cm-content').first().click()
     await page.keyboard.press('End')

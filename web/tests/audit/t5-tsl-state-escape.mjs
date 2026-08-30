@@ -14,7 +14,7 @@
  *
  *   HARNESS_PORT=5299 node tests/audit/t5-tsl-state-escape.mjs
  */
-import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil } from './audit.mjs'
+import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB, BUILDER_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -100,7 +100,7 @@ await withBrowser(async ({ launch }) => {
   const page = await openEditing(launch)
 
   // Make a real edit: rename the test via its inline title field if present, else type in the JSON tab.
-  await page.getByRole('tab', { name: /^Spec$/i }).first().click()
+  await page.getByRole('tab', { name: SPEC_TAB }).first().click()
   await page.waitForTimeout(600)
   const editor = page.locator('.cm-content').first()
   await editor.click()
@@ -132,7 +132,7 @@ await withBrowser(async ({ launch }) => {
 // ─── 2. does Cancel warn? (the control — it is documented to) ──────────────────────────────────────
 await withBrowser(async ({ launch }) => {
   const page = await openEditing(launch)
-  await page.getByRole('tab', { name: /^Spec$/i }).first().click()
+  await page.getByRole('tab', { name: SPEC_TAB }).first().click()
   await page.waitForTimeout(600)
   await page.locator('.cm-content').first().click()
   await page.keyboard.press('End')
@@ -158,15 +158,15 @@ await withBrowser(async ({ launch }) => {
 
   // Expand the one test, then read the spec before and after switching its type.
   const readSpec = async () => {
-    await page.getByRole('tab', { name: /^Spec$/i }).first().click()
+    await page.getByRole('tab', { name: SPEC_TAB }).first().click()
     await page.waitForTimeout(500)
     const t = await page.locator('.cm-content').first().innerText()
-    await page.getByRole('tab', { name: /^TSL$/i }).first().click()
+    await page.getByRole('tab', { name: BUILDER_TAB }).first().click()
     await page.waitForTimeout(500)
     return t
   }
 
-  await page.getByRole('tab', { name: /^TSL$/i }).first().click()
+  await page.getByRole('tab', { name: BUILDER_TAB }).first().click()
   await page.waitForTimeout(400)
   // Open the card
   const chevron = page.locator('main .MuiCollapse-root').first()
@@ -218,7 +218,7 @@ await withBrowser(async ({ launch }) => {
 // ─── 4. undo: is there any way back after deleting a test? ─────────────────────────────────────────
 await withBrowser(async ({ launch }) => {
   const page = await openEditing(launch)
-  await page.getByRole('tab', { name: /^TSL$/i }).first().click()
+  await page.getByRole('tab', { name: BUILDER_TAB }).first().click()
   await page.waitForTimeout(500)
 
   let dialogSeen = null
@@ -270,7 +270,7 @@ await withBrowser(async ({ launch }) => {
 await withBrowser(async ({ launch }) => {
   const page = await openEditing(launch)
   // Break the spec so tslValid goes false.
-  await page.getByRole('tab', { name: /^Spec$/i }).first().click()
+  await page.getByRole('tab', { name: SPEC_TAB }).first().click()
   await page.waitForTimeout(500)
   await page.locator('.cm-content').first().click()
   await page.keyboard.press('End')

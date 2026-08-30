@@ -13,7 +13,7 @@
  *
  *   HARNESS_PORT=5299 node tests/audit/t5b-tsl-state-rest.mjs
  */
-import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil } from './audit.mjs'
+import { withBrowser, fakeApi, shoot, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -204,7 +204,7 @@ await withBrowser(async ({ launch }) => {
   const before = await saveDisabled(page)
 
   // Break the spec in the TSL tab.
-  await page.getByRole('tab', { name: /^Spec$/i }).first().click()
+  await page.getByRole('tab', { name: SPEC_TAB }).first().click()
   await page.waitForTimeout(600)
   await page.locator('.cm-content').first().click()
   await page.keyboard.press('End')

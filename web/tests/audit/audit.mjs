@@ -74,6 +74,22 @@ export const VIEWPORTS = {
 }
 
 /**
+ * The TSL builder's inner tabs, as accessible names.
+ *
+ * Every driver that touches them runs in Estonian, per the plan's "judge layout in Estonian" rule,
+ * so these follow `et.json` rather than `en.json`. Two reasons they are anchored constants and not
+ * inline regexes:
+ *
+ *  - EZ-1820 renamed the panes and the name `TSL` *survived the rename onto a different tab* —
+ *    it used to be the raw JSON editor and is now the visual builder. A substring matcher finds
+ *    the wrong pane and tests the wrong thing, silently, which is worse than failing.
+ *  - the spec pane's Estonian name is being changed again (`Spec` → `Spetsifikatsioon`) while
+ *    English keeps `Spec`, so the matcher accepts either. One place to correct when it settles.
+ */
+export const SPEC_TAB = /^(Spec|Spetsifikatsioon)$/i
+export const BUILDER_TAB = /^TSL$/i
+
+/**
  * Run `fn` with a browser and a `launch` built the way `spec.mjs` builds it.
  *
  * `testInfo` is stubbed because `makeLaunch` only calls `attach`, and these drivers screenshot

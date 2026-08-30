@@ -6,7 +6,7 @@
  *   cd web && npx vite --config vite.stub.config.ts --port 5299 --strictPort &
  *   HARNESS_PORT=5299 node tests/audit/x018-error-voice-verify.mjs
  */
-import { withBrowser, fakeApi, VIEWPORTS, BASE_URL, waitUntil } from './audit.mjs'
+import { withBrowser, fakeApi, VIEWPORTS, BASE_URL, waitUntil, SPEC_TAB } from './audit.mjs'
 import { baseHandlers } from './fixtures.mjs'
 
 const EX_ID = '4242'
@@ -93,7 +93,7 @@ await withBrowser(async ({ launch }) => {
 
   // ─── 1. a compile rejection: one sentence naming the key, raw text behind the disclosure ────────
   rejectCompiles = true
-  await page.getByRole('tab', { name: /^Spec$/i }).first().click()
+  await page.getByRole('tab', { name: SPEC_TAB }).first().click()
   await page.waitForTimeout(400)
   await page.locator('.cm-content').first().click()
   await page.keyboard.press('End')
