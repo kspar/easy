@@ -14,6 +14,11 @@ ENV PYTHONIOENCODING utf-8
 #
 # It was `HEAD` until 2026-08-20, so no two builds of this image were guaranteed alike and there was
 # nothing to roll back to.
+#
+# The commit belongs on the repository's `easy` branch. `grader/easy.py` — what `python3 -m
+# grader.easy` runs, and what every exercise's grading script invokes — is only there; `master` is
+# the upstream project, with a `vpl.py` and no `easy.py`. The first pin took master's tip and dev
+# graded nothing for ten days. The smoke check imports `grader.easy` now rather than `grader`.
 ARG PYTHON_GRADER_REF
 
 COPY python-grader /python-grader

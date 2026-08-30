@@ -13,11 +13,22 @@ set -eu
 
 python3 /easy-smoke-expect-versions.py
 
+# `grader.easy` and not just `grader`, because the difference is the whole bug this check missed.
+# `python3 -m grader.easy` is how every exercise here invokes the grader, and `easy.py` lives only on
+# python-grader's `easy` branch — so an image built from a master commit imports `grader` perfectly
+# well and then answers `No module named grader.easy` on the first submission. That is precisely what
+# dev did from 2026-08-20 to 2026-08-30, with this check green throughout.
+#
+# Run as a module rather than imported, because importing it is not what grading does: `easy.py` does
+# its work under `__main__`, and an import that succeeds proves less than the invocation the executor
+# actually makes. With no tests to find it grades nothing and exits 0, which is all this needs.
 python3 - <<'PY'
 import importlib.metadata
 
-import grader                                   # the package python-grader's setup.py installs
-print("grader", importlib.metadata.version("grader"), "imports")
+import grader.easy                              # the entry point every exercise runs
+print("grader", importlib.metadata.version("grader"), "imports, with grader.easy in it")
 PY
+
+python3 -m grader.easy >/dev/null
 
 echo "smoke: pygrader ok"

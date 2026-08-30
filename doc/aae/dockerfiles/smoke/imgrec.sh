@@ -6,6 +6,10 @@
 # pygrader rebuild left imgrec silently sitting on an old base; the Ansible role documented the gap
 # and declined to fix it.
 #
+# It inherits the base's *contents*, not the base's smoke check, so `grader.easy` is asserted here
+# too. This is the image an image-recognition exercise actually grades on, and in 2026-08 it shipped
+# without that module while both smoke checks stayed green.
+#
 # Pillow and requests were entirely unpinned until 2026-08-20. Their pins were captured from what pip
 # resolved rather than chosen by anyone, so this script's job is to make sure the capture stays true.
 set -eu
@@ -13,6 +17,7 @@ set -eu
 python3 /easy-smoke-expect-versions.py
 
 python3 - <<'PY'
+import grader.easy                              # noqa: F401 — the entry point every exercise runs
 import requests                                 # noqa: F401 — imported to prove it loads
 from PIL import Image
 

@@ -43,7 +43,15 @@ silmused.PSYCOPG2_VERSION: "2.9.9"
 # remembering to open a pull request when upstream moves; it buys a build that can be reproduced and
 # an image that can be rolled back to. Not auto-mergeable: an unreviewed upstream tree is not a
 # released package.
-pygrader.PYTHON_GRADER_REF: "7105517ef40085691dc6b02deffa26345270232a"
+#
+# **The commit must be on python-grader's `easy` branch, not `master`.** `grader/easy.py` — the
+# entry point every one of our exercises runs as `python3 -m grader.easy` — exists only there;
+# master has `grader/vpl.py` and nothing of ours. Pinning on 2026-08-20 took master's tip, which is
+# what `HEAD` had been resolving to, and every Python assessment answered
+# `No module named grader.easy` until 2026-08-30. Neither the pin checker nor the smoke check
+# noticed: a commit sha is real either way, and `import grader` succeeds in an image with no
+# `easy.py` in it. The smoke check now imports `grader.easy`, so this cannot fail silently twice.
+pygrader.PYTHON_GRADER_REF: "95064f8bcaca8c3957903e63d0eda4b92e8b420a"
 pygrader.NUMPY_SPEC: "1.23.4"
 
 # imgrec — pygrader plus image handling. Nobody has ever bumped these; they were entirely unpinned
