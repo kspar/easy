@@ -33,18 +33,21 @@ import java.util.concurrent.TimeUnit
  * authority on what Python accepts, and a hand-rolled check would be a second, worse implementation
  * of the thing being tested.
  *
- * ### Two known gaps, deliberately not asserted here
+ * ### One known gap, deliberately not asserted here
  *
- * Both are recorded in `doc/testing-log.md` with their measured blast radius, because fixing either
- * changes what live exercises grade — which is a decision, not a bug fix:
+ * **Backslashes inside a value stay Python escapes.** `\n` in a spec becomes a real newline in
+ * the generated literal, and 18 exercises depend on exactly that. So `path\to\file` does *not*
+ * survive the round trip, and asserting that it should would be asserting against the format.
+ * Recorded in `doc/testing-log.md` with its measured blast radius, because fixing it changes what
+ * live exercises grade — a decision, not a bug fix.
  *
- * 1. **A value beginning with `"` is emitted raw**, so `"unterminated` is a `SyntaxError` and
- *    `", __import__('os').system('id'), "` is arbitrary code in the grading script. 178 values
- *    across 41 of the 720 exercises in the migration corpus start with `"` and would change meaning
- *    if this were removed.
- * 2. **Backslashes inside a value stay Python escapes.** `\n` in a spec becomes a real newline in
- *    the generated literal, and 18 exercises depend on exactly that. So `path\to\file` does *not*
- *    survive the round trip, and asserting that it should would be asserting against the format.
+ * The other gap this note used to carry — **a value beginning with `"` emitted raw as Python
+ * source** — was closed by EZ-1810: `PyStr`'s literal path now always quotes. The decision the
+ * old note deferred was taken (2026-08-30, fix-only): of the 178 corpus values starting with `"`,
+ * 139 sit in raw-Python fields (`arguments`, `returnValue`) and are untouched; the 39 in literal
+ * fields — all of them full `"..."` wrappers, across 5 exercises — now grade with their quotes
+ * intact, which is what their teachers typed. Those five are listed for review in the gitignored
+ * corpus notes.
  *
  * What is asserted below is everything else — and everything else used to be broken too.
  */
@@ -241,6 +244,12 @@ class PythonSyntaxTest {
             arrayOf("non-ascii", "õäöü ŠŽ — ✓"),
             arrayOf("emoji", "well done 🎉"),
             arrayOf("python code, quoted out", "', __import__('os').system('id'), '"),
+            // The EZ-1810 family: a leading double quote used to be emitted verbatim as Python
+            // source — a SyntaxError for a fragment, arbitrary grading-script code for a crafted
+            // one, and a silently different comparison for an ordinary quoted value.
+            arrayOf("leading double quote", "\"Tere\" väljastamine"),
+            arrayOf("fully double-quoted", "\"Tere\""),
+            arrayOf("double-quoted injection", "\", __import__('os').system('id'), \""),
             arrayOf("brace and percent", "100% of {tests} passed"),
             arrayOf("comment marker", "# not a comment"),
             arrayOf("only whitespace", "   "),
@@ -250,6 +259,8 @@ class PythonSyntaxTest {
         /** The subset whose *value* must survive, not merely parse. */
         @JvmStatic
         fun literalTerminators(): List<Array<String>> = listOf(
+            arrayOf("leading double quote", "\"Tere\" väljastamine"),
+            arrayOf("fully double-quoted", "\"Tere\""),
             arrayOf("trailing single quote", "ends with a quote'"),
             arrayOf("two trailing quotes", "1 4 7 ''"),
             arrayOf("only quotes", "''"),

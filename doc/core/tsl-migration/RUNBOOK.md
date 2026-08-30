@@ -238,8 +238,11 @@ handler. A half-migrated corpus is not a broken one.
 `writeback.py` exists because re-saving every exercise was the only way to get a fresh compile, and
 re-saving means a version per exercise — which is why so much of this runbook is about attribution
 surviving. **A pure recompile no longer needs any of it.**
-`POST /v2/admin/exercises/tsl/recompile` regenerates the scripts in place, creates no version, and
-touches no `tsl.json`. See `doc/core/api-testing.md`.
+`POST /v2/admin/exercises/tsl/recompile` regenerates the scripts in place and creates no version.
+It touches no `tsl.json` either — with one deliberate exception: `"normalize_specs": true` rewrites
+a spec **that strict JSON rejects** (a wui-era raw newline inside a string, EZ-1813) into the strict
+re-serialisation of what the compiler already reads, so the React editor can finally open it. A spec
+that parses strictly is never rewritten, whatever its formatting. See `doc/core/api-testing.md`.
 
 Reach for this runbook when the **specs** change — a retired test type, a model migration — and for
 the recompile endpoint when only the **compiler** has.

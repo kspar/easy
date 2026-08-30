@@ -12,8 +12,15 @@ export interface TslSpecStore {
   spec: TslSpec
   /** Set when `text` doesn't parse. The visual editor keeps showing the last good `spec`. */
   parseError: string | null
-  /** Compiler rejection text, shown verbatim. */
+  /** Compiler rejection text — the compiler ran and said no. */
   compileFeedback: string | null
+  /**
+   * The compile request itself failed — network, restart, 500. Kept apart from
+   * [compileFeedback] because the two mean opposite things to a teacher: one says "your spec is
+   * wrong", the other says "nobody has judged your spec". Blaming the spec for a transport
+   * failure sends the teacher off to fix a spec that may be fine (audit X-018 review).
+   */
+  compileUnavailable: string | null
   compiling: boolean
   /** Generated scripts from the last successful compile, keyed by filename. */
   scripts: Record<string, string>
@@ -64,6 +71,7 @@ export function useTslSpec({
   })
   const { spec, error: parseError } = parsed
   const [compileFeedback, setCompileFeedback] = useState<string | null>(null)
+  const [compileUnavailable, setCompileUnavailable] = useState<string | null>(null)
   const [compiling, setCompiling] = useState(false)
   const [scripts, setScripts] = useState<Record<string, string>>({})
 
@@ -118,6 +126,7 @@ export function useTslSpec({
       if (value.trim() === '') {
         if (seq === compileSeq.current) {
           setCompileFeedback(null)
+          setCompileUnavailable(null)
           setScripts({})
         }
         return
@@ -128,13 +137,15 @@ export function useTslSpec({
         resp = await compileTsl(value)
       } catch (e) {
         if (seq === compileSeq.current) {
-          setCompileFeedback((e as Error).message)
+          setCompileUnavailable((e as Error).message)
+          setCompileFeedback(null)
           setCompiling(false)
         }
         return
       }
       if (seq !== compileSeq.current) return
       setCompileFeedback(resp.feedback)
+      setCompileUnavailable(null)
       if (resp.scripts) {
         const meta = resp.meta
         setScripts({
@@ -161,9 +172,12 @@ export function useTslSpec({
     spec,
     parseError,
     compileFeedback,
+    compileUnavailable,
     compiling,
     scripts,
-    isValid: parseError === null && compileFeedback === null,
+    // An unreachable compiler also gates: validity is unknown, and saving an unjudged spec is the
+    // silent-failure family this editor exists to close. The message says which situation it is.
+    isValid: parseError === null && compileFeedback === null && compileUnavailable === null,
     setFromModel,
     setFromText,
   }

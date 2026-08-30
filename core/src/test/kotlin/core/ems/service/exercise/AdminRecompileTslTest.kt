@@ -431,6 +431,82 @@ class AdminRecompileTslTest(
         assertEquals(listOf(999999L), resp.jsonOrNull!!.list("not_found").map { it.asLong() })
     }
 
+    // --- spec normalisation (EZ-1813) --------------------------------------------------------------
+
+    /**
+     * A wui-era spec: a raw newline inside a string. kotlinx's parser tolerates it, so the
+     * exercise has always compiled and graded — but `JSON.parse` in the React editor rejects it,
+     * so its teacher is locked out. The fixture must be built by string surgery, because no JSON
+     * serialiser will produce it.
+     */
+    private fun plantLenientOnlySpec(): String {
+        val lenientSpec = spec.replace("Otsib silmust", "Otsib\nsilmust")
+        transaction {
+            Asset.deleteWhere { (Asset.autoExercise eq EntityID(autoExerciseId, AutoExercise)) and (Asset.fileName eq "tsl.json") }
+            Fixtures.asset(exerciseId, "tsl.json", lenientSpec)
+        }
+        return lenientSpec
+    }
+
+    @Test
+    fun `without the flag a lenient-only spec compiles but is never rewritten`() {
+        val lenientSpec = plantLenientOnlySpec()
+
+        assertEquals(200, recompile(apply = true).status)
+        assertEquals(lenientSpec, assetsOf(autoExerciseId)["tsl.json"]) {
+            "tsl.json was rewritten without normalize_specs"
+        }
+    }
+
+    @Test
+    fun `normalize_specs rewrites a lenient-only spec into strict JSON, dry run first`() {
+        plantLenientOnlySpec()
+
+        val dry = recompile(apply = false, normalize = true)
+        assertEquals(200, dry.status) { dry.body }
+        assertTrue(
+            dry.elements("results").single().list("scripts").map { it.asString() }.contains("tsl.json"),
+        ) { "The dry run does not announce the spec rewrite: ${dry.body}" }
+        assertTrue(assetsOf(autoExerciseId)["tsl.json"]!!.contains("Otsib\nsilmust")) {
+            "A dry run rewrote the spec"
+        }
+
+        assertEquals(200, recompile(apply = true, normalize = true).status)
+        val written = assetsOf(autoExerciseId)["tsl.json"]!!
+        // Strict now: Jackson (the same rules as the editor's JSON.parse) must accept it,
+        // and the teacher's value must have survived with its newline escaped, not lost.
+        val parsed = tools.jackson.databind.ObjectMapper().readTree(written)
+        assertEquals("Otsib\nsilmust", parsed.get("tests").get(0).get("name").asString()) { written }
+    }
+
+    @Test
+    fun `a spec that is already strict JSON is not rewritten by normalize_specs`() {
+        assertEquals(200, recompile(apply = true, normalize = true).status)
+        assertEquals(spec, assetsOf(autoExerciseId)["tsl.json"]) {
+            "normalize_specs reformatted a spec the editor can already open"
+        }
+    }
+
+    /**
+     * Two tsl.json rows with different content is a decision, not a repair: `rows.toMap()` keeps
+     * an arbitrary copy, and canonicalising an arbitrary choice — especially under
+     * normalize_specs — would silently decide which spec the exercise is.
+     */
+    @Test
+    fun `duplicate tsl json rows with differing content fail rather than pick one`() {
+        transaction { Fixtures.asset(exerciseId, "tsl.json", spec.replace("Otsib silmust", "Teine koopia")) }
+        // assetsOf collapses duplicates, so the invariant here is the raw row list.
+        val rowsBefore = assetRows(autoExerciseId)
+
+        val resp = recompile(apply = true, normalize = true)
+        assertEquals(200, resp.status) { resp.body }
+        assertEquals(1, resp.jsonOrNull!!.get("failed").asInt()) { resp.body }
+        assertTrue(
+            resp.elements("results").single().get("detail").asString().contains("differing content"),
+        ) { resp.body }
+        assertEquals(rowsBefore, assetRows(autoExerciseId)) { "A refused exercise was written to" }
+    }
+
     @Test
     fun `only an admin may recompile`() {
         assertEquals(403, recompile(apply = true, caller = Auth.asTeacher(teacher)).status)
@@ -444,13 +520,28 @@ class AdminRecompileTslTest(
 
     // --- helpers ---------------------------------------------------------------------------------
 
-    private fun recompile(apply: Boolean, caller: org.springframework.test.web.servlet.request.RequestPostProcessor = Auth.asAdmin(admin)) =
-        api.post("/v2/admin/exercises/tsl/recompile", api.body("apply" to apply), caller)
+    private fun recompile(
+        apply: Boolean,
+        normalize: Boolean = false,
+        caller: org.springframework.test.web.servlet.request.RequestPostProcessor = Auth.asAdmin(admin),
+    ) = api.post(
+        "/v2/admin/exercises/tsl/recompile",
+        if (normalize) api.body("apply" to apply, "normalize_specs" to true) else api.body("apply" to apply),
+        caller,
+    )
 
     private fun assetsOf(autoExId: Long): Map<String, String> = transaction {
         Asset.select(Asset.fileName, Asset.fileContent)
             .where { Asset.autoExercise eq autoExId }
             .associate { it[Asset.fileName] to it[Asset.fileContent] }
+    }
+
+    /** Like [assetsOf], but keeping duplicate rows visible. */
+    private fun assetRows(autoExId: Long): List<Pair<String, String>> = transaction {
+        Asset.select(Asset.fileName, Asset.fileContent)
+            .where { Asset.autoExercise eq autoExId }
+            .map { it[Asset.fileName] to it[Asset.fileContent] }
+            .sortedBy { it.first + it.second }
     }
 
     private fun currentAutoExerciseId(exId: Long): Long = transaction {

@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -11,7 +14,7 @@ import {
   Tabs,
   Typography,
 } from '@mui/material'
-import { AddOutlined, ArrowDropDownOutlined } from '@mui/icons-material'
+import { AddOutlined, ArrowDropDownOutlined, ExpandMoreOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { Extension } from '@codemirror/state'
 import CodeEditor from '../../../components/CodeEditor.tsx'
@@ -19,6 +22,7 @@ import { languageFromFilename } from '../../course-exercise/editorLanguage.ts'
 import TslTestCard from './TslTestCard.tsx'
 import { useTslSpec } from './useTslSpec.ts'
 import { duplicateTest, specTestProblems, type TslTest } from './tslModel.ts'
+import { summarizeCompileError, summarizeParseError } from './tslErrors.ts'
 import { PRESET_GROUPS } from './tslPresets.ts'
 
 type TslTab = 'tests' | 'spec' | 'generated'
@@ -54,7 +58,7 @@ export default function TslEditor({
   const [addAnchor, setAddAnchor] = useState<HTMLElement | null>(null)
 
   const store = useTslSpec({ value, onChange, solutionFileName })
-  const { spec, parseError, compileFeedback, compiling, scripts, isValid } = store
+  const { spec, parseError, compileFeedback, compileUnavailable, compiling, scripts, isValid } = store
 
   // Reports parse+compile validity only — the blank-required Save gate (audit X-027) is derived
   // by ExercisePage from the draft itself, so it holds even when this editor never mounts.
@@ -87,20 +91,16 @@ export default function TslEditor({
 
   return (
     <Box>
-      {parseError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          <Typography variant="body2" component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap' }}>
-            {parseError}
-          </Typography>
-        </Alert>
-      )}
-      {!parseError && compileFeedback && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          <Typography variant="body2" component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap' }}>
-            {compileFeedback}
-          </Typography>
-        </Alert>
-      )}
+      {/* One teacher-voiced sentence, raw diagnostics behind a disclosure (audit X-018): what
+          used to render here verbatim was kotlinx's own developer advice — in English, ending in
+          the teacher's whole document echoed back. */}
+      {parseError ? (
+        <TslErrorAlert {...summarizeParseError(parseError)} raw={parseError} />
+      ) : compileFeedback ? (
+        <TslErrorAlert {...summarizeCompileError(compileFeedback)} raw={compileFeedback} />
+      ) : compileUnavailable ? (
+        <TslErrorAlert messageKey="tsl.errorCompileUnavailable" raw={compileUnavailable} />
+      ) : null}
 
       <Box display="flex" alignItems="center" gap={1}>
         <Tabs
@@ -216,6 +216,49 @@ export default function TslEditor({
         {tab === 'generated' && <GeneratedScripts scripts={scripts} />}
       </Box>
     </Box>
+  )
+}
+
+function TslErrorAlert({
+  messageKey,
+  params,
+  raw,
+}: {
+  messageKey: string
+  params?: Record<string, string>
+  raw: string
+}) {
+  const { t } = useTranslation()
+  return (
+    <Alert severity="error" sx={{ mb: 2 }}>
+      <Typography variant="body2">{t(messageKey, params)}</Typography>
+      {/* Kept, not deleted: the raw diagnostic is what a bug report or a colleague needs.
+          Keyed by the text so a *different* error starts collapsed again — an open disclosure
+          carrying over would present the new raw dump as if it were the summary. */}
+      <Accordion
+        key={raw}
+        disableGutters
+        elevation={0}
+        // Both halves of BugReportDialog's debugged dark-mode fix: Paper paints its dark-mode
+        // elevation overlay as a background *image*, which bgcolor alone does not clear.
+        sx={{ mt: 0.5, bgcolor: 'transparent', backgroundImage: 'none', '&:before': { display: 'none' } }}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreOutlined />} sx={{ minHeight: 32, px: 0, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+          <Typography variant="caption" color="text.secondary">
+            {t('tsl.errorDetails')}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ px: 0, pt: 0 }}>
+          <Typography
+            variant="body2"
+            component="pre"
+            sx={{ m: 0, whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '0.75rem' }}
+          >
+            {raw}
+          </Typography>
+        </AccordionDetails>
+      </Accordion>
+    </Alert>
   )
 }
 

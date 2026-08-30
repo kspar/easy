@@ -608,7 +608,8 @@
     },
     "core.ems.service.exercise.AdminRecompileTslController.Req": {
       "apply": { "kind": "boolean" },
-      "exercise_ids": { "kind": "array", "nullable": true }
+      "exercise_ids": { "kind": "array", "nullable": true },
+      "normalize_specs": { "kind": "boolean" }
     },
     "core.ems.service.exercise.AdminRecompileTslController.Resp": {
       "applied": { "kind": "boolean" },

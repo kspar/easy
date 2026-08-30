@@ -22,6 +22,17 @@ data class CompiledResult(
 )
 
 
+/**
+ * A JSON spec, decoded and re-encoded through the same parser [compileTSL] uses.
+ *
+ * The round trip is the point: kotlinx's parser tolerates wui-era artefacts — a raw newline inside
+ * a string, a missing delimiter — that ECMA-404 parsers reject, so a spec can grade for years while
+ * the React editor's `JSON.parse` can never open it (EZ-1813). The re-encoding is strict JSON, and
+ * because the decode is the compiler's own, anything it would lose could never have compiled.
+ */
+fun normalizeTSLSpec(tslSpec: String): String =
+    TSLFormat.encodeToString(TSL.serializer(), TSLFormat.decodeFromString<TSL>(tslSpec))
+
 fun compileTSL(
     tslSpec: String,
     tslCompilerVersion: String,

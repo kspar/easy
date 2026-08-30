@@ -125,7 +125,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                 .map { PyPair(PyStr(it.fileName), PyStr(it.fileContent)) }
                 .let { PyList(it) }
 
-            val arguments = PyList(test.arguments.map { PyStr(it, false) })
+            val arguments = PyList(test.arguments.map { PyRawSource(it) })
 
             val returnValueChecks: PyList = if (test.returnValueCheck == null) {
                 PyList(listOf())
@@ -134,7 +134,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                     listOf(
                         PyDict(
                             mapOf(
-                                "expected_value" to PyStr(test.returnValueCheck?.returnValue, false),
+                                "expected_value" to PyRawSource(test.returnValueCheck?.returnValue),
                                 "before_message" to PyStr(test.returnValueCheck?.beforeMessage),
                                 "passed_message" to PyStr(test.returnValueCheck?.passedMessage),
                                 "failed_message" to PyStr(test.returnValueCheck?.failedMessage)
@@ -164,7 +164,7 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                             PyDict(
                                 mapOf(
                                     "param_number" to PyInt(it.paramNumber.toLong()),
-                                    "expected_value" to PyStr(it.expectedValue, forceString = false),
+                                    "expected_value" to PyRawSource(it.expectedValue),
                                     "before_message" to PyStr(it.beforeMessage),
                                     "passed_message" to PyStr(it.passedMessage),
                                     "failed_message" to PyStr(it.failedMessage)
@@ -231,7 +231,9 @@ class Compiler(private val irTree: TSL) { // TODO: RemoveMe
                                     "fields_final" to PyList(it.fieldsFinal.map {
                                         PyPair(
                                             PyStr(it.fieldName),
-                                            PyStr(it.fieldContent, forceString = false)
+                                            // Python syntax, like returnValue: "the field holds
+                                            // this value", written as a Python expression.
+                                            PyRawSource(it.fieldContent)
                                         )
                                     }),
                                     "check_name" to PyBool(it.checkName),

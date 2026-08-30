@@ -48,19 +48,27 @@ class PyInt(val value: Long?) : PyASTPrimitive() {
     }
 }
 
-class PyStr(val value: String?, private val forceString: Boolean = true) : PyASTPrimitive() {
+class PyStr(val value: String?) : PyASTPrimitive() {
     override fun generatePyString(): String {
         if (value == null) {
             return "None"
         }
-        if (value.startsWith('"')) {
-            return value
-        }
-        if (forceString) {
-            return "'''${closeableInTripleQuotes(value.replace("\n", "\\n").replace("'''", "\\'''").trim())}'''"
-        }
-        return value
+        // Always a literal, with no raw-source escape hatch (EZ-1810): these are the fields that
+        // carry teacher-typed text — names, messages, expected outputs — and a leading `"` emitted
+        // verbatim was a SyntaxError at grading time, or worse, a quiet comparison against a
+        // different string. Same bug family closeableInTripleQuotes closes.
+        return "'''${closeableInTripleQuotes(value.replace("\n", "\\n").replace("'''", "\\'''").trim())}'''"
     }
+}
+
+/**
+ * A value emitted verbatim as Python source — function arguments, return values: the fields whose
+ * help text itself teaches Python syntax (`nt sõne "abc"`). A separate type rather than a boolean
+ * on [PyStr], so a call site says *raw source* where it used to say `false` — the flag spelling is
+ * how the EZ-1810 injection family got planted on the literal path in the first place.
+ */
+class PyRawSource(val value: String?) : PyASTPrimitive() {
+    override fun generatePyString(): String = value ?: "None"
 }
 
 /**

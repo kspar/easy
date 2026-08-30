@@ -1,7 +1,9 @@
 package core.ems.service.exercise
 
 import com.example.demo.TSLSpecFormat
+import com.example.demo.normalizeTSLSpec
 import com.fasterxml.jackson.annotation.JsonProperty
+import tools.jackson.databind.ObjectMapper
 import core.conf.security.EasyUser
 import core.db.Asset
 import core.db.AutoExercise
@@ -53,8 +55,9 @@ private const val GENERATED_PREFIX = "generated_"
  * ### What it does instead
  *
  * Recompiles the spec and replaces the generated assets **on the existing `automatic_exercise`
- * row**. No new `exercise_version`, no new `automatic_exercise`, no change to `tsl.json` and no
- * change to any asset the teacher wrote. `ExerciseVer.autoExerciseId` still points where it did.
+ * row**. No new `exercise_version`, no new `automatic_exercise`, no change to any asset the
+ * teacher wrote, and — unless `normalize_specs` is set, and then only for a spec strict JSON
+ * rejects — no change to `tsl.json`. `ExerciseVer.autoExerciseId` still points where it did.
  *
  * Only **current** versions — `valid_to IS NULL` — because those are the only ones that can grade a
  * submission. An older version's stored script is a record of what that version generated, and
@@ -93,6 +96,17 @@ class AdminRecompileTslController {
         @param:JsonProperty("apply") val apply: Boolean = false,
         /** Optional filter. Absent means every current TSL exercise. */
         @param:JsonProperty("exercise_ids") val exerciseIds: List<Long>? = null,
+        /**
+         * Also rewrite `tsl.json` itself — but only where the stored text is not strict JSON.
+         *
+         * The wui-era editor could save a spec with a raw newline inside a string. kotlinx's
+         * parser tolerates that, so the exercise compiles and grades — but the React editor loads
+         * with `JSON.parse`, which is strict, so the teacher gets a raw parser error and can never
+         * open it (EZ-1813). Decoding with the same parser the compiler uses and re-encoding is
+         * exactly the normalisation saving in the editor would have performed, had it been able to
+         * load. A spec that already parses strictly is never rewritten, whatever its formatting.
+         */
+        @param:JsonProperty("normalize_specs") val normalizeSpecs: Boolean = false,
     )
 
     data class Resp(
@@ -123,7 +137,11 @@ class AdminRecompileTslController {
     data class ExerciseResp(
         @get:JsonProperty("exercise_id") val exerciseId: Long,
         @get:JsonProperty("outcome") val outcome: Outcome,
-        /** Which generated assets differ, or which are missing. Empty when nothing changed. */
+        /**
+         * Which assets this run touches: the generated scripts that differ or are stale — and,
+         * under `normalize_specs` (or when identical duplicate rows are collapsed), `tsl.json`
+         * itself. Empty when nothing changed.
+         */
         @get:JsonProperty("scripts") val scripts: List<String>,
         /** Why, for FAILED and SKIPPED. */
         @get:JsonProperty("detail") val detail: String?,
@@ -156,7 +174,7 @@ class AdminRecompileTslController {
         // exercises should not be all-or-nothing: a spec that fails to compile is reported and the
         // rest proceed, and an interrupted run leaves the exercises it already did in a good state
         // rather than rolling every one of them back.
-        val results = targets.map { recompileOne(it, req.apply) }
+        val results = targets.map { recompileOne(it, req.apply, req.normalizeSpecs) }
 
         val resp = Resp(
             applied = req.apply,
@@ -219,8 +237,8 @@ class AdminRecompileTslController {
      * the admin with a 500 and **no record of the hundreds already rewritten**. A run that cannot
      * say what it did is worse than one that did less.
      */
-    private fun recompileOne(target: Target, apply: Boolean): ExerciseResp = try {
-        transaction { recompileWithin(target, apply) }
+    private fun recompileOne(target: Target, apply: Boolean, normalizeSpecs: Boolean): ExerciseResp = try {
+        transaction { recompileWithin(target, apply, normalizeSpecs) }
     } catch (e: Throwable) {
         log.warn(e) { "TSL recompile threw for exercise ${target.exerciseId}" }
         ExerciseResp(target.exerciseId, Outcome.FAILED, emptyList(), describe(e))
@@ -235,7 +253,7 @@ class AdminRecompileTslController {
      * the only way to make the guard's own branch execute, and a guard whose branch never runs in a
      * test is a guard nobody has checked.
      */
-    internal fun recompileWithin(target: Target, apply: Boolean): ExerciseResp {
+    internal fun recompileWithin(target: Target, apply: Boolean, normalizeSpecs: Boolean = false): ExerciseResp {
         // Re-read the current version inside this transaction, and stop if it has moved.
         //
         // The target list is resolved once, up front, and a run over several hundred exercises takes
@@ -304,22 +322,50 @@ class AdminRecompileTslController {
         val obsolete = assets.keys.filter { it.startsWith(GENERATED_PREFIX) && it !in fresh }
         val (referenced, stale) = obsolete.partition { it in target.gradingScript }
 
+        // Duplicate tsl.json rows with *differing* content are a state this endpoint must not
+        // resolve by picking one: `rows.toMap()` keeps an arbitrary copy, and canonicalising an
+        // arbitrary choice under normalize_specs would silently decide which spec the exercise
+        // is. Identical copies are the same repair as duplicated generated assets.
+        val specCopies = rows.filter { it.first == TSL_SPEC_ASSET }.map { it.second }
+        if (specCopies.distinct().size > 1) {
+            return ExerciseResp(
+                target.exerciseId, Outcome.FAILED, emptyList(),
+                "several $TSL_SPEC_ASSET rows with differing content; resolve by hand before recompiling",
+            )
+        }
+
+        // See Req.normalizeSpecs. Non-null only when the stored spec is not strict JSON — the
+        // compile above already proved the compiler's own parser accepts it, so decode-and-encode
+        // cannot lose anything a strict save would have kept.
+        val normalizedSpec = if (normalizeSpecs && !parsesAsStrictJson(spec)) {
+            normalizeTSLSpec(spec).takeIf { it != spec }
+        } else null
+
+        // Everything this run contributes to tsl.json, spelled once so the report, the delete and
+        // the insert cannot disagree: a normalisation, or the collapse of identical duplicates.
+        val specRewrite: Map<String, String> = when {
+            normalizedSpec != null -> mapOf(TSL_SPEC_ASSET to normalizedSpec)
+            specCopies.size > 1 -> mapOf(TSL_SPEC_ASSET to spec)
+            else -> emptyMap()
+        }
+
         // Only the generated scripts decide whether anything changed. meta.txt carries a timestamp
         // that differs on every run, so including it would report every exercise as changed on every
         // run and the number would stop meaning anything.
         val differing = fresh.filter { (name, value) -> assets[name] != value }.keys
         val duplicated = (fresh.keys + obsolete).filter { (rowsPerName[it] ?: 0) > 1 }
 
-        val touched = (differing + stale + duplicated).toSortedSet().toList()
+        val touched = (differing + stale + duplicated + specRewrite.keys).toSortedSet().toList()
         if (touched.isEmpty()) {
             val note = "kept, still named by the grading script: $referenced".takeIf { referenced.isNotEmpty() }
             return ExerciseResp(target.exerciseId, Outcome.UNCHANGED, emptyList(), note)
         }
 
         if (apply) {
-            // Replace exactly the generated assets and the meta record. tsl.json is the source and
-            // is never touched; so is anything else the teacher attached.
-            val toReplace = fresh.keys + stale + TSL_META_ASSET
+            // Replace exactly the generated assets and the meta record — plus, only under
+            // normalizeSpecs and only for a spec strict JSON rejects, tsl.json itself. Anything
+            // else the teacher attached is never touched.
+            val toReplace = fresh.keys + stale + TSL_META_ASSET + specRewrite.keys
             Asset.deleteWhere { (Asset.autoExercise eq target.autoExerciseId) and (Asset.fileName inList toReplace) }
 
             val meta = compiled.meta?.let {
@@ -329,7 +375,8 @@ class AdminRecompileTslController {
                     Backend: ${it.backendId} ${it.backendVersion}
                 """.trimIndent()
             }
-            (fresh + listOfNotNull(meta?.let { TSL_META_ASSET to it })).forEach { (name, content) ->
+            (fresh + listOfNotNull(meta?.let { TSL_META_ASSET to it }) + specRewrite)
+                .forEach { (name, content) ->
                 Asset.insert {
                     it[autoExercise] = target.autoExerciseId
                     it[fileName] = name
@@ -346,4 +393,19 @@ class AdminRecompileTslController {
     /** The first line of why something failed, short enough to sit in a list of several hundred. */
     private fun describe(e: Throwable): String =
         (e.message ?: e::class.simpleName).orEmpty().lines().first().take(300)
+
+    /**
+     * Whether [text] is JSON by ECMA-404's rules — the rules `JSON.parse` in the editor applies.
+     * Jackson's defaults are those rules (unescaped control characters and missing delimiters are
+     * both rejected), which is precisely the disagreement with kotlinx that normalizeSpecs exists
+     * to repair, so Jackson is the honest oracle here.
+     */
+    private fun parsesAsStrictJson(text: String): Boolean = try {
+        strictJson.readTree(text)
+        true
+    } catch (_: Exception) {
+        false
+    }
+
+    private val strictJson = ObjectMapper()
 }

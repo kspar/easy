@@ -31,13 +31,15 @@ class PyGenericChecks(val genericChecks: List<GenericCheck>?) : PyASTPrimitive()
         }
         return PyList(
             genericChecks.map {
-                val forceString = it.expectedValue.toString() != DataCategory.CONTAINS_NUMBERS.toString()
                 PyDict(
                     mapOf(
                         "check_type" to PyStr(it.checkType.toString()),
                         "output_category" to PyStr(it.outputCategory.toString()),
                         "nothing_else" to PyBool(it.nothingElse),
-                        "expected_value" to PyList(it.expectedValue.map { PyStr(it, forceString) }),
+                        // Always the literal path. The old per-check forceString compared a
+                        // List<String>.toString() against an enum name — unconditionally true —
+                        // so this spells out what has in fact always happened.
+                        "expected_value" to PyList(it.expectedValue.map { PyStr(it) }),
                         "elements_ordered" to PyBool(it.elementsOrdered),
                         "before_message" to PyStr(it.beforeMessage),
                         "passed_message" to PyStr(it.passedMessage),
@@ -61,12 +63,12 @@ class PyGenericChecksLong(val genericChecksLong: List<GenericCheckLong>?) : PyAS
         }
         return PyList(
             genericChecksLong.map {
-                val forceString = it.expectedValue.toString() != DataCategory.CONTAINS_NUMBERS.toString()
                 PyDict(
                     mapOf(
                         "check_type" to PyStr(it.checkType.toString()),
                         "nothing_else" to PyBool(it.nothingElse),
-                        "expected_value" to PyList(it.expectedValue.map { PyStr(it, forceString) }),
+                        // Always the literal path — see the note on the sibling above.
+                        "expected_value" to PyList(it.expectedValue.map { PyStr(it) }),
                         "before_message" to PyStr(it.beforeMessage),
                         "passed_message" to PyStr(it.passedMessage),
                         "failed_message" to PyStr(it.failedMessage),
