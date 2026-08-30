@@ -70,6 +70,7 @@ export default function RequireAuth({ children, allowedRoles }: Props) {
     login,
     checkedIn,
     checkinFailed,
+    checkinError,
   } = useAuth()
 
   /**
@@ -108,7 +109,7 @@ export default function RequireAuth({ children, allowedRoles }: Props) {
   }
 
   if (checkinFailed) {
-    return <ErrorAlert />
+    return <ErrorAlert error={checkinError} />
   }
 
   // Nothing else can be requested before the account exists in core
@@ -117,7 +118,11 @@ export default function RequireAuth({ children, allowedRoles }: Props) {
   }
 
   if (allowedRoles && !allowedRoles.includes(activeRole)) {
-    return <Navigate to="/courses" replace />
+    // The relocation is right; the silence was not (audit X-033). A student opening a link their
+    // teacher shared watched the spinner for several seconds and then arrived somewhere else, with
+    // nothing on the page saying why — so the link reads as broken and the natural next move is to
+    // click it again. The flag is read once by the shell, which shows a sentence and clears it.
+    return <Navigate to="/courses" replace state={{ roleDenied: true }} />
   }
 
   return <>{children}</>

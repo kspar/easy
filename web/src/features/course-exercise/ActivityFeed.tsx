@@ -50,6 +50,7 @@ import ReadOnlyCodeSnippet from './ReadOnlyCodeSnippet.tsx'
 import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.ts'
 import { useFileDropExtension } from '../../components/markdown/useFileDropExtension.ts'
+import { errorMessage } from '../../api/errorMessage.ts'
 
 const NOTIFY_KEY = 'teacherNotifyStudent'
 const MERGE_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
@@ -571,7 +572,7 @@ export default function ActivityFeed({
 
           {postGrade.isError && (
             <Typography color="error" variant="caption" sx={{ px: 2, pb: 1.5, display: 'block' }}>
-              {t('general.somethingWentWrong')}
+              {errorMessage(postGrade.error, t)}
             </Typography>
           )}
         </Paper>

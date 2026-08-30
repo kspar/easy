@@ -18,6 +18,7 @@ import {
   draftQueryKey,
 } from '../../api/exercises.ts'
 import type { ExerciseDetails } from '../../api/types.ts'
+import { errorMessage } from '../../api/errorMessage.ts'
 
 export interface SolutionEditorHandle {
   setSolution: (solution: string) => void
@@ -529,7 +530,7 @@ export default forwardRef<SolutionEditorHandle, {
 
       {submit.isError && (
         <Alert severity="error" sx={{ mt: 2 }}>
-          {t('general.somethingWentWrong')}
+          {errorMessage(submit.error, t)}
         </Alert>
       )}
 

@@ -159,7 +159,7 @@ function StudentCourses() {
       </Box>
 
       {isLoading && <CircularProgress />}
-      {error && <ErrorAlert />}
+      {error && <ErrorAlert error={error} />}
 
       <Box sx={viewMode === 'grid' ? gridSx : listSx}>
         {courses?.map((course) => {
@@ -314,7 +314,7 @@ function TeacherCourses() {
       {isAdmin && <CreateCourseDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />}
 
       {isLoading && <CircularProgress />}
-      {error && <ErrorAlert />}
+      {error && <ErrorAlert error={error} />}
 
       <Box sx={viewMode === 'grid' ? gridSx : listSx}>
         {courses?.map((course) => {

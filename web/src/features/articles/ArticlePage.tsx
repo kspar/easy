@@ -183,7 +183,7 @@ export default function ArticlePage() {
         )}
       </Stack>
 
-      {update.isError && <ErrorAlert sx={{ mb: 2 }} />}
+      {update.isError && <ErrorAlert sx={{ mb: 2 }} error={update.error} />}
 
       <Box
         display="grid"

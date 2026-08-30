@@ -120,7 +120,7 @@ function StudentExercises() {
 
       {isLoading && <CircularProgress />}
       {error && (
-        <ErrorAlert />
+        <ErrorAlert error={error} />
       )}
 
       {exercises && exercises.length === 0 && (
@@ -371,7 +371,7 @@ function TeacherExercises() {
 
       {isLoading && <CircularProgress />}
       {error && (
-        <ErrorAlert />
+        <ErrorAlert error={error} />
       )}
 
       {exercises && exercises.length === 0 && (

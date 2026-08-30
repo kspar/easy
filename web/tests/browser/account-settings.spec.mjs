@@ -107,19 +107,31 @@ test('account-settings', async ({ launch, check }) => {
   )
 
   // --- appearance ----------------------------------------------------------------------------------------
-  const darkSwitch = page.getByRole('checkbox', { name: 'Dark mode' })
-  const wasDark = await darkSwitch.isChecked()
-  await darkSwitch.click()
+  // Three buttons, not a switch: the theme gained a "System" state (audit X-038), because the old
+  // two-state control destroyed follow-the-OS the first time anyone touched it and offered no way
+  // back. `System` stores nothing — the preference is the *absence* of an override.
+  const themeButton = (name) => page.getByRole('button', { name, exact: true })
+  const stored = () => page.evaluate(() => localStorage.getItem('themeMode'))
+
+  await themeButton('Dark').click()
   check(
-    'the dark mode switch actually switches the theme',
-    await waitUntil(async () => (await darkSwitch.isChecked()) !== wasDark),
+    'choosing Dark switches the theme and stores it',
+    await waitUntil(async () => (await stored()) === 'dark'),
+  )
+  await themeButton('Light').click()
+  check(
+    'and choosing Light switches back',
+    await waitUntil(async () => (await stored()) === 'light'),
+  )
+  await themeButton('System').click()
+  check(
+    'choosing System clears the override rather than storing a third value',
+    await waitUntil(async () => (await stored()) === null),
   )
   check(
-    'and persists it, so a reload does not undo it',
-    await waitUntil(async () =>
-      (await page.evaluate(() => localStorage.getItem('themeMode'))) === (wasDark ? 'light' : 'dark')),
+    'and the picker shows System as the one in force',
+    (await themeButton('System').getAttribute('aria-pressed')) === 'true',
   )
-  await darkSwitch.click()
 
   await shot('01-page')
 

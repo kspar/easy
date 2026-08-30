@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCreateExercise, useAddExerciseToCourse } from '../../api/library.ts'
+import { errorMessage } from '../../api/errorMessage.ts'
 
 /**
  * WUI parity: create a brand new library exercise and attach it to this course
@@ -34,13 +35,14 @@ export default function NewCourseExerciseDialog({
   const addToCourse = useAddExerciseToCourse()
 
   const [title, setTitle] = useState('')
-  const [error, setError] = useState(false)
+  // The error itself, not a flag: core says why, and the flag threw that away (audit X-035).
+  const [error, setError] = useState<unknown>(null)
 
   const isPending = createExercise.isPending || addToCourse.isPending
 
   async function handleCreate() {
     if (!title.trim() || isPending) return
-    setError(false)
+    setError(null)
     try {
       const { id: exerciseId } = await createExercise.mutateAsync({
         title: title.trim(),
@@ -60,8 +62,8 @@ export default function NewCourseExerciseDialog({
       })
       handleClose()
       navigate(`/courses/${courseId}/exercises/${courseExerciseId}`)
-    } catch {
-      setError(true)
+    } catch (err) {
+      setError(err)
     }
   }
 
@@ -96,9 +98,9 @@ export default function NewCourseExerciseDialog({
             if (e.key === 'Enter') handleCreate()
           }}
         />
-        {error && (
+        {error != null && (
           <Typography variant="body2" color="error" sx={{ mt: 1.5 }}>
-            {t('general.somethingWentWrong')}
+            {errorMessage(error, t)}
           </Typography>
         )}
       </DialogContent>

@@ -419,7 +419,7 @@ export default function TeacherFeedback({
 
   if (isLoading) return <CircularProgress size={24} />
   if (activitiesError)
-    return <ErrorAlert />
+    return <ErrorAlert error={activitiesError} />
   if ((!activities || activities.length === 0) && (!inlineComments || inlineComments.length === 0)) return null
 
   // Build a map of submission_id -> solution for quick lookup

@@ -65,7 +65,7 @@ export default function PreviousSubmissions({
 
   if (isLoading) return <CircularProgress size={24} />
   if (error)
-    return <ErrorAlert />
+    return <ErrorAlert error={error} />
   if (!submissions || submissions.length === 0) return null
 
   return (

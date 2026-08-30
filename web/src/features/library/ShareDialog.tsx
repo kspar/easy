@@ -29,7 +29,7 @@ import {
 } from '@mui/icons-material'
 import { useDirAccesses, usePutDirAccess } from '../../api/library.ts'
 import { ANY_SUBJECT, markShared, readRecentShares, subjectOf } from './recentShares.ts'
-import { ApiResponseError } from '../../api/client.ts'
+import { errorMessage } from '../../api/errorMessage.ts'
 import { useAuth } from '../../auth/useAuth.ts'
 import type {
   DirAccessLevel,
@@ -148,11 +148,11 @@ export default function ShareDialog({ dirId, parentDirId, itemName, isDir, open,
       setRecent(readRecentShares(activeDirId))
       setEmail('')
     } catch (err) {
-      if (err instanceof ApiResponseError && err.errorBody?.code === 'ACCOUNT_NOT_FOUND') {
-        setEmailError(t('library.emailNotFound'))
-      } else {
-        setEmailError(err instanceof Error ? err.message : String(err))
-      }
+      // Was `code === 'ACCOUNT_NOT_FOUND'`, which core has never sent: `PutDirAccess` throws
+      // ENTITY_WITH_ID_NOT_FOUND with the address in `attrs.email`. So the friendly branch was
+      // dead and an unknown address produced `log_msg` — a line written for the server log.
+      // `errorMessage` reads the attr and names the address back.
+      setEmailError(errorMessage(err, t))
     } finally {
       setAdding(false)
     }

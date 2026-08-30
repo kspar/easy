@@ -178,7 +178,7 @@ export default function GradeTablePage() {
 
       {isLoading && <CircularProgress />}
       {error && (
-        <ErrorAlert />
+        <ErrorAlert error={error} />
       )}
 
       {!isLoading && !error && sortedExercises.length === 0 && (

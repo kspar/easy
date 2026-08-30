@@ -62,6 +62,7 @@ import TeacherTestingTab from '../course-exercise/TeacherTestingTab.tsx'
 import { parseSpec, specTestProblems } from './tsl/tslModel.ts'
 import { isTslContainer } from './autoEvalTypes.ts'
 import { dirLink, hasAccess, spaLinkProps } from './links.ts'
+import { errorMessage } from '../../api/errorMessage.ts'
 
 type TabId = 'text' | 'autoassess' | 'testing'
 
@@ -281,8 +282,8 @@ export default function ExercisePage() {
       setSnackbar(t('library.exerciseSaved'))
       const fresh = await refetch()
       if (fresh.data) baseRef.current = fresh.data
-    } catch {
-      setSnackbar(t('general.somethingWentWrong'))
+    } catch (err) {
+      setSnackbar(errorMessage(err, t))
     } finally {
       setSaving(false)
     }

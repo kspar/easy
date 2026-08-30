@@ -183,7 +183,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .then(() => setState((prev) => ({ ...prev, checkedIn: true })))
               .catch((err) => {
                 console.error('Account checkin failed', err)
-                setState((prev) => ({ ...prev, checkinFailed: true }))
+                // The error too, not just the flag: check-in failing is the first thing a user
+                // meets and the least explicable, and core says why (audit X-035).
+                setState((prev) => ({ ...prev, checkinFailed: true, checkinError: err }))
               })
           } else {
             setState((prev) => ({ ...prev, initialized: true }))

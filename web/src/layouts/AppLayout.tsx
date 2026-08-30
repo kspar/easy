@@ -134,6 +134,17 @@ export default function AppLayout() {
   const [snackbar, setSnackbar] = useState<string | null>(null)
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null)
 
+  // A role guard sent the user here (audit X-033). Say so once, then clear the flag from history
+  // so a refresh or a Back does not re-announce a redirect that happened minutes ago.
+  // Below the state it writes, not beside the other route effect: `react-hooks/immutability` reads
+  // use-before-declare as an error, and lint is a CI gate.
+  useEffect(() => {
+    if ((location.state as { roleDenied?: boolean } | null)?.roleDenied) {
+      setSnackbar(t('general.roleDeniedRedirect'))
+      navigate(location.pathname + location.search, { replace: true, state: null })
+    }
+  }, [location.state, location.pathname, location.search, navigate, t])
+
   const toggleDrawer = () => setDrawerOpen((prev) => !prev)
 
   const toggleLanguage = () => {

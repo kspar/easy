@@ -110,6 +110,27 @@ const studentColumnHelper = createColumnHelper<StudentRow>()
 const teacherColumnHelper = createColumnHelper<TeacherParticipant>()
 const groupColumnHelper = createColumnHelper<GroupWithCount>()
 
+/**
+ * What removing a student does to their work — the one thing the confirmation never said, and the
+ * only fact the teacher deciding whether to click actually needs (audit X-032).
+ *
+ * The answer is in the schema, not in policy: `RemoveStudentsFromCourse` deletes the
+ * `student_course_access` row and nothing else, and `submission` references `course_exercise_id`
+ * and `student_id` directly rather than that row. So the submissions and grades survive, and
+ * re-adding the student brings them back into view.
+ *
+ * The same page's delete-group dialog has always named its consequences; this brings the removal
+ * up to it.
+ */
+function KeepsWorkNote() {
+  const { t } = useTranslation()
+  return (
+    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+      {t('participants.removeStudentKeepsWork')}
+    </Typography>
+  )
+}
+
 export default function ParticipantsPage() {
   const { activeRole } = useAuth()
   const isAdmin = activeRole === 'admin'
@@ -407,16 +428,19 @@ export default function ParticipantsPage() {
     if (active.length === 0) return
     const isSingle = active.length === 1
     setConfirm({
-      message: isSingle ? (
-        <Trans
-          i18nKey="participants.removeStudentConfirm"
-          values={{ name: studentName(active[0]) }}
-          components={{ bold: <strong /> }}
-        />
-      ) : (
-        t('participants.removeSelectedStudentsConfirm', {
-          count: active.length,
-        })
+      message: (
+        <>
+          {isSingle ? (
+            <Trans
+              i18nKey="participants.removeStudentConfirm"
+              values={{ name: studentName(active[0]) }}
+              components={{ bold: <strong /> }}
+            />
+          ) : (
+            t('participants.removeSelectedStudentsConfirm', { count: active.length })
+          )}
+          <KeepsWorkNote />
+        </>
       ),
       action: () => {
         removeStudents.mutate(active, {
@@ -555,11 +579,14 @@ export default function ParticipantsPage() {
   function handleRemoveStudent(id: string) {
     setConfirm({
       message: (
-        <Trans
-          i18nKey="participants.removeStudentConfirm"
-          values={{ name: studentName(id) }}
-          components={{ bold: <strong /> }}
-        />
+        <>
+          <Trans
+            i18nKey="participants.removeStudentConfirm"
+            values={{ name: studentName(id) }}
+            components={{ bold: <strong /> }}
+          />
+          <KeepsWorkNote />
+        </>
       ),
       action: () => {
         removeStudents.mutate([id], {
@@ -868,7 +895,7 @@ export default function ParticipantsPage() {
 
       {isLoading && <CircularProgress />}
       {error && (
-        <ErrorAlert />
+        <ErrorAlert error={error} />
       )}
 
       {data && (

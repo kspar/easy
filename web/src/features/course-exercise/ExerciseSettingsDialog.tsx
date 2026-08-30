@@ -89,10 +89,21 @@ const deadlinesOrdered = (soft: Date | null, hard: Date | null): boolean =>
   soft == null || hard == null || isNaN(soft.getTime()) || isNaN(hard.getTime()) ||
   hard.getTime() >= soft.getTime()
 
-/** Every date an exception row carries has to be usable and ordered, exactly as the exercise's are. */
-const exceptionRowValid = (r: { softDeadline: Date | null; hardDeadline: Date | null; visibleFrom: Date | null }): boolean =>
+/**
+ * An exception row, against the pair it will actually be graded by.
+ *
+ * Not against its own two fields: core *inherits* the ones an exception leaves empty
+ * (`determineSoftDeadline` in `core/ems/service/courses.kt`), so an exception carrying only a
+ * closing time of 20 May, on an exercise whose deadline is 1 June, produces exactly the
+ * contradiction X-037 is about — and a check that compared the row to itself would wave it
+ * through, because one side is null.
+ */
+const exceptionRowValid = (
+  r: { softDeadline: Date | null; hardDeadline: Date | null; visibleFrom: Date | null },
+  inherited: { softDeadline: Date | null; hardDeadline: Date | null },
+): boolean =>
   isUsableDate(r.softDeadline) && isUsableDate(r.hardDeadline) && isUsableDate(r.visibleFrom) &&
-  deadlinesOrdered(r.softDeadline, r.hardDeadline)
+  deadlinesOrdered(r.softDeadline ?? inherited.softDeadline, r.hardDeadline ?? inherited.hardDeadline)
 
 // Local state for an exception row
 interface ExceptionRow {
@@ -195,8 +206,11 @@ export default function ExerciseSettingsDialog({
 
   const thresholdNum = parseInt(threshold, 10)
   const thresholdValid = !isNaN(thresholdNum) && thresholdNum >= 0 && thresholdNum <= 100
+  // Only while the picker is on screen. A half-typed date left behind by switching away from
+  // "scheduled" would otherwise disable Save for good, with the offending field not rendered —
+  // a dead button and nothing to explain it, which is the failure this whole change removes.
   const visibleFromValid =
-    (visibility !== 'scheduled' || visibleFrom != null) && isUsableDate(visibleFrom)
+    visibility !== 'scheduled' || (visibleFrom != null && isUsableDate(visibleFrom))
   // The closing time cannot precede the deadline (audit X-037). Saved that way it means
   // submissions are refused before the deadline the student was given — a contradiction the
   // student meets and the teacher cannot explain, and nothing anywhere caught it.
@@ -207,8 +221,10 @@ export default function ExerciseSettingsDialog({
   const softDeadlineValid = isUsableDate(softDeadline)
   const hardDeadlineValid = isUsableDate(hardDeadline)
   const deadlineOrderValid = deadlinesOrdered(softDeadline, hardDeadline)
+  const inherited = { softDeadline, hardDeadline }
   const exceptionsValid =
-    studentExceptions.every(exceptionRowValid) && groupExceptions.every(exceptionRowValid)
+    studentExceptions.every((r) => exceptionRowValid(r, inherited)) &&
+    groupExceptions.every((r) => exceptionRowValid(r, inherited))
   const canSave =
     thresholdValid && visibleFromValid && softDeadlineValid && hardDeadlineValid &&
     deadlineOrderValid && exceptionsValid
@@ -514,6 +530,7 @@ export default function ExerciseSettingsDialog({
                   key={ex.studentId}
                   label={ex.studentName}
                   exception={ex}
+                  inherited={inherited}
                   onUpdate={(update) => updateStudentException(ex.studentId, update)}
                   onRemove={() => removeStudentException(ex.studentId)}
                   t={t}
@@ -555,6 +572,7 @@ export default function ExerciseSettingsDialog({
                   key={ex.groupId}
                   label={ex.groupName}
                   exception={ex}
+                  inherited={inherited}
                   onUpdate={(update) => updateGroupException(ex.groupId, update)}
                   onRemove={() => removeGroupException(ex.groupId)}
                   t={t}
@@ -614,17 +632,24 @@ export default function ExerciseSettingsDialog({
 function ExceptionRowUI({
   label,
   exception,
+  inherited,
   onUpdate,
   onRemove,
   t,
 }: {
   label: string
   exception: ExceptionRow
+  /** The exercise's own pair, which core falls back to for whichever field this row leaves empty. */
+  inherited: { softDeadline: Date | null; hardDeadline: Date | null }
   onUpdate: (update: Partial<ExceptionRow>) => void
   onRemove: () => void
   t: (key: string) => string
 }) {
-  const exceptionOrdered = deadlinesOrdered(exception.softDeadline, exception.hardDeadline)
+  // Against the effective pair, matching what core will grade by — see `exceptionRowValid`.
+  const exceptionOrdered = deadlinesOrdered(
+    exception.softDeadline ?? inherited.softDeadline,
+    exception.hardDeadline ?? inherited.hardDeadline,
+  )
 
   function handleVisibilityChange(mode: ExceptionVisibility) {
     if (mode === 'default' || mode === 'visible' || mode === 'hidden') {

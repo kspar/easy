@@ -1,0 +1,101 @@
+import type { TFunction } from 'i18next'
+import { ApiResponseError } from './client.ts'
+
+/**
+ * One sentence for a failed request, from the error code core already sends.
+ *
+ * Core answers every failure with `{id, code, attrs, log_msg}` and `client.ts` has always parsed it
+ * into `ApiResponseError.errorBody`. Before this, **two** call sites in the whole application read
+ * it (audit X-035); nineteen files rendered `general.somethingWentWrong` instead, so a taken course
+ * name, a malformed deadline, a group with students still in it and a server that was simply down
+ * were the same sentence. The mechanism was there; nothing used it.
+ *
+ * Deliberately a lookup and not nineteen bespoke handlers. A call site that wants to say something
+ * better about one specific code still can — `ShareDialog` does — and everything else improves by
+ * changing `catch` to call this.
+ *
+ * `log_msg` is never shown. It is written for whoever reads the server log and frequently contains
+ * ids, table names and Kotlin type names.
+ */
+
+/** Codes worth a sentence, from `core/exception/error_response.kt`. */
+const CODE_KEYS: Record<string, string> = {
+  // Access — the user is asking for something that is not theirs.
+  ROLE_NOT_ALLOWED: 'errors.roleNotAllowed',
+  NO_COURSE_ACCESS: 'errors.noCourseAccess',
+  NO_GROUP_ACCESS: 'errors.noGroupAccess',
+  NO_EXERCISE_ACCESS: 'errors.noExerciseAccess',
+  NO_DIR_ACCESS: 'errors.noDirAccess',
+  CANNOT_MODIFY_OWN: 'errors.cannotModifyOwn',
+
+  // The thing is not there, or is already there.
+  ENTITY_WITH_ID_NOT_FOUND: 'errors.notFound',
+  ENTITY_WITH_ID_ALREADY_EXISTS: 'errors.alreadyExists',
+  ACCOUNT_EMAIL_NOT_FOUND: 'errors.accountEmailNotFound',
+  ARTICLE_NOT_FOUND: 'errors.articleNotFound',
+  ARTICLE_ALIAS_IN_USE: 'errors.articleAliasInUse',
+
+  // Refused because of something the user can go and change.
+  GROUP_NOT_EMPTY: 'errors.groupNotEmpty',
+  DIR_NOT_EMPTY: 'errors.dirNotEmpty',
+  EXERCISE_USED_ON_COURSE: 'errors.exerciseUsedOnCourse',
+  ARTICLE_PUBLISHED: 'errors.articlePublished',
+  COURSE_EXERCISE_CLOSED: 'errors.courseExerciseClosed',
+  STUDENT_NOT_ON_COURSE: 'errors.studentNotOnCourse',
+  EXERCISE_NOT_AUTOASSESSABLE: 'errors.exerciseNotAutoassessable',
+  EXERCISE_WRONG_SOLUTION_TYPE: 'errors.exerciseWrongSolutionType',
+  INVALID_PARAMETER_VALUE: 'errors.invalidParameterValue',
+
+  // Grading and Moodle — transient, and the advice differs from "something went wrong".
+  ASSESSMENT_AWAIT_TIMEOUT: 'errors.assessmentAwaitTimeout',
+  MOODLE_SYNC_IN_PROGRESS: 'errors.moodleSyncInProgress',
+  MOODLE_LINKING_ERROR: 'errors.moodleLinkingError',
+  MOODLE_EMPTY_RESPONSE: 'errors.moodleEmptyResponse',
+  MOODLE_GRADE_SYNC_ERROR: 'errors.moodleGradeSyncError',
+  ACCOUNT_MIGRATION_FAILED: 'errors.accountMigrationFailed',
+  BUG_REPORT_RATE_LIMITED: 'errors.bugReportRateLimited',
+
+  // TSL_COMPILE_FAILED is deliberately absent: X-018 gives it a fuller treatment, with the
+  // compiler's own diagnostic behind a disclosure. A one-liner here would be a downgrade.
+}
+
+/**
+ * `ENTITY_WITH_ID_NOT_FOUND` is core's general-purpose miss, so the code alone cannot say *what*
+ * was missing — but `attrs` can, and nothing has ever read it. Sharing a directory with an unknown
+ * address is the case that matters: `PutDirAccess` throws it with `email`, and until now the dialog
+ * looked for a code named `ACCOUNT_NOT_FOUND` that core does not have, so the branch was dead and
+ * the user got a raw internal message.
+ */
+const NOT_FOUND_BY_ATTR: Record<string, string> = {
+  email: 'errors.emailNotFound',
+}
+
+/** Codes whose `attrs.email` names the address, so the message can too. */
+const EMAIL_CODES = new Set(['ENTITY_WITH_ID_NOT_FOUND', 'ACCOUNT_EMAIL_NOT_FOUND'])
+
+export function errorMessage(err: unknown, t: TFunction): string {
+  const generic = t('general.somethingWentWrong')
+
+  // A server that is genuinely down does not produce an ApiResponseError at all: `fetch` rejects
+  // with a TypeError before there is a status to read. Checking `status >= 500` alone therefore
+  // caught only nginx's own error page, and missed the outage it was written for.
+  if (!(err instanceof ApiResponseError)) {
+    return err instanceof TypeError ? t('errors.serverUnreachable') : generic
+  }
+
+  const body = err.errorBody
+  if (!body?.code) {
+    // A response with no envelope: a gateway or proxy answered instead of core.
+    return err.status >= 500 ? t('errors.serverUnreachable') : generic
+  }
+
+  if (EMAIL_CODES.has(body.code)) {
+    for (const [attr, key] of Object.entries(NOT_FOUND_BY_ATTR)) {
+      const value = body.attrs?.[attr]
+      if (value) return t(key, { value })
+    }
+  }
+
+  const key = CODE_KEYS[body.code]
+  return key ? t(key) : generic
+}

@@ -44,6 +44,7 @@ import RenameDirDialog from './RenameDirDialog.tsx'
 import AddToCourseDialog from './AddToCourseDialog.tsx'
 import ShareDialog from './ShareDialog.tsx'
 import ConfirmDialog from '../../components/ConfirmDialog.tsx'
+import { errorMessage } from '../../api/errorMessage.ts'
 
 type SortMode = 'name' | 'modified' | 'popularity'
 type VisibilityFilter = 'all' | 'shared' | 'private'
@@ -234,7 +235,7 @@ export default function ExerciseLibraryPage() {
   if (error) {
     return (
       <Typography color="error" sx={{ py: 4 }}>
-        {t('general.somethingWentWrong')}
+        {errorMessage(error, t)}
       </Typography>
     )
   }

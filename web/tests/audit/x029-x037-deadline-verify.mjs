@@ -229,12 +229,24 @@ await withBrowser(async ({ launch }) => {
             soft_deadline: { value: iso(30) },
             hard_deadline: { value: iso(2) },
             student_visible_from: null,
+          }, {
+            // The half the first version of this fix missed. This row carries only a closing
+            // time; core inherits the exercise's deadline (+7) for the other half, so the
+            // effective pair is 7 June against 2 June — inverted, while the row compared to
+            // itself looks fine because one side is null.
+            student_id: 'jaan',
+            soft_deadline: null,
+            hard_deadline: { value: iso(2) },
+            student_visible_from: null,
           }],
           exception_groups: [],
         })],
         [new RegExp(`/teacher/courses/${COURSE_ID}/exercises(\\?|$)`), () => ({ exercises: [] })],
         [/\/participants/, () => ({
-          students: [{ id: 'mari', given_name: 'Mari', family_name: 'Maasikas', email: 'm@example.org', groups: [], created_at: iso(-40) }],
+          students: [
+            { id: 'mari', given_name: 'Mari', family_name: 'Maasikas', email: 'm@example.org', groups: [], created_at: iso(-40) },
+            { id: 'jaan', given_name: 'Jaan', family_name: 'Tamm', email: 'j@example.org', groups: [], created_at: iso(-40) },
+          ],
           teachers: [], students_pending: [], students_moodle_pending: [],
         })],
         [/\/groups/, () => ({ groups: [] })],
@@ -254,6 +266,14 @@ await withBrowser(async ({ launch }) => {
       check(
         !(await saveBtn.isEnabled()),
         'an exception whose closing time precedes its own deadline gates Save too',
+      )
+      const text = await bodyText(page)
+      // Two rows are inverted: one on its own two fields, one only once the exercise's deadline
+      // is inherited. Both must be named, or the second is invisible to the teacher.
+      const errorRows = (text.match(/ei saa olla tähtajast varem/g) ?? []).length
+      check(
+        errorRows >= 2,
+        `both inverted rows are named, including the one that inherits its deadline (${errorRows} messages)`,
       )
       await shoot(page, 'x037-exception-out-of-order')
     }

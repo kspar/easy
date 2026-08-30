@@ -445,7 +445,7 @@ function StudentExerciseView() {
 
   if (isLoading) return <CircularProgress />
   if (error)
-    return <ErrorAlert />
+    return <ErrorAlert error={error} />
   if (!exercise) return null
   // The statement renders as soon as the details arrive; only the editor side waits for the
   // submissions and draft it seeds from, so a slow draft endpoint cannot blank the whole page.
@@ -862,7 +862,7 @@ function TeacherExerciseView() {
 
   if (isLoading) return <CircularProgress />
   if (error)
-    return <ErrorAlert />
+    return <ErrorAlert error={error} />
   if (!exercise) return null
 
   const effectiveTitle = exercise.title_alias || exercise.title

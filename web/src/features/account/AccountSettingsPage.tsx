@@ -9,7 +9,8 @@ import {
   IconButton,
   Paper,
   Stack,
-  Switch,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material'
 import {
@@ -23,6 +24,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import usePageTitle from '../../hooks/usePageTitle.ts'
+import type { ThemePreference } from '../../theme/theme-context.ts'
 import { useAuth } from '../../auth/useAuth.ts'
 import { returnUri } from '../../auth/auth-context.ts'
 import { useThemeMode } from '../../theme/useThemeMode.ts'
@@ -84,7 +86,7 @@ export default function AccountSettingsPage() {
   usePageTitle(t('account.title'))
 
   const { keycloak, email, username, availableRoles } = useAuth()
-  const { mode, toggleMode } = useThemeMode()
+  const { preference, setPreference } = useThemeMode()
 
   // keycloak-js builds this URL itself — realm included, and a return link — so the account console
   // path is not hardcoded here and survives a Keycloak upgrade that moves it.
@@ -234,19 +236,25 @@ export default function AccountSettingsPage() {
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             {t('account.appearance')}
           </Typography>
+          {/* Three states, because a switch cannot express the one the app starts in (audit
+              X-038). Following the OS was the default and the first toggle destroyed it for good;
+              this is where it can be chosen again. */}
           <SettingRow
             icon={<DarkModeOutlined />}
-            title={t('account.darkMode')}
+            title={t('account.theme')}
             description={t('account.storedLocally')}
             control={
-              <Switch
-                checked={mode === 'dark'}
-                onChange={toggleMode}
-                // slotProps.input, not the deprecated inputProps: the row already shows the label
-                // beside the control, so the switch needs an accessible name of its own rather than
-                // a second visible one via FormControlLabel.
-                slotProps={{ input: { 'aria-label': t('account.darkMode') } }}
-              />
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={preference}
+                onChange={(_, v) => { if (v) setPreference(v as ThemePreference) }}
+                aria-label={t('account.theme')}
+              >
+                <ToggleButton value="light">{t('account.themeLight')}</ToggleButton>
+                <ToggleButton value="dark">{t('account.themeDark')}</ToggleButton>
+                <ToggleButton value="system">{t('account.themeSystem')}</ToggleButton>
+              </ToggleButtonGroup>
             }
           />
           <Divider />

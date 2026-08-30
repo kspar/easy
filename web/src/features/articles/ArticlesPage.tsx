@@ -89,7 +89,7 @@ export default function ArticlesPage() {
         </Paper>
       )}
 
-      {create.isError && <ErrorAlert sx={{ mb: 2 }} />}
+      {create.isError && <ErrorAlert sx={{ mb: 2 }} error={create.error} />}
 
       {isLoading && (
         <Box display="flex" justifyContent="center" py={4}>

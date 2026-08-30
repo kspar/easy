@@ -32,6 +32,7 @@ import type {
   TeacherAutoassessResp,
   TeacherTestSubmissionResp,
 } from '../../api/types.ts'
+import { errorMessage } from '../../api/errorMessage.ts'
 
 export default function TeacherTestingTab({
   exerciseId,
@@ -211,7 +212,7 @@ export default function TeacherTestingTab({
 
       {autoassess.isError && (
         <Alert severity="error" sx={{ mt: 2 }}>
-          {t('general.somethingWentWrong')}
+          {errorMessage(autoassess.error, t)}
         </Alert>
       )}
 

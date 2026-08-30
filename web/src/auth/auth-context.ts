@@ -81,6 +81,8 @@ export interface AuthState {
   /** Whether the account has been checked in to core, see checkin(). */
   checkedIn: boolean
   checkinFailed: boolean
+  /** What check-in failed with, so the screen can say more than "something went wrong". */
+  checkinError?: unknown
 }
 
 export interface LoginOptions {
