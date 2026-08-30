@@ -7,6 +7,7 @@ import { alpha } from '@mui/material/styles'
 // Material's 300/600 midpoints land on the ramp's like-for-like lightness.
 import { GREEN } from '../../theme/theme.ts'
 import { useTranslation } from 'react-i18next'
+import usePrefersReducedMotion from '../../hooks/usePrefersReducedMotion.ts'
 
 type Phase = 'compile' | 'test' | 'analyze'
 
@@ -14,7 +15,7 @@ const PHASES: Phase[] = ['compile', 'test', 'analyze']
 const PHASE_DURATIONS: Record<Phase, number> = { compile: 3000, test: 4000, analyze: 3000 }
 const CYCLE_DURATION = 10000
 
-function useAutogradePhase(active: boolean) {
+function useAutogradePhase(active: boolean, reduced: boolean) {
   const [phase, setPhase] = useState<Phase>('compile')
   const [progress, setProgress] = useState(0)
   const startRef = useRef(0)
@@ -25,6 +26,25 @@ function useAutogradePhase(active: boolean) {
       setPhase('compile')
       setProgress(0)
       return
+    }
+
+    // Reduced motion: the phase label still steps, because it is the only thing telling the student
+    // the grader is working and a status that goes silent is worse than one that moves. What goes is
+    // the continuous part — a requestAnimationFrame loop re-rendering at 60 Hz to slide a progress
+    // bar. The bar now steps once per phase instead, three moves rather than six hundred.
+    if (reduced) {
+      let i = 0
+      setPhase(PHASES[0])
+      setProgress(0)
+      const timers: ReturnType<typeof setTimeout>[] = []
+      const step = () => {
+        i = (i + 1) % PHASES.length
+        setPhase(PHASES[i])
+        setProgress(i / PHASES.length)
+        timers.push(setTimeout(step, PHASE_DURATIONS[PHASES[i]]))
+      }
+      timers.push(setTimeout(step, PHASE_DURATIONS[PHASES[0]]))
+      return () => timers.forEach(clearTimeout)
     }
 
     startRef.current = performance.now()
@@ -48,15 +68,22 @@ function useAutogradePhase(active: boolean) {
 
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [active])
+  }, [active, reduced])
 
   return { phase, progress }
 }
 
 // --- SVG sub-animations ---
 
-function PrepareAnimation({ dark }: { dark: boolean }) {
+// Every SVG below animates from an invisible first frame — opacity 0, or a stroke dashed entirely
+// out of view — to a visible last one. So `reduced` cannot simply drop the animation: that would
+// leave the frame it starts on, which is nothing at all. Each takes the flag and renders its own
+// finished state instead, which is the picture the animation was travelling towards anyway.
+function PrepareAnimation({ dark, reduced }: { dark: boolean; reduced: boolean }) {
   const fill = dark ? GREEN[300] : GREEN[600]
+  const drop = (delay: string) =>
+    reduced ? undefined : { animation: `logoDrop 0.45s cubic-bezier(0.34,1.56,0.64,1) ${delay} forwards` }
+  const restOpacity = reduced ? 0.8 : 0
 
   // Exact Lahendus logo shapes from logo.svg (24x24 viewBox),
   // scaled 3.2x and centered in the 200x100 animation viewBox.
@@ -66,29 +93,29 @@ function PrepareAnimation({ dark }: { dark: boolean }) {
       {/* Bottom-left block */}
       <rect
         x="62" y="56.5" width="32.3" height="32.3"
-        fill={fill} opacity="0"
-        style={{ animation: 'logoDrop 0.45s cubic-bezier(0.34,1.56,0.64,1) 0s forwards' }}
+        fill={fill} opacity={restOpacity}
+        style={drop('0s')}
       />
 
       {/* Bottom-right block */}
       <rect
         x="106.5" y="56.5" width="32" height="32.3"
-        fill={fill} opacity="0"
-        style={{ animation: 'logoDrop 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.25s forwards' }}
+        fill={fill} opacity={restOpacity}
+        style={drop('0.25s')}
       />
 
       {/* Top block (pentagon — page body with fold cutout) */}
       <polygon
         points="84.4,12 84.4,44.3 116.4,44.3 116.4,34.4 88.9,12"
-        fill={fill} opacity="0"
-        style={{ animation: 'logoDrop 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.5s forwards' }}
+        fill={fill} opacity={restOpacity}
+        style={drop('0.5s')}
       />
 
       {/* Fold triangle (drops in separately) */}
       <polygon
         points="97.2,12 116.4,27.4 116.4,12"
-        fill={fill} opacity="0"
-        style={{ animation: 'logoDrop 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.75s forwards' }}
+        fill={fill} opacity={restOpacity}
+        style={drop('0.75s')}
       />
 
       <style>{`
@@ -101,7 +128,7 @@ function PrepareAnimation({ dark }: { dark: boolean }) {
   )
 }
 
-function TestAnimation({ dark, t }: { dark: boolean; t: (k: string, opts?: Record<string, unknown>) => string }) {
+function TestAnimation({ dark, reduced, t }: { dark: boolean; reduced: boolean; t: (k: string, opts?: Record<string, unknown>) => string }) {
   const bgColor = dark ? '#1a1a2e' : '#1b2631'
   const textColor = dark ? GREEN[300] : GREEN[400]
   const dimColor = dark ? '#667' : '#8899aa'
@@ -132,17 +159,19 @@ function TestAnimation({ dark, t }: { dark: boolean; t: (k: string, opts?: Recor
           fontFamily="monospace"
           fontSize="8"
           fill={line.color}
-          opacity="0"
+          opacity={reduced ? 1 : 0}
         >
           {line.text}
-          <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin={line.delay} fill="freeze" />
+          {!reduced && (
+            <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin={line.delay} fill="freeze" />
+          )}
         </text>
       ))}
     </svg>
   )
 }
 
-function AnalyzeAnimation({ dark }: { dark: boolean }) {
+function AnalyzeAnimation({ dark, reduced }: { dark: boolean; reduced: boolean }) {
   const classA = dark ? GREEN[300] : GREEN[600]
   const classB = dark ? GREEN[200] : GREEN[400]
   const lineColor = dark ? GREEN[100] : GREEN[800]
@@ -180,8 +209,8 @@ function AnalyzeAnimation({ dark }: { dark: boolean }) {
           cy={p.y}
           r="4"
           fill={p.color}
-          opacity="0"
-          style={{ animation: `dotPop 0.3s ease-out ${i * 0.05}s forwards` }}
+          opacity={reduced ? 0.8 : 0}
+          style={reduced ? undefined : { animation: `dotPop 0.3s ease-out ${i * 0.05}s forwards` }}
         />
       ))}
 
@@ -196,8 +225,8 @@ function AnalyzeAnimation({ dark }: { dark: boolean }) {
         opacity="0.6"
         style={{
           strokeDasharray: boundaryLen,
-          strokeDashoffset: boundaryLen,
-          animation: `boundaryDraw 1.5s ease-out 1.1s forwards`,
+          strokeDashoffset: reduced ? 0 : boundaryLen,
+          ...(reduced ? {} : { animation: `boundaryDraw 1.5s ease-out 1.1s forwards` }),
         }}
       />
 
@@ -214,8 +243,15 @@ function AnalyzeAnimation({ dark }: { dark: boolean }) {
   )
 }
 
-function CompletionCheckmark({ dark }: { dark: boolean }) {
+// Drawing time matters here, because `hold` below unmounts the whole panel when it expires: the
+// circle and tick have to be finished before that happens or the student watches a checkmark get
+// cut off mid-stroke. Circle 0.4s, tick 0.3s starting at 0.25s — done at 550ms, inside a 700ms hold.
+function CompletionCheckmark({ dark, reduced }: { dark: boolean; reduced: boolean }) {
   const strokeColor = dark ? GREEN[300] : GREEN[600]
+  const drawn = (len: number, anim: string) =>
+    reduced
+      ? { strokeDashoffset: 0 }
+      : { strokeDashoffset: len, animation: anim }
 
   return (
     <svg viewBox="0 0 200 100" width="100%" height="100%" key="done">
@@ -228,8 +264,7 @@ function CompletionCheckmark({ dark }: { dark: boolean }) {
         stroke={strokeColor}
         strokeWidth="3"
         strokeDasharray="201"
-        strokeDashoffset="201"
-        style={{ animation: 'circDraw 0.8s ease-out forwards' }}
+        style={drawn(201, 'circDraw 0.4s ease-out forwards')}
       />
       {/* Checkmark draws after delay */}
       <path
@@ -240,8 +275,7 @@ function CompletionCheckmark({ dark }: { dark: boolean }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeDasharray="60"
-        strokeDashoffset="60"
-        style={{ animation: 'checkDraw 0.5s ease-out 0.4s forwards' }}
+        style={drawn(60, 'checkDraw 0.3s ease-out 0.25s forwards')}
       />
       <style>{`
         @keyframes circDraw {
@@ -261,10 +295,12 @@ function PhaseStepper({
   activePhase,
   completed,
   dark,
+  reduced,
 }: {
   activePhase: Phase
   completed: boolean
   dark: boolean
+  reduced: boolean
 }) {
   const { t } = useTranslation()
   const labels: Record<Phase, string> = {
@@ -317,9 +353,11 @@ function PhaseStepper({
                   justifyContent: 'center',
                   transition: 'all 0.3s',
                   zIndex: 1,
+                  // The ring's resting state is its own first keyframe, so dropping the animation
+                  // leaves the step still marked as the active one — no JS branch needed here.
                   ...(isActive && {
                     boxShadow: `0 0 0 4px ${dark ? alpha(GREEN[500], 0.25) : alpha(GREEN[500], 0.2)}`,
-                    animation: 'pulseRing 1.5s ease-in-out infinite',
+                    ...(reduced ? {} : { animation: 'pulseRing 1.5s ease-in-out infinite' }),
                   }),
                 }}
               >
@@ -375,10 +413,22 @@ export default function AutogradeAnimation({
   const { t } = useTranslation()
   const theme = useTheme()
   const dark = theme.palette.mode === 'dark'
-  const { phase, progress } = useAutogradePhase(status === 'grading')
+  const reduced = usePrefersReducedMotion()
+  const { phase, progress } = useAutogradePhase(status === 'grading', reduced)
   const revealCalledRef = useRef(false)
 
-  // Completion timeout: after 1.5s in 'completed', fire onRevealReady
+  // How long the finished checkmark holds the screen before the test list takes over. It used to be
+  // 1500 ms, which was also how long the student waited to learn their grade — the page now shows
+  // the grade the moment the grader answers (audit X-007), so this hold only paces the *detail*,
+  // and it can be short.
+  //
+  // It cannot be zero, even for reduced motion. The parent unmounts this panel the moment the hold
+  // expires, and the submissions refetch that carries the results is fired without being awaited
+  // (`SolutionEditor`'s awaitAutograde effect) — so expiring immediately collapses a 200px panel and
+  // re-expands it a round trip later. That is a lurch, delivered specifically to the people who
+  // asked for less movement. 300ms covers the refetch and still reads as instant.
+  const hold = reduced ? 300 : 700
+
   useEffect(() => {
     if (status !== 'completed') {
       revealCalledRef.current = false
@@ -389,9 +439,9 @@ export default function AutogradeAnimation({
         revealCalledRef.current = true
         onRevealReady()
       }
-    }, 1500)
+    }, hold)
     return () => clearTimeout(timer)
-  }, [status, onRevealReady])
+  }, [status, onRevealReady, hold])
 
   const statusMessages: Record<Phase, string> = {
     compile: t('submission.autogradeCompiling'),
@@ -415,24 +465,28 @@ export default function AutogradeAnimation({
         overflow: 'hidden',
         position: 'relative',
         minHeight: 200,
-        animation: 'fadeInAnim 0.3s ease-out',
+        ...(reduced ? {} : { animation: 'fadeInAnim 0.3s ease-out' }),
       }}
     >
       {/* Phase stepper */}
       <Box sx={{ px: 2, pt: 2 }}>
-        <PhaseStepper activePhase={phase} completed={isCompleted} dark={dark} />
+        <PhaseStepper activePhase={phase} completed={isCompleted} dark={dark} reduced={reduced} />
       </Box>
 
-      {/* Central SVG animation */}
+      {/* Central SVG animation. Under reduced motion the three scenes stop taking turns — swapping
+          a logo for a terminal for a scatter plot every few seconds is the largest movement on the
+          screen, and it is illustration, not information: the stepper and the status line below
+          already say which phase is running. The logo holds the space instead, so the panel keeps
+          its shape and nothing jumps when the checkmark replaces it. */}
       <Box sx={{ height: 100, px: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {isCompleted ? (
-          <CompletionCheckmark dark={dark} />
-        ) : phase === 'compile' ? (
-          <PrepareAnimation dark={dark} />
+          <CompletionCheckmark dark={dark} reduced={reduced} />
+        ) : reduced || phase === 'compile' ? (
+          <PrepareAnimation dark={dark} reduced={reduced} />
         ) : phase === 'test' ? (
-          <TestAnimation dark={dark} t={t} />
+          <TestAnimation dark={dark} reduced={reduced} t={t} />
         ) : (
-          <AnalyzeAnimation dark={dark} />
+          <AnalyzeAnimation dark={dark} reduced={reduced} />
         )}
       </Box>
 
@@ -450,12 +504,17 @@ export default function AutogradeAnimation({
           {isCompleted ? t('submission.autogradeDone') : (
             <>
               {statusMessages[phase]}
-              <Box
-                component="span"
-                sx={{ animation: 'blink 1s step-end infinite', ml: 0.25 }}
-              >
-                |
-              </Box>
+              {/* The blinking caret is decoration; the phase label beside it is the actual signal,
+                  and it keeps stepping either way — a progress indicator is the one thing that
+                  should not go silent when motion is reduced. */}
+              {!reduced && (
+                <Box
+                  component="span"
+                  sx={{ animation: 'blink 1s step-end infinite', ml: 0.25 }}
+                >
+                  |
+                </Box>
+              )}
             </>
           )}
         </Typography>

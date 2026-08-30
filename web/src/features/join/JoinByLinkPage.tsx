@@ -9,6 +9,7 @@ import {
 } from '../../api/courses.ts'
 import JoinCard from './JoinCard.tsx'
 import usePageTitle from '../../hooks/usePageTitle.ts'
+import usePrefersReducedMotion from '../../hooks/usePrefersReducedMotion.ts'
 
 /**
  * Antenna flare and the smile land by ~700ms, the card then holds before lifting away at
@@ -25,6 +26,7 @@ export default function JoinByLinkPage({ isMoodle = false }: { isMoodle?: boolea
   const navigate = useNavigate()
   const { availableRoles } = useAuth()
   const isStudent = availableRoles.includes('student')
+  const reduced = usePrefersReducedMotion()
 
   const { data: invited, isLoading, error } = useCourseByInvite(inviteId, isMoodle, isStudent)
   const { data: myCourses, isLoading: coursesLoading } = useStudentCourses(isStudent)
@@ -64,7 +66,7 @@ export default function JoinByLinkPage({ isMoodle = false }: { isMoodle?: boolea
       onSuccess: (resp) => {
         const to = `/courses/${resp.course_id}/exercises`
         const state = { joinedCourse: true }
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        if (reduced) {
           navigate(to, { state })
           return
         }

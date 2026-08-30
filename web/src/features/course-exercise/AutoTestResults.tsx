@@ -20,6 +20,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import type { AutomaticAssessmentResp } from '../../api/types.ts'
 import { parseOkV3, type OkV3Test, type V3Status } from './okV3.ts'
+import usePrefersReducedMotion from '../../hooks/usePrefersReducedMotion.ts'
 
 function StatusIcon({ status }: { status: V3Status }) {
   if (status === 'PASS') return <CheckCircle color="success" fontSize="small" />
@@ -58,7 +59,14 @@ interface TypewriterState {
   statusShown: boolean   // status icon visible for typingIndex
 }
 
-function useTypewriterReveal(tests: OkV3Test[], active: boolean): TypewriterState {
+/**
+ * `resetKey` identifies the assessment being revealed — pass the raw feedback. Without it the
+ * effect keys on `active` alone, and a reveal that starts before the graded submission has landed
+ * (the completion hold is short now, so the two can race) carries `revealedCount` and the
+ * done-callback latch over onto the new, different list: tests past the old count render blank and
+ * `onStaggerDone` never fires again.
+ */
+function useTypewriterReveal(tests: OkV3Test[], active: boolean, resetKey: string): TypewriterState {
   const [state, setState] = useState<TypewriterState>(() =>
     active
       ? { headerVisible: false, revealedCount: 0, typingIndex: -1, typedChars: 0, statusShown: false }
@@ -105,7 +113,7 @@ function useTypewriterReveal(tests: OkV3Test[], active: boolean): TypewriterStat
     }
 
     return () => timers.forEach(clearTimeout)
-  }, [active])
+  }, [active, resetKey])
 
   return state
 }
@@ -127,6 +135,13 @@ export default function AutoTestResults({
   headerAction?: ReactNode
 }) {
   const { t } = useTranslation()
+  const reduced = usePrefersReducedMotion()
+
+  // `staggerReveal` is the parent asking for the reveal sequence; `animate` is whether the viewer
+  // gets one. They are deliberately different: a reduced-motion viewer skips straight to the
+  // finished list, but the parent still needs `onStaggerDone` to fire — it is what unfreezes the
+  // sidebar and refetches — so that callback stays keyed on the request, not on the animation.
+  const animate = staggerReveal && !reduced
 
   const v3 = useMemo(
     () => parseOkV3(autoAssessment.feedback),
@@ -134,7 +149,7 @@ export default function AutoTestResults({
   )
 
   const tests = v3?.tests ?? []
-  const tw = useTypewriterReveal(tests, staggerReveal)
+  const tw = useTypewriterReveal(tests, animate, autoAssessment.feedback ?? '')
 
   const firstFailIndex = useMemo(
     () => v3?.tests.findIndex(t => t.status === 'FAIL') ?? -1,
@@ -142,13 +157,13 @@ export default function AutoTestResults({
   )
 
   const [expanded, setExpanded] = useState<number | false>(() =>
-    staggerReveal ? false : (firstFailIndex >= 0 ? firstFailIndex : false),
+    animate ? false : (firstFailIndex >= 0 ? firstFailIndex : false),
   )
 
   // Auto-expand first fail after all tests have been revealed
   const autoExpandedRef = useRef(false)
   useEffect(() => {
-    if (!staggerReveal) {
+    if (!animate) {
       setExpanded(firstFailIndex >= 0 ? firstFailIndex : false)
       return
     }
@@ -157,10 +172,18 @@ export default function AutoTestResults({
       const timer = setTimeout(() => setExpanded(firstFailIndex), 300)
       return () => clearTimeout(timer)
     }
-  }, [firstFailIndex, staggerReveal, tw.revealedCount, tests.length])
+  }, [firstFailIndex, animate, tw.revealedCount, tests.length])
 
   // Notify parent when typewriter is fully done
   const staggerDoneCalledRef = useRef(false)
+
+  // A different assessment is a different reveal: the once-only latches belong to the old one.
+  // Declared above the effects that read them so it runs first on the render that swaps them.
+  useEffect(() => {
+    staggerDoneCalledRef.current = false
+    autoExpandedRef.current = false
+  }, [autoAssessment.feedback])
+
   const onStaggerDoneRef = useRef(onStaggerDone)
   onStaggerDoneRef.current = onStaggerDone
   useEffect(() => {
@@ -171,24 +194,24 @@ export default function AutoTestResults({
   }, [staggerReveal, tw.headerVisible, tw.revealedCount, tests.length])
 
   // Per-test reveal helpers
-  const isVisible = (i: number) => !staggerReveal || i < tw.revealedCount || i === tw.typingIndex
-  const isInteractive = (i: number) => !staggerReveal || i < tw.revealedCount || (i === tw.typingIndex && tw.statusShown)
-  const statusVisible = (i: number) => !staggerReveal || i < tw.revealedCount || (i === tw.typingIndex && tw.statusShown)
-  const isStatusPopping = (i: number) => staggerReveal && i === tw.typingIndex && tw.statusShown
+  const isVisible = (i: number) => !animate || i < tw.revealedCount || i === tw.typingIndex
+  const isInteractive = (i: number) => !animate || i < tw.revealedCount || (i === tw.typingIndex && tw.statusShown)
+  const statusVisible = (i: number) => !animate || i < tw.revealedCount || (i === tw.typingIndex && tw.statusShown)
+  const isStatusPopping = (i: number) => animate && i === tw.typingIndex && tw.statusShown
   const displayTitle = (i: number, full: string) => {
-    if (!staggerReveal || i < tw.revealedCount) return full
+    if (!animate || i < tw.revealedCount) return full
     if (i === tw.typingIndex) return full.slice(0, tw.typedChars)
     return ''
   }
 
-  const headerSx = staggerReveal ? {
+  const headerSx = animate ? {
     opacity: tw.headerVisible ? 1 : 0,
     transform: tw.headerVisible ? 'translateY(0)' : 'translateY(10px)',
     transition: 'opacity 0.4s ease-out, transform 0.4s ease-out',
   } : {}
 
-  const allRevealed = !staggerReveal || tw.revealedCount >= tests.length
-  const gradeSx = staggerReveal ? {
+  const allRevealed = !animate || tw.revealedCount >= tests.length
+  const gradeSx = animate ? {
     opacity: allRevealed ? 1 : 0,
     transform: allRevealed ? 'translateY(0)' : 'translateY(8px)',
     transition: 'opacity 0.4s ease-out, transform 0.4s ease-out',
@@ -355,7 +378,7 @@ export default function AutoTestResults({
             )
           })}
 
-          {staggerReveal && (
+          {animate && (
             <style>{`
               @keyframes atrStatusPop {
                 from { transform: scale(0); opacity: 0; }

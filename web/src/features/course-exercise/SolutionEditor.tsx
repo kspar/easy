@@ -442,8 +442,8 @@ export default forwardRef<SolutionEditorHandle, {
     })
   }, [getSolution, submit, awaitAutograde, exercise.grader_type, t, onSubmitted, onAutogradeStart, refetchAfterSubmit, currentDoc, cancelSaveTimer, saveDraftMutate, writeDraftCache, scheduleDraftSave])
 
-  // When autograde completes: refetch submissions (for results data) but NOT the
-  // exercises list — the parent delays that until the reveal animation finishes.
+  // When autograde completes: refetch submissions, which carry the results. The exercises list is
+  // the parent's to refresh — it does so on the same transition, from `onSubmitted`.
   useEffect(() => {
     if (awaitAutograde.isSuccess) {
       queryClient.refetchQueries({

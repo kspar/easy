@@ -391,66 +391,42 @@ function StudentExerciseView() {
   //
   // The autograde animation plays a multi-phase visual (compile/test/analyze),
   // then a checkmark, then typewriter-reveals each test result one by one.
-  // During this whole sequence, the GradeBanner and sidebar exercise status must
-  // NOT update prematurely — they should reflect the pre-autograde state until
-  // the reveal animation finishes, then update as the final step.
   //
-  // GradeBanner freeze mechanism:
-  //   GradeBanner and AutoTestResults both read from the same submissions query.
-  //   When autograde completes, SolutionEditor refetches submissions (so AutoTestResults
-  //   can render the results during the typewriter). But GradeBanner must NOT see
-  //   the new grade yet. We solve this with a snapshot:
+  // The grade is NOT part of that sequence (audit X-007). GradeBanner used to read a frozen
+  // snapshot of the submissions query until the typewriter finished, so a student learned their
+  // grade about 4.3 seconds after the grader already knew it — a toll charged on the single most
+  // frequent action in the product, on every attempt, forever. The banner now reads live data:
+  // the grade appears the moment the result lands, and the animation goes on underneath it as
+  // what it always was, the detail. The reveal keeps its drama; it just stops holding the answer
+  // hostage.
   //
-  //   - During 'grading': frozenSubmissionsRef tracks live data (so the banner
-  //     updates naturally after the post-submit refetch, e.g. showing "Not graded"
-  //     for the new submission).
-  //   - When autograde completes ('completed'): we freeze the snapshot. From this
-  //     point, GradeBanner reads stale data while AutoTestResults reads live data.
-  //   - When typewriter finishes ('idle'): we unfreeze and GradeBanner sees the
-  //     new grade.
-  //
-  // Sidebar freeze:
-  //   The exercises list query invalidation was removed from useAwaitAutograde.
-  //   It's only refetched in handleStaggerDone after the typewriter finishes.
+  // The sidebar goes with it. That list is the student's exercise nav, and its refetch used to wait
+  // for the typewriter too — which was consistent while the banner also waited, and becomes a
+  // contradiction the moment the banner does not: "100/100, passed" beside a sidebar entry still
+  // showing the exercise as unsolved, on the same screen, for the length of the reveal. Both now
+  // refresh when the result lands.
 
   const [autogradeStatus, setAutogradeStatus] = useState<'idle' | 'grading' | 'completed' | 'revealing'>('idle')
-  const frozenSubmissionsRef = useRef(submissions)
-  const freezeRef = useRef(false)
-
-  // While grading (before autograde result arrives), keep the snapshot in sync
-  // with live data so the banner reflects the post-submit state naturally.
-  if (autogradeStatus === 'grading' && !freezeRef.current) {
-    frozenSubmissionsRef.current = submissions
-  }
 
   const handleAutogradeStart = useCallback(() => {
-    freezeRef.current = false
     setAutogradeStatus('grading')
   }, [])
 
   const handleSubmitted = useCallback(() => {
-    if (autogradeStatus === 'grading') {
-      // Freeze now — the next submissions refetch will contain the autograde
-      // result, which GradeBanner must not show until the typewriter finishes.
-      frozenSubmissionsRef.current = submissions
-      freezeRef.current = true
-      setAutogradeStatus('completed')
-    }
-  }, [autogradeStatus, submissions])
+    if (autogradeStatus !== 'grading') return
+    setAutogradeStatus('completed')
+    queryClient.refetchQueries({ queryKey: ['student', 'courses', courseId, 'exercises'] })
+  }, [autogradeStatus, queryClient, courseId])
 
   const handleRevealReady = useCallback(() => {
     setAutogradeStatus('revealing')
   }, [])
 
+  // The sidebar was already refreshed when the result landed, so all that is left here is leaving
+  // the reveal state. The 600ms is the settle after the last test's status icon pops.
   const handleStaggerDone = useCallback(() => {
-    queryClient.refetchQueries({
-      queryKey: ['student', 'courses', courseId, 'exercises'],
-    })
-    setTimeout(() => {
-      freezeRef.current = false
-      setAutogradeStatus('idle')
-    }, 600)
-  }, [queryClient, courseId])
+    setTimeout(() => setAutogradeStatus('idle'), 600)
+  }, [])
 
   // When grading failed outright, there is nothing for the typewriter to reveal and
   // onStaggerDone would never fire, leaving the banner and sidebar frozen — so complete the
@@ -502,10 +478,7 @@ function StudentExerciseView() {
     </Box>
   ) : (
     <>
-      <GradeBanner
-        submissions={autogradeStatus === 'idle' ? submissions : frozenSubmissionsRef.current}
-        threshold={exercise.threshold}
-      />
+      <GradeBanner submissions={submissions} threshold={exercise.threshold} />
 
       <SolutionEditor
         ref={editorRef}
