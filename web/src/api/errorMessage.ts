@@ -73,6 +73,19 @@ const NOT_FOUND_BY_ATTR: Record<string, string> = {
 /** Codes whose `attrs.email` names the address, so the message can too. */
 const EMAIL_CODES = new Set(['ENTITY_WITH_ID_NOT_FOUND', 'ACCOUNT_EMAIL_NOT_FOUND'])
 
+/**
+ * Adding teachers is a bulk paste, so `AddTeachersToCourse` reports *every* address it could not
+ * resolve in `attrs.emails`, comma-separated — not just the first one it tripped over (EZ-1830).
+ * Naming them is the whole point of the message: a teacher who pasted thirty lines needs to know
+ * which of them to go and fix.
+ */
+function unresolvedEmails(attrs: Record<string, string> | undefined): string[] {
+  return (attrs?.emails ?? '')
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean)
+}
+
 export function errorMessage(err: unknown, t: TFunction): string {
   const generic = t('general.somethingWentWrong')
 
@@ -87,6 +100,13 @@ export function errorMessage(err: unknown, t: TFunction): string {
   if (!body?.code) {
     // A response with no envelope: a gateway or proxy answered instead of core.
     return err.status >= 500 ? t('errors.serverUnreachable') : generic
+  }
+
+  if (body.code === 'ACCOUNT_EMAIL_NOT_FOUND') {
+    const emails = unresolvedEmails(body.attrs)
+    // One address reads better in a sentence; several read better as a list after a colon.
+    if (emails.length === 1) return t('errors.emailNotFound', { value: emails[0] })
+    if (emails.length > 1) return t('errors.emailsNotFound', { value: emails.join(', ') })
   }
 
   if (EMAIL_CODES.has(body.code)) {

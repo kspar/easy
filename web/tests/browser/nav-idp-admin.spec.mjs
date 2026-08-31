@@ -42,7 +42,7 @@ test('nav-idp-admin', async ({ launch, check }) => {
     // written; the section it now sits in has three siblings that are also anchors, so `.first()`
     // would silently start asserting against a different link and the failure would read as this
     // feature being broken.
-    const anchor = page.locator('nav a').filter({ hasText: 'Lahendus ID admin' })
+    const anchor = page.locator('nav a').filter({ hasText: 'Lahendus user admin' })
     const has = await anchor.count()
     const result = {
       items,
@@ -60,7 +60,7 @@ test('nav-idp-admin', async ({ launch, check }) => {
   check(`admin: acting role really is admin (${asAdmin.role})`, asAdmin.role === 'admin')
   check(
     `admin: the link is in the sidebar (${asAdmin.items.join(' | ')})`,
-    asAdmin.items.some((t) => t.includes('Lahendus ID admin')),
+    asAdmin.items.some((t) => t.includes('Lahendus user admin')),
   )
   check(`admin: points at the configured URL (${asAdmin.href})`, asAdmin.href === GATE)
   // A real anchor with target=_blank, so ctrl/cmd-click behaves like any other link and the app is
@@ -74,7 +74,7 @@ test('nav-idp-admin', async ({ launch, check }) => {
   const asTeacher = await menuFor({ activeRole: 'teacher', config: { emsRoot: '/v2', keycloak: KC, idpAdminUrl: GATE } })
   check(
     `teacher: no link, even though the URL is configured (${asTeacher.items.join(' | ')})`,
-    !asTeacher.items.some((t) => t.includes('Lahendus ID admin')),
+    !asTeacher.items.some((t) => t.includes('Lahendus user admin')),
   )
 
   // --- hidden, where the environment has nowhere to send them ---------------------------------------
@@ -83,7 +83,7 @@ test('nav-idp-admin', async ({ launch, check }) => {
   const noUrl = await menuFor({ activeRole: 'admin', config: { emsRoot: '/v2', keycloak: KC } })
   check(
     `admin, no idpAdminUrl: no link (${noUrl.items.join(' | ')})`,
-    !noUrl.items.some((t) => t.includes('Lahendus ID admin')),
+    !noUrl.items.some((t) => t.includes('Lahendus user admin')),
   )
   check('admin, no idpAdminUrl: the rest of the sidebar is intact', noUrl.items.length >= 3)
 })

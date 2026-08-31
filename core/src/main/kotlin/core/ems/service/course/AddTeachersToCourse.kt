@@ -59,13 +59,30 @@ class AddTeachersToCourse {
             teacherOnCourse(courseId)
         }
 
-        val accesses = body.teachers.distinctBy { it.email }.map {
-            val id = getUsernameByEmail(it.email) ?: throw InvalidRequestException(
-                "Account with email ${it.email} not found", ReqError.ACCOUNT_EMAIL_NOT_FOUND, "email" to it.email,
-                notify = false
+        val requested = body.teachers.distinctBy { it.email }
+        val resolved = requested.map { it to getUsernameByEmail(it.email) }
+
+        // Every address is looked up before any is reported. This is a bulk paste — a teacher adds
+        // a course's staff in one go — and throwing on the first unknown address named one line of
+        // the list and said nothing about the other twenty-nine, so the only way to find out which
+        // ones were wrong was to submit them one at a time (EZ-1830).
+        val missing = resolved.filter { it.second == null }.map { it.first.email }
+        if (missing.isNotEmpty()) {
+            val attrs = buildList {
+                add("emails" to missing.joinToString(", "))
+                // Kept for the single-address case so a client that only knows the old attribute
+                // still renders the address rather than a generic failure.
+                if (missing.size == 1) add("email" to missing.single())
+            }
+            throw InvalidRequestException(
+                "No account with email(s) ${missing.joinToString(", ")}",
+                ReqError.ACCOUNT_EMAIL_NOT_FOUND, *attrs.toTypedArray(), notify = false
             )
-            val groupIds = it.groups.map { it.groupId.idToLongOrInvalidReq() }.toSet()
-            TeacherNewAccess(id, it.email, groupIds)
+        }
+
+        val accesses = resolved.map { (teacher, id) ->
+            val groupIds = teacher.groups.map { it.groupId.idToLongOrInvalidReq() }.toSet()
+            TeacherNewAccess(id!!, teacher.email, groupIds)
         }
 
         accesses.flatMap { it.groups }.toSet().forEach {

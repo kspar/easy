@@ -19,6 +19,10 @@ const et = flat(JSON.parse(fs.readFileSync('src/i18n/et.json', 'utf8')))
 const RULES = [
   ['ET terms the audit retired', et, /automaatkontroll|tudeng|vabavara|e-post|keycloak/i,
     ['landing.terminalCaption']],
+  // Both languages, unlike the rule above: "Lahendus ID" was the same three characters in each, and
+  // it named a product nobody outside this repo had heard of. Retired in favour of Lahendus user /
+  // Lahenduse kasutaja — a guide row without a detector is a preference, not a rule.
+  ['the retired "Lahendus ID"', [...en, ...et], /Lahendus\s?ID/i, []],
   ['ASCII ellipsis', [...en, ...et], /\.\.\./, []],
   ['US spelling', en, /\b(color|analyz|organiz|recogniz)/i, []],
   ['"(s)" pluralisation', [...en, ...et], /\w\(s\)/, []],

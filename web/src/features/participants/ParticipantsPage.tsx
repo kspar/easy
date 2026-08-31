@@ -418,6 +418,9 @@ export default function ParticipantsPage() {
           setAddTeachersOpen(false)
           setSnackMsg(t('participants.teachersAdded'))
         },
+        // No onError. The dialog stays open and renders `addTeachers.error` itself, which is the
+        // only place the rejected addresses can be corrected. Core rejects the batch as a whole, so
+        // there is nothing to close over: not one of them was added.
       },
     )
   }
@@ -1853,7 +1856,11 @@ export default function ParticipantsPage() {
         open={addTeachersOpen}
         title={t('participants.addTeachers')}
         isPending={addTeachers.isPending}
-        onClose={() => setAddTeachersOpen(false)}
+        error={addTeachers.error}
+        onClose={() => {
+          setAddTeachersOpen(false)
+          addTeachers.reset()
+        }}
         onSubmit={handleAddTeachers}
       />
 

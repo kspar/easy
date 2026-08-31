@@ -29,7 +29,7 @@ the row.
 | The TSL visual builder tab | TSL | TSL | "TSL" now names the editor, not the format |
 | The raw TSL spec tab | Spec | **Spetsifikatsioon** | The errors about it have always said *spetsifikatsioon* |
 | A test passes | passes | **läbib** | Reserved for outcome. A run that merely ended *lõpetab* — see the trap below |
-| The identity/login account | **Lahendus ID** | Lahendus ID | Never "Keycloak", never "your Lahendus account" (you are *in* Lahendus) |
+| The identity/login account | **Lahendus user** | **Lahenduse kasutaja** | Never "Keycloak", never "Lahendus ID" — which named a product nobody had heard of. Never "your Lahendus account" either (you are *in* Lahendus) |
 | A person taking a course | student | **õpilane** | Not *tudeng*, which the app said twice against thirty-seven |
 | The exercise library | Exercise library | **Ülesandekogu** | One word. The landing page said "Ülesannete kogu" and the nav disagreed |
 | Open source | open source | **avatud lähtekood** | Not *vabavara* |
