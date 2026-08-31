@@ -247,6 +247,7 @@
     "uploadErrorNotText": "The chosen file is not a text file",
     "exception": "Exception",
     "actualOutput": "Output",
+    "noChecksInTest": "This test reported no checks",
     "autogradeCompiling": "Preparing the environment…",
     "autogradeTesting": "Running tests…",
     "autogradeAnalyzing": "Analysing results…",

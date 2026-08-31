@@ -1,7 +1,12 @@
 export type V3Status = 'PASS' | 'FAIL' | 'SKIP'
 
 export interface OkV3Check {
-  title: string
+  /**
+   * Optional on the wire, and empty far more often than not: silmused defaults a check's title to
+   * `''` and tiivad sends `''` for every check it produces. Only a silmused exercise that names
+   * its subtests fills it in — which is the whole of what EZ-1834 was about.
+   */
+  title?: string | null
   status: V3Status
   feedback: string | null
 }

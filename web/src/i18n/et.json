@@ -247,6 +247,7 @@
     "uploadErrorNotText": "Valitud fail pole tekstifail",
     "exception": "Erind",
     "actualOutput": "Väljund",
+    "noChecksInTest": "See test ei sisaldanud ühtegi kontrolli",
     "autogradeCompiling": "Valmistan keskkonda ette…",
     "autogradeTesting": "Käivitan automaatteste…",
     "autogradeAnalyzing": "Analüüsin tulemusi…",

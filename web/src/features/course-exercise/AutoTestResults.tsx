@@ -19,7 +19,7 @@ import {
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { AutomaticAssessmentResp } from '../../api/types.ts'
-import { parseOkV3, type OkV3Test, type V3Status } from './okV3.ts'
+import { parseOkV3, type OkV3Check, type OkV3Test, type V3Status } from './okV3.ts'
 import usePrefersReducedMotion from '../../hooks/usePrefersReducedMotion.ts'
 
 function StatusIcon({ status }: { status: V3Status }) {
@@ -405,23 +405,62 @@ export default function AutoTestResults({
   )
 }
 
+/**
+ * What one check has to say, in the order a reader needs it.
+ *
+ * Neither field can be the heading and neither can be the body, because the two graders fill
+ * opposite ones and both shapes are legitimate. silmused names the subtest in `title` and leaves
+ * `feedback` empty when the check passed — it has nothing to explain. tiivad sends `title: ""`
+ * and puts the whole message in `feedback`. So whichever field is present leads, and a feedback
+ * that follows a title is the subordinate line; a check with neither says nothing, and is the
+ * only kind dropped.
+ *
+ * This used to be `filter(c => c.feedback)` rendering `c.feedback` alone (EZ-1834), which for
+ * silmused meant every passing subtest vanished and every failing one lost its name.
+ */
+function checkLines(check: OkV3Check): { lead: string; detail: string | null } | null {
+  const title = check.title?.trim()
+  const feedback = check.feedback?.trim()
+  if (title) return { lead: title, detail: feedback || null }
+  if (feedback) return { lead: feedback, detail: null }
+  return null
+}
+
 function TestDetails({ test, t }: { test: OkV3Test; t: (k: string) => string }) {
-  const checkFeedbacks = test.checks.filter(c => c.feedback)
+  const checks = test.checks.flatMap(c => {
+    const lines = checkLines(c)
+    return lines ? [{ status: c.status, ...lines }] : []
+  })
   const hasOutput = test.actual_output && test.actual_output.trim()
+  // An accordion that opens onto nothing at all reads as a broken page rather than as a test that
+  // reported nothing. The old WUI said so in words here; this says the same, minus the shrug.
+  const saysNothing =
+    checks.length === 0 && !test.exception_message && !hasOutput && !test.created_files?.length
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      {checkFeedbacks.length > 0 && (
+      {checks.length > 0 && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-          {checkFeedbacks.map((check, i) => (
+          {checks.map((check, i) => (
             <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
               <Box sx={{ flexShrink: 0, mt: 0.15 }}>
                 <CheckIcon status={check.status} />
               </Box>
-              <Typography variant="body2">{check.feedback}</Typography>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="body2">{check.lead}</Typography>
+                {check.detail && (
+                  <Typography variant="body2" color="text.secondary">{check.detail}</Typography>
+                )}
+              </Box>
             </Box>
           ))}
         </Box>
+      )}
+
+      {saysNothing && (
+        <Typography variant="body2" color="text.secondary">
+          {t('submission.noChecksInTest')}
+        </Typography>
       )}
 
       {test.exception_message && (

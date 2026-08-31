@@ -11,6 +11,7 @@
   "bug-report.spec.mjs": 23,
   "course-exercise-assessment.spec.mjs": 18,
   "course-exercise-embed.spec.mjs": 16,
+  "course-exercise-feedback-shapes.spec.mjs": 7,
   "course-exercise-grading.spec.mjs": 19,
   "course-exercise-retry-autoassess.spec.mjs": 6,
   "course-exercise-teacher-testing.spec.mjs": 17,
