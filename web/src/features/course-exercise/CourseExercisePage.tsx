@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Typography,
   CircularProgress,
@@ -120,14 +120,96 @@ function readStored<T>(key: string, fallback: T): T {
   }
 }
 
+/**
+ * The space between the bottom of `el` and the bottom of the document — the page container's own
+ * padding, in practice — read off the ancestors' box properties rather than off the rendered
+ * geometry.
+ *
+ * Geometry cannot answer this once the frame is in place. The first attempt asked
+ * `scrollHeight - (top + height)`, which is right while the content overflows and badly wrong when
+ * it does not: `scrollHeight` never drops below the viewport, so an empty page reports its unused
+ * space as padding, the frame shrinks to make room for it, which leaves more unused space. It
+ * settled at a frame 56px tall. Padding and margins are the same whatever the content does.
+ *
+ * Assumes the frame is the last thing on the page, which it is in both views here.
+ */
+function spaceBelow(el: HTMLElement): number {
+  let total = 0
+  for (let node: HTMLElement | null = el.parentElement; node && node !== document.documentElement; node = node.parentElement) {
+    const style = getComputedStyle(node)
+    total += parseFloat(style.paddingBottom) + parseFloat(style.borderBottomWidth) + parseFloat(style.marginBottom)
+  }
+  return total
+}
+
+/**
+ * The height this page may occupy, measured from where it actually starts rather than assumed.
+ *
+ * `calc(100vh - 48px)` was the old guess, and it was wrong by the height of everything between the
+ * app bar and the panes — the title row, the deadline chips, the exceptions summary — so the
+ * statement pane ran past the bottom of the window. Measuring also survives what moves this page's
+ * top edge at runtime: a system message or update banner appearing above the app bar, and the chip
+ * row wrapping onto a second line when the window narrows. The first changes the page's height,
+ * which is why `document.body` is watched; the second does not, which is why the header is too.
+ *
+ * `frameSx` is `undefined` while disabled (mobile), which leaves the page in ordinary document flow.
+ */
+function useFrameHeight(enabled: boolean) {
+  // Callback refs, held in state rather than in a ref object: the frame only exists once the
+  // exercise has loaded, and a `useRef` would still be null on the mount this effect runs in —
+  // leaving the page unframed for the rest of its life with nothing to re-trigger the measurement.
+  const [frameEl, setFrameEl] = useState<HTMLDivElement | null>(null)
+  const [headerEl, setHeaderEl] = useState<HTMLDivElement | null>(null)
+  const [top, setTop] = useState<number | null>(null)
+
+  useLayoutEffect(() => {
+    // No `setTop(null)` here: whether the frame applies is read off `enabled` below, so the
+    // disabled path has nothing to write, and a stale measurement is re-taken on the way back in.
+    if (!enabled || !frameEl) return
+    const measure = () => {
+      // Plus the scroll offset: the rect is viewport-relative, and the first measurement is taken
+      // while the page is still an ordinary scrolling document.
+      const above = frameEl.getBoundingClientRect().top + window.scrollY
+      setTop(Math.round(above + spaceBelow(frameEl)))
+    }
+    measure()
+
+    const observer = new ResizeObserver(measure)
+    observer.observe(document.body)
+    if (headerEl) observer.observe(headerEl)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [enabled, frameEl, headerEl])
+
+  return {
+    frameRef: setFrameEl,
+    headerRef: setHeaderEl,
+    frameSx: !enabled || top == null
+      ? undefined
+      : { height: `calc(100dvh - ${top}px)`, minHeight: 0, display: 'flex', flexDirection: 'column' as const },
+  }
+}
+
 function SplitPane({
   left,
   right,
   storageKey,
+  fill = false,
 }: {
   left: React.ReactNode
   right: React.ReactNode
   storageKey: string
+  /**
+   * Fill the height of the parent rather than growing with the content. Both panes then scroll
+   * inside themselves and the window does not scroll at all — see `useFrameHeight`. The right
+   * pane is handed its height and lays itself out; unlike the left one it is not given a
+   * scrollbar, because what lives there (the editor and its results, the teacher's tabs) has to
+   * decide for itself which of its parts scrolls.
+   */
+  fill?: boolean
 }) {
   const { t } = useTranslation()
   const theme = useTheme()
@@ -209,7 +291,7 @@ function SplitPane({
   return (
     <Box
       ref={containerRef}
-      sx={{ display: 'flex', minHeight: 0, gap: 0 }}
+      sx={{ display: 'flex', minHeight: 0, gap: 0, ...(fill && { flex: '1 1 auto', height: '100%' }) }}
     >
       {/* Left pane */}
       {showLeft && (
@@ -218,12 +300,16 @@ function SplitPane({
             ...(collapsed === 'right'
               ? { flex: 1, minWidth: 0 }
               : { width: `${leftPct}%`, flexShrink: 0 }),
-            position: 'sticky',
-            top: HEADER_HEIGHT,
-            maxHeight: `calc(100vh - ${HEADER_HEIGHT}px)`,
             overflow: 'auto',
-            alignSelf: 'flex-start',
             pr: collapsed !== 'none' ? 0 : 2,
+            ...(fill
+              ? { height: '100%', minHeight: 0, pb: 2 }
+              : {
+                  position: 'sticky',
+                  top: HEADER_HEIGHT,
+                  maxHeight: `calc(100vh - ${HEADER_HEIGHT}px)`,
+                  alignSelf: 'flex-start',
+                }),
           }}
         >
           {left}
@@ -269,10 +355,10 @@ function SplitPane({
           />
         )}
 
-        {/* Collapse/restore buttons — sticky at top */}
+        {/* Collapse/restore buttons — sticky at top, except in a frame that never scrolls */}
         <Box
           sx={{
-            position: 'sticky',
+            position: fill ? 'static' : 'sticky',
             top: HEADER_HEIGHT + 4,
             display: 'flex',
             flexDirection: 'column',
@@ -331,11 +417,177 @@ function SplitPane({
             flex: 1,
             minWidth: 0,
             pl: collapsed === 'left' ? 0 : 2,
+            ...(fill && { height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }),
           }}
         >
           {right}
         </Box>
       )}
+    </Box>
+  )
+}
+
+const DEFAULT_TOP_PCT = 55
+const MIN_TOP_PCT = 25
+const MAX_TOP_PCT = 80
+/** Below this the top section is a grade banner and a submit button with no editor between them. */
+const WORKSPACE_MIN_TOP = 220
+
+/**
+ * The right pane of a framed exercise page: the editor and its submit button above, everything a
+ * submission produces below, and a divider between them.
+ *
+ * The percentage is a **ceiling on the lower section, not a fixed division**. An exercise nobody
+ * has submitted to yet has nothing down there — no results, no feedback, no history — and holding
+ * 45% of the pane empty would be taking it from the only part in use. So the lower section takes
+ * the height of its own content and the editor keeps the rest, until that content would pass the
+ * ceiling; from there the ceiling holds and the section scrolls. The same rule gives the autograde
+ * animation exactly the room it needs on a first submission and no more.
+ *
+ * The handle therefore appears at the moment it can do something — when the ceiling starts to
+ * bind — and is a plain rule before that. A handle that answers a drag with nothing is worse than
+ * no handle.
+ */
+function Workspace({
+  storageKey,
+  top,
+  bottom,
+  bottomRef,
+}: {
+  storageKey: string
+  top: React.ReactNode
+  bottom: React.ReactNode
+  /** The scrolling lower section, so a submission can send it back to the top. */
+  bottomRef?: React.RefObject<HTMLDivElement | null>
+}) {
+  const { t } = useTranslation()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const fallbackRef = useRef<HTMLDivElement>(null)
+  const scrollRef = bottomRef ?? fallbackRef
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  const pctKey = `splitPane.${storageKey}.topPct`
+  const [topPct, setTopPctRaw] = useState(() => readStored<number>(pctKey, DEFAULT_TOP_PCT))
+  const setTopPct = useCallback((pct: number) => {
+    const clamped = Math.min(MAX_TOP_PCT, Math.max(MIN_TOP_PCT, pct))
+    setTopPctRaw(clamped)
+    try { localStorage.setItem(pctKey, JSON.stringify(clamped)) } catch { /* ignore */ }
+  }, [pctKey])
+
+  // 'hidden' — nothing below to divide from. 'rule' — something, but not enough to reach the
+  // ceiling, so there is no space to redistribute. 'handle' — the ceiling binds and dragging it
+  // moves real content.
+  const [divider, setDivider] = useState<'hidden' | 'rule' | 'handle'>('hidden')
+  useEffect(() => {
+    const scroll = scrollRef.current
+    const content = contentRef.current
+    if (!scroll || !content) return
+    const check = () => {
+      const contentHeight = content.getBoundingClientRect().height
+      if (contentHeight < 4) setDivider('hidden')
+      else setDivider(scroll.scrollHeight > scroll.clientHeight + 1 ? 'handle' : 'rule')
+    }
+    check()
+    const observer = new ResizeObserver(check)
+    observer.observe(scroll)
+    observer.observe(content)
+    return () => observer.disconnect()
+  }, [scrollRef])
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!containerRef.current) return
+    e.preventDefault()
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setTopPct(((ev.clientY - rect.top) / rect.height) * 100)
+    }
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    document.body.style.cursor = 'row-resize'
+    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+  }, [setTopPct])
+
+  // The vertical splitter has been mouse-only since it was written; this one is not. A separator
+  // that only answers a drag is a layout half the class cannot adjust.
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const step = e.key === 'ArrowUp' ? -4 : e.key === 'ArrowDown' ? 4 : 0
+    if (step === 0) return
+    e.preventDefault()
+    setTopPct(topPct + step)
+  }, [setTopPct, topPct])
+
+  return (
+    <Box ref={containerRef} sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        {top}
+      </Box>
+
+      {divider !== 'hidden' && (
+        <Box
+          {...(divider === 'handle' && {
+            role: 'separator',
+            'aria-orientation': 'horizontal' as const,
+            'aria-valuenow': Math.round(topPct),
+            'aria-valuemin': MIN_TOP_PCT,
+            'aria-valuemax': MAX_TOP_PCT,
+            'aria-label': t('nav.resizeSections'),
+            tabIndex: 0,
+            onMouseDown: handleMouseDown,
+            onKeyDown: handleKeyDown,
+          })}
+          sx={{
+            flexShrink: 0,
+            height: 13,
+            position: 'relative',
+            ...(divider === 'handle' && { cursor: 'row-resize' }),
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 6,
+              height: '1px',
+              bgcolor: 'divider',
+              transition: 'background-color 0.2s',
+            },
+            ...(divider === 'handle' && {
+              '&:hover::after, &:focus-visible::after': { bgcolor: 'action.disabled' },
+            }),
+          }}
+        />
+      )}
+
+      {/*
+        `0 0 auto`, not `0 1 auto`: with both sections shrinkable, flexbox divides the shortfall
+        between them in proportion to their content, and the taller lower section lost the most —
+        eight collapsed test rows were squeezed to a 50px sliver under the button. Not shrinking,
+        it is exactly its content's height until the ceiling, and the editor above absorbs the
+        rest.
+      */}
+      <Box
+        ref={scrollRef}
+        sx={{
+          flex: '0 0 auto',
+          minHeight: 0,
+          overflowY: 'auto',
+          // The percentage, or whatever leaves the editor a usable 220px — whichever is smaller.
+          // Without the second term a quarter-height top on a short window is banner plus submit
+          // row and no editor at all, and past that the row itself starts going over the edge.
+          maxHeight: `min(${100 - topPct}%, calc(100% - ${WORKSPACE_MIN_TOP}px))`,
+          pt: divider === 'hidden' ? 0 : 1,
+        }}
+      >
+        <Box ref={contentRef}>{bottom}</Box>
+      </Box>
     </Box>
   )
 }
@@ -382,6 +634,13 @@ function StudentExerciseView() {
   const editorRef = useRef<SolutionEditorHandle>(null)
   const queryClient = useQueryClient()
 
+  // Desktop only. On a phone the panes are stacked and the page scrolls, which is the right
+  // answer there: a viewport-height frame and a virtual keyboard fight over the same space.
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { frameRef, headerRef, frameSx } = useFrameHeight(!isMobile)
+  const framed = frameSx != null
+
   // Highlight a specific submission when clicking "submission #X" in TeacherFeedback
   const [highlightSubNumber, setHighlightSubNumber] = useState<number | undefined>()
 
@@ -408,8 +667,13 @@ function StudentExerciseView() {
 
   const [autogradeStatus, setAutogradeStatus] = useState<'idle' | 'grading' | 'completed' | 'revealing'>('idle')
 
+  // The lower section of the framed workspace. Grading replaces what is in it, and a section
+  // scrolled halfway down someone else's feedback would open the animation out of view.
+  const resultsRef = useRef<HTMLDivElement>(null)
+
   const handleAutogradeStart = useCallback(() => {
     setAutogradeStatus('grading')
+    resultsRef.current?.scrollTo({ top: 0 })
   }, [])
 
   const handleSubmitted = useCallback(() => {
@@ -472,11 +736,7 @@ function StudentExerciseView() {
     </>
   )
 
-  const rightPane = editorLoading ? (
-    <Box display="flex" justifyContent="center" py={8}>
-      <CircularProgress />
-    </Box>
-  ) : (
+  const editorSection = (
     <>
       <GradeBanner submissions={submissions} threshold={exercise.threshold} />
 
@@ -488,10 +748,15 @@ function StudentExerciseView() {
         initialSolution={restoreDraft ? draft.solution : latestSubmission?.solution}
         initialIsDraft={restoreDraft}
         autosaveEnabled={draftLoaded}
+        fill={framed}
         onSubmitted={handleSubmitted}
         onAutogradeStart={handleAutogradeStart}
       />
+    </>
+  )
 
+  const resultsSection = (
+    <>
       {animationPlaying && (
         <Box sx={{ my: 2 }}>
           <AutogradeAnimation
@@ -503,7 +768,9 @@ function StudentExerciseView() {
 
       {latestSubmission?.auto_assessment && !animationPlaying && (
         <>
-          <Divider sx={{ my: 3 }} />
+          {/* Framed, the workspace's own divider already separates the two sections, and a
+              second rule under it would be a line about nothing. */}
+          {!framed && <Divider sx={{ my: 3 }} />}
           <AutoTestResults
             autoAssessment={latestSubmission.auto_assessment}
             staggerReveal={autogradeStatus === 'revealing'}
@@ -544,51 +811,75 @@ function StudentExerciseView() {
     </>
   )
 
+  const rightPane = editorLoading ? (
+    <Box display="flex" justifyContent="center" py={8}>
+      <CircularProgress />
+    </Box>
+  ) : framed ? (
+    <Workspace
+      storageKey="studentExercise"
+      top={editorSection}
+      bottom={resultsSection}
+      bottomRef={resultsRef}
+    />
+  ) : (
+    <>
+      {editorSection}
+      {resultsSection}
+    </>
+  )
+
   const deadlinePassed = exercise.deadline != null && isPast(new Date(exercise.deadline))
 
   return (
     <>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-        <IconButton
-          component={RouterLink}
-          to={`/courses/${courseId}/exercises`}
-          size="small"
-          aria-label={t('general.back')}
-        >
-          <ArrowBackOutlined />
-        </IconButton>
-        <Typography variant="h5">{exercise.effective_title}</Typography>
-        <Tooltip title={exercise.grader_type === 'AUTO' ? t('exercises.gradedAutomatically') : t('exercises.gradedByTeacher')}>
-          {exercise.grader_type === 'AUTO'
-            ? <RobotIcon sx={{ fontSize: 22, color: 'text.secondary', ml: 0.5 }} />
-            : <FaceOutlined sx={{ fontSize: 22, color: 'text.secondary', ml: 0.5 }} />
-          }
-        </Tooltip>
+      {/* The header is measured, not assumed: the chip row wraps onto a second line when the
+          window narrows, and the frame below has to lose exactly that much height. */}
+      <Box ref={headerRef}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+          <IconButton
+            component={RouterLink}
+            to={`/courses/${courseId}/exercises`}
+            size="small"
+            aria-label={t('general.back')}
+          >
+            <ArrowBackOutlined />
+          </IconButton>
+          <Typography variant="h5">{exercise.effective_title}</Typography>
+          <Tooltip title={exercise.grader_type === 'AUTO' ? t('exercises.gradedAutomatically') : t('exercises.gradedByTeacher')}>
+            {exercise.grader_type === 'AUTO'
+              ? <RobotIcon sx={{ fontSize: 22, color: 'text.secondary', ml: 0.5 }} />
+              : <FaceOutlined sx={{ fontSize: 22, color: 'text.secondary', ml: 0.5 }} />
+            }
+          </Tooltip>
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+          {exercise.deadline && (
+            // A date on its own makes the student do the arithmetic (audit X-029): the page knew the
+            // deadline had gone and said only when it was. The label says which it is; the colour
+            // agrees but does not carry the meaning alone.
+            <Chip
+              label={`${deadlinePassed ? t('exercises.deadlinePassed') : t('exercises.deadline')}: ${format(new Date(exercise.deadline), 'PPp', { locale: dateFnsLocale })}`}
+              size="small"
+              variant="outlined"
+              color={deadlinePassed && exercise.is_open ? 'warning' : 'default'}
+            />
+          )}
+          {!exercise.is_open && (
+            <Chip
+              label={t('submission.exerciseClosed')}
+              size="small"
+              color="error"
+              variant="outlined"
+            />
+          )}
+        </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-        {exercise.deadline && (
-          // A date on its own makes the student do the arithmetic (audit X-029): the page knew the
-          // deadline had gone and said only when it was. The label says which it is; the colour
-          // agrees but does not carry the meaning alone.
-          <Chip
-            label={`${deadlinePassed ? t('exercises.deadlinePassed') : t('exercises.deadline')}: ${format(new Date(exercise.deadline), 'PPp', { locale: dateFnsLocale })}`}
-            size="small"
-            variant="outlined"
-            color={deadlinePassed && exercise.is_open ? 'warning' : 'default'}
-          />
-        )}
-        {!exercise.is_open && (
-          <Chip
-            label={t('submission.exerciseClosed')}
-            size="small"
-            color="error"
-            variant="outlined"
-          />
-        )}
+      <Box ref={frameRef} sx={frameSx}>
+        <SplitPane storageKey="studentExercise" left={leftPane} right={rightPane} fill={framed} />
       </Box>
-
-      <SplitPane storageKey="studentExercise" left={leftPane} right={rightPane} />
     </>
   )
 }
@@ -729,10 +1020,13 @@ function TeacherRightPane({
   courseId,
   courseExerciseId,
   exercise,
+  framed = false,
 }: {
   courseId: string
   courseExerciseId: string
   exercise: TeacherExerciseDetailsType
+  /** In a framed pane the tab strip stays put and the tab's content scrolls under it. */
+  framed?: boolean
 }) {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -769,17 +1063,23 @@ function TeacherRightPane({
   }, [setSearchParams])
 
   return (
-    <Box>
+    <Box sx={framed ? { flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' } : undefined}>
       <Tabs
         value={tabIndex}
         onChange={(_, v) => setTabIndex(v)}
-        sx={{ mb: 2, minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, textTransform: 'none' } }}
+        sx={{
+          mb: 2,
+          minHeight: 36,
+          '& .MuiTab-root': { minHeight: 36, py: 0.5, textTransform: 'none' },
+          ...(framed && { flexShrink: 0 }),
+        }}
       >
         <Tab label={t('submission.tabStudents')} />
         <Tab label={t('submission.tabTesting')} />
         <Tab label={t('submission.tabAssessment')} />
       </Tabs>
 
+      <Box sx={framed ? { flex: '1 1 auto', minHeight: 0, overflowY: 'auto', pb: 2 } : undefined}>
       {/* Students tab */}
       {tabIndex === 0 && (
         selectedStudentId ? (
@@ -829,6 +1129,7 @@ function TeacherRightPane({
           <AutoAssessTab draft={autoAssessDraft} editing={false} onChange={() => {}} />
         </Box>
       )}
+      </Box>
     </Box>
   )
 }
@@ -843,6 +1144,13 @@ function TeacherExerciseView() {
   const dateFnsLocale = i18n.language === 'et' ? et : enGB
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [embedOpen, setEmbedOpen] = useState(false)
+
+  // The same frame as the student's page. A teacher reading a 1500-line submission in the grading
+  // view was scrolling exactly as far as the student who wrote it.
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { frameRef, headerRef, frameSx } = useFrameHeight(!isMobile)
+  const framed = frameSx != null
 
   const {
     data: exercise,
@@ -889,11 +1197,13 @@ function TeacherExerciseView() {
       courseId={courseId!}
       courseExerciseId={courseExerciseId!}
       exercise={exercise}
+      framed={framed}
     />
   )
 
   return (
     <>
+      <Box ref={headerRef}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
         <IconButton
           component={RouterLink}
@@ -1000,8 +1310,11 @@ function TeacherExerciseView() {
         t={t}
         dateFnsLocale={dateFnsLocale}
       />
+      </Box>
 
-      <SplitPane storageKey="teacherExercise" left={leftPane} right={rightPane} />
+      <Box ref={frameRef} sx={frameSx}>
+        <SplitPane storageKey="teacherExercise" left={leftPane} right={rightPane} fill={framed} />
+      </Box>
     </>
   )
 }

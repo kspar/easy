@@ -186,9 +186,11 @@ export default function TeacherTestingTab({
         <Box
           ref={editorContainerRef}
           sx={{
-            '& .cm-editor': { minHeight: 200, cursor: 'text' },
+            // Capped for the same reason as the student's editor (EZ-1835): a teacher pasting the
+            // 1500-line solution they are testing put the "Run tests" button below the fold.
+            '& .cm-editor': { minHeight: 200, maxHeight: 'min(55vh, 640px)', cursor: 'text' },
             '& .cm-focused': { outline: 'none' },
-            '& .cm-scroller': { cursor: 'text' },
+            '& .cm-scroller': { cursor: 'text', overflow: 'auto' },
           }}
         />
       </Box>

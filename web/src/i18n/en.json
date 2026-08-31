@@ -113,6 +113,7 @@
     "splitView": "Split view",
     "collapseLeft": "Collapse left pane",
     "collapseRight": "Collapse right pane",
+    "resizeSections": "Resize the editor and the results",
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
     "accountMenu": "Account menu",

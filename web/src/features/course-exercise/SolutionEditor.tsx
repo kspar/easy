@@ -37,6 +37,18 @@ export default forwardRef<SolutionEditorHandle, {
    * instead of silently flushing.
    */
   autosaveEnabled?: boolean
+  /**
+   * Fill the height given by the parent instead of growing with the document (EZ-1835).
+   *
+   * The editor used to have a minimum height and no maximum, so a 1500-line database dump — what
+   * the later homework on the database courses *is* — made the editor 1500 lines tall and pushed
+   * the submit button some forty screens down the page. Filling means the file sets its own
+   * height and not the page's; the button below it then cannot be pushed anywhere.
+   *
+   * Off on mobile, where the pane is not height-bounded and a viewport-height editor next to a
+   * virtual keyboard is worse than scrolling. There the editor is capped instead.
+   */
+  fill?: boolean
   onSubmitted?: () => void
   onAutogradeStart?: () => void
 }>(function SolutionEditor({
@@ -46,6 +58,7 @@ export default forwardRef<SolutionEditorHandle, {
   initialSolution,
   initialIsDraft = false,
   autosaveEnabled = true,
+  fill = false,
   onSubmitted,
   onAutogradeStart,
 }, ref) {
@@ -455,8 +468,15 @@ export default forwardRef<SolutionEditorHandle, {
   }, [awaitAutograde.isSuccess, onSubmitted, queryClient, courseId, courseExerciseId])
 
   return (
-    <Box>
-      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden', mb: 2 }}>
+    <Box sx={fill ? { flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' } : undefined}>
+      <Box sx={{
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: 1,
+        overflow: 'hidden',
+        mb: 2,
+        ...(fill && { flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }),
+      }}>
         <Box sx={{
           display: 'flex',
           alignItems: 'center',
@@ -501,18 +521,33 @@ export default forwardRef<SolutionEditorHandle, {
             </MenuItem>
           </Menu>
         </Box>
+        {/*
+          Two ways to stop a long solution from setting the page's height, and the editor needs
+          both because it is used in both layouts. Filling, it takes the height its section was
+          given; not filling — mobile — it is capped. Either way `.cm-scroller` has to be told to
+          scroll: CodeMirror hands the overflow to the scroller only when the editor's own height
+          is bounded, and without `overflow: auto` there it would simply clip.
+        */}
         <Box
           ref={editorRef}
           sx={{
-            '& .cm-editor': { minHeight: 200, cursor: 'text' },
+            ...(fill
+              ? {
+                  flex: '1 1 auto',
+                  minHeight: 0,
+                  '& .cm-editor': { height: '100%', cursor: 'text' },
+                }
+              : {
+                  '& .cm-editor': { minHeight: 200, maxHeight: 'min(65vh, 800px)', cursor: 'text' },
+                }),
             '& .cm-focused': { outline: 'none' },
-            '& .cm-scroller': { cursor: 'text' },
+            '& .cm-scroller': { cursor: 'text', overflow: 'auto' },
           }}
         />
       </Box>
 
       {exercise.is_open && (
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
           <Button
             variant="contained"
             startIcon={
