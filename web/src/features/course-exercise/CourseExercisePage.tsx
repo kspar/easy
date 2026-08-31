@@ -21,7 +21,6 @@ import {
   CircleOutlined,
   FaceOutlined,
   FirstPageOutlined,
-  UpdateOutlined,
   LastPageOutlined,
   VerticalSplitOutlined,
   LibraryBooksOutlined,
@@ -69,7 +68,18 @@ import AutoAssessTab from '../library/AutoAssessTab.tsx'
 import { autoAssessDraftFrom } from '../library/exerciseDraft.ts'
 import ErrorAlert from '../../components/ErrorAlert.tsx'
 
-function GradeBanner({
+/**
+ * The student's current grade, as a chip in the page header beside the deadline.
+ *
+ * It was a full-width Alert above the editor, which cost about 70px of the pane — the one place on
+ * this page where vertical space is scarce, now that the editor is bounded by the window rather
+ * than by the file (EZ-1835). It also said what the results section's own header already says.
+ *
+ * A chip in the header keeps the grade permanently on screen (the header sits above the frame and
+ * never scrolls) and takes no space from the editor at all, while staying in the vocabulary the
+ * row already uses for the deadline: same size, same colour rule, colour never the only carrier.
+ */
+function GradeChip({
   submissions,
   threshold,
 }: {
@@ -83,25 +93,36 @@ function GradeBanner({
   const latest = submissions[0]
   if (!latest.grade) {
     return (
-      <Alert severity="info" sx={{ mb: 2 }} iconMapping={{ info: <CircleOutlined fontSize="inherit" /> }}>
-        {t('submission.currentGrade')}: {t('exercises.notGraded')}
-      </Alert>
+      <Chip
+        icon={<CircleOutlined />}
+        label={`${t('submission.currentGrade')}: ${t('exercises.notGraded')}`}
+        size="small"
+        variant="outlined"
+      />
     )
   }
 
   const grade = latest.grade.grade
-  const severity = grade >= threshold ? 'success' : 'warning'
+  const passed = grade >= threshold
   const indirect = !latest.grade.is_graded_directly
 
   return (
-    <Alert severity={severity} sx={{ mb: 2 }} iconMapping={{ success: <CheckCircle fontSize="inherit" />, warning: <CircleOutlined fontSize="inherit" /> }}>
-      {t('submission.currentGrade')}: {grade} / 100
-      {indirect && (
-        <Tooltip title={t('submission.gradePreviousSubmission')}>
-          <UpdateOutlined sx={{ fontSize: 18, ml: 1, verticalAlign: 'text-bottom', cursor: 'help' }} />
-        </Tooltip>
-      )}
-    </Alert>
+    <Chip
+      icon={passed ? <CheckCircle /> : <CircleOutlined />}
+      label={
+        `${t('submission.currentGrade')}: ${grade} / 100` +
+        // Spelled out rather than left to the hover it used to be: an icon explained only by a
+        // tooltip says nothing on a phone, and nothing to a screen reader either.
+        (indirect ? ` · ${t('submission.gradePreviousSubmission')}` : '')
+      }
+      size="small"
+      variant="outlined"
+      // The colour goes on the icon, not on the chip. `color="warning"` would paint the label
+      // #f9a825, which is under 2:1 on this background — and a grade below the threshold is the
+      // state a student sees most of the time. The number stays at full contrast and the colour
+      // stays a second cue on top of a label that already says everything.
+      sx={{ '& .MuiChip-icon': { color: passed ? 'success.main' : 'warning.main' } }}
+    />
   )
 }
 
@@ -444,9 +465,8 @@ const WORKSPACE_MIN_TOP = 220
  * ceiling; from there the ceiling holds and the section scrolls. The same rule gives the autograde
  * animation exactly the room it needs on a first submission and no more.
  *
- * The handle therefore appears at the moment it can do something — when the ceiling starts to
- * bind — and is a plain rule before that. A handle that answers a drag with nothing is worse than
- * no handle.
+ * The handle therefore appears when there is anything at all below it, and not before: on an
+ * exercise nobody has submitted to there is nothing down there to divide from.
  */
 function Workspace({
   storageKey,
@@ -474,34 +494,42 @@ function Workspace({
     try { localStorage.setItem(pctKey, JSON.stringify(clamped)) } catch { /* ignore */ }
   }, [pctKey])
 
-  // 'hidden' — nothing below to divide from. 'rule' — something, but not enough to reach the
-  // ceiling, so there is no space to redistribute. 'handle' — the ceiling binds and dragging it
-  // moves real content.
-  const [divider, setDivider] = useState<'hidden' | 'rule' | 'handle'>('hidden')
+  // There is a divider when there is something below to divide from, and not before: on an
+  // exercise nobody has submitted to, the lower section is empty and a rule across the pane would
+  // be a line about nothing.
+  //
+  // Deliberately *not* keyed on whether the ceiling currently binds, which was the first rule
+  // here. It made the handle disappear exactly when a drag downwards had given the lower section
+  // all the room its content needed — leaving no way to drag back up, and the split stuck where
+  // the last gesture left it.
+  const [hasContentBelow, setHasContentBelow] = useState(false)
   useEffect(() => {
-    const scroll = scrollRef.current
     const content = contentRef.current
-    if (!scroll || !content) return
-    const check = () => {
-      const contentHeight = content.getBoundingClientRect().height
-      if (contentHeight < 4) setDivider('hidden')
-      else setDivider(scroll.scrollHeight > scroll.clientHeight + 1 ? 'handle' : 'rule')
-    }
+    if (!content) return
+    const check = () => setHasContentBelow(content.getBoundingClientRect().height > 4)
     check()
     const observer = new ResizeObserver(check)
-    observer.observe(scroll)
     observer.observe(content)
     return () => observer.disconnect()
-  }, [scrollRef])
+  }, [])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!containerRef.current) return
     e.preventDefault()
 
+    // Where in the handle the grab happened. Without this the first mouse move puts the divider
+    // under the cursor instead of moving it by however far the cursor went, so the split jumps the
+    // moment you take hold of it — the jank you can feel but not quite see.
+    //
+    // Measured from the handle's *bottom* edge, not its middle. What the percentage positions is
+    // the top of the lower section, and the handle sits above that in the flex column, so
+    // centring the maths on the handle left a residual jump of exactly half its height.
+    const grabOffset = e.clientY - e.currentTarget.getBoundingClientRect().bottom
+
     const onMouseMove = (ev: MouseEvent) => {
       const rect = containerRef.current?.getBoundingClientRect()
       if (!rect) return
-      setTopPct(((ev.clientY - rect.top) / rect.height) * 100)
+      setTopPct(((ev.clientY - grabOffset - rect.top) / rect.height) * 100)
     }
     const onMouseUp = () => {
       document.removeEventListener('mousemove', onMouseMove)
@@ -531,24 +559,22 @@ function Workspace({
         {top}
       </Box>
 
-      {divider !== 'hidden' && (
+      {hasContentBelow && (
         <Box
-          {...(divider === 'handle' && {
-            role: 'separator',
-            'aria-orientation': 'horizontal' as const,
-            'aria-valuenow': Math.round(topPct),
-            'aria-valuemin': MIN_TOP_PCT,
-            'aria-valuemax': MAX_TOP_PCT,
-            'aria-label': t('nav.resizeSections'),
-            tabIndex: 0,
-            onMouseDown: handleMouseDown,
-            onKeyDown: handleKeyDown,
-          })}
+          role="separator"
+          aria-orientation="horizontal"
+          aria-valuenow={Math.round(topPct)}
+          aria-valuemin={MIN_TOP_PCT}
+          aria-valuemax={MAX_TOP_PCT}
+          aria-label={t('nav.resizeSections')}
+          tabIndex={0}
+          onMouseDown={handleMouseDown}
+          onKeyDown={handleKeyDown}
           sx={{
             flexShrink: 0,
             height: 13,
             position: 'relative',
-            ...(divider === 'handle' && { cursor: 'row-resize' }),
+            cursor: 'row-resize',
             '&::after': {
               content: '""',
               position: 'absolute',
@@ -559,9 +585,7 @@ function Workspace({
               bgcolor: 'divider',
               transition: 'background-color 0.2s',
             },
-            ...(divider === 'handle' && {
-              '&:hover::after, &:focus-visible::after': { bgcolor: 'action.disabled' },
-            }),
+            '&:hover::after, &:focus-visible::after': { bgcolor: 'action.disabled' },
           }}
         />
       )}
@@ -583,7 +607,7 @@ function Workspace({
           // Without the second term a quarter-height top on a short window is banner plus submit
           // row and no editor at all, and past that the row itself starts going over the edge.
           maxHeight: `min(${100 - topPct}%, calc(100% - ${WORKSPACE_MIN_TOP}px))`,
-          pt: divider === 'hidden' ? 0 : 1,
+          pt: hasContentBelow ? 1 : 0,
         }}
       >
         <Box ref={contentRef}>{bottom}</Box>
@@ -738,8 +762,6 @@ function StudentExerciseView() {
 
   const editorSection = (
     <>
-      <GradeBanner submissions={submissions} threshold={exercise.threshold} />
-
       <SolutionEditor
         ref={editorRef}
         courseId={courseId!}
@@ -854,7 +876,10 @@ function StudentExerciseView() {
           </Tooltip>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* First in the row, because after a submission it is the thing the student came back
+              for — and this row is above the frame, so it stays on screen while they work. */}
+          <GradeChip submissions={submissions} threshold={exercise.threshold} />
           {exercise.deadline && (
             // A date on its own makes the student do the arithmetic (audit X-029): the page knew the
             // deadline had gone and said only when it was. The label says which it is; the colour

@@ -156,7 +156,25 @@ test('course-exercise-layout', async ({ launch, check }) => {
 
   // --- the divider ---------------------------------------------------------------------------
   const grip = page.getByRole('separator', { name: /Resize the editor/i })
-  check('a divider appears once the results are tall enough to be capped', await grip.isVisible())
+  check('a divider appears once there is something below it', await grip.isVisible())
+
+  // Grab the handle off-centre, move, and come back to exactly where the grab started. A splitter
+  // that carries the grab offset lands back where it was; one that centres itself on the cursor —
+  // as this one did — keeps the few pixels between the grab point and the middle of the handle,
+  // which is felt as a jump the moment you take hold of it.
+  const restBox = await grip.boundingBox()
+  const grabY = restBox.y + 1
+  await page.mouse.move(restBox.x + 80, grabY)
+  await page.mouse.down()
+  await page.mouse.move(restBox.x + 80, grabY + 40, { steps: 4 })
+  await page.mouse.move(restBox.x + 80, grabY, { steps: 4 })
+  await page.mouse.up()
+  const returnedBox = await grip.boundingBox()
+  check(
+    'grabbing it off-centre and returning leaves the split where it was',
+    Math.abs(returnedBox.y - restBox.y) <= 1.5,
+    `moved ${(returnedBox.y - restBox.y).toFixed(1)}px`,
+  )
 
   const gripBox = await grip.boundingBox()
   await page.mouse.move(gripBox.x + gripBox.width / 2, gripBox.y + gripBox.height / 2)
