@@ -27,8 +27,8 @@ on:
       #
       # It has to be here for a second reason too: deploy.sh resolves `latest` by matching a run's
       # HEAD BRANCH against DEPLOY_BRANCH, so a branch CI does not build produces no run for it to
-      # find. `prod-releases` was named in prod.env for a while before this line existed, under its
-      # earlier name `releases/v4.0`, and `deploy.sh prod latest` simply never worked (EZ-1845).
+      # find. Production does not use `latest` today — the script refuses it there — but the branch
+      # is what an autodeploy timer would poll, and that asks the same question of CI.
       #
       # `prod-releases` rather than a `releases/<version>` branch: the name means "what production
       # runs", and one that changes every release cannot be tracked by anything long-lived — an

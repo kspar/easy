@@ -165,11 +165,18 @@ named branch. It mirrors `dev-releases`, and the name is stable on purpose: it m
 production runs", and a `releases/<version>` branch that changes every release cannot be tracked by
 anything long-lived — an autodeploy timer takes one branch name, not a pattern.
 
-Until 2026-09-01 this said `releases/v4.0`, and **that branch had never been created**, so
-`deploy.sh prod latest` could not resolve anything (EZ-1845). Nobody noticed because production is
-always deployed by explicit sha. Worth knowing why the branch alone would not have fixed it either:
-`latest` matches a CI run's *head branch* against `DEPLOY_BRANCH`, so the branch has to be in
-`main.yml`'s push triggers or it produces no runs to match.
+Until 2026-09-01 this said `releases/v4.0`, and **that branch had never been created** (EZ-1845).
+Nothing broke, and that is the interesting part: `REQUIRE_CONFIRM=true` makes the script refuse
+`latest` here before it reads `DEPLOY_BRANCH` at all, and an explicit sha is matched across every
+branch — so on production this value is read by nothing. A value nothing checks is a value nobody
+notices is wrong, and the first thing that would have read it is the autodeploy timer, which takes a
+branch name and would have found nothing there.
+
+Worth knowing for whenever a branch here does start being read: `latest` matches a CI run's *head
+branch*, so a branch must be in `main.yml`'s push triggers or it produces no runs to match. And a
+`push` event runs the workflow file **in the pushed commit** — so adding the trigger on master does
+not retroactively make CI build a branch pointed at an older commit. `prod-releases` got its first
+run from `workflow_dispatch` for that reason.
 
 ## What CI publishes
 
