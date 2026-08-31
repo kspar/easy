@@ -1,18 +1,18 @@
 # Production content: exercise titles, and specs whose feedback messages teachers wrote.
 # This repo is public, so the export and everything derived from it stays local.
 #
-# Deliberately broader than the names the docs happen to use. The confirmation step in the runbook
-# re-explodes the corpus into a second tree, and every one of these directories is full of real
-# exercises — so a pattern that only matched the examples would leave the next person's `after/`
-# or `check-2/` untracked-but-committable. summary.txt is the only shareable output, and it lives
-# inside one of these.
-*.jsonl
-out*/
-from-*/
-migrated*/
-after*/
-before*/
-check*/
-verify*/
-writeback*.log
-easy.log
+# **Deny everything, then name what may be committed.** This file used to list the output shapes it
+# expected — deliberately broader than the docs' own examples, and still a list. Its sibling in
+# `../adoc-to-md/` was written the same way and lost on 2026-08-31: a run wrote `payload.json` where
+# the rule said `payload.jsonl`, and several hundred real exercises sat untracked in a public
+# repository until someone happened to look. The same near-miss was available here.
+#
+# An allowlist cannot lose that way. A script inventing a new output name is ignored by default, and
+# the cost is that adding a tracked file means adding a line — the rare case, and the deliberate one.
+*
+
+!.gitignore
+!README.md
+!RUNBOOK.md
+!*.py
+!*.sql

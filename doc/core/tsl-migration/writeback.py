@@ -36,7 +36,11 @@ Safety properties, in the order they matter:
 - nothing is written without `--apply`
 - it stops at the first failure rather than continuing through 189 exercises
 - already-migrated exercises are skipped, so a re-run after a stall resumes rather than repeats
-- every id it touched is appended to a log as it goes, so an interrupted run is reconstructable
+- every id it wrote is appended to a log as it goes, so an interrupted run is reconstructable, and
+  every id it deliberately did *not* write is appended beside them as a `# skip <id>: <why>` comment
+  — held-back exercises are decisions, and a decision recorded only in a terminal is not recorded
+  (exercises skipped because they are already migrated are a no-op rather than a decision, and stay
+  out of the log so it does not fill with them)
 - it refuses to run if the spec it is about to write still contains retired types
 """
 import argparse
@@ -137,6 +141,21 @@ def main():
         print(f"skipping by request: {', '.join(sorted(skip_ids, key=int))}")
     print()
 
+    def note(eid, reason):
+        """Record a decision not to write, in the same file that records the writes.
+
+        A skip is a decision, and the log used to hold only the writes — so an exercise deliberately
+        held back looked exactly like one the run never reached, and the only record of which was
+        which was the terminal it scrolled past. That mattered on 2026-08-31: 24 exercises were held
+        back over two runs, and reconstructing the list afterwards meant re-deriving it rather than
+        reading it.
+
+        Skips are written as comments so that anything reading this file for ids — a resume, a diff
+        against the corpus — sees exactly what it did before.
+        """
+        with args.log.open("a", encoding="utf-8") as f:
+            f.write(f"# skip {eid}: {reason}\n")
+
     written = skipped = 0
     for i, d in enumerate(dirs):
         if args.limit and written >= args.limit:
@@ -146,6 +165,7 @@ def main():
         eid = d.name
         if eid in skip_ids:
             print(f"{eid}: skip — excluded with --skip")
+            note(eid, "excluded with --skip")
             skipped += 1
             continue
         spec_path = d / "tsl.json"
@@ -173,6 +193,7 @@ def main():
         live = next((a for a in (current.get("assets") or []) if a["file_name"] == "tsl.json"), None)
         if live is None:
             print(f"{eid}: skip — no tsl.json on the server (legacy YAML?)")
+            note(eid, "no tsl.json on the server (legacy YAML?)")
             skipped += 1
             continue
         # Compared as parsed structures, so a spec that only differs in whitespace or in having

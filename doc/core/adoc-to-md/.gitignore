@@ -1,15 +1,30 @@
 # Everything this directory produces is production exercise text. The repo is public.
 #
-# Only the scripts, the SQL, this file, the README and `fixtures/` (synthetic, written by hand)
-# belong in git. `doc/core/tsl-migration/.gitignore` is the same rule for the same reason.
+# **Deny everything, then name what may be committed.** This used to be the other way round — a list
+# of the output names known at the time — and on 2026-08-31 that list lost. The release produced
+# `out-final/`, `out-hidden/`, `out-wrapped/`, `payload-262.json`, `receipt-262.json` and a pile of
+# `after-*.md`, none of which matched a rule: the file said `payload.jsonl` and the run wrote
+# `payload.json`. Several hundred real exercises sat untracked in a public repository until someone
+# noticed and excluded them in `.git/info/exclude`, which protects exactly one clone.
 #
-# The README tells you to export to /tmp, which is outside the repo — but "outside the repo" is a
-# habit and this is a rule, and the two failure modes are not symmetrical: forgetting the habit
-# publishes a thousand exercises.
-*.jsonl
-!fixtures/*.adoc
-out/
-work/
-flagged/
-payload.jsonl
-receipt.txt
+# An allowlist cannot lose that way. A new script inventing a new output name is ignored by default,
+# and the cost of the inversion is that adding a *tracked* file means adding a line here — which is
+# the rare case and the one worth making deliberate.
+#
+# `doc/core/tsl-migration/.gitignore` is the same rule for the same reason.
+*
+
+!.gitignore
+!README.md
+!RUNBOOK.md
+!*.py
+!*.sql
+
+# Synthetic, written by hand, and the only exercise text in here that is safe to publish.
+!fixtures/
+!fixtures/**
+
+# Directories have to be walked into before anything inside them can be un-ignored, and `tests/`
+# holds only test code.
+!tests/
+!tests/**
