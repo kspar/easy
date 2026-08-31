@@ -24,7 +24,8 @@ import org.springframework.stereotype.Service
  *  - the client renders these columns with `dangerouslySetInnerHTML` and has no sanitiser of its
  *    own, so this function is the only place the question is asked.
  *
- * So the pipeline is parse → render → **clean against [SAFELIST]** → externalise links.
+ * So the pipeline is parse → render → **clean against [SAFELIST]** → externalise links →
+ * conceal [HIDDEN_TEXT_TAG].
  */
 @Service
 class MarkdownService {
@@ -105,7 +106,8 @@ class MarkdownService {
 private val SAFELIST: Safelist = Safelist()
     .addTags(
         "a", "abbr", "b", "blockquote", "br", "caption", "cite", "code", "col", "colgroup", "dd",
-        "del", "details", "div", "dl", "dt", "em", "figcaption", "figure", "h1", "h2", "h3", "h4",
+        "del", "details", "div", "dl", "dt", HIDDEN_TEXT_TAG, "em", "figcaption", "figure", "h1",
+        "h2", "h3", "h4",
         "h5", "h6", "hr", "i", "img", "ins", "kbd", "li", "mark", "ol", "p", "pre", "q", "s", "samp",
         "small", "span", "strong", "sub", "summary", "sup", "table", "tbody", "td", "tfoot", "th",
         "thead", "tr", "u", "ul", "var",
@@ -185,6 +187,28 @@ private val SAFELIST: Safelist = Safelist()
  */
 private const val SANITISER_BASE_URI = "https://easy.invalid/"
 
+/**
+ * The tag an author writes to hide text, and what it is given after the clean. Named constants so
+ * the safelist entry, the pass that styles it and the tests all agree on one spelling.
+ */
+private const val HIDDEN_TEXT_TAG = "easy-hidden"
+
+/**
+ * **Containment, not inheritance, and that distinction is the whole of this constant.** The first
+ * version of this was `font-size:0;color:transparent`, which hides only descendants that inherit
+ * both — and `proseStyles.ts` gives `h4`–`h6` their own `fontSize` and `color`, tables and
+ * `blockquote` their own borders, and `img` a size that no font-size can reach. A canary containing
+ * a heading therefore rendered at full size in front of the class, which is precisely the failure
+ * this whole mechanism exists to prevent. Clipping the element contains whatever it holds, however
+ * that content is styled.
+ *
+ * Still not `display:none` or `visibility:hidden`: the text has to travel with a copy of the
+ * description, and neither of those is copied. A clipped element is still laid out and still
+ * selected, which is what keeps the mechanism working.
+ */
+private const val HIDDEN_TEXT_STYLE =
+    "position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap"
+
 private fun sanitise(html: String, cleaner: Cleaner): String {
     // `parseBodyFragment` and not `parse`: `parse` builds a whole document and moves a leading
     // `<script>` into `<head>`, which then falls outside `body().html()`. That makes the simplest
@@ -194,13 +218,51 @@ private fun sanitise(html: String, cleaner: Cleaner): String {
     val dirty = Jsoup.parseBodyFragment(html, SANITISER_BASE_URI)
     val clean = cleaner.clean(dirty)
     clean.outputSettings(dirty.outputSettings())
-    return externaliseLinks(clean)
+    externaliseLinks(clean)
+    concealHiddenText(clean)
+    return clean.body().html()
 }
 
-private fun externaliseLinks(jdoc: org.jsoup.nodes.Document): String {
+private fun externaliseLinks(jdoc: org.jsoup.nodes.Document) {
     jdoc.getElementsByTag("a").forEach {
         it.attr("target", "_blank")
             .attr("rel", "noopener noreferrer")
     }
-    return jdoc.body().html()
+}
+
+/**
+ * `<easy-hidden>` is text meant to be in the page but not on it — the anti-LLM canaries some
+ * exercises carry, which a student pasting the description into a chatbot takes with them.
+ *
+ * **The styling is written here rather than in `web/`, and that is the whole point.** A CSS rule
+ * fails open: one stylesheet that does not load, or one consumer of `text_html` that is not the
+ * exercise page, and the canary is on screen in front of the class. Baking the declaration into the
+ * stored HTML means the text is hidden wherever that HTML is rendered. The cost is the EZ-1792 one —
+ * changing the styling later means re-rendering the corpus — which is the right trade for a
+ * declaration that should never change.
+ *
+ * **`font-size: 0; color: transparent` and deliberately not `display: none`.** The mechanism depends
+ * on the text being carried along by a copy of the description, and `display: none` is not copied.
+ * The exercises this replaces used `opacity: 0`, `color: white` and `font-size: 0.000001em` for the
+ * same reason, before the safelist stopped honouring `style` from an author.
+ *
+ * `aria-hidden` because the alternative is a screen reader announcing the canary to the one student
+ * who cannot see that it is hidden — which is both a worse experience and a worse trap.
+ *
+ * Set here, after the clean, for the same reason as [externaliseLinks]: `style` is not safelisted on
+ * this tag, so the declaration is ours by construction rather than by trusting the input. The
+ * author's `class`, `id`, `title`, `role`, `dir` and `lang` do survive, as they do on every tag —
+ * inert here, because an inline declaration beats any stylesheet rule a class could name.
+ *
+ * The `tabindex` is not decoration. `aria-hidden` on a subtree containing a focusable element is an
+ * accessibility fault in its own right (axe's `aria-hidden-focus`): a keyboard user would land on a
+ * link inside a clipped canary that the screen reader is instructed not to announce. Markdown can
+ * put a link in there, so the pass takes it out of the tab order.
+ */
+private fun concealHiddenText(jdoc: org.jsoup.nodes.Document) {
+    jdoc.getElementsByTag(HIDDEN_TEXT_TAG).forEach { hidden ->
+        hidden.attr("style", HIDDEN_TEXT_STYLE)
+            .attr("aria-hidden", "true")
+        hidden.select("a[href]").forEach { it.attr("tabindex", "-1") }
+    }
 }

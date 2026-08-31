@@ -76,6 +76,11 @@ class MarkdownServiceTest {
         // `img[src]` and nowhere else.
         "![alt](data:image/png;base64,iVBORw0KGgo=)" to "src=\"data:image/png;base64,iVBORw0KGgo=\"",
 
+        // The canary tag. It is in the survival half because the failure that made it necessary is
+        // exactly the one this half exists to catch: an unsafelisted tag is unwrapped and its text
+        // kept, so a canary would not vanish — it would appear, in front of the class.
+        "<easy-hidden>salajane</easy-hidden>" to "<easy-hidden",
+
         // Raw HTML the existing corpus actually contains. The collapsible hint block is the one
         // worth naming: it is the standard way an exercise hides its answer, and markdown has no
         // syntax for it, so it is only ever written as raw HTML.
@@ -239,6 +244,7 @@ class MarkdownServiceTest {
     fun `style survives on col and nowhere else`() {
         // The exemption, and its boundary. Both halves matter: dropping the first breaks every
         // proportional table, and widening it past `col` reinstates the overlay the ban is for.
+        // `easy-hidden` also carries a `style`, but never the author's: see [concealHiddenText].
         val html = service.mdToHtml(
             """
             <table><colgroup><col style="width: 50%;"></colgroup>
@@ -272,6 +278,63 @@ class MarkdownServiceTest {
         // library has been rewritten to point at a domain that does not exist.
         val html = service.mdToHtml("[t](/library/exercise/4)\n\n![i](/v2/resource/k/p.png)")
         assertFalse(html.contains("easy.invalid"), html)
+    }
+
+    @Test
+    fun `easy-hidden is hidden by us, in a way that survives being copied`() {
+        // The mechanism: a student pastes the description into a chatbot and takes the canary with
+        // them. `display: none` and `visibility: hidden` are not copied, so the declaration matters
+        // as much as the fact that there is one.
+        val html = service.mdToHtml("<easy-hidden>salajane</easy-hidden> nähtav")
+
+        assertTrue(html.contains("<easy-hidden"), html)
+        assertTrue(html.contains("salajane"), html)
+        assertTrue(html.contains("clip-path:inset(50%)"), html)
+        assertTrue(html.contains("aria-hidden=\"true\""), html)
+        assertFalse(html.contains("display:none"), html)
+        assertFalse(html.contains("visibility:hidden"), html)
+    }
+
+    @Test
+    fun `a heading inside easy-hidden is hidden too, which inheritance alone would not manage`() {
+        // The first version of the declaration was `font-size:0;color:transparent`, and it hid only
+        // what inherits both. `proseStyles.ts` gives h4-h6 their own `fontSize` and `color`, so a
+        // canary wrapping a heading rendered at full size. Clipping contains the subtree whatever it
+        // declares — this test is here so nobody swaps the recipe back for a shorter one.
+        val html = service.mdToHtml("<easy-hidden>\n\n#### Juhis\n\ntekst\n\n</easy-hidden>")
+
+        assertTrue(html.contains("<h4>Juhis</h4>"), html)
+        assertTrue(html.contains("clip-path:inset(50%)"), html)
+        assertFalse(html.contains("font-size:0"), html)
+    }
+
+    @Test
+    fun `a link inside easy-hidden leaves the tab order`() {
+        // aria-hidden over a focusable element is its own accessibility fault: the key lands on a
+        // link the screen reader will not announce.
+        val html = service.mdToHtml("<easy-hidden>[klõpsa](https://example.org)</easy-hidden>")
+
+        assertTrue(html.contains("tabindex=\"-1\""), html)
+        assertTrue(html.contains("aria-hidden=\"true\""), html)
+    }
+
+    @Test
+    fun `an author cannot decide what easy-hidden looks like`() {
+        // The tag takes no attributes from the author: the safelist drops them, and the pass after
+        // the clean writes ours. Without this an author could make the canary visible — or, worse,
+        // make ordinary text invisible and hide the actual task.
+        val html = service.mdToHtml(
+            "<easy-hidden style=\"font-size:2em;color:red\" onclick=\"steal()\" class=\"x\">s</easy-hidden>"
+        )
+
+        assertFalse(html.contains("2em"), html)
+        assertFalse(html.contains("red"), html)
+        assertFalse(html.contains("onclick"), html)
+        assertTrue(html.contains("clip-path:inset(50%)"), html)
+        // `class` is allowed on every tag and survives here too, which is deliberate and inert: an
+        // author's class can only do something where `web/` already cooperates, and it cannot undo
+        // the hiding, because an inline declaration beats any stylesheet rule it could name.
+        assertTrue(html.contains("class=\"x\""), html)
     }
 
     @Test

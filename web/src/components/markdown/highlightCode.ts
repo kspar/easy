@@ -133,6 +133,11 @@ export async function highlightCode(root: HTMLElement): Promise<void> {
   for (const el of pending) {
     const language = languageOf(el)
     if (!language) continue
+    // A canary inside a code sample is a natural place to put one, and highlighting would destroy
+    // it: the block is re-emitted from `textContent`, so the `easy-hidden` element disappears and
+    // its text comes back as ordinary highlighted source — in plain sight. Leaving such a block
+    // unhighlighted is the smaller loss, and it is the same fallback the catch below settles for.
+    if (el.querySelector('easy-hidden')) continue
     try {
       // `textContent`, not `innerHTML`: the block's text is the authored source, and taking it as
       // text means nothing an author wrote can re-enter the DOM as markup on this path. What goes
