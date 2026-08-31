@@ -57,6 +57,7 @@ import {
   BugReportOutlined,
   MonitorHeartOutlined,
 } from '@mui/icons-material'
+import { exerciseLink } from '../features/library/links.ts'
 import { useThemeMode } from '../theme/useThemeMode.ts'
 import { useCourseExercises } from '../api/exercises.ts'
 import { useCourse } from '../api/courses.ts'
@@ -70,14 +71,6 @@ import SystemMessageBanner from '../components/SystemMessageBanner.tsx'
 import UpdateAvailableBanner from '../components/UpdateAvailableBanner.tsx'
 import EnvironmentBadge from '../components/EnvironmentBadge.tsx'
 import ExerciseStatusIcon from '../components/ExerciseStatusIcon.tsx'
-
-function slugify(s: string): string {
-  return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u00C0-\u024F-]/g, '')
-}
-
-function exerciseLink(id: string, title: string): string {
-  return `/library/exercise/${id}/${slugify(title)}`
-}
 
 const DRAWER_WIDTH = 260
 

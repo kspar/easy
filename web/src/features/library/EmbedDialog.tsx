@@ -25,7 +25,7 @@ import {
   useSetExerciseTemplate,
 } from '../../api/library.ts'
 import CodeEditor from '../../components/CodeEditor.tsx'
-import { hasAccess } from './links.ts'
+import { hasAccess, slugify } from './links.ts'
 import useEmbedOptions from '../../hooks/useEmbedOptions.ts'
 
 /**
@@ -213,10 +213,15 @@ export default function EmbedDialog({
   ].filter(Boolean) as string[]
   const query = params.length ? `?${params.join('&')}` : ''
 
+  // `slugify`, not `encodeURIComponent` — the third thing this generator got wrong about wui's
+  // scheme, alongside the two above. The parent-side resizer script finds the iframe by matching
+  // `decodeURI(<the url the frame reports>)` against the `src` attribute, so a percent-encoded path
+  // decodes to something the attribute never said and no iframe is ever found: the embed keeps its
+  // 150px default and the exercise is cut off (EZ-1831). A readable slug survives that round trip.
   const origin = window.location.origin
   const src =
     `${origin}/embed/exercises/${exerciseId}/` +
-    `${encodeURIComponent(exerciseTitle)}${query}`
+    `${slugify(exerciseTitle)}${query}`
 
   const html =
     `<script src="${origin}${RESIZER_SCRIPT_PATH}"></script>\n` +

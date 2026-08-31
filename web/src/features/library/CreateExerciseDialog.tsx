@@ -10,10 +10,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useCreateExercise } from '../../api/library.ts'
-
-function slugify(s: string): string {
-  return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u00C0-\u024F-]/g, '')
-}
+import { slugify } from './links.ts'
 
 export default function CreateExerciseDialog({
   parentDirId,

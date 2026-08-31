@@ -45,22 +45,12 @@ import AddToCourseDialog from './AddToCourseDialog.tsx'
 import ShareDialog from './ShareDialog.tsx'
 import ConfirmDialog from '../../components/ConfirmDialog.tsx'
 import { errorMessage } from '../../api/errorMessage.ts'
+import { dirLink, exerciseLink } from './links.ts'
 
 type SortMode = 'name' | 'modified' | 'popularity'
 type VisibilityFilter = 'all' | 'shared' | 'private'
 type GradingFilter = 'all' | 'auto' | 'teacher'
 
-function slugify(s: string): string {
-  return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u00C0-\u024F-]/g, '')
-}
-
-function dirLink(id: string, name: string): string {
-  return `/library/dir/${id}/${slugify(name)}`
-}
-
-function exerciseLink(id: string, title: string): string {
-  return `/library/exercise/${id}/${slugify(title)}`
-}
 
 function hasAccess(level: DirAccessLevel, required: DirAccessLevel): boolean {
   const order: DirAccessLevel[] = ['P', 'PR', 'PRA', 'PRAW', 'PRAWM']

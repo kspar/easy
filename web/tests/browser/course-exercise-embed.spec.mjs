@@ -182,7 +182,7 @@ test('course-exercise-embed', async ({ launch, check }) => {
   check('the library shortcut is a real link', (await libLink.count()) === 1)
   check(
     'and it addresses the library exercise route',
-    (await libLink.getAttribute('href')) === `/library/exercise/${EX}/sum-of-two-numbers`,
+    (await libLink.getAttribute('href')) === `/library/exercise/${EX}/Sum-of-two-numbers`,
   )
   await libLink.click()
   check(

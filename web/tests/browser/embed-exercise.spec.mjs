@@ -251,5 +251,76 @@ test('embed-exercise', async ({ launch, check }) => {
     )
   }
 
+  // --- the resizer script, end to end ---------------------------------------------------------------
+  // Everything above proves the *child* posts a height. Nothing proved the parent applies one, and
+  // the parent is the half that was broken: `ez-embed-frame-resizer.js` matched the iframe by exact
+  // `src` attribute after running `decodeURI` over the reported URL, so a percent-encoded slug never
+  // matched, `null.setAttribute` threw into an empty `catch`, and the iframe kept the 150px default
+  // with the exercise cut off (EZ-1831). Invisible in every sense: no error, no failing test, and
+  // the only symptom on a page nobody here can edit.
+  //
+  // Both spellings are loaded because both are published. `slugify` emits the readable one from now
+  // on, but the percent-encoded embeds pasted while v4 was generating them are out there for good —
+  // fixing only the generator would leave those broken forever, so the script has to size them too.
+  const READABLE = 'Koduülesanne-1.2-Arvutamine'
+  const ENCODED = encodeURIComponent('Koduülesanne 1.2 Arvutamine')
+  const RESIZE_HOST = `${BASE_URL}/host-resizer`
+  await page.route(RESIZE_HOST, (r) => r.fulfill({
+    contentType: 'text/html',
+    // The real script, served from `public/` by the same dev server — not a copy of its logic,
+    // which is what a test of a file that ships to third-party pages has to mean.
+    // `<meta charset>` is load-bearing here: without it the browser decodes this body as
+    // windows-1252, the ü in the readable slug becomes mojibake, and the iframe requests a URL
+    // that is not the one this test is about. The script still resizes it — it matches whatever
+    // the frame reports — so the symptom is only that the assertion below cannot find the message.
+    body: `<html><head><meta charset="utf-8"></head><body style="margin:0">
+      <script src="${BASE_URL}/static/js/ez-embed-frame-resizer.js"></script>
+      <iframe id="readable" src="${BASE_URL}/embed/exercises/${ID}/${READABLE}" width="100%"></iframe>
+      <iframe id="encoded" src="${BASE_URL}/embed/exercises/${ID}/${ENCODED}" width="100%"></iframe>
+    </body></html>`,
+  }))
+  await page.goto(RESIZE_HOST)
+
+  const heightOf = (id) => page.locator(`iframe#${id}`).getAttribute('height')
+
+  /** Every height this document was told about, for a frame whose URL contains `slug`. */
+  const postedFor = async (slug) => {
+    const raw = await page.evaluate(() => window.__resizeMessages ?? [])
+    return raw
+      .map((m) => { try { return JSON.parse(m) } catch { return null } })
+      .filter((m) => m?.type === 'ez-frame-resize' && decodeURI(m.url).includes(decodeURI(slug)))
+      .map((m) => `${m.height}px`)
+  }
+
+  // Not "taller than the 150px default": the stubbed exercise is short enough to measure 143px, and
+  // a threshold would then fail on a working script for a reason that has nothing to do with the
+  // bug. What distinguishes fixed from broken is that the attribute exists at all — it was never
+  // written before, because the selector matched nothing — and carries a height the child actually
+  // reported rather than an invented one.
+  const sized = async (id, slug) => {
+    const applied = await heightOf(id)
+    return applied != null && (await postedFor(slug)).includes(applied)
+  }
+
+  check(
+    'the script sizes an iframe whose slug is readable, as wui always published them',
+    await waitUntil(() => sized('readable', READABLE)),
+    `applied ${await heightOf('readable')}, posted ${JSON.stringify(await postedFor(READABLE))}`,
+  )
+  check(
+    'and one whose slug is percent-encoded, which is every embed pasted from v4',
+    await waitUntil(() => sized('encoded', ENCODED)),
+    `applied ${await heightOf('encoded')}, posted ${JSON.stringify(await postedFor(ENCODED))}`,
+  )
+  // Polled, not compared once: the height grows as the exercise renders, so the two frames can be
+  // one observer callback apart and a single comparison would fail on timing rather than on the
+  // thing being tested.
+  check(
+    'the two settle on the same height, since they are the same exercise at the same width',
+    await waitUntil(async () => (await heightOf('readable')) === (await heightOf('encoded'))),
+    `${await heightOf('readable')} vs ${await heightOf('encoded')}`,
+  )
+  await shot('06-resized-by-the-real-script')
+
   await close()
 })
