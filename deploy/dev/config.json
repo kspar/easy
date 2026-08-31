@@ -6,7 +6,7 @@
     "clientId": "lahendus.ut.ee"
   },
   "idpAdminUrl": "https://dev.idp.lahendus.ut.ee/idp-admin/",
-  "bugReportDashboardUrl": "https://easy.myjetbrains.com/youtrack/dashboard?id=540-8",
+  "bugReportDashboardUrl": "https://easy.youtrack.cloud/dashboard?id=540-8",
   "environment": {
     "label": "DEV",
     "colour": "#b26a00"

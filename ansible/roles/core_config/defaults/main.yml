@@ -51,6 +51,16 @@ easy_core_db_user: easy
 easy_core_db_pool_max: 90
 easy_core_db_pool_min_idle: 10
 
+# Log a stack trace for any connection held longer than this, in milliseconds. 0 turns it off, which
+# is HikariCP's own default and what a host gets by saying nothing.
+#
+# Production's hand-written config carried `leak-detection-threshold: 10000` and the move to managed
+# config silently dropped it, because the template had no line for it. Worth having back and worth
+# having as a variable: a connection held for ten seconds is either a genuine leak or a query nobody
+# meant to write, and without this the symptom is pool exhaustion under load with nothing in the log
+# naming the transaction that caused it. It costs a timer per connection and nothing else.
+easy_core_db_leak_detection_ms: 10000
+
 # --- authentication ---------------------------------------------------------------------------------
 # NEVER false on a deployed host. `false` installs DummyZeroAuthFilter, which trusts `oidc_claim_*`
 # request headers verbatim — anyone could assert `oidc_claim_easy_role: admin`. It exists for local

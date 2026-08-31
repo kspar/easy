@@ -31,6 +31,9 @@ spring:
     hikari:
       maximum-pool-size: {{ easy_core_db_pool_max }}
       minimum-idle: {{ easy_core_db_pool_min_idle }}
+      ## A connection held longer than this gets a stack trace in the log. Production ran with it
+      ## before v4.0 and lost it in the move to managed config — see the variable's comment.
+      leak-detection-threshold: {{ easy_core_db_leak_detection_ms }}
   mail:
     host: "{{ easy_core_mail_host }}"
     port: {{ easy_core_mail_port }}
