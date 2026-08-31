@@ -44,9 +44,24 @@ export default function AboutPage() {
       </Typography>
 
       <Box display="flex" gap={2} flexWrap="wrap" my={3}>
-        <StatCard label={t('about.statsAutograding')} value={stats.inAutoAssessing} isLoading={stats.isLoading} />
-        <StatCard label={t('about.statsSubmissions')} value={stats.totalSubmissions} isLoading={stats.isLoading} />
-        <StatCard label={t('about.statsAccounts')} value={stats.totalUsers} isLoading={stats.isLoading} />
+        <StatCard
+          label={t('about.statsAutograding')}
+          value={stats.inAutoAssessing}
+          isLoading={stats.isLoading}
+          isUnavailable={stats.isUnavailable}
+        />
+        <StatCard
+          label={t('about.statsSubmissions')}
+          value={stats.totalSubmissions}
+          isLoading={stats.isLoading}
+          isUnavailable={stats.isUnavailable}
+        />
+        <StatCard
+          label={t('about.statsAccounts')}
+          value={stats.totalUsers}
+          isLoading={stats.isLoading}
+          isUnavailable={stats.isUnavailable}
+        />
       </Box>
 
       <Typography paragraph>{t('about.sponsors')}</Typography>
@@ -345,7 +360,17 @@ function formatNumber(n: number): string {
   return result
 }
 
-function StatCard({ label, value, isLoading }: { label: string; value: number; isLoading: boolean }) {
+function StatCard({
+  label,
+  value,
+  isLoading,
+  isUnavailable,
+}: {
+  label: string
+  value: number
+  isLoading: boolean
+  isUnavailable: boolean
+}) {
   const [highlight, setHighlight] = useState(false)
   const prevRef = useRef(value)
 
@@ -374,7 +399,9 @@ function StatCard({ label, value, isLoading }: { label: string; value: number; i
         <CircularProgress size={28} />
       ) : (
         <Typography variant="h4" fontWeight="bold">
-          {formatNumber(value)}
+          {/* An em dash rather than a 0 when the poll gave up without an answer — see
+              `isUnavailable` in api/statistics.ts. */}
+          {isUnavailable ? '—' : formatNumber(value)}
         </Typography>
       )}
       <Typography variant="body2" color="text.secondary" mt={0.5}>

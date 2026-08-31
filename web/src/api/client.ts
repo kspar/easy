@@ -90,9 +90,19 @@ export async function apiFetch<T>(
     body?: unknown
     headers?: Record<string, string>
     noAuth?: boolean
+    /**
+     * Abort the request when the caller stops caring.
+     *
+     * For the one call in the app that outlives a render rather than a query — the statistics long
+     * poll, which core holds open for up to thirty seconds. Without this, navigating away from the
+     * landing page leaves that request in flight and core holding a thread for it, since nothing
+     * tells a blocked handler that the socket went away. react-query's own calls do not need it: it
+     * discards a resolved promise it no longer wants.
+     */
+    signal?: AbortSignal
   } = {},
 ): Promise<T> {
-  const { method = 'GET', body, headers = {}, noAuth = false } = options
+  const { method = 'GET', body, headers = {}, noAuth = false, signal } = options
 
   const isFormData = body instanceof FormData
 
@@ -118,6 +128,7 @@ export async function apiFetch<T>(
     method,
     headers: combinedHeaders,
     body: isFormData ? body : body != null ? JSON.stringify(body) : undefined,
+    signal,
   })
 
   if (!response.ok) {

@@ -18,7 +18,6 @@
     "messages.ts:SystemMessage",
     "messages.ts:AdminSystemMessage",
     "operatingInfo.ts:OperatingInfo",
-    "statistics.ts:Stats",
     "statistics.ts:UseStatisticsResult",
     "tsl.ts:TslCompiledScript",
     "tsl.ts:TslCompileMeta",

@@ -105,6 +105,16 @@ easy:
     statistics:
       fixed-delay:
         ms: "1000"
+      # Production holds a long poll for 30 seconds; StatisticsApiTest asserts that the hold ends,
+      # and waiting 30 seconds to be told so twice is 30 seconds of everyone's build. The property
+      # carries a default in the source, so this is the only file that mentions it — deliberately,
+      # per SampleConfigCompletenessTest's rule about defaulted placeholders.
+      long-poll-timeout:
+        ms: "1500"
+      # Two, so StatisticsApiTest can fill the queue and ask what happens to the next caller. If this
+      # and the test's own WAITING_CAP ever disagree, that test fails rather than passing quietly:
+      # a caller it expects to be turned away instead waits out the timeout above.
+      max-waiting-clients: "2"
 
     # Loopback port 1, so a job that somehow does fire fails to connect rather than reaching
     # anything. The crons are pinned to the never-date as well.

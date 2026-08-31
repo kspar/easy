@@ -26,11 +26,12 @@ import core.aas.AutoGradeScheduler
 /**
  * Everything reachable from the internet with no account, exercised as the internet reaches it.
  *
- * There are four patterns in `PERMIT_ALL_PATTERNS` and this is the whole surface: an anonymous
- * exercise's details, an anonymous submission, a published article, an uploaded file. Two of them
- * return content whose visibility is decided by a column, and one of them **runs code**.
+ * There are five patterns in `PERMIT_ALL_PATTERNS` and this is the whole surface: an anonymous
+ * exercise's details, an anonymous submission, a published article, an uploaded file, and the
+ * landing page's three aggregate counts. Two of them return content whose visibility is decided by
+ * a column, and one of them **runs code**.
  *
- * `/unauth/versions` was the fifth until EZ-1782 made it teacher-and-admin. Its assertions moved
+ * `/unauth/versions` was among them until EZ-1782 made it teacher-and-admin. Its assertions moved
  * to `VersionsApiTest` rather than being deleted — what that payload refuses to contain is worth
  * the same whoever is allowed to read it.
  *
@@ -42,8 +43,9 @@ import core.aas.AutoGradeScheduler
  * if every public endpoint returned the wrong thing.
  *
  * This is the behavioural half: what the public endpoints actually *do*, and — the part worth having
- * — what they refuse. The articles and files legs live in `ArticleApiTest` and `FileApiTest`, which
- * is where the rest of those endpoints' behaviour is; the three remaining ones are here.
+ * — what they refuse. The articles, files and statistics legs live in `ArticleApiTest`, `FileApiTest`
+ * and `StatisticsApiTest`, which is where the rest of those endpoints' behaviour is; the two
+ * remaining ones are here.
  *
  * ### The rule under `assertUnauthAccessToExercise`
  *

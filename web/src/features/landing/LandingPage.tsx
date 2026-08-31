@@ -304,17 +304,21 @@ function StatItem({
   value,
   label,
   isLoading,
+  isUnavailable,
   live,
 }: {
   value: number
   label: string
   isLoading: boolean
+  isUnavailable: boolean
   live?: boolean
 }) {
   return (
     <Box sx={{ textAlign: 'center' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-        {live && (
+        {/* No pulse when there is no number: a "live" dot beside a dash claims a connection that
+            the poll has just given up on. */}
+        {live && !isUnavailable && (
           <Box
             sx={{
               width: 6,
@@ -335,7 +339,15 @@ function StatItem({
             minWidth: 80,
           }}
         >
-          {isLoading ? <CircularProgress size={24} sx={{ color: '#4a6a4a' }} /> : formatNumber(value)}
+          {isLoading ? (
+            <CircularProgress size={24} sx={{ color: '#4a6a4a' }} />
+          ) : isUnavailable ? (
+            // An em dash rather than a 0. The count never arrived, and "0 submissions" on the front
+            // page of a service with a decade of them is a worse answer than no answer.
+            '—'
+          ) : (
+            formatNumber(value)
+          )}
         </Typography>
       </Box>
       <Typography
@@ -379,6 +391,7 @@ function StatsStrip() {
             value={stats.totalSubmissions}
             label={t('about.statsSubmissions')}
             isLoading={stats.isLoading}
+            isUnavailable={stats.isUnavailable}
           />
           <Box
             sx={{
@@ -392,6 +405,7 @@ function StatsStrip() {
             value={stats.totalUsers}
             label={t('about.statsAccounts')}
             isLoading={stats.isLoading}
+            isUnavailable={stats.isUnavailable}
           />
           <Box
             sx={{
@@ -405,6 +419,7 @@ function StatsStrip() {
             value={stats.inAutoAssessing}
             label={t('about.statsAutograding')}
             isLoading={stats.isLoading}
+            isUnavailable={stats.isUnavailable}
             live
           />
         </Box>

@@ -68,6 +68,21 @@ internal val PERMIT_ALL_PATTERNS = arrayOf(
     // should fall through to anyRequest().authenticated() and fail closed rather than be public
     // because this line was broader than it needed to be.
     "/*/unauth/articles/*",
+    // The three aggregate counts the landing page shows: submissions, accounts, and submissions
+    // being graded right now. The landing page is what a visitor sees before logging in and has
+    // always shown them, so the request was already being made on every anonymous visit — it was
+    // simply being refused, in a five-second retry loop, two log lines at a time, for as long as
+    // the tab stayed open.
+    //
+    // The opposite call to `/unauth/versions` above, and deliberately so. Component versions name
+    // what is installed and are worth withholding; three counts with no ids in them are the sort of
+    // number an "about this service" page exists to print. Nothing here can widen quietly either:
+    // the response is a fixed shape of three Longs, so growing it means editing `StatResp` and
+    // reading this comment on the way past.
+    //
+    // Full segments rather than a wildcard tail, like every other line here, so a
+    // `/unauth/statistics/something-else` added later fails closed instead of inheriting this.
+    "/*/unauth/statistics/common",
     // Uploaded files — the images inside all of the above. An anonymously readable article whose
     // screenshot 401s is not anonymously readable, and the same goes for anonymous exercise embeds.
     // Reads carry no permission check by decision (EZ-1571): objects are public and the key is the

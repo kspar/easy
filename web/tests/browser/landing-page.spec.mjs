@@ -11,8 +11,9 @@ test('landing-page', async ({ launch, check }) => {
   await fakeApi(
     page,
     [
-      // The endpoint is `/statistics/common`; naming it `/statistics` answered a URL one segment
-      // deeper than the needle described.
+      // The endpoint is `/unauth/statistics/common` (public since EZ-1844); naming it `/statistics`
+      // answered a URL one segment deeper than the needle described. This needle still matches by
+      // suffix, which is why the move did not touch any stub.
       ['/statistics/common', () => ({ total_submissions: 123456, total_users: 7890, in_auto_assessing: 3 })],
       ['/account/checkin', () => ({})],
       ['/courses', () => ({ courses: [] })],

@@ -3842,31 +3842,6 @@
         "method": "POST",
         "header": [
           {
-            "key": "oidc_claim_preferred_username",
-            "value": "fp",
-            "type": "text"
-          },
-          {
-            "key": "oidc_claim_email",
-            "value": "foo@bar.com",
-            "type": "text"
-          },
-          {
-            "key": "oidc_claim_given_name",
-            "value": "Fred",
-            "type": "text"
-          },
-          {
-            "key": "oidc_claim_family_name",
-            "value": "Pansen",
-            "type": "text"
-          },
-          {
-            "key": "oidc_claim_easy_role",
-            "value": "admin",
-            "type": "text"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json",
             "type": "text"
@@ -3874,14 +3849,15 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{}"
+          "raw": ""
         },
         "url": {
-          "raw": "{{EMSBASE}}/statistics/common",
+          "raw": "{{EMSBASE}}/unauth/statistics/common",
           "host": [
             "{{EMSBASE}}"
           ],
           "path": [
+            "unauth",
             "statistics",
             "common"
           ]

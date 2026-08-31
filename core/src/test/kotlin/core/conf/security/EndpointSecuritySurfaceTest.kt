@@ -150,6 +150,10 @@ class EndpointSecuritySurfaceTest(@Autowired private val mapping: RequestMapping
             // teacher-and-admin. It is `GET /v2/versions` now — this test caught the stale entry,
             // which is the half of its job that is easy to forget it does.
             "GET /v2/unauth/articles/{articleId}",
+            // Three aggregate counts for the landing page. Takes no caller, and the response is
+            // three Longs — so "leaks nothing" is a property of the DTO here rather than of a
+            // filter somewhere.
+            "POST /v2/unauth/statistics/common",
             "GET /v2/resource/{key}/{filename}",
         )
 
