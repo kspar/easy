@@ -37,7 +37,7 @@ picocli = "4.7.7"
 # management, which does not import testcontainers-bom, so an unversioned coordinate fails to
 # resolve. Bump alongside the postgres:16 tag in TestDatabase.kt and docker-compose.yml.
 testcontainers = "1.21.4"
-tika = "3.3.2"
+tika = "4.0.0"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
