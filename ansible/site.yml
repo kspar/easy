@@ -45,7 +45,21 @@
     # exist and be migrated first. Grading is also the one thing here that runs other people's
     # code, which is a good reason for it to be the last thing added to a host rather than the
     # first. See doc/dev-environment.md §6.
-    - executor
+    #
+    # **Only where the executor has no host of its own**, which is what the empty `executor` group
+    # means. Dev keeps everything on one VM, so these two run here; production has 193.40.22.68 and
+    # the play below covers it.
+    #
+    # This ran unconditionally until 2026-08-31, and on production it cost an outage rather than a
+    # tidiness complaint. `roles/executor` installs Docker, whose bridge claims 172.17.0.0/16 and
+    # leaves a route for it pointing at `docker0`. UT has internal clients in that range, so every
+    # reply to them was sent to a bridge with nothing behind it: their SYN arrived, core answered,
+    # and the answer vanished. Users saw ERR_CONNECTION_TIMED_OUT against both the name and the IP,
+    # with no TLS error, from the moment the role first ran. It also put a `dev-executor` row in
+    # production's database pointing at 127.0.0.1:5111, and pulled 6 GB of grading images onto a
+    # host that does not grade.
+    - role: executor
+      when: groups['executor'] | default([]) | length == 0
     # After `executor`, and not interchangeable with it. This role uses that one's variables — which
     # images exist, where they live, where the executor listens — rather than declaring a second copy
     # of them, and role defaults only stay in scope for roles that come afterwards. It also registers
@@ -53,7 +67,11 @@
     #
     # In production the executor is its own host, which is why this is a separate role rather than
     # more tasks in `executor`: it has to be installable there on its own.
-    - executor_images
+    #
+    # Gated with `executor` above, and for the same reason: on a host that does not grade, this
+    # installs a reconciler and a timer that pull grading images nobody will ever run.
+    - role: executor_images
+      when: groups['executor'] | default([]) | length == 0
 
 # For an environment where the executor is its own machine. Dev is not one — its host is in `core`
 # and not in `executor`, so the two roles below run there from the play above and this play matches
