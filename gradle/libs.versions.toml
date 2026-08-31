@@ -27,7 +27,7 @@ jsoup = "1.23.1"
 # :tsl and :tsl-common get JUnit explicitly. :core does not need this — it inherits jupiter from
 # spring-boot-starter-test, whose version the Boot BOM decides; pinning it here for those two would
 # risk the two modules disagreeing on the platform version inside one build.
-junit = "5.14.2"
+junit = "6.1.3"
 kaml = "0.104.0"
 kotlinLogging = "8.0.4"
 kotlinxSerializationJson = "1.11.0"
