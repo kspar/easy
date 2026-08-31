@@ -520,9 +520,11 @@ Three things break in three different ways if this is done piecemeal, so the ord
    Everyone is signed out regardless: tokens carrying the old issuer are rejected by the newly
    configured core, which is correct and looks exactly like an outage to anyone mid-session.
 
-3. **Then a deploy, promptly**, because step 2 does not finish the job. `core_autodeploy` writes
-   `/srv/easy/conf/config.json`, but the copy a browser loads is `web/config.json` inside the
-   *current release*, which only gets it when a release is placed. So between step 2 and this, the
+3. **Then a deploy, promptly**, because step 2 does not finish the job. On an autodeploying host —
+   dev is one, production is not — `core_autodeploy` writes `/srv/easy/conf/config.json`, but the
+   copy a browser loads is `web/config.json` inside the *current release*, which only gets it when a
+   release is placed. Where autodeploy is off there is no `conf/config.json` at all and `deploy.sh`
+   is the only thing that places one, which makes this step not merely prompt but mandatory. So between step 2 and this, the
    SPA is still sending people to the old name — which by then has no certificate that matches, so
    they get a TLS warning rather than a login page.
 

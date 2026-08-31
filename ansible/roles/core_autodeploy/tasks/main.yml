@@ -3,160 +3,36 @@
 #
 # Depends on core_service having run: the release tree, the deploy group and the systemd unit this
 # restarts all come from there, and this role only refers to them.
+#
+# **Opt-in, and the whole role is gated rather than just the timer.** It used to install everything
+# unconditionally and let `core_autodeploy_enabled` decide only whether the timer was started. That
+# left production carrying a deploy script pinned to dev's branch and one `systemctl start` away
+# from installing a dev build — a stopped timer is not the same safety property as no timer. It also
+# meant `enabled: true` was the default, so a new host tracked dev-releases unless someone
+# remembered to say otherwise. Both halves of that are fixed here: nothing is installed unless the
+# host asks for it, and a host that asks must name its own branch.
 
-- name: Create the account the deploys run as
-  ansible.builtin.user:
-    name: "{{ core_autodeploy_user }}"
-    system: true
-    shell: /usr/sbin/nologin
-    home: "/var/lib/{{ core_autodeploy_user }}"
-    create_home: true
-    state: present
-
-- name: Let it write the release tree
-  # The group core_service made owner of /srv/easy. Appended, so this does not disturb whatever
-  # else the account is in.
-  ansible.builtin.user:
-    name: "{{ core_autodeploy_user }}"
-    groups: "{{ core_autodeploy_deploy_group }}"
-    append: true
-  when: not ansible_check_mode
-
-- name: Let it restart core, and nothing else
-  # Two exact commands, no wildcards — the same reasoning as core_service's grant for human
-  # deployers. `systemctl` with a free argument is equivalent to root for anyone who can write a
-  # unit file, and this account can write /srv/easy.
-  ansible.builtin.copy:
-    dest: /etc/sudoers.d/easy-autodeploy
-    owner: root
-    group: root
-    mode: "0440"
-    # A malformed sudoers file can lock everyone out of sudo entirely, so it is checked before it
-    # is allowed to exist.
-    validate: "visudo -cf %s"
-    content: |
-      # Managed by Ansible (roles/core_autodeploy) — local edits are overwritten.
-      {{ core_autodeploy_user }} ALL=(root) NOPASSWD: /usr/bin/systemctl restart {{ core_autodeploy_service }}
-
-- name: Create the config directory
-  ansible.builtin.file:
-    path: "{{ core_autodeploy_token_file | dirname }}"
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
-
-# --- the token, which stays on the host --------------------------------------------------------
-# Same arrangement as every other credential here: Ansible creates the file, never reads it, and
-# afterwards only checks its shape. A placeholder is written so an unconfigured host says so rather
-# than failing obscurely, and this role reports it on every run until a human replaces it.
-
-- name: Create the token file if it does not exist
-  ansible.builtin.copy:
-    dest: "{{ core_autodeploy_token_file }}"
-    owner: root
-    group: "{{ core_autodeploy_user }}"
-    mode: "0640"
-    content: "CHANGEME-github-token-with-actions-read\n"
-    force: false
-  when: not ansible_check_mode
-
-- name: Check the token file's shape, without reading its value
-  ansible.builtin.stat:
-    path: "{{ core_autodeploy_token_file }}"
-  register: core_autodeploy_token_stat
-  check_mode: false
-
-- name: Refuse to leave the token world-readable
+- name: Refuse to install autodeploy without saying which branch it tracks
+  # No default for the branch, deliberately. A default is the mechanism by which a production host
+  # quietly inherits `dev-releases`, and there is no value that is right for an unspecified host.
   ansible.builtin.assert:
     that:
-      - core_autodeploy_token_stat.stat.mode == "0640"
-      - core_autodeploy_token_stat.stat.pw_name == "root"
-      - core_autodeploy_token_stat.stat.gr_name == core_autodeploy_user
+      - core_autodeploy_branch is defined
+      - core_autodeploy_branch | length > 0
+      - core_autodeploy_config_src is defined
+      - core_autodeploy_config_src | length > 0
     fail_msg: >-
-      {{ core_autodeploy_token_file }} should be 0640 root:{{ core_autodeploy_user }} but is
-      {{ core_autodeploy_token_stat.stat.mode | default('absent') }}
-      {{ core_autodeploy_token_stat.stat.pw_name | default('') }}:{{ core_autodeploy_token_stat.stat.gr_name | default('') }}.
+      core_autodeploy_enabled is true, so this host must name both the branch it deploys from
+      (core_autodeploy_branch) and the config.json that goes with it (core_autodeploy_config_src).
+      Pushing to that branch is what deploys here and that file is what the deployed app reads for
+      its backend and its realm — neither is something to inherit from a default.
     quiet: true
-  when:
-    - not ansible_check_mode
-    - core_autodeploy_token_stat.stat.exists
+  when: core_autodeploy_enabled | bool
 
-- name: Find out whether the token is still a placeholder
-  # Greps rather than slurps: the answer is a yes/no, and reading the file to the controller to get
-  # it would give away the property this whole arrangement exists to keep.
-  ansible.builtin.command:
-    cmd: grep -q '^CHANGEME' {{ core_autodeploy_token_file | quote }}
-  register: core_autodeploy_token_placeholder
-  changed_when: false
-  failed_when: false
-  check_mode: false
+- name: Install it
+  ansible.builtin.include_tasks: install.yml
+  when: core_autodeploy_enabled | bool
 
-- name: Say that deploys will not start until a token is in place
-  ansible.builtin.debug:
-    msg: >-
-      {{ core_autodeploy_token_file }} still holds a placeholder, so the timer is installed and
-      running but every tick will exit without deploying. Put a GitHub token with Actions:read for
-      {{ core_autodeploy_repo }} in it — `sudo tee {{ core_autodeploy_token_file }}` — and no
-      restart is needed; the next tick picks it up.
-  when: core_autodeploy_token_placeholder.rc == 0
-
-# --- this environment's config.json ---------------------------------------------------------------
-
-- name: Place this environment's config.json
-  # Out of the release tree on purpose: it belongs to the environment, so a rollback keeps today's
-  # config rather than resurrecting the one that shipped with the older commit.
-  ansible.builtin.copy:
-    src: "{{ core_autodeploy_config_src }}"
-    dest: "{{ core_autodeploy_config_json }}"
-    owner: root
-    group: "{{ core_autodeploy_deploy_group }}"
-    mode: "0644"
-
-# --- the deployer ------------------------------------------------------------------------------
-
-- name: Install the deploy script
-  ansible.builtin.template:
-    src: easy-autodeploy.py.j2
-    dest: /usr/local/bin/easy-autodeploy
-    owner: root
-    group: root
-    mode: "0755"
-    # Catches a template that renders to invalid Python before it is ever run by a timer, where the
-    # failure would otherwise be a syntax error once a minute in the journal.
-    validate: "python3 -m py_compile %s"
-
-- name: Install the unit and its timer
-  ansible.builtin.template:
-    src: "{{ item }}.j2"
-    dest: "/etc/systemd/system/{{ item }}"
-    owner: root
-    group: root
-    mode: "0644"
-    validate: "systemd-analyze verify %s"
-  loop:
-    - easy-autodeploy.service
-    - easy-autodeploy.timer
-  notify: Reload the autodeploy timer
-
-- name: Apply the unit before enabling it
-  ansible.builtin.meta: flush_handlers
-
-- name: Enable the timer
-  ansible.builtin.systemd_service:
-    name: easy-autodeploy.timer
-    enabled: "{{ core_autodeploy_enabled | bool }}"
-    state: "{{ 'started' if core_autodeploy_enabled | bool else 'stopped' }}"
-    daemon_reload: true
-  when: not ansible_check_mode
-
-- name: Say when it next runs
-  ansible.builtin.command:
-    cmd: systemctl list-timers easy-autodeploy.timer --no-pager
-  register: core_autodeploy_next
-  changed_when: false
-  check_mode: false
-
-- name: Show it
-  ansible.builtin.debug:
-    var: core_autodeploy_next.stdout_lines
+- name: Remove it where it is not wanted
+  ansible.builtin.include_tasks: absent.yml
+  when: not core_autodeploy_enabled | bool

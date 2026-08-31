@@ -70,11 +70,19 @@
   # Same lesson as the SSH grant list: `append: true` on its own makes a group a high-water mark, so
   # removing a name from the inventory would report success and change nothing. Being able to write
   # the release tree is being able to replace the jar core runs, so it is worth revoking properly.
+  #
+  # The service accounts are exempted because they are not people and are not in
+  # `easy_core_deploy_users`. Without that, this task and core_autodeploy fought each other on every
+  # run of the Core play: this one removed `easy-autodeploy` from the group, that one put it back.
+  # Never idempotent, and an autodeploy tick landing between the two lost write access to the release
+  # tree in the middle of installing a release.
   ansible.builtin.command:
     cmd: gpasswd -d {{ item | quote }} {{ easy_core_deploy_group | quote }}
   loop: >-
     {{ (easy_core_deploy_group_now.ansible_facts.getent_group[easy_core_deploy_group][2]
-        | default('') | split(',')) | select | difference(easy_core_deploy_users) }}
+        | default('') | split(',')) | select
+        | difference(easy_core_deploy_users)
+        | difference(easy_core_deploy_group_service_accounts) }}
   changed_when: true
   when: not ansible_check_mode
 
@@ -100,6 +108,28 @@
     owner: "{{ easy_core_user }}"
     group: "{{ easy_core_group }}"
     mode: "0750"
+
+- name: Create the upload directory the local storage backend writes into
+  # Only for `backend: local`; an s3 host stores nothing here and should not be given a directory
+  # that looks like it does. Nothing created this before, and nothing added it to the unit's
+  # ReadWritePaths either, so a fresh local host installed cleanly and then failed to start — core
+  # cannot create it itself, because ProtectSystem=strict has already made the filesystem read-only
+  # by the time it tries. 0750: core streams these bytes out itself, so nobody else needs to read
+  # them off the disk.
+  #
+  # Both variables belong to core_config, which runs before this role in the Core play. Referenced
+  # without a `default()` on purpose: the same two values decide what application.yaml says, what
+  # this creates and what the unit may write to, and a fallback spelled here would be a second copy
+  # of the path to keep in step — one that goes wrong silently, as the unit whitelisting the old
+  # directory while the config names the new one. Running this role with core_config out of scope is
+  # an undefined-variable error, which is the correct answer to that.
+  ansible.builtin.file:
+    path: "{{ easy_core_storage_local_dir }}"
+    state: directory
+    owner: "{{ easy_core_user }}"
+    group: "{{ easy_core_group }}"
+    mode: "0750"
+  when: easy_core_storage_backend == 'local'
 
 - name: Install the unit
   ansible.builtin.template:
@@ -129,6 +159,14 @@
 - name: Check the journal reader refuses what it is supposed to refuse
   # A validating wrapper that does not actually validate is worse than no wrapper, because the
   # sudoers comment now claims a property nobody re-tested. Cheap to assert, so assert it.
+  #
+  # Deliberately still ABOVE the sudoers grant, while the positive probe below is deliberately under
+  # it. This one runs as root and needs no grant, and it is the check that the wrapper still pins the
+  # unit — so it has to be able to stop the grant existing. Ordered the other way, loosening the
+  # reject arm in easy-core-log.j2 would write `NOPASSWD: easy-core-log *` to disk and only then
+  # fail, leaving the deploy accounts passwordless root on a wrapper that no longer pins the unit,
+  # i.e. the whole journal including auth. The play aborts either way; what differs is whether the
+  # grant is on the host when it does.
   ansible.builtin.command:
     cmd: "{{ easy_core_log_helper_path }} {{ item }}"
   register: easy_core_log_probe
@@ -139,6 +177,33 @@
     - "--since 'yesterday -u ssh'"
     - "--follow"
   when: easy_core_deploy_users | length > 0
+
+- name: Let the deploy account restart core without a password
+  # The single grant deploy/deploy.sh needs. Scoped to one exact command: a deploy should be
+  # able to restart core and do nothing else with root.
+  #
+  # Between the two probes, and both placements are deliberate. It comes after the wrapper it names
+  # and after the check that the wrapper still refuses a second `-u` — see above. It comes before the
+  # unprivileged probe because that probe cannot pass without it: the helper re-execs itself under
+  # `sudo -n`, which fails rather than prompting when no grant exists. With the grant last, the role
+  # failed on every first run against a new host and passed on every run after that, so only a new
+  # environment ever met it — production did, on the night of the v4.0 release.
+  ansible.builtin.template:
+    src: sudoers-deploy.j2
+    dest: /etc/sudoers.d/easy-core-deploy
+    owner: root
+    group: root
+    mode: "0440"
+    # A malformed sudoers file can lock everyone out of sudo entirely, so it is checked before it is
+    # allowed to exist. -c checks, -f names the file to check.
+    validate: "visudo -cf %s"
+  when: easy_core_deploy_users | length > 0
+
+- name: Remove the grant when nobody should have it
+  ansible.builtin.file:
+    path: /etc/sudoers.d/easy-core-deploy
+    state: absent
+  when: easy_core_deploy_users | length == 0
 
 - name: Check the journal reader honours its arguments as an unprivileged caller
   # The other half, and the half that was missing. Refusing bad input proves nothing about whether
@@ -164,26 +229,6 @@
     or (easy_core_log_positive.stdout_lines | length) > 20
   loop: "{{ easy_core_deploy_users }}"
   when: easy_core_deploy_users | length > 0
-
-- name: Let the deploy account restart core without a password
-  # The single grant deploy/deploy.sh needs. Scoped to one exact command: a deploy should be
-  # able to restart core and do nothing else with root.
-  ansible.builtin.template:
-    src: sudoers-deploy.j2
-    dest: /etc/sudoers.d/easy-core-deploy
-    owner: root
-    group: root
-    mode: "0440"
-    # A malformed sudoers file can lock everyone out of sudo entirely, so it is checked before it is
-    # allowed to exist. -c checks, -f names the file to check.
-    validate: "visudo -cf %s"
-  when: easy_core_deploy_users | length > 0
-
-- name: Remove the grant when nobody should have it
-  ansible.builtin.file:
-    path: /etc/sudoers.d/easy-core-deploy
-    state: absent
-  when: easy_core_deploy_users | length == 0
 
 # --- starting it, if there is anything to start ------------------------------------------------------
 

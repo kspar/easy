@@ -156,3 +156,12 @@ easy_nginx_acme_email: kaspar.papli@helmes.com
 # Deliberately absent for production, along with the id it replaces: that playbook submits work and
 # runs a container, which is not something to do to a real environment casually.
 grading_check_fixture: true
+
+# --- automatic deploys ------------------------------------------------------------------------------
+# Dev's, and stated here rather than assumed by the role. All three of these used to be role defaults
+# describing dev, which meant every other environment inherited dev's answers by saying nothing —
+# production ended up with dev's deploy script and dev's config.json installed on it, harmless only
+# because the timer was switched off by hand. The role is opt-in now and asserts the branch.
+core_autodeploy_enabled: true
+core_autodeploy_branch: dev-releases
+core_autodeploy_config_src: "{{ playbook_dir }}/../deploy/dev/config.json"

@@ -38,6 +38,19 @@ easy_core_java_opts: ""
 # `NOPASSWD: /usr/bin/systemctl restart easy-core` and nothing wider.
 easy_core_deploy_users: []
 
+# Machine accounts that belong in the deploy group but are not deployers, and so must survive the
+# revoke task that prunes it back to `easy_core_deploy_users`.
+#
+# Only core_autodeploy's account, and only where that role is actually installing something. The two
+# halves both matter. Where autodeploy is on, the roles otherwise fight on every play — this one
+# evicts the account, that one re-adds it — and a timer tick landing between them loses write access
+# to the release tree mid-deploy. Where it is off, the account should lose the group: absent.yml
+# leaves the account itself alone deliberately, and membership of the group that may replace the jar
+# core runs is the part of it that is a privilege.
+easy_core_deploy_group_service_accounts: >-
+  {{ [core_autodeploy_user | default('easy-autodeploy')]
+     if (core_autodeploy_enabled | default(false) | bool) else [] }}
+
 # A root-owned reader for core's journal, granted NOPASSWD alongside the restart. It exists because
 # the unit cannot be pinned in sudoers: journalctl takes `-u` repeatedly, and a sudoers wildcard
 # matches the whole rest of the command line, so any rule permissive enough to allow a time window

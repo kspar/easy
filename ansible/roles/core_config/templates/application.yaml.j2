@@ -133,6 +133,13 @@ easy:
       backend: "{{ easy_core_storage_backend }}"
       local:
         dir: "{{ easy_core_storage_local_dir }}"
+{% if easy_core_storage_backend == 's3' %}
+      ## Written only for an s3 host, and the condition is not tidiness. `easy_core_storage_s3_bucket`
+      ## deliberately has no default — the role asserts it instead, so that a host claiming the s3
+      ## backend without naming a bucket is told so rather than pointed at someone else's. Rendering
+      ## this block unconditionally turned that missing default into an undefined-variable failure on
+      ## every `local` host, which is how production first met it. S3StorageService is
+      ## @ConditionalOnProperty on the backend, so with `local` these keys are read by nobody.
       s3:
         ## The bucket must serve objects publicly and must DENY anonymous ListBucket. The whole
         ## scheme rests on keys being unguessable, and a public listing hands them out — that is the
@@ -141,6 +148,7 @@ easy:
         region: "{{ easy_core_storage_s3_region }}"
         endpoint: "{{ easy_core_storage_s3_endpoint }}"
         public-base-url: "{{ easy_core_storage_s3_public_base_url }}"
+{% endif %}
 
     upload:
       max-bytes:

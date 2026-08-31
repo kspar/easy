@@ -1,0 +1,89 @@
+---
+# Included by main.yml where core_autodeploy_enabled is false.
+#
+# "Disabled" used to mean the timer was installed and stopped, which left the deploy script, its
+# units and its sudo grant sitting on a host that had said it did not want them — all of it pinned
+# to whichever branch the role defaulted to. Production carried exactly that: a deployer for dev's
+# branch, one `systemctl start` from installing a dev build.
+#
+# The flag now defaults to false, so this file is also what an unconfigured host gets, and it
+# deletes things. That is why it looks before it acts: on a host that never had autodeploy it must
+# do nothing at all and say so, and on one that did it names every path before removing it. `-e
+# core_autodeploy_enabled=false` on an installed host is an uninstall, not a skip — the report below
+# is what makes that visible while it happens rather than afterwards.
+
+- name: Look for anything autodeploy left on this host
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /etc/systemd/system/easy-autodeploy.timer
+    - /etc/systemd/system/easy-autodeploy.service
+    - /usr/local/bin/easy-autodeploy
+    - /etc/sudoers.d/easy-autodeploy
+    - "{{ core_autodeploy_config_json }}"
+  register: core_autodeploy_leftovers
+  check_mode: false
+
+- name: What is about to be removed
+  ansible.builtin.debug:
+    msg: >-
+      {{ (core_autodeploy_present | length > 0)
+         | ternary('autodeploy is disabled on this host; removing: ' ~ (core_autodeploy_present | join(', ')),
+                   'autodeploy is disabled on this host and nothing of it is installed.') }}
+  vars:
+    core_autodeploy_present: "{{ core_autodeploy_leftovers.results | selectattr('stat.exists') | map(attribute='item') | list }}"
+
+- name: Stop the timer and its unit
+  # Only the units that are actually present, so that "there was nothing here" and "this failed to
+  # stop" cannot arrive as the same green result. A blanket `failed_when: false` here would report a
+  # timer that refused to stop as success and then delete its unit file, leaving the operator's only
+  # evidence of autodeploy still running to be the deploy it performs next.
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop:
+    - easy-autodeploy.timer
+    - easy-autodeploy.service
+  when:
+    - not ansible_check_mode
+    - ('/etc/systemd/system/' ~ item) in (core_autodeploy_leftovers.results
+        | selectattr('stat.exists') | map(attribute='item') | list)
+
+- name: Remove the units, the deployer and its grant
+  # The config.json goes with them: this role's copy is the one the autodeploy script would install
+  # into a release, and on a host that does not autodeploy it is an unread file naming some
+  # environment's backend and realm. Production's live config.json is written by deploy/deploy.sh
+  # into the release's own web directory and is not this file — but a stale copy of dev's settings in
+  # a production config directory is a trap for the next person to read that directory.
+  #
+  # /srv/easy/conf itself stays. It is core's config directory, not this role's, and application.yaml
+  # and secrets.yaml live there.
+  ansible.builtin.file:
+    path: "{{ item.item }}"
+    state: absent
+  loop: "{{ core_autodeploy_leftovers.results | selectattr('stat.exists') | list }}"
+  loop_control:
+    label: "{{ item.item }}"
+  register: core_autodeploy_removed
+
+- name: Forget the units that are gone
+  # Not the role's handler: that one restarts the timer and is guarded on the flag being true, so on
+  # this path it would never run and systemd would keep listing units whose files no longer exist.
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when:
+    - not ansible_check_mode
+    - core_autodeploy_removed is changed
+
+# Deliberately left behind: the service account and the GitHub token. The token is a credential a
+# human put there by hand, and a playbook that silently destroys one of those teaches people not to
+# trust it. The account keeps no privilege — core_service drops it from the deploy group precisely
+# when this flag is false, and the sudo grant above is gone — so what remains is a nologin user.
+- name: Say what was left alone
+  ansible.builtin.debug:
+    msg: >-
+      Left in place: the {{ core_autodeploy_user }} account (nologin, and no longer in
+      {{ core_autodeploy_deploy_group }}) and {{ core_autodeploy_token_file }}, which holds a
+      hand-placed credential. Remove those by hand if this host is done with autodeploy for good.
+  when: core_autodeploy_removed is changed

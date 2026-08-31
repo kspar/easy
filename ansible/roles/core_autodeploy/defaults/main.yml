@@ -11,15 +11,22 @@
 # arbitrary commit — a rollback, or something off master. See the header of the deploy script
 # template for the contract between them.
 
-core_autodeploy_enabled: true
+# Off unless a host asks for it. It defaulted to true, which is the wrong way round for a mechanism
+# that installs whatever a branch happens to contain: the environment that most wants automatic
+# deploys is the one that can most afford to say so, and the environment that must not have them
+# should not depend on someone remembering to switch it off. Where this is false the role removes
+# what it would otherwise install — see tasks/absent.yml.
+core_autodeploy_enabled: false
 
 core_autodeploy_repo: kspar/easy
 
-# The branch this host tracks. Pushing to it is the deploy.
+# `core_autodeploy_branch` — the branch this host tracks; pushing to it is the deploy. No default,
+# and that is the point. Any default is a branch some other environment's host silently inherits,
+# and `dev-releases` — which this was — is the one that turns a production host into a consumer of
+# dev builds. tasks/main.yml asserts it is set whenever the role is enabled.
 #
-# Not `releases`: `releases/*` is for real version branches and CI already builds those, so a name
-# that says which environment it feeds cannot be mistaken for one of them.
-core_autodeploy_branch: dev-releases
+# Not `releases/*`: those are real version branches and CI already builds them, so a name that says
+# which environment it feeds cannot be mistaken for one of them.
 
 # Matched against the run's `name`, so an unrelated workflow gaining artifacts later cannot be
 # mistaken for a release build.
@@ -49,7 +56,9 @@ core_autodeploy_keep_releases: 5
 # the same reason: web/public/config.json holds *production* defaults, and an artifact carrying
 # those is one forgotten step away from dev quietly talking to production.
 core_autodeploy_config_json: /srv/easy/conf/config.json
-core_autodeploy_config_src: "{{ playbook_dir }}/../deploy/dev/config.json"
+# `core_autodeploy_config_src` — no default, for the reason directly above. It used to be
+# deploy/dev/config.json, so any environment that did not override it installed dev's backend and
+# dev's realm. Each inventory names its own.
 
 # --- the account it runs as ---------------------------------------------------------------------
 # Its own system account rather than root. The one thing this process handles that comes from

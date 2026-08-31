@@ -254,11 +254,17 @@ admin-only sidebar link. Not environment-specific — there is one EZ project, s
 point at the same dashboard — but still per-environment config rather than a build constant, because
 an environment that should not advertise the tracker simply omits the key.
 
-**Changing either of these needs the `core_autodeploy` role re-run, not just a promote.** The role
-copies `deploy/<env>/config.json` to `/srv/easy/conf/config.json`, and the autodeploy script copies
-*that* into each new dist as it installs it. So a config change lands on the next install: update the
-host's copy first, then promote, or the promote ships the previous config and the change appears an
-install later than expected.
+**On a host that autodeploys, changing either of these needs the `core_autodeploy` role re-run, not
+just a promote.** There the role copies `core_autodeploy_config_src` to `/srv/easy/conf/config.json`,
+and the autodeploy script copies *that* into each new dist as it installs it. So a config change
+lands on the next install: update the host's copy first, then promote, or the promote ships the
+previous config and the change appears an install later than expected.
+
+Where `core_autodeploy_enabled` is false there is no such file, and no step that needs it: the role
+removes its copy, and `deploy.sh` sends `deploy/<env>/config.json` straight into the release it is
+installing. Production works this way. Do not go looking for `/srv/easy/conf/config.json` there —
+until 2026-08-31 one existed and held *dev's* settings, unread by anything, which is exactly why the
+role now takes it away instead of leaving it.
 
 `emsRoot` is an absolute cross-origin URL — web and API are separate names on dev — so it also
 requires `easy_core_cors_allowed_origins` on the host to contain `https://dev.lahendus.ut.ee`. It

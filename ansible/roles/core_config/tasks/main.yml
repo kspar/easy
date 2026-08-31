@@ -173,6 +173,20 @@
     quiet: true
   when: not easy_core_allow_real_outbound | bool
 
+- name: Refuse a storage backend that is not one of the two that exist
+  # Every other check on the backend, here and in core_service, is an equality test against 'local'
+  # or 's3', and each one silently takes the other branch for a value that is neither. `S3` would
+  # pass the opt-in guard below, skip the S3-values assert, render no s3 block, get no upload
+  # directory and no ReadWritePaths entry — and then core would match neither storage bean's
+  # @ConditionalOnProperty and die at startup on a missing StorageService, with nothing anywhere
+  # naming the typo. One assert, before any of them.
+  ansible.builtin.assert:
+    that: easy_core_storage_backend in ['local', 's3']
+    fail_msg: >-
+      easy_core_storage_backend is '{{ easy_core_storage_backend }}'. It must be exactly 'local' or
+      's3' — the comparisons that act on it are case-sensitive, in both Ansible and core.
+    quiet: true
+
 - name: Refuse object storage on an environment that has not opted into it
   # Not gated on easy_core_allow_real_outbound — see the note on easy_core_storage_allow_s3. This is
   # its own decision because the risk is its own shape: the nightly sweep lists the bucket and

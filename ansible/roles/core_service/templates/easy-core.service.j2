@@ -53,7 +53,19 @@ SystemCallFilter=@system-service
 SystemCallErrorNumber=EPERM
 
 # ProtectSystem=strict makes everything read-only except these.
+#
+# The upload directory is listed only when the local backend is in use, and it has to be listed:
+# ProtectSystem=strict is what an s3 host never notices and a local host dies of. Core opens the
+# directory on startup, gets EROFS, and the unit fails — with a message about a path, which reads
+# like a permissions problem on the directory rather than a property of the unit that names it.
+#
+# A second ReadWritePaths line adds to the first rather than replacing it — that is systemd's rule
+# for this directive, and the reason the condition can be a whole line instead of an expression
+# spliced into one.
 ReadWritePaths={{ easy_core_log_dir }}
+{% if easy_core_storage_backend == 'local' %}
+ReadWritePaths={{ easy_core_storage_local_dir }}
+{% endif %}
 
 # Deliberately NOT set: MemoryDenyWriteExecute. The JIT compiler writes machine code and then
 # executes it, so that flag stops the JVM from starting at all. It appears in most systemd hardening
