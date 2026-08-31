@@ -22,6 +22,18 @@ on:
       # the deploy silently never comes. Reviewed and kept on 2026-08-09 for that reason; deleting
       # it to save CI minutes is removing the only gate on the one path that has none.
       - dev-releases
+      # What production tracks, and the same argument as above applies to it — more so, because a
+      # commit pushed straight at this branch is a hotfix on the live environment.
+      #
+      # It has to be here for a second reason too: deploy.sh resolves `latest` by matching a run's
+      # HEAD BRANCH against DEPLOY_BRANCH, so a branch CI does not build produces no run for it to
+      # find. `prod-releases` was named in prod.env for a while before this line existed, under its
+      # earlier name `releases/v4.0`, and `deploy.sh prod latest` simply never worked (EZ-1845).
+      #
+      # `prod-releases` rather than a `releases/<version>` branch: the name means "what production
+      # runs", and one that changes every release cannot be tracked by anything long-lived — an
+      # autodeploy timer takes a single branch name, not a pattern.
+      - prod-releases
       - 'releases/*'
 
 jobs:

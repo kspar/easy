@@ -160,12 +160,21 @@ Deliberately **no polling autodeploy on production**. The dev timer re-asserts w
 points at within a minute, which is exactly right there and turns a rollback here into a rollback
 plus a remembered `systemctl stop`. Production's deploys are named by a person.
 
-`DEPLOY_BRANCH` is a `releases/*` branch rather than `master`, so a hotfix is a deliberate push to a
-named branch. CI builds `releases/*`.
+`DEPLOY_BRANCH` is **`prod-releases`** rather than `master`, so a hotfix is a deliberate push to a
+named branch. It mirrors `dev-releases`, and the name is stable on purpose: it means "what
+production runs", and a `releases/<version>` branch that changes every release cannot be tracked by
+anything long-lived — an autodeploy timer takes one branch name, not a pattern.
+
+Until 2026-09-01 this said `releases/v4.0`, and **that branch had never been created**, so
+`deploy.sh prod latest` could not resolve anything (EZ-1845). Nobody noticed because production is
+always deployed by explicit sha. Worth knowing why the branch alone would not have fixed it either:
+`latest` matches a CI run's *head branch* against `DEPLOY_BRANCH`, so the branch has to be in
+`main.yml`'s push triggers or it produces no runs to match.
 
 ## What CI publishes
 
-`.github/workflows/main.yml`, on master, `releases/*` and `workflow_dispatch` only:
+`.github/workflows/main.yml`, on master, `dev-releases`, `prod-releases`, `releases/*` and
+`workflow_dispatch` only:
 
 | Artifact | Contents |
 | --- | --- |
