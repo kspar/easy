@@ -10,7 +10,75 @@ set -euo pipefail
 
 DB={{ postgres_db_name | quote }}
 DIR={{ postgres_backup_dir | quote }}
-KEEP_DAYS={{ postgres_backup_keep_days }}
+
+# Grandfather-father-son, because "keep N days" and "dump before every deploy" together are a disk
+# filling up. A dump of this database is ~460 MB and one is taken nightly AND ahead of each deploy,
+# so a fortnight's worth was tens of gigabytes on a 28 GB disk — the retention ate the host it was
+# protecting. Counting backups rather than days makes the ceiling arithmetic instead of a guess:
+# at most KEEP_DAILY + KEEP_WEEKLY + KEEP_MONTHLY files, whatever the deploy rate.
+KEEP_DAILY={{ postgres_backup_keep_daily }}
+KEEP_WEEKLY={{ postgres_backup_keep_weekly }}
+KEEP_MONTHLY={{ postgres_backup_keep_monthly }}
+
+# `--dry-run` prints what would be kept and removed, and touches nothing. A script that deletes
+# backups should be inspectable before it is trusted, and this is how you inspect it on the host.
+DRY_RUN=false
+[ "${1:-}" = "--dry-run" ] && DRY_RUN=true
+
+# Which dumps to keep, decided from the timestamp in the file name rather than from mtime: a file
+# copied or restored gets a new mtime and would silently change its own age.
+#
+# The newest dump in each bucket wins, so a day with three deploys contributes one daily. A dump can
+# satisfy several buckets at once — today's is also this week's and this month's — which is why the
+# keep set is a union and the real file count is usually below the sum.
+prune() {
+    local kept=0 removed=0
+    declare -A newest_of_day newest_of_week newest_of_month
+
+    # Sorted by name, which for this stamp format is chronological, so later assignments overwrite
+    # earlier ones and each bucket ends holding its newest member.
+    local f base stamp day week month
+    while IFS= read -r f; do
+        base=$(basename "$f")
+        stamp=${base#"$DB-"}; stamp=${stamp%.dump}
+        day=${stamp%%T*}
+        [[ $day =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || continue
+        week=$(date -d "$day" +%G-%V 2>/dev/null) || continue
+        month=${day%-*}
+        newest_of_day[$day]=$f
+        newest_of_week[$week]=$f
+        newest_of_month[$month]=$f
+    done < <(find "$DIR" -maxdepth 1 -name "$DB-*.dump" -type f | sort)
+
+    declare -A keep
+    local k
+    # Roles accumulate rather than overwrite: today's dump is usually the daily, the weekly and the
+    # monthly at once, and a report that named only the last one would understate why it is kept.
+    for k in $(printf '%s\n' "${!newest_of_day[@]}"   | sort | tail -n "$KEEP_DAILY");   do f=${newest_of_day[$k]};   keep[$f]="${keep[$f]:+${keep[$f]}+}daily";   done
+    for k in $(printf '%s\n' "${!newest_of_week[@]}"  | sort | tail -n "$KEEP_WEEKLY");  do f=${newest_of_week[$k]};  keep[$f]="${keep[$f]:+${keep[$f]}+}weekly";  done
+    for k in $(printf '%s\n' "${!newest_of_month[@]}" | sort | tail -n "$KEEP_MONTHLY"); do f=${newest_of_month[$k]}; keep[$f]="${keep[$f]:+${keep[$f]}+}monthly"; done
+
+    while IFS= read -r f; do
+        if [ -n "${keep[$f]:-}" ]; then
+            kept=$((kept + 1))
+            [ "$DRY_RUN" = true ] && echo "  keep   $(basename "$f")  (${keep[$f]})"
+        else
+            removed=$((removed + 1))
+            if [ "$DRY_RUN" = true ]; then
+                echo "  remove $(basename "$f")"
+            else
+                rm -f "$f"
+            fi
+        fi
+    done < <(find "$DIR" -maxdepth 1 -name "$DB-*.dump" -type f | sort)
+
+    echo "retention: kept $kept, removed $removed (daily $KEEP_DAILY, weekly $KEEP_WEEKLY, monthly $KEEP_MONTHLY)"
+}
+
+if [ "$DRY_RUN" = true ]; then
+    prune
+    exit 0
+fi
 
 stamp=$(date +%Y-%m-%dT%H%M)
 final="$DIR/$DB-$stamp.dump"
@@ -36,7 +104,6 @@ trap - EXIT
 echo "wrote $final ($(du -h "$final" | cut -f1))"
 
 # Only after a dump succeeded. Pruning first, or unconditionally, means a week of failures quietly
-# eats the history it was supposed to protect — the retention window should shrink when backups
-# break, not the archive.
-deleted=$(find "$DIR" -maxdepth 1 -name "$DB-*.dump" -type f -mtime "+$KEEP_DAYS" -print -delete | wc -l)
-echo "kept $(find "$DIR" -maxdepth 1 -name "$DB-*.dump" -type f | wc -l) dumps, pruned $deleted older than $KEEP_DAYS days"
+# eats the history it was supposed to protect — the archive should outlive the schedule, not the
+# other way round.
+prune

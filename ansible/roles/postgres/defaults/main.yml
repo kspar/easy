@@ -34,7 +34,13 @@ postgres_backup_dir: /srv/easy/db-dumps
 # 14 days, the upper end of §3.5's 7–14. The thing this protects against is usually noticed late —
 # "that course looks wrong" is a slower signal than a service failing to start — and the dumps are
 # small next to the disk: at roughly half a gigabyte each, a fortnight is a few percent of the VM.
-postgres_backup_keep_days: 14
+# Grandfather-father-son rather than a window in days. See the reasoning in the script template:
+# a dump is taken nightly and before every deploy, so "14 days" was an unbounded number of files.
+# The ceiling here is arithmetic — at most 9 dumps, and usually fewer, since today's dump counts as
+# the daily, the weekly and the monthly at once.
+postgres_backup_keep_daily: 5
+postgres_backup_keep_weekly: 2
+postgres_backup_keep_monthly: 2
 
 # 03:30 UTC, and the offset from the hour is on purpose: unattended-upgrades and its reboot window
 # are the other things that run overnight here (§9), and a dump killed halfway by a reboot is a
