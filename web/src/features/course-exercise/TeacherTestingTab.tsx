@@ -37,10 +37,17 @@ import { useSoftWrap } from '../../components/editorWrap.ts'
 
 export default function TeacherTestingTab({
   exerciseId,
+  courseId,
   solutionFileName,
   graderType,
 }: {
   exerciseId: string
+  /**
+   * The course this tab is open on, when it is open on one. It is what lets core authorise the run
+   * by course access instead of by library access — see [useTeacherAutoassess]. Undefined from the
+   * exercise library, which has no course.
+   */
+  courseId?: string
   solutionFileName: string
   graderType: GraderType
 }) {
@@ -52,7 +59,7 @@ export default function TeacherTestingTab({
   // Follows the same setting as the student's editor; the switch for it lives in that editor's menu.
   const { wrapExtension } = useSoftWrap('code', viewRef)
 
-  const autoassess = useTeacherAutoassess(exerciseId)
+  const autoassess = useTeacherAutoassess(exerciseId, courseId)
   const { data: previousSubs } = useTeacherTestSubmissions(exerciseId)
 
   const [result, setResult] = useState<TeacherAutoassessResp | null>(null)

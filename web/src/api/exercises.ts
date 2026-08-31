@@ -727,12 +727,27 @@ export function useMarkSubmissionsSeen(
   })
 }
 
-export function useTeacherAutoassess(exerciseId: string) {
+/**
+ * `courseId` decides which access rule core applies, and leaving it off is how testing broke for
+ * every teacher who did not author the exercise.
+ *
+ * `TeacherAutoassess` grants access two ways: with `course` it asks whether the caller teaches that
+ * course and the exercise is on it; without, it demands `DirAccessLevel.PR` on the exercise's
+ * library directory. wui always sent it from a course page (`ExerciseDAO.autoassess` took a
+ * `courseId`), and the port dropped the parameter — so a teacher pressing "Run tests" on a
+ * colleague's exercise was refused with NO_EXERCISE_ACCESS and told they had no access to the
+ * exercise, which reads as their role being wrong rather than a missing query parameter.
+ *
+ * Undefined from the exercise library, where there is no course and the library check is the right
+ * one.
+ */
+export function useTeacherAutoassess(exerciseId: string, courseId?: string) {
   const queryClient = useQueryClient()
+  const query = courseId ? `?course=${encodeURIComponent(courseId)}` : ''
   return useMutation({
     mutationFn: (solution: string) =>
       apiFetch<TeacherAutoassessResp>(
-        `/exercises/${exerciseId}/testing/autoassess`,
+        `/exercises/${exerciseId}/testing/autoassess${query}`,
         { method: 'POST', body: { solution } },
       ),
     // The server stores every test run, so the run just made is now part of the history the

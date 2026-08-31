@@ -62,6 +62,8 @@ test('course-exercise-teacher-testing', async ({ launch, check }) => {
 
   /** Every solution the autoassess endpoint was asked to grade. */
   const graded = []
+  /** …and the URL each of those runs was posted to, which is where the access rule is chosen. */
+  const gradedUrls = []
 
   await fakeApi(page, [
     ['/account/checkin', () => ({})],
@@ -74,8 +76,9 @@ test('course-exercise-teacher-testing', async ({ launch, check }) => {
     [`/exercises/${EX}/testing/autoassess/submissions`, () => ({ count: submissions.length, submissions })],
     [
       `/exercises/${EX}/testing/autoassess`,
-      ({ body }) => {
+      ({ body, url }) => {
         graded.push(body.solution)
+        gradedUrls.push(url)
         submissions = [
           {
             id: String(submissions.length + 1),
@@ -181,6 +184,20 @@ test('course-exercise-teacher-testing', async ({ launch, check }) => {
     graded[0],
   )
   check('and shows the feedback', await waitUntil(() => page.getByText('All tests passed').isVisible()))
+  // The one thing about this request that is not visible on the page, and the whole of the bug it
+  // was reported for. `TeacherAutoassess` authorises a run two ways: with `course` it asks whether
+  // the caller teaches that course, and without it demands PR access to the exercise's *library*
+  // directory. The port dropped the parameter wui always sent from a course page, so every teacher
+  // who had not authored the exercise was told "Sul pole sellele ülesandele ligipääsu" — a message
+  // about the exercise, for what looked to them like a broken course role.
+  //
+  // A stub answers 200 whatever the URL says, so nothing on screen can distinguish the two. This is
+  // the assertion.
+  check(
+    'the run is authorised through the course it was started from, not through the library',
+    gradedUrls[0]?.includes(`course=${COURSE}`),
+    gradedUrls[0] ?? 'no request',
+  )
   check(
     'the history picks up the run that just happened',
     await waitUntil(() => page.getByText('Previous tests (4)').isVisible()),

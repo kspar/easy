@@ -1129,6 +1129,7 @@ function TeacherRightPane({
       {tabIndex === 1 && (
         <TeacherTestingTab
           exerciseId={exercise.exercise_id}
+          courseId={courseId}
           solutionFileName={exercise.solution_file_name}
           graderType={exercise.grader_type}
         />
