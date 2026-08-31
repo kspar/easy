@@ -38,6 +38,11 @@ postgres_backup_dir: /srv/easy/db-dumps
 # a dump is taken nightly and before every deploy, so "14 days" was an unbounded number of files.
 # The ceiling here is arithmetic — at most 9 dumps, and usually fewer, since today's dump counts as
 # the daily, the weekly and the monthly at once.
+# Every dump younger than this is kept whatever bucket it lands in. It exists for the dump that
+# deploy.sh takes just before restarting core: that is the restore point a bad release needs, and
+# the daily bucket alone would discard it as soon as the day produced a newer dump.
+postgres_backup_keep_all_days: 3
+
 postgres_backup_keep_daily: 5
 postgres_backup_keep_weekly: 2
 postgres_backup_keep_monthly: 2
