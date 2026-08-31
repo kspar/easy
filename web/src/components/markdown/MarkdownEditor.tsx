@@ -154,6 +154,7 @@ export default function MarkdownEditor({
           readOnly={readOnly}
           placeholder={placeholder}
           minHeight={minHeight}
+          wrapScope="markdown"
           extensions={extensions}
           onViewReady={setView}
         />

@@ -6,6 +6,7 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import { useTheme } from '@mui/material/styles'
 import { Box } from '@mui/material'
 import { languageFromFilename } from './editorLanguage.ts'
+import { useSoftWrap } from '../../components/editorWrap.ts'
 
 interface Props {
   code: string
@@ -23,6 +24,7 @@ export default function ReadOnlyCodeSnippet({
   const theme = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const { wrapExtension } = useSoftWrap('code', viewRef)
   const isDark = theme.palette.mode === 'dark'
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export default function ReadOnlyCodeSnippet({
         syntaxHighlighting(defaultHighlightStyle),
         EditorState.readOnly.of(true),
         EditorView.editable.of(false),
-        EditorView.lineWrapping,
+        wrapExtension(),
         snippetTheme,
       ]
       if (isDark) extensions.push(oneDark)
@@ -103,7 +105,8 @@ export default function ReadOnlyCodeSnippet({
       viewRef.current?.destroy()
       viewRef.current = null
     }
-  }, [code, fileName, firstLineNumber, isDark])
+    // `wrapExtension` is stable, so it is here to satisfy the rule rather than to cause rebuilds.
+  }, [code, fileName, firstLineNumber, isDark, wrapExtension])
 
   return (
     <Box

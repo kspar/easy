@@ -5,6 +5,7 @@ import { EditorView, placeholder as cmPlaceholder } from '@codemirror/view'
 import { EditorState, type Extension } from '@codemirror/state'
 import { basicSetup } from 'codemirror'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { useSoftWrap, type WrapScope } from './editorWrap.ts'
 
 /**
  * Thin CodeMirror 6 wrapper for the places that need a plain text/code box: the exercise
@@ -24,6 +25,7 @@ export default function CodeEditor({
   minHeight = '15rem',
   maxHeight,
   lineNumbers = true,
+  wrapScope = 'code',
   // Aliased: the local `extensions` array below is what actually gets handed to CodeMirror.
   extensions: extra,
   onViewReady,
@@ -38,6 +40,12 @@ export default function CodeEditor({
   minHeight?: string
   maxHeight?: string
   lineNumbers?: boolean
+  /**
+   * Which soft-wrap setting this editor follows. Defaults to `code`, which does not wrap: most
+   * callers here hold a grading script, an asset file or an embed snippet. The markdown editor
+   * passes `markdown`, which does.
+   */
+  wrapScope?: WrapScope
   /**
    * Extra extensions — keymaps, mostly. **Must be referentially stable**: it sits in the effect's
    * dependency list, so a fresh array each render rebuilds the editor on every keystroke and
@@ -61,6 +69,7 @@ export default function CodeEditor({
   const theme = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const { wrapExtension } = useSoftWrap(wrapScope, viewRef)
 
   // Kept in a ref so changing the handler doesn't force an editor rebuild
   const onChangeRef = useRef(onChange)
@@ -85,7 +94,7 @@ export default function CodeEditor({
 
     const extensions: Extension[] = [
       basicSetup,
-      EditorView.lineWrapping,
+      wrapExtension(),
       EditorView.updateListener.of((u) => {
         if (u.docChanged) onChangeRef.current?.(u.state.doc.toString())
       }),

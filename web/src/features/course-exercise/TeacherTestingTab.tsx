@@ -33,6 +33,7 @@ import type {
   TeacherTestSubmissionResp,
 } from '../../api/types.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
+import { useSoftWrap } from '../../components/editorWrap.ts'
 
 export default function TeacherTestingTab({
   exerciseId,
@@ -48,6 +49,8 @@ export default function TeacherTestingTab({
 
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  // Follows the same setting as the student's editor; the switch for it lives in that editor's menu.
+  const { wrapExtension } = useSoftWrap('code', viewRef)
 
   const autoassess = useTeacherAutoassess(exerciseId)
   const { data: previousSubs } = useTeacherTestSubmissions(exerciseId)
@@ -92,7 +95,7 @@ export default function TeacherTestingTab({
         basicSetup,
         lang,
         cmPlaceholder(t('submission.editorPlaceholder')),
-        EditorView.lineWrapping,
+        wrapExtension(),
         EditorView.theme({ '.cm-content': { paddingTop: '4px' } }),
       ]
       if (theme.palette.mode === 'dark') {
@@ -121,7 +124,9 @@ export default function TeacherTestingTab({
       viewRef.current?.destroy()
       viewRef.current = null
     }
-  }, [theme.palette.mode, solutionFileName, t, latestSolution])
+    // `wrapExtension` is stable; listed to satisfy the rule, not to trigger rebuilds — the setting
+    // is applied to the live view through the compartment instead.
+  }, [theme.palette.mode, solutionFileName, t, latestSolution, wrapExtension])
 
   const handleRunTests = useCallback(() => {
     const solution = viewRef.current?.state.doc.toString() ?? ''

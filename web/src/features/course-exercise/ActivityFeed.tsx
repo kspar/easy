@@ -25,6 +25,7 @@ import {
   FormatItalicOutlined,
   FormatListBulletedOutlined,
   FormatListNumberedOutlined,
+  WrapTextOutlined,
   UpdateOutlined,
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
@@ -51,6 +52,7 @@ import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.ts'
 import { useFileDropExtension } from '../../components/markdown/useFileDropExtension.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
+import { useSoftWrap } from '../../components/editorWrap.ts'
 
 const NOTIFY_KEY = 'teacherNotifyStudent'
 const MERGE_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
@@ -234,6 +236,8 @@ export default function ActivityFeed({
   // CodeMirror refs
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  // Prose, so it follows the markdown setting — the switch is the one in its own toolbar.
+  const { wrap, wrapExtension, toggleWrap } = useSoftWrap('markdown', viewRef)
 
   // Auto-save draft
   useEffect(() => {
@@ -268,7 +272,7 @@ export default function ActivityFeed({
     const extensions = [
       minimalSetup,
       markdown(),
-      EditorView.lineWrapping,
+      wrapExtension(),
       cmPlaceholder(t('submission.feedbackPlaceholder')),
       keymap.of([
         { key: 'Mod-b', run: (v) => { applyFormat(v, '**', '**', 'bold'); return true } },
@@ -518,6 +522,20 @@ export default function ActivityFeed({
                 <FormatListNumberedOutlined sx={{ fontSize: 17 }} />
               </IconButton>
             </Tooltip>
+            {/* This row is hand-built rather than a MarkdownToolbar, so the wrap switch every
+                other markdown surface gets from that component has to be repeated here. */}
+            <Box sx={{ flex: 1, minWidth: 8 }} />
+            <Tooltip title={t('general.wrapLines')}>
+              <IconButton
+                size="small"
+                aria-label={t('general.wrapLines')}
+                aria-pressed={wrap}
+                onClick={toggleWrap}
+                sx={{ ...tbSx, ...(wrap && { color: 'text.primary', bgcolor: 'action.selected' }) }}
+              >
+                <WrapTextOutlined sx={{ fontSize: 17 }} />
+              </IconButton>
+            </Tooltip>
           </Box>
 
           {/* CodeMirror editor */}
@@ -626,6 +644,8 @@ function EditCommentEditor({
   const theme = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  // Prose, so it follows the markdown setting — the switch is the one in its own toolbar.
+  const { wrapExtension } = useSoftWrap('markdown', viewRef)
   const [text, setText] = useState(initialText)
   const textRef = useRef(initialText)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -651,7 +671,7 @@ function EditCommentEditor({
     const extensions = [
       minimalSetup,
       markdown(),
-      EditorView.lineWrapping,
+      wrapExtension(),
       keymap.of([
         { key: 'Mod-b', run: (v) => { applyFormat(v, '**', '**', 'bold'); return true } },
         { key: 'Mod-i', run: (v) => { applyFormat(v, '_', '_', 'italic'); return true } },

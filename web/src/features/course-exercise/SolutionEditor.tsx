@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react'
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Snackbar, Tooltip, Typography } from '@mui/material'
-import { SendOutlined, FileUploadOutlined, FileDownloadOutlined, MoreVertOutlined } from '@mui/icons-material'
+import { SendOutlined, FileUploadOutlined, FileDownloadOutlined, MoreVertOutlined, WrapTextOutlined, CheckOutlined } from '@mui/icons-material'
 import { useBlocker } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { EditorView, placeholder as cmPlaceholder } from '@codemirror/view'
@@ -19,6 +19,7 @@ import {
 } from '../../api/exercises.ts'
 import type { ExerciseDetails } from '../../api/types.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
+import { useSoftWrap } from '../../components/editorWrap.ts'
 
 export interface SolutionEditorHandle {
   setSolution: (solution: string) => void
@@ -67,6 +68,7 @@ export default forwardRef<SolutionEditorHandle, {
   const queryClient = useQueryClient()
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const { wrap, wrapExtension, toggleWrap } = useSoftWrap('code', viewRef)
   const prevExerciseRef = useRef(courseExerciseId)
   const [snackMsg, setSnackMsg] = useState<string | null>(null)
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
@@ -297,7 +299,7 @@ export default forwardRef<SolutionEditorHandle, {
         basicSetup,
         lang,
         cmPlaceholder(t('submission.editorPlaceholder')),
-        EditorView.lineWrapping,
+        wrapExtension(),
         EditorView.theme({ '.cm-content': { paddingTop: '4px' } }),
         // The student's primary input had no accessible name at all — a gate-level
         // `aria-input-field-name` violation on the app's most-used surface (audit X-002). This
@@ -518,6 +520,18 @@ export default forwardRef<SolutionEditorHandle, {
             <MenuItem onClick={() => { setMenuAnchor(null); handleDownload() }}>
               <ListItemIcon><FileDownloadOutlined fontSize="small" /></ListItemIcon>
               <ListItemText>{t('submission.saveAsFile')}</ListItemText>
+            </MenuItem>
+            {/*
+              The one place the code-side wrap setting can be reached, and it governs every code
+              editor in the app rather than this one alone — a per-editor switch would have to be
+              found and flipped again in each of them.
+            */}
+            <MenuItem onClick={() => { setMenuAnchor(null); toggleWrap() }}>
+              <ListItemIcon>
+                <WrapTextOutlined fontSize="small" color={wrap ? 'primary' : 'inherit'} />
+              </ListItemIcon>
+              <ListItemText>{t('general.wrapLines')}</ListItemText>
+              {wrap && <CheckOutlined fontSize="small" sx={{ ml: 2, color: 'text.secondary' }} />}
             </MenuItem>
           </Menu>
         </Box>

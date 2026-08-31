@@ -15,10 +15,12 @@ import {
   StrikethroughSOutlined,
   TableChartOutlined,
   TitleOutlined,
+  WrapTextOutlined,
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { EditorView } from '@codemirror/view'
 import type { MarkdownTool } from './markdownTools.ts'
+import { useSoftWrap } from '../editorWrap.ts'
 import {
   applyFormat,
   insertCodeBlock,
@@ -57,6 +59,9 @@ export default function MarkdownToolbar({
   onPickFile?: () => void
 }) {
   const { t } = useTranslation()
+  // Lives here rather than in one editor, so every markdown surface that has a toolbar has the
+  // switch: the exercise text, an article, and the comment box wedged between two lines of code.
+  const { wrap, toggleWrap } = useSoftWrap('markdown')
   const [headingAnchor, setHeadingAnchor] = useState<HTMLElement | null>(null)
   const [imageAnchor, setImageAnchor] = useState<HTMLElement | null>(null)
   const [mathAnchor, setMathAnchor] = useState<HTMLElement | null>(null)
@@ -95,7 +100,10 @@ export default function MarkdownToolbar({
 
   return (
     <Box
-      sx={{ display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'wrap' }}
+      // Fills its row so the wrap toggle at the far end has somewhere to be pushed to. Both
+      // spellings are needed: `flex` for the editor's flex header, `width` for the comment box's
+      // plain block one.
+      sx={{ display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'wrap', flex: 1, minWidth: 0, width: '100%' }}
       role="toolbar"
       aria-label={t('markdown.toolbar')}
     >
@@ -248,6 +256,31 @@ export default function MarkdownToolbar({
             )
         }
       })}
+
+      {/*
+        Last, and pushed as far right as the row allows: it changes how the text is displayed
+        rather than what the text is, so it does not belong among the formatting commands. The
+        spacer collapses to a gap in a narrow box — the comment editor wedged into someone's code
+        — and opens up to the full width in the exercise text tab.
+
+        Never disabled. `disabled` here means the document cannot be edited; how it is displayed
+        is still the reader's business.
+      */}
+      <Box sx={{ flex: 1, minWidth: 8 }} />
+      <Tooltip title={t('general.wrapLines')}>
+        <IconButton
+          size="small"
+          onClick={toggleWrap}
+          aria-label={t('general.wrapLines')}
+          aria-pressed={wrap}
+          sx={{
+            ...btnSx,
+            ...(wrap && { color: 'text.primary', bgcolor: 'action.selected' }),
+          }}
+        >
+          <WrapTextOutlined sx={iconSx} />
+        </IconButton>
+      </Tooltip>
     </Box>
   )
 }

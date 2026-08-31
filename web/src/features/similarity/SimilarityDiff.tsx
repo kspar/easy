@@ -7,6 +7,7 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import { useTheme } from '@mui/material/styles'
 import { Box } from '@mui/material'
 import { languageFromFilename } from '../course-exercise/editorLanguage.ts'
+import { useSoftWrap } from '../../components/editorWrap.ts'
 
 /**
  * Two solutions side by side, with the matching regions marked.
@@ -30,6 +31,9 @@ export default function SimilarityDiff({
   const host = useRef<HTMLDivElement>(null)
   const theme = useTheme()
   const dark = theme.palette.mode === 'dark'
+  // A MergeView owns two editors, and a compartment can only be reconfigured through a view we
+  // hold — so this one rebuilds on the setting instead, the same way it already rebuilds on theme.
+  const { wrap, wrapExtension } = useSoftWrap('code')
 
   useEffect(() => {
     if (!host.current) return
@@ -48,7 +52,7 @@ export default function SimilarityDiff({
         lineNumbers(),
         EditorView.editable.of(false),
         EditorState.readOnly.of(true),
-        EditorView.lineWrapping,
+        wrapExtension(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         lang,
         ...(dark ? [oneDark] : []),
@@ -72,7 +76,7 @@ export default function SimilarityDiff({
       cancelled = true
       view?.destroy()
     }
-  }, [left, right, fileName, dark])
+  }, [left, right, fileName, dark, wrap, wrapExtension])
 
   return (
     <Box

@@ -50,6 +50,7 @@ import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.t
 import { useFileDropExtension } from '../../components/markdown/useFileDropExtension.ts'
 import { COMPACT_TOOLS } from '../../components/markdown/markdownTools.ts'
 import { applyFormat } from '../../components/markdown/markdownActions.ts'
+import { useSoftWrap } from '../../components/editorWrap.ts'
 
 /* ───────── Types ───────── */
 
@@ -255,6 +256,9 @@ export default function AnnotatedCodeEditor({
   const theme = useTheme()
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  // The submission being read is code, so it follows the code setting — the comment composer
+  // further down this file is prose and stays wrapped whatever that setting says.
+  const { wrapExtension } = useSoftWrap('code', viewRef)
 
   const [draft, setDraft] = useState<DraftComment | null>(null)
   const [saving, setSaving] = useState(false)
@@ -455,7 +459,7 @@ export default function AnnotatedCodeEditor({
         lang,
         EditorState.readOnly.of(true),
         EditorView.editable.of(false),
-        EditorView.lineWrapping,
+        wrapExtension(),
         annotationField,
         ...(canEdit ? [lineHoverPlugin()] : []),
         editorTheme,
@@ -704,6 +708,8 @@ function CommentEditor({
   const theme = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
   const innerViewRef = useRef<EditorView | null>(null)
+  // Prose, so it follows the markdown setting — the switch is the one in its own toolbar.
+  const { wrapExtension } = useSoftWrap('markdown', innerViewRef)
   // The toolbar is a child component, so it needs the view as a prop — and a ref assignment does
   // not re-render, which would leave every button permanently disabled.
   const [toolbarView, setToolbarView] = useState<EditorView | null>(null)
@@ -741,7 +747,7 @@ function CommentEditor({
     const extensions = [
       minimalSetup,
       markdown(),
-      EditorView.lineWrapping,
+      wrapExtension(),
       cmPlaceholder(t('submission.feedbackPlaceholder')),
       keymap.of([
         { key: 'Mod-b', run: (v) => { applyFormat(v, '**', '**', 'bold'); return true } },

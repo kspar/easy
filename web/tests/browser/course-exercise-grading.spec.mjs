@@ -217,6 +217,21 @@ test('course-exercise-grading', async ({ launch, check }) => {
   )
   await shot('01-student-opened')
 
+  // The feedback composer builds its own toolbar rather than using MarkdownToolbar, so the wrap
+  // switch every other markdown surface inherits has to be repeated in it — which makes this the
+  // one place it can quietly go missing (EZ-1841).
+  check(
+    'the feedback composer offers the wrap switch its hand-built toolbar has to carry itself',
+    await page.getByRole('button', { name: /Wrap long lines/i }).first().isVisible(),
+  )
+  check(
+    'and prose wraps here by default, whatever code is set to',
+    await page
+      .locator('.cm-content')
+      .last()
+      .evaluate((el) => el.classList.contains('cm-lineWrapping')),
+  )
+
   // --- the grade field refuses what core would reject --------------------------------------------
   // The important half is that a refused grade sends **nothing**. A page that posts 150 and lets the
   // backend say no is a page that has already changed a grade by the time it finds out.

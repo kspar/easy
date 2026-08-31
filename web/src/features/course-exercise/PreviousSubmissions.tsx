@@ -24,6 +24,7 @@ import { isGraderFailed } from './okV3.ts'
 import { useSubmissions } from '../../api/exercises.ts'
 import type { AutomaticAssessmentResp } from '../../api/types.ts'
 import ErrorAlert from '../../components/ErrorAlert.tsx'
+import { useSoftWrap } from '../../components/editorWrap.ts'
 
 export default function PreviousSubmissions({
   courseId,
@@ -217,6 +218,10 @@ function SubmissionItem({
 function ReadOnlyEditor({ code, solutionFileName }: { code: string; solutionFileName: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const theme = useTheme()
+  // No view ref to reconfigure here, so `wrap` goes in the effect's deps and the snippet is
+  // rebuilt when the setting changes. It costs a rebuild of a collapsed panel nobody is looking
+  // at — the switch is in the editor above, not in here.
+  const { wrap, wrapExtension } = useSoftWrap('code')
 
   useEffect(() => {
     if (!ref.current) return
@@ -231,7 +236,7 @@ function ReadOnlyEditor({ code, solutionFileName }: { code: string; solutionFile
         lang,
         EditorView.editable.of(false),
         EditorState.readOnly.of(true),
-        EditorView.lineWrapping,
+        wrapExtension(),
       ]
       if (theme.palette.mode === 'dark') {
         extensions.push(oneDark)
@@ -247,7 +252,7 @@ function ReadOnlyEditor({ code, solutionFileName }: { code: string; solutionFile
       cancelled = true
       view?.destroy()
     }
-  }, [code, solutionFileName, theme.palette.mode])
+  }, [code, solutionFileName, theme.palette.mode, wrap, wrapExtension])
 
   return (
     <Box
