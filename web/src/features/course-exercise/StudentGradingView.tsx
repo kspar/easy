@@ -187,22 +187,6 @@ export default function StudentGradingView({
     if (sub) setSelectedSubId(sub.id)
   }, [submissions])
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' && (e.ctrlKey || e.metaKey) && nextStudent) {
-        e.preventDefault()
-        onSelectStudent(nextStudent.student_id)
-      }
-      if (e.key === 'ArrowLeft' && (e.ctrlKey || e.metaKey) && prevStudent) {
-        e.preventDefault()
-        onSelectStudent(prevStudent.student_id)
-      }
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [nextStudent, prevStudent, onSelectStudent])
-
   const studentName = currentRow
     ? `${currentRow.given_name} ${currentRow.family_name}`
     : studentId
