@@ -1,5 +1,8 @@
 import { useId, useState } from 'react'
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Chip,
   Collapse,
@@ -16,7 +19,6 @@ import {
   Select,
   Switch,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material'
 import {
@@ -198,19 +200,6 @@ export default function TslTestCard({
               {editing && testChecksNothing(test) && (
                 <Chip size="small" color="warning" label={t('tsl.checksNothingChip')} variant="outlined" />
               )}
-              {editing && (
-                <Tooltip title={t('tsl.editTitle')}>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setRenaming(true)
-                    }}
-                  >
-                    <DriveFileRenameOutlineOutlined fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
             </>
           )}
           {editing && (
@@ -234,6 +223,20 @@ export default function TslTestCard({
         onClose={() => setMenuAnchor(null)}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* First, because it is the one that acts on the title the menu button sits beside. It
+            used to be its own pencil in the header — a second icon competing with this one for a
+            row that already carries the name, the type and up to four chips. */}
+        <MenuItem
+          onClick={() => {
+            setMenuAnchor(null)
+            setRenaming(true)
+          }}
+        >
+          <ListItemIcon>
+            <DriveFileRenameOutlineOutlined fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t('tsl.editTitle')}</ListItemText>
+        </MenuItem>
         <MenuItem
           onClick={() => {
             setMenuAnchor(null)
@@ -317,35 +320,75 @@ export default function TslTestCard({
 
             {/* Points weight and visibility live on the base `Test` class, so every type has them
                 and none of the bodies should. Both are written only when moved off their Kotlin
-                default, which keeps specs to what was actually changed. */}
-            <TextField
-              label={t('tsl.pointsWeight')}
-              type="number"
-              value={pointsWeightField(test)}
-              onChange={(e) =>
-                actions.onChange(
-                  setOrDefault(test, 'pointsWeight', Math.max(0, Number(e.target.value) || 0), 1),
-                )
-              }
-              disabled={!editing}
-              size="small"
-              slotProps={{ htmlInput: { min: 0, step: 'any' } }}
-              sx={{ width: 130, mb: 1 }}
-            />
-            <FormControlLabel
-              sx={{ mb: 1 }}
-              control={
-                <Switch
-                  checked={visibleToUserField(test)}
-                  onChange={(e) =>
-                    actions.onChange(setOrDefault(test, 'visibleToUser', e.target.checked, true))
-                  }
-                  disabled={!editing}
-                  size="small"
-                />
-              }
-              label={<Typography variant="body2">{t('tsl.visibleToUser')}</Typography>}
-            />
+                default, which keeps specs to what was actually changed.
+
+                Behind a disclosure, because both are almost always left alone: a test is worth 1
+                and is shown to the student, and the two controls were taking a permanent row of
+                the card to say so. Open automatically when either has been moved off its default,
+                so a test that *is* unusual never hides why — and the collapsed row keeps saying
+                which, rather than making the reader open it to find out. */}
+            {(() => {
+              const weight = pointsWeightField(test)
+              const visible = visibleToUserField(test)
+              const atDefaults = weight === 1 && visible
+              return (
+                <Accordion
+                  disableGutters
+                  elevation={0}
+                  defaultExpanded={!atDefaults}
+                  sx={{
+                    mb: 1,
+                    bgcolor: 'transparent',
+                    '&::before': { display: 'none' },
+                    '& .MuiAccordionSummary-root': { minHeight: 0, p: 0 },
+                    '& .MuiAccordionSummary-content': { my: 0.5 },
+                    '& .MuiAccordionDetails-root': { p: 0, pt: 1 },
+                  }}
+                >
+                  <AccordionSummary expandIcon={<ExpandMoreOutlined fontSize="small" />}>
+                    <Typography variant="caption" color="text.secondary">
+                      {atDefaults
+                        ? t('tsl.scoringDefaults')
+                        : t('tsl.scoringSummary', {
+                            count: weight,
+                            visibility: visible ? t('tsl.visibleShort') : t('tsl.hiddenShort'),
+                          })}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+                      <TextField
+                        label={t('tsl.pointsWeight')}
+                        type="number"
+                        value={weight}
+                        onChange={(e) =>
+                          actions.onChange(
+                            setOrDefault(test, 'pointsWeight', Math.max(0, Number(e.target.value) || 0), 1),
+                          )
+                        }
+                        disabled={!editing}
+                        size="small"
+                        slotProps={{ htmlInput: { min: 0, step: 'any' } }}
+                        sx={{ width: 130 }}
+                      />
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={visible}
+                            onChange={(e) =>
+                              actions.onChange(setOrDefault(test, 'visibleToUser', e.target.checked, true))
+                            }
+                            disabled={!editing}
+                            size="small"
+                          />
+                        }
+                        label={<Typography variant="body2">{t('tsl.visibleToUser')}</Typography>}
+                      />
+                    </Box>
+                  </AccordionDetails>
+                </Accordion>
+              )
+            })()}
           </Box>
 
           <TslTestBody test={test} editing={editing} onChange={actions.onChange} />

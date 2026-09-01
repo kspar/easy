@@ -150,7 +150,8 @@ export function TslStdInSection({
   }
 
   return (
-    <Box>
+    // mb: the input-files button follows immediately, and sat flush against this box.
+    <Box sx={{ mb: 2 }}>
       <TextField
         label={t('tsl.stdins')}
         value={toLines(inputs)}
@@ -390,7 +391,11 @@ export function TslDataChecksSection({
           </Box>
 
           <TextField
-            label={t('tsl.expectedValues')}
+            // No visible label: the row above reads "Väljund <check> <category>" and this box is
+            // the end of that sentence, so a label repeats in a box what the sentence already
+            // said. The accessible name stays — the sentence is a visual arrangement, and without
+            // this the field is an unnamed textarea to anyone not reading the layout.
+            slotProps={{ htmlInput: { 'aria-label': t('tsl.expectedValues') } }}
             value={toLines(check.expectedValue ?? [])}
             onChange={(e) => patch(i, { expectedValue: fromLines(e.target.value) })}
             disabled={!editing}
@@ -519,7 +524,11 @@ export function TslOutputFileChecksSection({
             )}
           </Box>
           <TextField
-            label={t('tsl.expectedValues')}
+            // No visible label: the row above reads "Väljund <check> <category>" and this box is
+            // the end of that sentence, so a label repeats in a box what the sentence already
+            // said. The accessible name stays — the sentence is a visual arrangement, and without
+            // this the field is an unnamed textarea to anyone not reading the layout.
+            slotProps={{ htmlInput: { 'aria-label': t('tsl.expectedValues') } }}
             value={toLines(check.expectedValue ?? [])}
             onChange={(e) => patch(i, { expectedValue: fromLines(e.target.value) })}
             disabled={!editing}

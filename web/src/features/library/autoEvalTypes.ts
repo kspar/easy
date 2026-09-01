@@ -34,7 +34,6 @@ export const AUTO_EVAL_TYPES: AutoEvalType[] = [
     allowedTime: 7,
     allowedMemory: 30,
     editor: 'TSL',
-    helpTextKey: 'library.autoEvalHelpTsl',
     evaluateScript: 'cd student-submission\npython generated_0.py',
     assets: { 'generated_0.py': '' },
   },

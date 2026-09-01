@@ -1,5 +1,8 @@
 import { Fragment, useEffect, useId, useMemo, useState } from 'react'
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   FormControl,
   IconButton,
@@ -12,12 +15,11 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { AddOutlined, DeleteOutlineOutlined } from '@mui/icons-material'
+import { AddOutlined, DeleteOutlineOutlined, ExpandMoreOutlined } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import type { Extension } from '@codemirror/state'
 import CodeEditor from '../../components/CodeEditor.tsx'
 import { languageFromFilename } from '../course-exercise/editorLanguage.ts'
-import type { SolutionFileType } from '../../api/types.ts'
 import { AUTO_EVAL_TYPES, autoEvalTypeOf, isTslContainer } from './autoEvalTypes.ts'
 import { assetsToMap, mapToAssets, TSL_SPEC_FILENAME, type AutoAssessDraft } from './exerciseDraft.ts'
 import TslEditor from './tsl/TslEditor.tsx'
@@ -40,7 +42,6 @@ export default function AutoAssessTab({
   const { t } = useTranslation()
   const [selectedFile, setActiveFile] = useState<string>(EVAL_SCRIPT_TAB)
   // MUI needs explicit ids to associate an InputLabel with a Select; see TslTestCard.
-  const fileTypeLabelId = useId()
   const evalTypeLabelId = useId()
   const [lang, setLang] = useState<Extension | undefined>(undefined)
 
@@ -204,13 +205,6 @@ export default function AutoAssessTab({
   // because the fields come back exactly when they become useful.
   const summary = [
     { label: t('library.solutionFileName'), value: draft.solutionFileName },
-    {
-      label: t('library.solutionFileType'),
-      value:
-        draft.solutionFileType === 'TEXT_EDITOR'
-          ? t('library.solutionTypeEditor')
-          : t('library.solutionTypeUpload'),
-    },
     ...(hasAuto
       ? [
           { label: t('library.autoAssessType'), value: type?.name ?? unknownContainer ?? '–' },
@@ -258,18 +252,15 @@ export default function AutoAssessTab({
               size="small"
               sx={{ minWidth: 200 }}
             />
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel id={fileTypeLabelId}>{t('library.solutionFileType')}</InputLabel>
-              <Select
-                labelId={fileTypeLabelId}
-                label={t('library.solutionFileType')}
-                value={draft.solutionFileType}
-                onChange={(e) => patch({ solutionFileType: e.target.value as SolutionFileType })}
-              >
-                <MenuItem value="TEXT_EDITOR">{t('library.solutionTypeEditor')}</MenuItem>
-                <MenuItem value="TEXT_UPLOAD">{t('library.solutionTypeUpload')}</MenuItem>
-              </Select>
-            </FormControl>
+            {/* No submission-type chooser. `TEXT_UPLOAD` is in the enum and in nothing else: the
+                student's page renders a code editor whichever value is stored, both creation paths
+                hardcode `TEXT_EDITOR`, and core reads the field only to *refuse* anything else from
+                the embed and anonymous endpoints. So picking "file upload" changed a stored value,
+                changed nothing a student saw, and quietly made the exercise un-embeddable.
+
+                The draft still round-trips whatever is stored, so an exercise already saved as
+                TEXT_UPLOAD keeps its value rather than being silently rewritten by opening this
+                tab. */}
           </Box>
 
           <Box display="flex" gap={2} flexWrap="wrap" alignItems="flex-start">
@@ -288,27 +279,53 @@ export default function AutoAssessTab({
                 ))}
               </Select>
             </FormControl>
-            {hasAuto && (
-              <>
-                <TextField
-                  label={t('library.maxTimeSec')}
-                  value={draft.maxTimeSec ?? ''}
-                  onChange={(e) => patch({ maxTimeSec: parseIntOrNull(e.target.value) })}
-                  size="small"
-                  error={draft.maxTimeSec === null}
-                  sx={{ width: 130 }}
-                />
-                <TextField
-                  label={t('library.maxMemMb')}
-                  value={draft.maxMemMb ?? ''}
-                  onChange={(e) => patch({ maxMemMb: parseIntOrNull(e.target.value) })}
-                  size="small"
-                  error={draft.maxMemMb === null}
-                  sx={{ width: 130 }}
-                />
-              </>
-            )}
           </Box>
+
+          {/* The execution limits, folded away: they are set once per container type and then
+              almost never touched, and as two permanent boxes they read as things the author is
+              expected to decide. Open on their own when either is empty — both are required and
+              a blank one blocks Save (`error` below), which must not be hidden behind a
+              disclosure nobody thought to open. */}
+          {hasAuto && (
+            <Accordion
+              disableGutters
+              elevation={0}
+              defaultExpanded={draft.maxTimeSec === null || draft.maxMemMb === null}
+              sx={{
+                bgcolor: 'transparent',
+                '&::before': { display: 'none' },
+                '& .MuiAccordionSummary-root': { minHeight: 0, p: 0 },
+                '& .MuiAccordionSummary-content': { my: 0.5 },
+                '& .MuiAccordionDetails-root': { p: 0, pt: 1 },
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreOutlined fontSize="small" />}>
+                <Typography variant="caption" color="text.secondary">
+                  {t('library.executionLimits')}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box display="flex" gap={2} flexWrap="wrap">
+                  <TextField
+                    label={t('library.maxTimeSec')}
+                    value={draft.maxTimeSec ?? ''}
+                    onChange={(e) => patch({ maxTimeSec: parseIntOrNull(e.target.value) })}
+                    size="small"
+                    error={draft.maxTimeSec === null}
+                    sx={{ width: 130 }}
+                  />
+                  <TextField
+                    label={t('library.maxMemMb')}
+                    value={draft.maxMemMb ?? ''}
+                    onChange={(e) => patch({ maxMemMb: parseIntOrNull(e.target.value) })}
+                    size="small"
+                    error={draft.maxMemMb === null}
+                    sx={{ width: 130 }}
+                  />
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          )}
 
           {/* Guidance for choosing a container, so it goes with the chooser. */}
           {type?.helpTextKey && (

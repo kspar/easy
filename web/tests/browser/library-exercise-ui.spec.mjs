@@ -421,22 +421,42 @@ test('library-exercise-ui', async ({ launch, check }) => {
   await shot('07-non-tsl-autoassess')
 
   // --- the settings are a summary until you edit -----------------------------------------------------
-  // Five labelled inputs pushed the file editor most of a screen down for values that are set once.
-  // Reading them still has to work, so the summary carries all five; editing still has to work, so
+  // Labelled inputs pushed the file editor most of a screen down for values that are set once.
+  // Reading them still has to work, so the summary carries them all; editing still has to work, so
   // the inputs come back with Edit. No collapsible in between — the mode already says which is wanted.
+  //
+  // The submission type is no longer among them: `TEXT_UPLOAD` was in the enum and in nothing else,
+  // so the chooser and this summary entry both went.
   const settingsLine = () => page.locator('p').filter({ hasText: 'lahendus.py' }).first().innerText()
   check('the settings are one line while viewing', await waitUntil(async () => (await settingsLine()).includes('·')))
-  for (const value of ['lahendus.py', 'Text editor', 'Python Grader', '7 s', '30 MB']) {
+  for (const value of ['lahendus.py', 'Python Grader', '7 s', '30 MB']) {
     check(`the summary carries ${value}`, (await settingsLine()).includes(value))
   }
+  check(
+    'and the retired submission-type chooser is not among them',
+    !(await settingsLine()).includes('Text editor'),
+    await settingsLine(),
+  )
   check(
     'and there is no labelled input to distract from the script',
     (await page.getByRole('textbox', { name: 'Max time (s)' }).count()) === 0,
   )
 
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
+  // Time and memory now sit behind a disclosure — they are set once per container type and then
+  // left alone, so they no longer take a permanent row. Collapsed here because both have values;
+  // a blank one opens it on its own, since a blank one blocks Save.
   check(
-    'editing brings the real fields back',
+    'the execution limits are folded away rather than shown by default',
+    await waitUntil(async () => (await page.getByRole('button', { name: 'Time and memory limits' }).count()) === 1),
+  )
+  check(
+    'and are not on screen until asked for',
+    !(await page.getByRole('textbox', { name: 'Max time (s)' }).isVisible()),
+  )
+  await page.getByRole('button', { name: 'Time and memory limits' }).click()
+  check(
+    'opening it brings the real fields back',
     await waitUntil(() => page.getByRole('textbox', { name: 'Max time (s)' }).isVisible()),
   )
   check(

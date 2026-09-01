@@ -135,16 +135,23 @@ test('course-exercise-assessment', async ({ launch, check }) => {
     await waitUntil(() => page.getByText(/Configured in the exercise library/).isVisible()),
   )
 
-  // The five settings are one dense line here rather than five labelled inputs: they are read-only
-  // on this page and were most of what the tab showed. Every value still has to be on screen.
-  // Located as the one paragraph carrying the eval type, so the assertions below are about a single
-  // line rather than five values scattered anywhere on the page. No data-testid: nothing else in
-  // this app has one, and role/text is how the rest of these scripts locate things.
+  // The settings are one dense line here rather than labelled inputs: they are read-only on this
+  // page and were most of what the tab showed. Every value still has to be on screen. Located as
+  // the one paragraph carrying the eval type, so the assertions below are about a single line
+  // rather than values scattered anywhere on the page. No data-testid: nothing else in this app
+  // has one, and role/text is how the rest of these scripts locate things.
+  //
+  // The submission type used to be among them and is not any more: `TEXT_UPLOAD` existed in the
+  // enum and nowhere else, so the chooser and this reading of it both went.
   const summary = () => page.locator('p').filter({ hasText: 'lahendus.py' }).first().innerText()
   check('the settings collapse to one line', await waitUntil(async () => (await summary()).includes('·')))
+  check(
+    'and no longer report a submission type, which was never a real choice',
+    !(await summary()).includes('Text editor'),
+    await summary(),
+  )
   for (const [what, value] of [
     ['the solution file name', 'lahendus.py'],
-    ['the submission type', 'Text editor'],
     ['the auto-assessment type', 'Python Grader'],
     // Not the container template's defaults (7s/30MB) — these come from the response or not at all.
     ['max time, from the response rather than the template', '12 s'],
