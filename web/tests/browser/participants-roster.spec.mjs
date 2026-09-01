@@ -74,6 +74,7 @@ test('participants-roster', async ({ launch, check }) => {
     ['/account/checkin', () => ({})],
     [`/courses/${COURSE}/basic`, () => ({
       title: 'Programming 101', alias: null, archived: false, color: '#1976d2', course_code: null,
+      moodle_course_url: null,
     })],
     [`/courses/${COURSE}/groups/`, ({ method, body, url }) => {
       if (method === 'POST') groupAdds.push({ body, path: new URL(url).pathname })

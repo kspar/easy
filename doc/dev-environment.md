@@ -35,6 +35,9 @@ The rest are on you:
   `course-allowlist`, and anonymisation clearing every `moodle_short_name`. Four locks because the
   obvious ones miss the real path: **grades have no cron and need no endpoint** — ordinary grading
   pushes them, so a tester submitting one solution is enough. (§5)
+  `moodle-sync.course-url-prefix` is the exception and is deliberately a real Moodle address on
+  every environment: core never contacts it, it is only put in a sidebar anchor for a person to
+  click (EZ-1874), so the worst a wrong value does is give somebody a broken link.
 - **A production import brings production's `executor` rows with it.** They must be deleted before
   core is allowed to start, or a tester's submission is dispatched to a production grader.
   `import-prod-dump.yml` does it; a hand-run `pg_restore` does not. (§3.6, §5)

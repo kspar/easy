@@ -55,6 +55,7 @@ test('participants-add-teachers', async ({ launch, check }) => {
     ['/account/checkin', () => ({})],
     [`/courses/${COURSE}/basic`, () => ({
       title: 'Programming 101', alias: null, archived: false, color: '#1976d2', course_code: null,
+      moodle_course_url: null,
     })],
     [new RegExp(`/courses/${COURSE}/groups(\\?|$)`), () => ({ groups: [] })],
     [new RegExp(`/courses/${COURSE}/participants(\\?|$)`), () => participants],

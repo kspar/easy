@@ -111,6 +111,17 @@ easy:
       # reach Moodle through an endpoint at all: ordinary grading pushes them, so a check on the
       # sync endpoints would cover almost nothing.
       course-allowlist: ""
+      # Everything up to and including `?name=` of a Moodle course URL. Core appends the course's
+      # shortname, percent-encoded, and returns the result on GET /courses/{courseId}/basic so that
+      # a Moodle-linked course shows a Moodle link in its sidebar (EZ-1874).
+      #
+      # EMPTY MEANS NO LINK, which is the right default for a laptop: nothing here, nothing in the
+      # sidebar. Not derived from the sync URLs above on purpose — dev points those at a discard
+      # port, and reading a course page is a different permission from writing its gradebook.
+      #
+      # A whole prefix rather than a hostname so that nothing in core knows Moodle's URL shape: if
+      # Moodle changes how a course is addressed, this is a config edit rather than a release.
+      course-url-prefix: "https://moodle.example/course/view.php?name="
 
     # Where the bytes of uploaded files live. `local` writes them to a directory and needs no AWS
     # account, no credentials and no network — it is what a laptop and CI run on. `s3` is for

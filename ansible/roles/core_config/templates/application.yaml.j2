@@ -125,6 +125,11 @@ easy:
       ## Comma-separated course shortnames, empty meaning unrestricted. Enforced immediately before
       ## the request is built, so it covers the grading paths above and not just the endpoints.
       course-allowlist: "{{ easy_core_moodle_course_allowlist }}"
+      ## Everything up to and including `?name=` of a Moodle course URL; core appends the course
+      ## shortname and hands the result to the sidebar (EZ-1874). Read-only and client-side — this is
+      ## a link a person clicks, not an address core ever contacts — so it is a real URL on every
+      ## environment and is NOT covered by the loopback assertions on the two sync URLs above.
+      course-url-prefix: "{{ easy_core_moodle_course_url_prefix }}"
 
     ## Where the bytes of uploaded files live. `local` is a directory on this host; `s3` is a bucket
     ## whose objects are publicly readable, which is the deployed answer (EZ-1571).

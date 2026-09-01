@@ -193,6 +193,20 @@ easy_core_moodle_course_allowlist: ""
 # key as an empty list.
 easy_core_moodle_grades_row_creation_fallback_username: ""
 
+# Everything up to and including `?name=` of a Moodle course URL. Core appends the course's
+# shortname and serves the result to the sidebar, so a Moodle-linked course offers a link to its
+# Moodle page (EZ-1874).
+#
+# THE SAME VALUE ON EVERY ENVIRONMENT, and unlike the URLs above that is safe: this address is never
+# contacted by core. It is put in an anchor for a person to click, so the worst a wrong value can do
+# is give somebody a broken link — where a wrong sync URL writes into a real gradebook. Which is
+# also why it is not derived from `easy_core_moodle_users_url`: dev pins that to a discard port, and
+# deriving would link every dev course to 127.0.0.1.
+#
+# A whole prefix rather than a hostname, so nothing in core knows Moodle's URL shape. Empty means no
+# link anywhere.
+easy_core_moodle_course_url_prefix: "https://moodle.ut.ee/course/view.php?name="
+
 easy_core_moodle_users_cron: "{{ easy_core_never_cron }}"
 easy_core_moodle_users_wsfunction: local_ut_custom_get_course_groups_users
 easy_core_moodle_grades_wsfunction: local_ut_custom_update_manual_grades

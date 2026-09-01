@@ -52,6 +52,7 @@ import {
   CompareArrowsOutlined,
   SettingsOutlined,
   AdminPanelSettingsOutlined,
+  MenuBookOutlined,
   OpenInNewOutlined,
   CampaignOutlined,
   BugReportOutlined,
@@ -270,6 +271,41 @@ export default function AppLayout() {
   }
 
   const initials = firstName?.charAt(0)?.toUpperCase() ?? '?'
+
+  /**
+   * The link out to this course's page in Moodle (EZ-1874), for both roles.
+   *
+   * Core sends a finished URL or null, so there is no shortname to encode here and no config to
+   * consult: null means either the course is not Moodle-linked or this environment has no Moodle,
+   * and both of those mean the same thing to a sidebar.
+   *
+   * **Directly under the course title in both role sections**, rather than at the end of either.
+   * The end is where it belongs by kind — it leaves the app, as the two Administration links do —
+   * but a student's section continues into every exercise on the course, so "last" there can be
+   * twenty rows down and off the screen. It is a property of the course, like the title it sits
+   * under, and it is in the same place whichever role you are working as.
+   */
+  const moodleCourseItem = courseInfo?.moodle_course_url ? (
+    <ListItem disablePadding>
+      <ListItemButton
+        component="a"
+        href={courseInfo.moodle_course_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={closeDrawerOnMobile}
+        sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+      >
+        <ListItemIcon sx={{ minWidth: 28 }}>
+          <MenuBookOutlined sx={{ fontSize: 18 }} color="action" />
+        </ListItemIcon>
+        <ListItemText
+          primary={t('nav.moodleCourse')}
+          primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }}
+        />
+        <OpenInNewOutlined sx={{ fontSize: 14, opacity: 0.5 }} />
+      </ListItemButton>
+    </ListItem>
+  ) : null
 
   const sidenavContent = (
     <Box
@@ -490,8 +526,13 @@ export default function AppLayout() {
           </List>
         )}
 
-        {/* Student: exercise list in sidebar */}
-        {studentCourseId && exercises && exercises.length > 0 && (
+        {/*
+          Student: exercise list in sidebar — and the Moodle link, which is why the condition is not
+          just the exercise count. A course whose exercises have not been published yet still has a
+          Moodle page worth reaching, and early in a semester that is exactly the course a student is
+          looking at.
+        */}
+        {studentCourseId && ((exercises && exercises.length > 0) || moodleCourseItem) && (
           <List disablePadding>
             <ListSubheader
               disableSticky
@@ -527,7 +568,8 @@ export default function AppLayout() {
                 {courseTitle ?? t('exercises.title')}
               </Box>
             </ListSubheader>
-            {exercises.map((ex) => (
+            {moodleCourseItem}
+            {exercises?.map((ex) => (
               <ListItem key={ex.id} disablePadding>
                 <ListItemButton
                   component={RouterLink}
@@ -586,6 +628,7 @@ export default function AppLayout() {
                 {courseTitle ?? t('exercises.title')}
               </Box>
             </ListSubheader>
+            {moodleCourseItem}
             <ListItem disablePadding>
               <ListItemButton
                 component={RouterLink}

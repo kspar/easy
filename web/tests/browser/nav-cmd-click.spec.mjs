@@ -24,7 +24,12 @@ test('nav-cmd-click', async ({ launch, check }) => {
     page,
     [
       ['/account/checkin', () => ({})],
-      [`/courses/${COURSE_ID}/basic`, () => ({ id: COURSE_ID, title: 'Programming 101', alias: null })],
+      [`/courses/${COURSE_ID}/basic`, () => ({
+        id: COURSE_ID, title: 'Programming 101', alias: null,
+        // Null, so the sidebar grows no Moodle link here (EZ-1874) — this spec counts the nav items
+        // and asserts every one of them is an anchor, and the link has its own spec.
+        moodle_course_url: null,
+      })],
       [`/courses/${COURSE_ID}/exercises`, () => ({ exercises: [] })],
       ['/courses/teacher', () => ({
         courses: [{ id: COURSE_ID, title: 'Programming 101', alias: null, student_count: 12 }],

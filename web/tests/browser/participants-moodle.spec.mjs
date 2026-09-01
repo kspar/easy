@@ -26,6 +26,9 @@ const COURSE_BASIC = {
   archived: false,
   color: '#1976d2',
   course_code: null,
+  // A URL and not null, because this spec's course is Moodle-linked and that is what core sends for
+  // one (EZ-1874). The sidebar link it produces is `nav-moodle-course`'s subject, not this one's.
+  moodle_course_url: 'https://moodle.example/course/view.php?name=LTAT.03.001',
 }
 
 // Every field core's StudentsResp carries, including `moodle_username` — which

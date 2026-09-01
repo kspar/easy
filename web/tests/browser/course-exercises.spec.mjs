@@ -116,7 +116,9 @@ test('course-exercises', async ({ launch, check }) => {
 
   await fakeApi(page, [
     ['/account/checkin', () => ({})],
-    ['/courses/9006/basic', () => ({ id: COURSE_ID, title: 'Programming 101', alias: null })],
+    ['/courses/9006/basic', () => ({
+      id: COURSE_ID, title: 'Programming 101', alias: null, moodle_course_url: null,
+    })],
     ['/student/courses/9006/exercises', () => ({ exercises: [] })],
     ['/courses/teacher', () => ({
       courses: [{ id: COURSE_ID, title: 'Programming 101', alias: null, student_count: 12 }],

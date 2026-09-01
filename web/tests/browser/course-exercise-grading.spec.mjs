@@ -126,6 +126,7 @@ test('course-exercise-grading', async ({ launch, check }) => {
     ['/account/checkin', () => ({})],
     [`/courses/${COURSE}/basic`, () => ({
       title: 'Programming 101', alias: null, archived: false, color: '#1976d2', course_code: null,
+      moodle_course_url: null,
     })],
     [`/courses/${COURSE}/groups`, () => ({ groups: [] })],
     // AppLayout fires this during boot, before activeRole settles to teacher. Unstubbed it falls

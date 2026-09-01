@@ -42,9 +42,19 @@ export function useCourse(courseId: string | undefined) {
   return useQuery({
     queryKey: ['course', courseId],
     queryFn: () =>
-      apiFetch<{ title: string; alias: string | null; archived: boolean; color: string; course_code: string | null }>(
-        `/courses/${courseId}/basic`,
-      ),
+      apiFetch<{
+        title: string
+        alias: string | null
+        archived: boolean
+        color: string
+        course_code: string | null
+        /**
+         * The course's page in Moodle, or null when there is nothing to link to (EZ-1874) — the
+         * course is not Moodle-linked, or this environment has no Moodle configured. Already a
+         * finished, encoded URL: nothing here builds one.
+         */
+        moodle_course_url: string | null
+      }>(`/courses/${courseId}/basic`),
     enabled: !!courseId,
   })
 }

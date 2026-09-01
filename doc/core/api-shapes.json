@@ -443,6 +443,7 @@
       "archived": { "kind": "boolean" },
       "color": { "kind": "string" },
       "course_code": { "kind": "string", "nullable": true },
+      "moodle_course_url": { "kind": "string", "nullable": true },
       "title": { "kind": "string" }
     },
     "core.ems.service.course.ReadParticipantsOnCourseController.Resp": {

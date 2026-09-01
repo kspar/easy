@@ -68,6 +68,7 @@ export const baseStubs = (membershipCalls = [], deletedGroups = []) => [
   ['/account/checkin', () => ({})],
   [`/courses/${COURSE}/basic`, () => ({
     title: 'Programming 101', alias: null, archived: false, color: '#1976d2', course_code: null,
+    moodle_course_url: null,
   })],
   // Students in/out of a group, which carries a body; and deleting a group, which does not. Both
   // patterns must precede the plain `/groups` one below, which would otherwise swallow them.

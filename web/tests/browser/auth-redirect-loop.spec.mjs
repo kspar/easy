@@ -189,6 +189,7 @@ test('auth-redirect-loop', async ({ launch, check }) => {
         archived: false,
         color: '#1976d2',
         course_code: 'LTAT.03.001',
+        moodle_course_url: null,
       }))],
       [`/student/courses/${COURSE}/exercises`, authed(() => ({ exercises: [] }))],
       // The page itself. Empty, because this section is about where the browser goes rather than
