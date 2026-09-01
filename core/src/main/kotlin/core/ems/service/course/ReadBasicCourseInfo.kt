@@ -42,13 +42,16 @@ class ReadBasicCourseInfo(
          * Here, on the course-identity endpoint, and not on `GET /courses/{courseId}/moodle`, which
          * is otherwise where everything Moodle lives:
          *
-         * - This endpoint is `userOnCourse`, which is exactly the audience. Students on a linked
-         *   course move between the two systems as much as their teachers do and are enrolled in
-         *   that Moodle course anyway; the Moodle props endpoint is `teacherOnCourse` and could
-         *   never serve them.
          * - The sidebar already fetches this for the course title, so the link costs no request.
          * - Those props are **polled every three seconds while a sync runs** (EZ-1768). That cadence
          *   belongs to a sync-status resource, not to the cached course-identity one.
+         *
+         * Only the sidebar's teacher section renders it, so the frontend asks for this as a teacher
+         * and a student is sent a field nothing displays. That is a deliberate trade and not an
+         * oversight: this endpoint is `userOnCourse`, the shortname it is built from is not a secret
+         * from students enrolled in the same Moodle course, and the alternative — a second request
+         * on every course page, against an endpoint polled every three seconds — costs more than it
+         * hides.
          *
          * What it deliberately is not is a role-dependent response: one URL answering with different
          * fields per caller makes every field optional on the client, and the frontend switches

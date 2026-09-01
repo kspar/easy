@@ -273,17 +273,23 @@ export default function AppLayout() {
   const initials = firstName?.charAt(0)?.toUpperCase() ?? '?'
 
   /**
-   * The link out to this course's page in Moodle (EZ-1874), for both roles.
+   * The link out to this course's page in Moodle (EZ-1874). **Teachers and admins only**, and last
+   * in their course section.
    *
    * Core sends a finished URL or null, so there is no shortname to encode here and no config to
    * consult: null means either the course is not Moodle-linked or this environment has no Moodle,
    * and both of those mean the same thing to a sidebar.
    *
-   * **Directly under the course title in both role sections**, rather than at the end of either.
-   * The end is where it belongs by kind — it leaves the app, as the two Administration links do —
-   * but a student's section continues into every exercise on the course, so "last" there can be
-   * twenty rows down and off the screen. It is a property of the course, like the title it sits
-   * under, and it is in the same place whichever role you are working as.
+   * Last because it leaves the app, which is where the Administration section puts its two external
+   * links as well — the in-app pages a person moves between stay together above it.
+   *
+   * Students had it too in the first version and no longer do. Their section is the exercise list,
+   * and one external row in the middle of it (or below twenty exercises, which is the same as
+   * hidden) bought them little: moving between the two systems is a teacher's working day, not a
+   * student's. `moodle_course_url` stays on `/courses/{id}/basic` rather than moving to the
+   * teacher-only Moodle endpoint, because the sidebar already fetches this for the course title and
+   * that endpoint is polled every three seconds mid-sync; a student is simply sent a field the app
+   * does not render for them.
    */
   const moodleCourseItem = courseInfo?.moodle_course_url ? (
     <ListItem disablePadding>
@@ -526,13 +532,8 @@ export default function AppLayout() {
           </List>
         )}
 
-        {/*
-          Student: exercise list in sidebar — and the Moodle link, which is why the condition is not
-          just the exercise count. A course whose exercises have not been published yet still has a
-          Moodle page worth reaching, and early in a semester that is exactly the course a student is
-          looking at.
-        */}
-        {studentCourseId && ((exercises && exercises.length > 0) || moodleCourseItem) && (
+        {/* Student: exercise list in sidebar */}
+        {studentCourseId && exercises && exercises.length > 0 && (
           <List disablePadding>
             <ListSubheader
               disableSticky
@@ -568,8 +569,7 @@ export default function AppLayout() {
                 {courseTitle ?? t('exercises.title')}
               </Box>
             </ListSubheader>
-            {moodleCourseItem}
-            {exercises?.map((ex) => (
+            {exercises.map((ex) => (
               <ListItem key={ex.id} disablePadding>
                 <ListItemButton
                   component={RouterLink}
@@ -628,7 +628,6 @@ export default function AppLayout() {
                 {courseTitle ?? t('exercises.title')}
               </Box>
             </ListSubheader>
-            {moodleCourseItem}
             <ListItem disablePadding>
               <ListItemButton
                 component={RouterLink}
@@ -696,6 +695,7 @@ export default function AppLayout() {
                 <ListItemText primary={t('courses.courseSettings')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
               </ListItemButton>
             </ListItem>
+            {moodleCourseItem}
           </List>
         )}
 

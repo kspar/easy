@@ -1,12 +1,12 @@
-// The Moodle link in a course's sidebar section (EZ-1874) — both roles, and absent where there is
-// no Moodle course to open.
+// The Moodle link in a course's sidebar section (EZ-1874) — teachers only, last in the section, and
+// absent where there is no Moodle course to open.
 //
 // Core decides whether there is a link at all and sends a finished URL or null, so what is testable
 // here is the half that lives in the sidebar: that null renders nothing, that a URL renders a real
-// external anchor, that a student gets it as well as a teacher, and that it sits directly under the
-// course title rather than at the end of the section. That last one is not decoration — a student's
-// section continues into every exercise on the course, so an item placed last can be twenty rows
-// below the fold, which is indistinguishable from a missing feature to the person looking for it.
+// external anchor, that it comes last among the course's items, and that a student does not get it
+// even though the same response carries the URL. That last one is the assertion worth having — the
+// field is on `/courses/{id}/basic`, which students are served too, so nothing but the sidebar's own
+// role gate keeps it out of their nav, and a gate has to be watched saying no.
 //
 //   cd web && npx playwright test nav-moodle-course
 import { test } from '../support/spec.mjs'
@@ -110,14 +110,13 @@ test('nav-moodle-course', async ({ launch, check }) => {
     check(`opens in a new tab (${r.target})`, r.target === '_blank')
     check(`and is not an open redirect vector (${r.rel})`, (r.rel ?? '').includes('noopener'))
 
-    // Directly under the course title, i.e. before the four in-app pages rather than after them.
+    // Last, after the in-app pages — including Course settings, which used to end the section.
     const moodleAt = r.navItems.findIndex((t) => t === 'Moodle')
-    const exercisesAt = r.navItems.findIndex((t) => t === 'Exercises')
     check(
-      `it comes first in the course section (Moodle at ${moodleAt}, Exercises at ${exercisesAt})`,
-      moodleAt >= 0 && exercisesAt > moodleAt,
+      `it comes last in the sidebar (${r.navItems.join(' | ')})`,
+      moodleAt >= 0 && moodleAt === r.navItems.length - 1,
     )
-    // And it did not displace anything: the section is the same five items plus one.
+    // And it displaced nothing: the same five items, plus one at the end.
     for (const item of ['Exercises', 'Grades', 'Participants', 'Similarity', 'Course settings']) {
       check(`${item} is still in the nav`, r.navItems.some((t) => t.includes(item)))
     }
@@ -140,35 +139,21 @@ test('nav-moodle-course', async ({ launch, check }) => {
 
   // --- a student on the same course ------------------------------------------------------------------
   {
+    // The URL is in the response — `/basic` serves students the same fields — so this is the role
+    // gate being watched say no, not an absent fixture producing an absent link.
     const r = await sidebarFor({
       role: 'student',
       moodleCourseUrl: MOODLE_URL,
       exercises: [studentExercise('1', 'Loops', 'UNSTARTED'), studentExercise('2', 'Lists', 'COMPLETED')],
     })
-    check(`a student gets it too (${r.found})`, r.found === 1)
-    // Above the exercise list, which is the whole reason it is not last: this list is as long as the
-    // course, and the sidebar scrolls.
-    const moodleAt = r.navItems.findIndex((t) => t === 'Moodle')
-    const firstExerciseAt = r.navItems.findIndex((t) => t.includes('Loops'))
+    check(`a student does not get it, URL or no URL (${r.found})`, r.found === 0)
     check(
-      `above the exercises (Moodle at ${moodleAt}, first exercise at ${firstExerciseAt})`,
-      moodleAt >= 0 && firstExerciseAt > moodleAt,
+      `nor a row of any kind naming Moodle (${r.navItems.join(' | ')})`,
+      !r.navItems.some((t) => t.includes('Moodle')),
     )
-    await r.close()
-  }
-
-  {
-    // A linked course with nothing published yet. The student section used to render only where
-    // there was at least one exercise, so the link would have been invisible on exactly the course
-    // someone looks at in the first week of a semester.
-    const r = await sidebarFor({ role: 'student', moodleCourseUrl: MOODLE_URL, exercises: [] })
-    check(`a course with no exercises still shows it (${r.found})`, r.found === 1)
-    await r.close()
-  }
-
-  {
-    const r = await sidebarFor({ role: 'student', moodleCourseUrl: null, exercises: [] })
-    check('and a student with neither gets no section at all', r.found === 0)
+    // The positive control for this case: their own section did render, so "no link" is a decision
+    // and not an empty sidebar.
+    check('while their exercise list is there as before', r.navItems.some((t) => t.includes('Loops')))
     await r.close()
   }
 })
