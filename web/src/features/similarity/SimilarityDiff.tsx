@@ -8,6 +8,7 @@ import { useTheme } from '@mui/material/styles'
 import { Box } from '@mui/material'
 import { languageFromFilename } from '../course-exercise/editorLanguage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import { sharedCodeHighlighting } from './similarityHighlight.ts'
 
 /**
  * Two solutions side by side, with the matching regions marked.
@@ -56,6 +57,7 @@ export default function SimilarityDiff({
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         lang,
         ...(dark ? [oneDark] : []),
+        ...sharedCodeHighlighting(dark),
       ]
 
       view = new MergeView({

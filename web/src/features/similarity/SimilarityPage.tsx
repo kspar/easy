@@ -37,6 +37,7 @@ import {
   useTeacherSubmissionSummaries,
 } from '../../api/exercises.ts'
 import SimilarityDiff from './SimilarityDiff.tsx'
+import { SHARED_LIGHT, SHARED_DARK } from './similarityHighlight.ts'
 import { spaLinkProps } from '../../components/spaLink.ts'
 
 /**
@@ -320,6 +321,35 @@ export default function SimilarityPage() {
                         </Typography>
                       </Box>
                     ))}
+                  </Box>
+                  {/*
+                    The highlight is the opposite of what a merge view usually means, so it says so
+                    once, next to the thing it describes. Without this the blue reads as "changed".
+                  */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      mb: 0.75,
+                      color: 'text.secondary',
+                      fontSize: 12,
+                    }}
+                  >
+                    <Box
+                      aria-hidden
+                      sx={{
+                        width: 22,
+                        height: 12,
+                        borderRadius: 0.5,
+                        flexShrink: 0,
+                        bgcolor: (t) =>
+                          t.palette.mode === 'dark' ? SHARED_DARK : SHARED_LIGHT,
+                        outline: '1px solid',
+                        outlineColor: 'divider',
+                      }}
+                    />
+                    {t('similarity.sharedLegend')}
                   </Box>
                   <SimilarityDiff left={a.solution} right={b.solution} fileName="lahendus.py" />
                 </AccordionDetails>

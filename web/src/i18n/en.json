@@ -597,7 +597,8 @@
     "scope_one": "{{submissions}} submissions, {{count}} pair to compare",
     "scope_other": "{{submissions}} submissions, {{count}} pairs to compare",
     "diceTooltip": "Dice coefficient — how much of the two files is text they both contain.",
-    "levenshteinTooltip": "Levenshtein ratio — how few edits would turn one file into the other."
+    "levenshteinTooltip": "Levenshtein ratio — how few edits would turn one file into the other.",
+    "sharedLegend": "Highlighted code appears in both solutions."
   },
   "about": {
     "s1": "Lahendus is operated and developed by the",

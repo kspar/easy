@@ -597,7 +597,8 @@
     "scope_one": "{{submissions}} esitust, {{count}} võrreldav paar",
     "scope_other": "{{submissions}} esitust, {{count}} võrreldavat paari",
     "diceTooltip": "Dice’i kordaja — kui suure osa kahest failist moodustab tekst, mis on neis mõlemas.",
-    "levenshteinTooltip": "Levenshteini suhtarv — kui vähe muudatusi oleks vaja, et ühest failist saaks teine."
+    "levenshteinTooltip": "Levenshteini suhtarv — kui vähe muudatusi oleks vaja, et ühest failist saaks teine.",
+    "sharedLegend": "Esiletõstetud kood esineb mõlemas lahenduses."
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",

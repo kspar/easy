@@ -133,6 +133,66 @@ test('similarity-page', async ({ launch, check }) => {
     'and the diff has actual height, rather than rendering into a 0px box',
     await waitUntil(async () => ((await mergeView.boundingBox())?.height ?? 0) > 60),
   )
+  // --- what the colour means (EZ-1875) -----------------------------------------------------------
+  // The stub pair is the same algorithm with every name changed, which a line diff sees as almost
+  // completely different. The point of the treatment is that the *shared* skeleton is what carries
+  // the ink, so assert both halves: shared runs are marked, and the library's red/green is gone.
+  // Asserting only the first would still pass with the default theme layered underneath.
+  const marks = await page.evaluate(() => ({
+    shared: document.querySelectorAll('.cm-mergeView .cm-commonSpan, .cm-mergeView .cm-commonLine').length,
+    litUnderlines: [...document.querySelectorAll('.cm-mergeView .cm-changedText')].filter((el) => {
+      const bg = getComputedStyle(el).background
+      return bg.includes('gradient') || bg.includes('rgb(')
+    }).length,
+  }))
+  check(`the code both students share is marked (${marks.shared} runs)`, marks.shared > 0)
+  check(
+    `and the red/green diff colouring is not (${marks.litUnderlines} lit)`,
+    marks.litUnderlines === 0,
+  )
+  check(
+    'the highlight is explained, since it means the opposite of a normal diff',
+    await page.getByText('Highlighted code appears in both solutions.').isVisible(),
+  )
+
+  // Two shapes, and they mean different things. A line that is identical end to end keeps its
+  // full-width band, indent included — the solid run down the pane is the message. A *fragment*
+  // matching inside a line that differs is a word-shaped mark, and must not swallow the indent:
+  // in Python the indent is shared by construction, so marking it draws a column saying only "this
+  // code is indented" and turns the marks into blocks.
+  const bandedLines = await page.locator('.cm-mergeView .cm-line.cm-commonLine').count()
+  check(`an identical line is banded in full (${bandedLines} lines)`, bandedLines > 0)
+
+  // Walks text nodes tracking column, rather than reading CSS: the offence is a range boundary.
+  const indentOffenders = await page.evaluate(() => {
+    const bad = []
+    for (const lineEl of document.querySelectorAll('.cm-mergeView .cm-line')) {
+      const text = lineEl.textContent ?? ''
+      const indent = text.length - text.trimStart().length
+      if (indent === 0) continue
+      let col = 0
+      const walk = (node) => {
+        if (node.nodeType === 3) {
+          col += node.textContent.length
+          return
+        }
+        for (const child of node.childNodes) {
+          const start = col
+          walk(child)
+          if (child.nodeType === 1 && child.classList?.contains('cm-commonSpan') && start < indent) {
+            bad.push(text.slice(0, 40))
+          }
+        }
+      }
+      walk(lineEl)
+    }
+    return bad
+  })
+  check(
+    `a fragment mark never covers the indent (${indentOffenders.length} offenders)`,
+    indentOffenders.length === 0,
+  )
+
   const link = page.getByRole('link', { name: /Mari Maasikas/ })
   check(
     'each side links to that student in the grading view',

@@ -1,0 +1,573 @@
+<title>Shared, Not Different</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&display=swap">
+<style>
+  :root {
+    --paper: #f4f6f8; --surface: #fff; --surface-2: #eef1f5;
+    --ink: #141a23; --ink-2: #3d4753; --muted: #6a7480;
+    --border: #dbe0e7; --border-2: #c6cdd6;
+    --shared: rgba(90, 150, 190, .13);
+    --shared-span: rgba(90, 150, 190, .18);
+    --shared-solid: #4a86b4;
+    --crit: #a83a2c; --ok: #2a6b50;
+    --kw: #7c3aad; --bi: #1a5fb4; --st: #0a6b52; --cm: #9a6a20; --num: #b0521f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f141b; --surface: #161d26; --surface-2: #1d2732;
+      --ink: #e8ecf1; --ink-2: #b9c2cd; --muted: #8a94a1;
+      --border: #29333f; --border-2: #3a4655;
+      --shared: rgba(120, 180, 220, .16);
+      --shared-span: rgba(120, 180, 220, .24);
+      --shared-solid: #7db4dc;
+      --crit: #e8907f; --ok: #7cc4a2;
+      --kw: #c9a0e8; --bi: #8ab4f8; --st: #7cc4a2; --cm: #d0a860; --num: #e8a87c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f141b; --surface: #161d26; --surface-2: #1d2732;
+    --ink: #e8ecf1; --ink-2: #b9c2cd; --muted: #8a94a1;
+    --border: #29333f; --border-2: #3a4655;
+    --shared: rgba(120, 180, 220, .16);
+    --shared-span: rgba(120, 180, 220, .24);
+    --shared-solid: #7db4dc;
+    --crit: #e8907f; --ok: #7cc4a2;
+    --kw: #c9a0e8; --bi: #8ab4f8; --st: #7cc4a2; --cm: #d0a860; --num: #e8a87c;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.6; }
+  .wrap { max-width: 1500px; margin: 0 auto; padding: 0 24px 80px; }
+  header { padding: 52px 0 26px; border-bottom: 2px solid var(--ink); margin-bottom: 34px; }
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+  h1 { font-family: "IBM Plex Serif", Georgia, serif; font-size: clamp(28px, 4.6vw, 42px); line-height: 1.1; margin: 0 0 14px; letter-spacing: -.015em; text-wrap: balance; }
+  .standfirst { font-size: 17px; color: var(--ink-2); max-width: 68ch; margin: 0; }
+  .standfirst strong { color: var(--ink); }
+  h2 { font-family: "IBM Plex Serif", Georgia, serif; font-size: 21px; margin: 0 0 6px; }
+  .blurb { color: var(--ink-2); font-size: 14.5px; max-width: 78ch; margin: 0 0 14px; }
+  .scenario { margin-bottom: 54px; }
+  .metrics { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .metric { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; padding: 4px 10px; border-radius: 3px; border: 1px solid var(--border-2); background: var(--surface); }
+  .metric em { font-style: normal; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: 10px; }
+  .metric.bad b { color: var(--crit); }
+  .metric.good b { color: var(--shared-solid); }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 1100px) { .compare { grid-template-columns: 1fr; } }
+  .lbl { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 500; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid; }
+  .lbl-before { color: var(--crit); border-color: var(--crit); }
+  .lbl-after { color: var(--shared-solid); border-color: var(--shared-solid); }
+  .panes { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; background: var(--surface); }
+  .pane { overflow-x: auto; border-right: 1px solid var(--border); }
+  .pane:last-child { border-right: 0; }
+  .ln { display: flex; align-items: stretch; font-family: "IBM Plex Mono", monospace; font-size: 12px; line-height: 1.65; white-space: pre; }
+  .gut { width: 4px; flex: 0 0 4px; }
+  .gut-a { background: #e43; }
+  .gut-b { background: #2b2; }
+  .hair-a { background: linear-gradient(to right, #c2603f 0 2px, transparent 2px); }
+  .hair-b { background: linear-gradient(to right, #3f8f5f 0 2px, transparent 2px); }
+  .no { width: 34px; flex: 0 0 34px; text-align: right; padding-right: 9px; color: var(--muted); opacity: .65; user-select: none; }
+  .code { padding-right: 12px; flex: 1; }
+  .spacer { background: var(--surface-2); opacity: .45; }
+  /* Current treatment — values copied from @codemirror/merge's own baseTheme. */
+  .chg-a { background: rgba(160, 128, 100, .08); }
+  .chg-b { background: rgba(100, 160, 128, .08); }
+  .del { background: linear-gradient(#ee443366, #ee443366) bottom/100% 2px no-repeat; }
+  .ins { background: linear-gradient(#22bb22aa, #22bb22aa) bottom/100% 2px no-repeat; }
+  /* Proposed — a full-width band for an identical line, a text-hugging mark for a fragment. */
+  .common-line { background: var(--shared); }
+  .common-span { background: var(--shared-span); border-radius: 2px; }
+  .kw { color: var(--kw); } .bi { color: var(--bi); } .st { color: var(--st); } .cm { color: var(--cm); } .num { color: var(--num); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; background: var(--surface); border: 1px solid var(--border); border-radius: 3px; }
+  th { text-align: left; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 500; padding: 11px 14px; border-bottom: 1px solid var(--border-2); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: 0; }
+  td.n { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; text-align: right; }
+  .verdict { border: 1px solid var(--border); border-left: 3px solid var(--shared-solid); background: var(--surface); border-radius: 3px; padding: 20px 22px; margin-top: 20px; }
+  .verdict h2 { margin-bottom: 10px; }
+  .verdict p { color: var(--ink-2); max-width: 76ch; margin: 0 0 10px; }
+  .verdict p:last-child { margin: 0; }
+  code { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; background: var(--surface-2); border-radius: 2px; padding: 1px 5px; }
+  .legend { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+  .swatch { width: 24px; height: 13px; border-radius: 3px; background: var(--shared); outline: 1px solid var(--border-2); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span>Similarity diff</span><span>EZ-1875</span><span>Proof of concept</span></div>
+    <h1>Shared, not different</h1>
+    <p class="standfirst">
+      The similarity page borrows a merge view, which colours <strong>what changed</strong>. On a
+      plagiarism page the evidence is <strong>what is the same</strong> — so today the colour is
+      inversely proportional to the finding: a disguised copy is the quietest pair on the page and
+      two unrelated solutions are the loudest. Every pane below is rendered from the real
+      <code>Chunk.build</code> output, not mocked up.
+    </p>
+  </header>
+
+  <section>
+    <h2>The measurements</h2>
+    <p class="blurb">Counted in the running app with Playwright — the rendered DOM, not a recomputation. Left pane of each pair, 30 lines of Python. “Painted” counts lines given a background; “underlines” counts the inline red/green runs.</p>
+    <table>
+      <thead><tr><th>Pair</th><th style="text-align:right">Lines painted now</th><th style="text-align:right">Underlines now</th><th style="text-align:right">Shared lines</th><th style="text-align:right">Shared runs</th></tr></thead>
+      <tbody><tr><td>Same code, every name changed</td><td class="n">22/30</td><td class="n">32</td><td class="n">1</td><td class="n">45</td></tr>
+<tr><td>The same file, lightly disguised</td><td class="n">3/30</td><td class="n">4</td><td class="n">19</td><td class="n">7</td></tr>
+<tr><td>Two unrelated solutions</td><td class="n">29/30</td><td class="n">22</td><td class="n">0</td><td class="n">1</td></tr></tbody>
+    </table>
+  </section>
+
+  <div class="verdict">
+    <h2>Why invert rather than just tone it down</h2>
+    <p>
+      Softening the red and green makes the code readable but says almost nothing: a hairline meaning
+      “22 of these lines differ somehow” is roughly the information already in the score. The page
+      exists to answer a question the scores explicitly cannot — its own help text says they “cannot
+      tell a shared approach from a copy”. Marking the shared runs answers it directly.
+    </p>
+    <p>
+      It also fixes the readability complaint as a side effect. In the renamed case the underlines sit
+      under nearly every identifier; inverted, the renamed identifiers are the one thing left plain,
+      so the eye lands on the skeleton that survived the renaming.
+    </p>
+    <p>
+      Blue, not green or red: those are spoken for by the scores and by pass/fail everywhere else in
+      the product, and “shared” is neither good news nor bad news — it is the thing to look at.
+    </p>
+    <p>
+      <strong>Two shapes, two claims.</strong> A line identical end to end keeps a full-width band,
+      indent and all: the solid run down the pane <em>is</em> the message. A fragment matching inside
+      a line that differs gets a word-shaped mark that stops at the first real character — in Python
+      the indent is shared by construction, so marking it would draw a column saying only “this code
+      is indented” and turn the fragments into blocks. Telling the two apart at a glance is most of
+      the value.
+    </p>
+    <div class="legend" style="margin-top:14px"><span class="swatch"></span> Highlighted code appears in both solutions.</div>
+  </div>
+
+
+  <section class="scenario" id="renamed">
+    <h2>Same code, every name changed</h2>
+    <p class="blurb">The case you described. A line diff sees almost nothing in common, so almost every line is painted and the underlines land on exactly the renamed identifiers — the part a teacher wants to look past. Inverted, the shared skeleton lights up and the renamed names stay plain.</p>
+    <div class="metrics">
+      <span class="metric bad"><b>22</b>/30 lines painted &middot; <b>32</b> underlines <em>now</em></span>
+      <span class="metric good"><b>1</b> shared lines &middot; <b>45</b> shared runs <em>proposed</em></span>
+    </div>
+    <div class="compare">
+      <div class="col">
+        <h3 class="lbl lbl-before">Now — colour marks what differs</h3>
+        
+      <div class="panes">
+        <div class="pane"><div class="ln chg-a"><span class="gut gut-a"></span><span class="no">1</span><span class="code"><span class="cm"># Loeb failist </span><span class="del"><span class="cm">hinded </span></span><span class="cm">ja </span><span class="del"><span class="cm">arvutab statistika</span></span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">3</span><span class="code"><span class="kw">def</span> loe_<span class="del">hinded(failinimi</span>):</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">4</span><span class="code">    <span class="del">hinded</span> = []</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">5</span><span class="code">    <span class="kw">with</span> <span class="bi">open</span>(<span class="del">failinimi</span>) <span class="kw">as</span> f<span class="del">ail</span>:</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">6</span><span class="code">        <span class="kw">for</span> r<span class="del">ida</span> <span class="kw">in</span> f<span class="del">ail</span>:</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">7</span><span class="code">            r<span class="del">ida</span> = r<span class="del">ida</span>.strip()</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">8</span><span class="code">            <span class="kw">if</span> r<span class="del">ida</span>:</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">9</span><span class="code">                <span class="del">hinded</span>.append(<span class="bi">int</span>(r<span class="del">ida</span>))</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">10</span><span class="code">    <span class="kw">return</span> <span class="del">hinded</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">11</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">12</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">13</span><span class="code"><span class="kw">def</span> keskmine<span class="del">(hinded</span>):</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">14</span><span class="code">    <span class="kw">if</span> <span class="bi">len</span>(<span class="del">hinded</span>) == <span class="num">0</span>:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">15</span><span class="code">        <span class="kw">return</span> <span class="num">0</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">16</span><span class="code">    <span class="kw">return</span> <span class="bi">sum</span>(<span class="del">hinded</span>) / <span class="bi">len</span>(<span class="del">hinded</span>)</span></div>
+<div class="ln"><span class="gut"></span><span class="no">17</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">18</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">19</span><span class="code"><span class="kw">def</span> <span class="del">suurim(hinded</span>):</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">20</span><span class="code">    <span class="del">parim</span> = <span class="del">hinded</span>[<span class="num">0</span>]</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">21</span><span class="code">    <span class="kw">for</span> <span class="del">h</span> <span class="kw">in</span> <span class="del">hinded</span>:</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">22</span><span class="code">        <span class="kw">if</span> <span class="del">h</span> &gt; <span class="del">parim</span>:</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">23</span><span class="code">            <span class="del">parim</span> = <span class="del">h</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">24</span><span class="code">    <span class="kw">return</span> <span class="del">parim</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">25</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">26</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">27</span><span class="code"><span class="del">hinded</span> = loe_<span class="del">hinded</span>(<span class="st">"hinded.txt"</span>)</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">28</span><span class="code"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, keskmine<span class="del">(hinded</span>))</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">29</span><span class="code"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, <span class="del">suurim(hinded</span>))</span></div>
+<div class="ln"><span class="gut"></span><span class="no">30</span><span class="code">&nbsp;</span></div></div>
+        <div class="pane"><div class="ln chg-b"><span class="gut gut-b"></span><span class="no">1</span><span class="code"><span class="cm"># Loeb </span><span class="ins"><span class="cm">tulemused </span></span><span class="cm">failist ja </span><span class="ins"><span class="cm">teeb kokkuvote</span></span></span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">3</span><span class="code"><span class="kw">def</span> loe_<span class="ins">tulemused(nimi</span>):</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">4</span><span class="code">    <span class="ins">tulemused</span> = []</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">5</span><span class="code">    <span class="kw">with</span> <span class="bi">open</span>(<span class="ins">nimi</span>) <span class="kw">as</span> f:</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">6</span><span class="code">        <span class="kw">for</span> r <span class="kw">in</span> f:</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">7</span><span class="code">            r = r.strip()</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">8</span><span class="code">            <span class="kw">if</span> r:</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">9</span><span class="code">                <span class="ins">tulemused</span>.append(<span class="bi">int</span>(r))</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">10</span><span class="code">    <span class="kw">return</span> <span class="ins">tulemused</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">11</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">12</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">13</span><span class="code"><span class="kw">def</span> keskmine<span class="ins">_tulemus(tulemused</span>):</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">14</span><span class="code">    <span class="kw">if</span> <span class="bi">len</span>(<span class="ins">tulemused</span>) == <span class="num">0</span>:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">15</span><span class="code">        <span class="kw">return</span> <span class="num">0</span></span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">16</span><span class="code">    <span class="kw">return</span> <span class="bi">sum</span>(<span class="ins">tulemused</span>) / <span class="bi">len</span>(<span class="ins">tulemused</span>)</span></div>
+<div class="ln"><span class="gut"></span><span class="no">17</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">18</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">19</span><span class="code"><span class="kw">def</span> <span class="ins">maksimum(tulemused</span>):</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">20</span><span class="code">    <span class="ins">suurim</span> = <span class="ins">tulemused</span>[<span class="num">0</span>]</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">21</span><span class="code">    <span class="kw">for</span> <span class="ins">t</span> <span class="kw">in</span> <span class="ins">tulemused</span>:</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">22</span><span class="code">        <span class="kw">if</span> <span class="ins">t</span> &gt; <span class="ins">suurim</span>:</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">23</span><span class="code">            <span class="ins">suurim</span> = <span class="ins">t</span></span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">24</span><span class="code">    <span class="kw">return</span> <span class="ins">suurim</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">25</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">26</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">27</span><span class="code"><span class="ins">tulemused</span> = loe_<span class="ins">tulemused</span>(<span class="st">"hinded.txt"</span>)</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">28</span><span class="code"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, keskmine<span class="ins">_tulemus(tulemused</span>))</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">29</span><span class="code"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, <span class="ins">maksimum(tulemused</span>))</span></div>
+<div class="ln"><span class="gut"></span><span class="no">30</span><span class="code">&nbsp;</span></div></div>
+      </div>
+      </div>
+      <div class="col">
+        <h3 class="lbl lbl-after">Proposed — colour marks what is shared</h3>
+        
+      <div class="panes">
+        <div class="pane"><div class="ln"><span class="gut hair-a"></span><span class="no">1</span><span class="code"><span class="common-span"><span class="cm"># Loeb </span></span><span class="common-span"><span class="cm">failist </span></span><span class="cm">hinded </span><span class="common-span"><span class="cm">ja </span></span><span class="cm">arvutab statistika</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">3</span><span class="code"><span class="common-span"><span class="kw">def</span> loe_</span>hinded(failinimi<span class="common-span">):</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">4</span><span class="code">    hinded<span class="common-span"> = []</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">5</span><span class="code">    <span class="common-span"><span class="kw">with</span> <span class="bi">open</span>(</span>failinimi<span class="common-span">) <span class="kw">as</span> f</span>ail<span class="common-span">:</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">6</span><span class="code">        <span class="common-span"><span class="kw">for</span> r</span>ida<span class="common-span"> <span class="kw">in</span> f</span>ail<span class="common-span">:</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">7</span><span class="code">            <span class="common-span">r</span>ida<span class="common-span"> = r</span>ida<span class="common-span">.strip()</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">8</span><span class="code">            <span class="common-span"><span class="kw">if</span> r</span>ida<span class="common-span">:</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">9</span><span class="code">                hinded<span class="common-span">.append(<span class="bi">int</span>(r</span>ida<span class="common-span">))</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">10</span><span class="code">    <span class="common-span"><span class="kw">return</span> </span>hinded</span></div>
+<div class="ln"><span class="gut"></span><span class="no">11</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">12</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">13</span><span class="code"><span class="common-span"><span class="kw">def</span> keskmine</span>(hinded<span class="common-span">):</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">14</span><span class="code">    <span class="common-span"><span class="kw">if</span> <span class="bi">len</span>(</span>hinded<span class="common-span">) == <span class="num">0</span>:</span></span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">15</span><span class="code">        <span class="kw">return</span> <span class="num">0</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">16</span><span class="code">    <span class="common-span"><span class="kw">return</span> <span class="bi">sum</span>(</span>hinded<span class="common-span">) / <span class="bi">len</span>(</span>hinded<span class="common-span">)</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">17</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">18</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">19</span><span class="code"><span class="common-span"><span class="kw">def</span> </span>suurim(hinded<span class="common-span">):</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">20</span><span class="code">    parim<span class="common-span"> = </span>hinded<span class="common-span">[<span class="num">0</span>]</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">21</span><span class="code">    <span class="common-span"><span class="kw">for</span> </span>h<span class="common-span"> <span class="kw">in</span> </span>hinded<span class="common-span">:</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">22</span><span class="code">        <span class="common-span"><span class="kw">if</span> </span>h<span class="common-span"> &gt; </span>parim<span class="common-span">:</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">23</span><span class="code">            parim<span class="common-span"> = </span>h</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">24</span><span class="code">    <span class="common-span"><span class="kw">return</span> </span>parim</span></div>
+<div class="ln"><span class="gut"></span><span class="no">25</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">26</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">27</span><span class="code">hinded<span class="common-span"> = loe_</span>hinded<span class="common-span">(<span class="st">"hinded.txt"</span>)</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">28</span><span class="code"><span class="common-span"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, keskmine</span>(hinded<span class="common-span">))</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">29</span><span class="code"><span class="common-span"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, </span>suurim(hinded<span class="common-span">))</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">30</span><span class="code">&nbsp;</span></div></div>
+        <div class="pane"><div class="ln"><span class="gut hair-b"></span><span class="no">1</span><span class="code"><span class="common-span"><span class="cm"># Loeb </span></span><span class="cm">tulemused </span><span class="common-span"><span class="cm">failist </span></span><span class="common-span"><span class="cm">ja </span></span><span class="cm">teeb kokkuvote</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">3</span><span class="code"><span class="common-span"><span class="kw">def</span> loe_</span>tulemused(nimi<span class="common-span">):</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">4</span><span class="code">    tulemused<span class="common-span"> = []</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">5</span><span class="code">    <span class="common-span"><span class="kw">with</span> <span class="bi">open</span>(</span>nimi<span class="common-span">) <span class="kw">as</span> f</span><span class="common-span">:</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">6</span><span class="code">        <span class="common-span"><span class="kw">for</span> r</span><span class="common-span"> <span class="kw">in</span> f</span><span class="common-span">:</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">7</span><span class="code">            <span class="common-span">r</span><span class="common-span"> = r</span><span class="common-span">.strip()</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">8</span><span class="code">            <span class="common-span"><span class="kw">if</span> r</span><span class="common-span">:</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">9</span><span class="code">                tulemused<span class="common-span">.append(<span class="bi">int</span>(r</span><span class="common-span">))</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">10</span><span class="code">    <span class="common-span"><span class="kw">return</span> </span>tulemused</span></div>
+<div class="ln"><span class="gut"></span><span class="no">11</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">12</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">13</span><span class="code"><span class="common-span"><span class="kw">def</span> keskmine</span>_tulemus(tulemused<span class="common-span">):</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">14</span><span class="code">    <span class="common-span"><span class="kw">if</span> <span class="bi">len</span>(</span>tulemused<span class="common-span">) == <span class="num">0</span>:</span></span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">15</span><span class="code">        <span class="kw">return</span> <span class="num">0</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">16</span><span class="code">    <span class="common-span"><span class="kw">return</span> <span class="bi">sum</span>(</span>tulemused<span class="common-span">) / <span class="bi">len</span>(</span>tulemused<span class="common-span">)</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">17</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">18</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">19</span><span class="code"><span class="common-span"><span class="kw">def</span> </span>maksimum(tulemused<span class="common-span">):</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">20</span><span class="code">    suurim<span class="common-span"> = </span>tulemused<span class="common-span">[<span class="num">0</span>]</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">21</span><span class="code">    <span class="common-span"><span class="kw">for</span> </span>t<span class="common-span"> <span class="kw">in</span> </span>tulemused<span class="common-span">:</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">22</span><span class="code">        <span class="common-span"><span class="kw">if</span> </span>t<span class="common-span"> &gt; </span>suurim<span class="common-span">:</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">23</span><span class="code">            suurim<span class="common-span"> = </span>t</span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">24</span><span class="code">    <span class="common-span"><span class="kw">return</span> </span>suurim</span></div>
+<div class="ln"><span class="gut"></span><span class="no">25</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">26</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">27</span><span class="code">tulemused<span class="common-span"> = loe_</span>tulemused<span class="common-span">(<span class="st">"hinded.txt"</span>)</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">28</span><span class="code"><span class="common-span"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, keskmine</span>_tulemus(tulemused<span class="common-span">))</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">29</span><span class="code"><span class="common-span"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, </span>maksimum(tulemused<span class="common-span">))</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">30</span><span class="code">&nbsp;</span></div></div>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scenario" id="copy">
+    <h2>The same file, lightly disguised</h2>
+    <p class="blurb">A real copy with one helper renamed and the header comment reworded. This is the pair that most deserves attention — and today it is the quietest thing on the page, because there is almost nothing to mark as different.</p>
+    <div class="metrics">
+      <span class="metric bad"><b>3</b>/30 lines painted &middot; <b>4</b> underlines <em>now</em></span>
+      <span class="metric good"><b>19</b> shared lines &middot; <b>7</b> shared runs <em>proposed</em></span>
+    </div>
+    <div class="compare">
+      <div class="col">
+        <h3 class="lbl lbl-before">Now — colour marks what differs</h3>
+        
+      <div class="panes">
+        <div class="pane"><div class="ln chg-a"><span class="gut gut-a"></span><span class="no">1</span><span class="code"><span class="cm"># Loeb failist </span><span class="del"><span class="cm">hinded </span></span><span class="cm">ja arvutab</span><span class="del"><span class="cm"> statistika</span></span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">3</span><span class="code"><span class="kw">def</span> loe_hinded(failinimi):</span></div>
+<div class="ln"><span class="gut"></span><span class="no">4</span><span class="code">    hinded = []</span></div>
+<div class="ln"><span class="gut"></span><span class="no">5</span><span class="code">    <span class="kw">with</span> <span class="bi">open</span>(failinimi) <span class="kw">as</span> fail:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">6</span><span class="code">        <span class="kw">for</span> rida <span class="kw">in</span> fail:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">7</span><span class="code">            rida = rida.strip()</span></div>
+<div class="ln"><span class="gut"></span><span class="no">8</span><span class="code">            <span class="kw">if</span> rida:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">9</span><span class="code">                hinded.append(<span class="bi">int</span>(rida))</span></div>
+<div class="ln"><span class="gut"></span><span class="no">10</span><span class="code">    <span class="kw">return</span> hinded</span></div>
+<div class="ln"><span class="gut"></span><span class="no">11</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">12</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">13</span><span class="code"><span class="kw">def</span> keskmine(hinded):</span></div>
+<div class="ln"><span class="gut"></span><span class="no">14</span><span class="code">    <span class="kw">if</span> <span class="bi">len</span>(hinded) == <span class="num">0</span>:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">15</span><span class="code">        <span class="kw">return</span> <span class="num">0</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">16</span><span class="code">    <span class="kw">return</span> <span class="bi">sum</span>(hinded) / <span class="bi">len</span>(hinded)</span></div>
+<div class="ln"><span class="gut"></span><span class="no">17</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">18</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">19</span><span class="code"><span class="kw">def</span> <span class="del">suurim</span>(hinded):</span></div>
+<div class="ln"><span class="gut"></span><span class="no">20</span><span class="code">    parim = hinded[<span class="num">0</span>]</span></div>
+<div class="ln"><span class="gut"></span><span class="no">21</span><span class="code">    <span class="kw">for</span> h <span class="kw">in</span> hinded:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">22</span><span class="code">        <span class="kw">if</span> h &gt; parim:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">23</span><span class="code">            parim = h</span></div>
+<div class="ln"><span class="gut"></span><span class="no">24</span><span class="code">    <span class="kw">return</span> parim</span></div>
+<div class="ln"><span class="gut"></span><span class="no">25</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">26</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">27</span><span class="code">hinded = loe_hinded(<span class="st">"hinded.txt"</span>)</span></div>
+<div class="ln"><span class="gut"></span><span class="no">28</span><span class="code"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, keskmine(hinded))</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">29</span><span class="code"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, <span class="del">suurim</span>(hinded))</span></div>
+<div class="ln"><span class="gut"></span><span class="no">30</span><span class="code">&nbsp;</span></div></div>
+        <div class="pane"><div class="ln chg-b"><span class="gut gut-b"></span><span class="no">1</span><span class="code"><span class="cm"># Loeb </span><span class="ins"><span class="cm">hinded </span></span><span class="cm">failist ja arvutab</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">3</span><span class="code"><span class="kw">def</span> loe_hinded(failinimi):</span></div>
+<div class="ln"><span class="gut"></span><span class="no">4</span><span class="code">    hinded = []</span></div>
+<div class="ln"><span class="gut"></span><span class="no">5</span><span class="code">    <span class="kw">with</span> <span class="bi">open</span>(failinimi) <span class="kw">as</span> fail:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">6</span><span class="code">        <span class="kw">for</span> rida <span class="kw">in</span> fail:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">7</span><span class="code">            rida = rida.strip()</span></div>
+<div class="ln"><span class="gut"></span><span class="no">8</span><span class="code">            <span class="kw">if</span> rida:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">9</span><span class="code">                hinded.append(<span class="bi">int</span>(rida))</span></div>
+<div class="ln"><span class="gut"></span><span class="no">10</span><span class="code">    <span class="kw">return</span> hinded</span></div>
+<div class="ln"><span class="gut"></span><span class="no">11</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">12</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">13</span><span class="code"><span class="kw">def</span> keskmine(hinded):</span></div>
+<div class="ln"><span class="gut"></span><span class="no">14</span><span class="code">    <span class="kw">if</span> <span class="bi">len</span>(hinded) == <span class="num">0</span>:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">15</span><span class="code">        <span class="kw">return</span> <span class="num">0</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">16</span><span class="code">    <span class="kw">return</span> <span class="bi">sum</span>(hinded) / <span class="bi">len</span>(hinded)</span></div>
+<div class="ln"><span class="gut"></span><span class="no">17</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">18</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">19</span><span class="code"><span class="kw">def</span> <span class="ins">maks</span>(hinded):</span></div>
+<div class="ln"><span class="gut"></span><span class="no">20</span><span class="code">    parim = hinded[<span class="num">0</span>]</span></div>
+<div class="ln"><span class="gut"></span><span class="no">21</span><span class="code">    <span class="kw">for</span> h <span class="kw">in</span> hinded:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">22</span><span class="code">        <span class="kw">if</span> h &gt; parim:</span></div>
+<div class="ln"><span class="gut"></span><span class="no">23</span><span class="code">            parim = h</span></div>
+<div class="ln"><span class="gut"></span><span class="no">24</span><span class="code">    <span class="kw">return</span> parim</span></div>
+<div class="ln"><span class="gut"></span><span class="no">25</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">26</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">27</span><span class="code">hinded = loe_hinded(<span class="st">"hinded.txt"</span>)</span></div>
+<div class="ln"><span class="gut"></span><span class="no">28</span><span class="code"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, keskmine(hinded))</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">29</span><span class="code"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, <span class="ins">maks</span>(hinded))</span></div>
+<div class="ln"><span class="gut"></span><span class="no">30</span><span class="code">&nbsp;</span></div></div>
+      </div>
+      </div>
+      <div class="col">
+        <h3 class="lbl lbl-after">Proposed — colour marks what is shared</h3>
+        
+      <div class="panes">
+        <div class="pane"><div class="ln"><span class="gut hair-a"></span><span class="no">1</span><span class="code"><span class="common-span"><span class="cm"># Loeb </span></span><span class="common-span"><span class="cm">failist </span></span><span class="cm">hinded </span><span class="common-span"><span class="cm">ja arvutab</span></span><span class="cm"> statistika</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">3</span><span class="code"><span class="kw">def</span> loe_hinded(failinimi):</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">4</span><span class="code">    hinded = []</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">5</span><span class="code">    <span class="kw">with</span> <span class="bi">open</span>(failinimi) <span class="kw">as</span> fail:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">6</span><span class="code">        <span class="kw">for</span> rida <span class="kw">in</span> fail:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">7</span><span class="code">            rida = rida.strip()</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">8</span><span class="code">            <span class="kw">if</span> rida:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">9</span><span class="code">                hinded.append(<span class="bi">int</span>(rida))</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">10</span><span class="code">    <span class="kw">return</span> hinded</span></div>
+<div class="ln"><span class="gut"></span><span class="no">11</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">12</span><span class="code">&nbsp;</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">13</span><span class="code"><span class="kw">def</span> keskmine(hinded):</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">14</span><span class="code">    <span class="kw">if</span> <span class="bi">len</span>(hinded) == <span class="num">0</span>:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">15</span><span class="code">        <span class="kw">return</span> <span class="num">0</span></span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">16</span><span class="code">    <span class="kw">return</span> <span class="bi">sum</span>(hinded) / <span class="bi">len</span>(hinded)</span></div>
+<div class="ln"><span class="gut"></span><span class="no">17</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">18</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">19</span><span class="code"><span class="common-span"><span class="kw">def</span> </span>suurim<span class="common-span">(hinded):</span></span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">20</span><span class="code">    parim = hinded[<span class="num">0</span>]</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">21</span><span class="code">    <span class="kw">for</span> h <span class="kw">in</span> hinded:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">22</span><span class="code">        <span class="kw">if</span> h &gt; parim:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">23</span><span class="code">            parim = h</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">24</span><span class="code">    <span class="kw">return</span> parim</span></div>
+<div class="ln"><span class="gut"></span><span class="no">25</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">26</span><span class="code">&nbsp;</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">27</span><span class="code">hinded = loe_hinded(<span class="st">"hinded.txt"</span>)</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">28</span><span class="code"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, keskmine(hinded))</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">29</span><span class="code"><span class="common-span"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, </span>suurim<span class="common-span">(hinded))</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">30</span><span class="code">&nbsp;</span></div></div>
+        <div class="pane"><div class="ln"><span class="gut hair-b"></span><span class="no">1</span><span class="code"><span class="common-span"><span class="cm"># Loeb </span></span><span class="cm">hinded </span><span class="common-span"><span class="cm">failist </span></span><span class="common-span"><span class="cm">ja arvutab</span></span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">3</span><span class="code"><span class="kw">def</span> loe_hinded(failinimi):</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">4</span><span class="code">    hinded = []</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">5</span><span class="code">    <span class="kw">with</span> <span class="bi">open</span>(failinimi) <span class="kw">as</span> fail:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">6</span><span class="code">        <span class="kw">for</span> rida <span class="kw">in</span> fail:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">7</span><span class="code">            rida = rida.strip()</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">8</span><span class="code">            <span class="kw">if</span> rida:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">9</span><span class="code">                hinded.append(<span class="bi">int</span>(rida))</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">10</span><span class="code">    <span class="kw">return</span> hinded</span></div>
+<div class="ln"><span class="gut"></span><span class="no">11</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">12</span><span class="code">&nbsp;</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">13</span><span class="code"><span class="kw">def</span> keskmine(hinded):</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">14</span><span class="code">    <span class="kw">if</span> <span class="bi">len</span>(hinded) == <span class="num">0</span>:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">15</span><span class="code">        <span class="kw">return</span> <span class="num">0</span></span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">16</span><span class="code">    <span class="kw">return</span> <span class="bi">sum</span>(hinded) / <span class="bi">len</span>(hinded)</span></div>
+<div class="ln"><span class="gut"></span><span class="no">17</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">18</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">19</span><span class="code"><span class="common-span"><span class="kw">def</span> </span>maks<span class="common-span">(hinded):</span></span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">20</span><span class="code">    parim = hinded[<span class="num">0</span>]</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">21</span><span class="code">    <span class="kw">for</span> h <span class="kw">in</span> hinded:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">22</span><span class="code">        <span class="kw">if</span> h &gt; parim:</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">23</span><span class="code">            parim = h</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">24</span><span class="code">    <span class="kw">return</span> parim</span></div>
+<div class="ln"><span class="gut"></span><span class="no">25</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut"></span><span class="no">26</span><span class="code">&nbsp;</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">27</span><span class="code">hinded = loe_hinded(<span class="st">"hinded.txt"</span>)</span></div>
+<div class="ln common-line"><span class="gut"></span><span class="no">28</span><span class="code"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, keskmine(hinded))</span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">29</span><span class="code"><span class="common-span"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, </span>maks<span class="common-span">(hinded))</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">30</span><span class="code">&nbsp;</span></div></div>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scenario" id="different">
+    <h2>Two unrelated solutions</h2>
+    <p class="blurb">A pair to dismiss. Today it is the loudest thing on the page: nearly every line is red and green, which is the strongest visual alarm given to the pair with nothing to answer for.</p>
+    <div class="metrics">
+      <span class="metric bad"><b>29</b>/30 lines painted &middot; <b>4</b> underlines <em>now</em></span>
+      <span class="metric good"><b>0</b> shared lines &middot; <b>6</b> shared runs <em>proposed</em></span>
+    </div>
+    <div class="compare">
+      <div class="col">
+        <h3 class="lbl lbl-before">Now — colour marks what differs</h3>
+        
+      <div class="panes">
+        <div class="pane"><div class="ln chg-a"><span class="gut gut-a"></span><span class="no">1</span><span class="code"><span class="del"><span class="cm"># Loeb failist hinded ja arvutab statistika</span></span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">3</span><span class="code"><span class="del"><span class="kw">def</span> loe_hinded(failinimi):</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">4</span><span class="code"><span class="del">    hinded = []</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">5</span><span class="code"><span class="del">    <span class="kw">with</span> <span class="bi">open</span>(failinimi) <span class="kw">as</span> fail:</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">6</span><span class="code"><span class="del">        <span class="kw">for</span> rida <span class="kw">in</span> fail:</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">7</span><span class="code"><span class="del">            rida = rida.strip()</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">8</span><span class="code"><span class="del">            <span class="kw">if</span> rida:</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">9</span><span class="code"><span class="del">                hinded.append(<span class="bi">int</span>(rida))</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">10</span><span class="code"><span class="del">    <span class="kw">return</span> hinded</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">11</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">12</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">13</span><span class="code"><span class="del"><span class="kw">def</span> keskmine(hinded):</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">14</span><span class="code"><span class="del">    <span class="kw">if</span> <span class="bi">len</span>(hinded) == <span class="num">0</span>:</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">15</span><span class="code"><span class="del">        <span class="kw">return</span> <span class="num">0</span></span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">16</span><span class="code"><span class="del">    <span class="kw">return</span> <span class="bi">sum</span>(hinded) / <span class="bi">len</span>(hinded)</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">17</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">18</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">19</span><span class="code"><span class="del"><span class="kw">def</span> suurim(hinded):</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">20</span><span class="code"><span class="del">    parim</span> = <span class="del">hinded[<span class="num">0</span>]</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">21</span><span class="code"><span class="del">    <span class="kw">for</span> h <span class="kw">in</span> hinded:</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">22</span><span class="code"><span class="del">        <span class="kw">if</span> h &gt; parim:</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">23</span><span class="code"><span class="del">            parim = h</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">24</span><span class="code"><span class="del">    <span class="kw">return</span> parim</span></span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">25</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">26</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">27</span><span class="code"><span class="del">hinded = loe_hinded</span>(<span class="st">"hinded.txt"</span>)</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">28</span><span class="code"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, <span class="del">keskmine(hinded</span>))</span></div>
+<div class="ln chg-a"><span class="gut gut-a"></span><span class="no">29</span><span class="code"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, <span class="del">suurim(hinded</span>))</span></div>
+<div class="ln"><span class="gut"></span><span class="no">30</span><span class="code">&nbsp;</span></div></div>
+        <div class="pane"><div class="ln chg-b"><span class="gut gut-b"></span><span class="no">1</span><span class="code"><span class="ins"><span class="kw">import</span> <span class="bi">statistics</span></span></span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">3</span><span class="code"><span class="ins">nums</span> = <span class="ins">[<span class="bi">int</span>(x) <span class="kw">for</span> x <span class="kw">in</span> <span class="bi">open</span></span>(<span class="st">"hinded.txt"</span>)<span class="ins">]</span></span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">4</span><span class="code"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, <span class="ins"><span class="bi">statistics</span>.<span class="bi">mean</span>(nums</span>))</span></div>
+<div class="ln chg-b"><span class="gut gut-b"></span><span class="no">5</span><span class="code"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, <span class="ins"><span class="bi">max</span>(nums</span>))</span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln"><span class="gut"></span><span class="no">6</span><span class="code">&nbsp;</span></div></div>
+      </div>
+      </div>
+      <div class="col">
+        <h3 class="lbl lbl-after">Proposed — colour marks what is shared</h3>
+        
+      <div class="panes">
+        <div class="pane"><div class="ln"><span class="gut hair-a"></span><span class="no">1</span><span class="code"><span class="cm"># Loeb failist hinded ja arvutab statistika</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">3</span><span class="code"><span class="kw">def</span> loe_hinded(failinimi):</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">4</span><span class="code">    hinded = []</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">5</span><span class="code">    <span class="kw">with</span> <span class="bi">open</span>(failinimi) <span class="kw">as</span> fail:</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">6</span><span class="code">        <span class="kw">for</span> rida <span class="kw">in</span> fail:</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">7</span><span class="code">            rida = rida.strip()</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">8</span><span class="code">            <span class="kw">if</span> rida:</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">9</span><span class="code">                hinded.append(<span class="bi">int</span>(rida))</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">10</span><span class="code">    <span class="kw">return</span> hinded</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">11</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">12</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">13</span><span class="code"><span class="kw">def</span> keskmine(hinded):</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">14</span><span class="code">    <span class="kw">if</span> <span class="bi">len</span>(hinded) == <span class="num">0</span>:</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">15</span><span class="code">        <span class="kw">return</span> <span class="num">0</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">16</span><span class="code">    <span class="kw">return</span> <span class="bi">sum</span>(hinded) / <span class="bi">len</span>(hinded)</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">17</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">18</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">19</span><span class="code"><span class="kw">def</span> suurim(hinded):</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">20</span><span class="code">    parim<span class="common-span"> = </span>hinded[<span class="num">0</span>]</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">21</span><span class="code">    <span class="kw">for</span> h <span class="kw">in</span> hinded:</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">22</span><span class="code">        <span class="kw">if</span> h &gt; parim:</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">23</span><span class="code">            parim = h</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">24</span><span class="code">    <span class="kw">return</span> parim</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">25</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">26</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">27</span><span class="code">hinded = loe_hinded<span class="common-span">(<span class="st">"hinded.txt"</span>)</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">28</span><span class="code"><span class="common-span"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, </span>keskmine(hinded<span class="common-span">))</span></span></div>
+<div class="ln"><span class="gut hair-a"></span><span class="no">29</span><span class="code"><span class="common-span"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, </span>suurim(hinded<span class="common-span">))</span></span></div>
+<div class="ln"><span class="gut"></span><span class="no">30</span><span class="code">&nbsp;</span></div></div>
+        <div class="pane"><div class="ln"><span class="gut hair-b"></span><span class="no">1</span><span class="code"><span class="kw">import</span> <span class="bi">statistics</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">2</span><span class="code">&nbsp;</span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">3</span><span class="code">nums<span class="common-span"> = </span>[<span class="bi">int</span>(x) <span class="kw">for</span> x <span class="kw">in</span> <span class="bi">open</span><span class="common-span">(<span class="st">"hinded.txt"</span>)</span>]</span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">4</span><span class="code"><span class="common-span"><span class="bi">print</span>(<span class="st">"Keskmine:"</span>, </span><span class="bi">statistics</span>.<span class="bi">mean</span>(nums<span class="common-span">))</span></span></div>
+<div class="ln"><span class="gut hair-b"></span><span class="no">5</span><span class="code"><span class="common-span"><span class="bi">print</span>(<span class="st">"Suurim:"</span>, </span><span class="bi">max</span>(nums<span class="common-span">))</span></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln spacer"><span class="gut"></span><span class="no"></span><span class="code"></span></div>
+<div class="ln"><span class="gut"></span><span class="no">6</span><span class="code">&nbsp;</span></div></div>
+      </div>
+      </div>
+    </div>
+  </section>
+</div>
