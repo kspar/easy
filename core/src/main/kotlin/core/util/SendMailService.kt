@@ -6,7 +6,6 @@ import org.springframework.mail.SimpleMailMessage
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
-import java.net.URLEncoder
 import java.time.Instant
 import java.util.*
 
@@ -68,19 +67,31 @@ class SendMailService(private val mailSender: JavaMailSender) {
         sendUserEmail(recipientEmail, subject, text)
     }
 
+    /**
+     * The recipient has no account yet, so this is the one mail that has to explain how to get one.
+     *
+     * It used to point at `$webBaseUrl/register?email=…`, a page that opened Keycloak's registration
+     * form with the address prefilled and locked — which mattered, because course membership resolves
+     * by exact address (`getUsernameByEmail`) and an account created under a different one silently
+     * does not join the course. That guarantee has not existed since the theme upgrade of 2024-07
+     * (`easy-kc-theme@3f3cee7`) deleted the `register.ftl` reading those hints, and the page itself
+     * went with the WUI. Reviving neither is the decision on EZ-1691.
+     *
+     * So the link is gone and the address is spelled out instead, twice: nothing can enforce it now,
+     * and a reader who registers under the wrong address gets no error, no course, and no clue why.
+     */
     @Async
     fun sendStudentAddedToCoursePending(courseTitle: String, recipientEmail: String) {
         val subject =
             """Sind lisati Lahenduse kursusele "$courseTitle" / You were added to course $courseTitle in Lahendus"""
-        val encodedEmail = URLEncoder.encode(recipientEmail, "UTF-8")
-        val registerLink = "$webBaseUrl/register?email=$encodedEmail"
         val text = """
             |Tere!
             |
             |Sind lisati meiliaadressiga $recipientEmail kursusele "$courseTitle" Lahenduse keskkonnas.
             |
-            |Meile tundub, et selle meiliaadressiga kasutajat Lahenduses veel ei eksisteeri. Kursusele ligi pääsemiseks klõpsa järgneval lingil ja loo endale kasutaja:
-            |  $registerLink
+            |Meile tundub, et selle meiliaadressiga Lahenduse kasutajat veel pole. Kursusele ligi pääsemiseks mine $webBaseUrl ja loo endale kasutaja.
+            |
+            |NB! Loo kasutaja just meiliaadressiga $recipientEmail - kursusele pääsed ligi ainult selle aadressiga. Muu aadressiga loodud kasutaja ei saa kursust näha.
             |
             |Kui sul on juba Lahenduse kasutaja olemas, siis veendu, et selle meiliaadress oleks $recipientEmail. Vajadusel saad meiliaadressi muuta konto seadete lehel. Kui meiliaadress on õigeks muudetud, siis peaksid samuti automaatselt kursusele ligi saama.
             | 
@@ -96,9 +107,10 @@ class SendMailService(private val mailSender: JavaMailSender) {
             |
             |You were added to the course $courseTitle in Lahendus by your email address $recipientEmail.
             |
-            |We think that there's no account in Lahendus with this email address. To access the course, click on the following link and create an account:
-            |  $registerLink
-            |  
+            |We think that there's no Lahendus user with this email address yet. To access the course, go to $webBaseUrl and create an account.
+            |
+            |Please note: create it with the email address $recipientEmail - that address is the only one that gets you into the course. An account created with any other address will not see it.
+            |
             |If you already have an account at Lahendus, then make sure its email address is $recipientEmail. You can change the email address in your account settings. Once you've changed the email address to $recipientEmail, you should automatically get access to this course.
             | 
             |If you already have an account with this email address, then simply log in and you should automatically get access to the course. If you've forgotten your password, then feel free to use the Forgot password? feature on the login page. 
