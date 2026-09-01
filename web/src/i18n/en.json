@@ -508,6 +508,7 @@
     "deleteGroupWithStudentsConfirm": "Delete group <bold>{{name}}</bold>? These students will be removed from the group:",
     "groupDeleted": "Group deleted",
     "noGroups": "No groups",
+    "groupsFromMoodle": "Groups come from Moodle on this course. A group created here is deleted at the next student sync, along with its exercise deadline exceptions.",
     "removeSelectedStudentsConfirm": "Remove {{count}} students from this course?",
     "removeSelectedTeachersConfirm": "Remove {{count}} teachers from this course?",
     "deleteSelectedGroupsConfirm": "Delete {{count}} groups?",

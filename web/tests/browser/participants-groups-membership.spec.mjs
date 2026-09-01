@@ -149,5 +149,21 @@ test('participants-groups-membership', async ({ launch, check }) => {
   )
   await shot('03-chip-removed')
 
+  // --- creating a group, which only an unlinked course may do ------------------------------------
+  // The other half of `participants-groups-moodle-locked`'s create-group check. That one asserts the
+  // button is *absent* on a linked course, and an assertion of absence means nothing unless the
+  // button is present where it should be — a gate stuck shut would satisfy it just as well.
+  await page.getByRole('tab', { name: /^Groups/ }).click()
+  await page.locator('tbody tr').first().waitFor()
+
+  check(
+    'an unlinked course still offers to create a group',
+    (await page.getByRole('button', { name: /create group/i }).count()) === 1,
+  )
+  check(
+    'and does not claim its groups come from Moodle',
+    !/Groups come from Moodle/i.test(await page.locator('main').innerText()),
+  )
+
   await close()
 })

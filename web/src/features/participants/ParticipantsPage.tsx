@@ -1266,15 +1266,26 @@ export default function ParticipantsPage() {
                 />
               ) : (
                 <Box sx={{ mb: 2 }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<AddOutlined />}
-                    onClick={() => setCreateGroupOpen(true)}
-                    sx={{ textTransform: 'none', height: 32 }}
-                  >
-                    {t('participants.createGroup')}
-                  </Button>
+                  {isMoodleLinked ? (
+                    // No create button on a synced course: the student sync rebuilds this course's
+                    // groups from the Moodle response and deletes every group Moodle does not have,
+                    // taking each group's per-exercise deadline exceptions with it. A group made
+                    // here therefore lasts until the nightly sync, with nothing to say so — which is
+                    // why this is a sentence rather than a hidden button.
+                    <Typography variant="body2" color="text.secondary">
+                      {t('participants.groupsFromMoodle')}
+                    </Typography>
+                  ) : (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<AddOutlined />}
+                      onClick={() => setCreateGroupOpen(true)}
+                      sx={{ textTransform: 'none', height: 32 }}
+                    >
+                      {t('participants.createGroup')}
+                    </Button>
+                  )}
                 </Box>
               )}
 

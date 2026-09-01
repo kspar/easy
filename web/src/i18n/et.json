@@ -508,6 +508,7 @@
     "deleteGroupWithStudentsConfirm": "Kustuta rühm <bold>{{name}}</bold>? Need õpilased eemaldatakse rühmast:",
     "groupDeleted": "Rühm kustutatud",
     "noGroups": "Rühmad puuduvad",
+    "groupsFromMoodle": "Selle kursuse rühmad tulevad Moodle'ist. Siin loodud rühm kustutatakse järgmisel õpilaste sünkroonimisel koos rühma ülesannete tähtaegade erisustega.",
     "removeSelectedStudentsConfirm": "Eemalda {{count}} õpilast sellelt kursuselt?",
     "removeSelectedTeachersConfirm": "Eemalda {{count}} õpetajat sellelt kursuselt?",
     "deleteSelectedGroupsConfirm": "Kustuta {{count}} rühma?",
