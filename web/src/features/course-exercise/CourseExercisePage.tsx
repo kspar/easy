@@ -29,8 +29,8 @@ import {
 } from '@mui/icons-material'
 import { useParams, useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { format, isPast, type Locale } from 'date-fns'
-import { et, enGB } from 'date-fns/locale'
+import { isPast, type Locale } from 'date-fns'
+import { formatDateTime, useDateLocale } from '../../i18n/dateLocale.ts'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth/useAuth.ts'
 import {
@@ -630,8 +630,8 @@ function StudentExerciseView() {
     courseId: string
     courseExerciseId: string
   }>()
-  const { t, i18n } = useTranslation()
-  const dateFnsLocale = i18n.language === 'et' ? et : enGB
+  const { t } = useTranslation()
+  const dateFnsLocale = useDateLocale()
 
   const {
     data: exercise,
@@ -885,7 +885,7 @@ function StudentExerciseView() {
             // deadline had gone and said only when it was. The label says which it is; the colour
             // agrees but does not carry the meaning alone.
             <Chip
-              label={`${deadlinePassed ? t('exercises.deadlinePassed') : t('exercises.deadline')}: ${format(new Date(exercise.deadline), 'PPp', { locale: dateFnsLocale })}`}
+              label={`${deadlinePassed ? t('exercises.deadlinePassed') : t('exercises.deadline')}: ${formatDateTime(new Date(exercise.deadline), dateFnsLocale)}`}
               size="small"
               variant="outlined"
               color={deadlinePassed && exercise.is_open ? 'warning' : 'default'}
@@ -915,7 +915,7 @@ function formatExceptionValue(
 ): string | null {
   if (!ev) return null
   if (ev.value === null) return null
-  return format(new Date(ev.value), 'PPp', { locale: dateFnsLocale })
+  return formatDateTime(new Date(ev.value), dateFnsLocale)
 }
 
 function visibilityLabel(
@@ -927,7 +927,7 @@ function visibilityLabel(
   if (ev.value === null) return t('exercises.hidden')
   const d = new Date(ev.value)
   if (d.getTime() <= Date.now()) return t('exercises.visible')
-  return `${t('exercises.visibleFrom')}: ${format(d, 'PPp', { locale: dateFnsLocale })}`
+  return `${t('exercises.visibleFrom')}: ${formatDateTime(d, dateFnsLocale)}`
 }
 
 const EXCEPTIONS_OPEN_KEY = 'exerciseExceptions.open'
@@ -1166,8 +1166,8 @@ function TeacherExerciseView() {
     courseExerciseId: string
   }>()
   const navigate = useNavigate()
-  const { t, i18n } = useTranslation()
-  const dateFnsLocale = i18n.language === 'et' ? et : enGB
+  const { t } = useTranslation()
+  const dateFnsLocale = useDateLocale()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [embedOpen, setEmbedOpen] = useState(false)
 
@@ -1307,21 +1307,21 @@ function TeacherExerciseView() {
         )}
         {isScheduled && (
           <Chip
-            label={`${t('exercises.visibleFrom')}: ${format(visibleFromDate, 'PPp', { locale: dateFnsLocale })}`}
+            label={`${t('exercises.visibleFrom')}: ${formatDateTime(visibleFromDate, dateFnsLocale)}`}
             size="small"
             variant="outlined"
           />
         )}
         {exercise.soft_deadline && (
           <Chip
-            label={`${t('exercises.deadline')}: ${format(new Date(exercise.soft_deadline), 'PPp', { locale: dateFnsLocale })}`}
+            label={`${t('exercises.deadline')}: ${formatDateTime(new Date(exercise.soft_deadline), dateFnsLocale)}`}
             size="small"
             variant="outlined"
           />
         )}
         {exercise.hard_deadline && (
           <Chip
-            label={`${t('exercises.closingTime')}: ${format(new Date(exercise.hard_deadline), 'PPp', { locale: dateFnsLocale })}`}
+            label={`${t('exercises.closingTime')}: ${formatDateTime(new Date(exercise.hard_deadline), dateFnsLocale)}`}
             size="small"
             variant="outlined"
           />

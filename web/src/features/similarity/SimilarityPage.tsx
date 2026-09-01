@@ -27,8 +27,7 @@ import {
 } from '@mui/icons-material'
 import { useNavigate, useParams, useSearchParams, Link as RouterLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
-import { enGB } from 'date-fns/locale'
+import { formatDateTime, useDateLocale } from '../../i18n/dateLocale.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import useSavedGroup from '../../hooks/useSavedGroup.ts'
 import {
@@ -56,6 +55,7 @@ export default function SimilarityPage() {
   const { courseId } = useParams<{ courseId: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const dateFnsLocale = useDateLocale()
   usePageTitle(t('similarity.title'))
 
   // The exercise lives in the URL so a result is linkable and survives a refresh — the same thing
@@ -308,8 +308,15 @@ export default function SimilarityPage() {
                           )}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
+                          {/*
+                            Absolute, not relative. The two sides of a similarity pair are almost
+                            always submitted the same day, so "3 hours ago" on both would hide the
+                            one thing a teacher is reading this page for: whether they were minutes
+                            apart. Everywhere else a submission time is a <RelativeTime>; here the
+                            exact clock time is the evidence.
+                          */}
                           {sub.course_title} ·{' '}
-                          {format(new Date(sub.created_at), 'dd/MM/yyyy HH:mm', { locale: enGB })}
+                          {formatDateTime(new Date(sub.created_at), dateFnsLocale)}
                         </Typography>
                       </Box>
                     ))}

@@ -1,8 +1,7 @@
 import { RouterProvider } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { et, enGB } from 'date-fns/locale'
+import { useDateLocale } from './i18n/dateLocale.ts'
 import { ThemeProvider } from './theme/ThemeContext.tsx'
 import { AuthProvider } from './auth/AuthContext.tsx'
 import { QueryProvider } from './api/QueryProvider.tsx'
@@ -15,8 +14,9 @@ import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'
 
 export default function App() {
-  const { i18n } = useTranslation()
-  const dateFnsLocale = i18n.language === 'et' ? et : enGB
+  // A hook, so a language switch re-renders and the pickers below are not stranded on the old
+  // locale. See i18n/dateLocale.ts.
+  const dateFnsLocale = useDateLocale()
 
   return (
     <ThemeProvider>

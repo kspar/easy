@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Tooltip } from '@mui/material'
-import { format, isToday, isYesterday, isTomorrow } from 'date-fns'
+import { isToday, isYesterday, isTomorrow } from 'date-fns'
 import type { Locale } from 'date-fns'
-import { et, enGB } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import {
+  formatDateTime,
+  formatShortDateTime,
+  formatTime,
+  useDateLocale,
+} from '../i18n/dateLocale.ts'
 
 function formatRelative(
   date: Date,
@@ -14,7 +19,7 @@ function formatRelative(
   locale: Locale,
 ): string {
   const now = new Date()
-  const time = format(date, 'p', { locale })
+  const time = formatTime(date, locale)
   const diffMs = now.getTime() - date.getTime()
   const diffSec = Math.floor(diffMs / 1000)
 
@@ -23,9 +28,9 @@ function formatRelative(
     if (isToday(date)) return `${t('datetime.today')}, ${time}`
     if (isTomorrow(date)) return `${t('datetime.tomorrow')}, ${time}`
     if (date.getFullYear() === now.getFullYear()) {
-      return format(date, 'MMM d, ', { locale }) + time
+      return formatShortDateTime(date, locale)
     }
-    return format(date, 'PPp', { locale })
+    return formatDateTime(date, locale)
   }
 
   // Past — today
@@ -40,9 +45,9 @@ function formatRelative(
   // Past — yesterday
   if (isYesterday(date)) return `${t('datetime.yesterday')}, ${time}`
   if (date.getFullYear() === now.getFullYear()) {
-    return format(date, 'MMM d, ', { locale }) + time
+    return formatShortDateTime(date, locale)
   }
-  return format(date, 'PPp', { locale })
+  return formatDateTime(date, locale)
 }
 
 function getRefreshInterval(date: Date): number {
@@ -55,10 +60,10 @@ function getRefreshInterval(date: Date): number {
 }
 
 export default function RelativeTime({ date }: { date: string }) {
-  const { t, i18n } = useTranslation()
-  const dateFnsLocale = i18n.language === 'et' ? et : enGB
+  const { t } = useTranslation()
+  const dateFnsLocale = useDateLocale()
   const parsed = new Date(date)
-  const fullFormatted = format(parsed, 'PPp', { locale: dateFnsLocale })
+  const fullFormatted = formatDateTime(parsed, dateFnsLocale)
 
   const [, setTick] = useState(0)
 

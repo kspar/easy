@@ -43,8 +43,8 @@ import {
 } from '@mui/icons-material'
 import { useParams, Link as RouterLink } from 'react-router-dom'
 import { useTranslation, Trans } from 'react-i18next'
-import { format, isPast } from 'date-fns'
-import { et, enGB } from 'date-fns/locale'
+import { isPast } from 'date-fns'
+import { formatDateTime, useDateLocale } from '../../i18n/dateLocale.ts'
 import {
   type ColumnDef,
   type RowSelectionState,
@@ -135,14 +135,14 @@ export default function ParticipantsPage() {
   const { activeRole } = useAuth()
   const isAdmin = activeRole === 'admin'
   const { courseId } = useParams<{ courseId: string }>()
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const [tab, setTab] = useState(0)
   const { data, isLoading, error } = useParticipants(courseId!)
   const { data: groups } = useCourseGroups(courseId!)
   const { data: invite, isLoading: inviteLoading } = useCourseInvite(courseId!)
   usePageTitle(t('participants.students'))
 
-  const dateFnsLocale = i18n.language === 'et' ? et : enGB
+  const dateFnsLocale = useDateLocale()
 
   const createInvite = useCreateInvite(courseId!)
   const deleteInvite = useDeleteInvite(courseId!)
@@ -1036,9 +1036,8 @@ export default function ParticipantsPage() {
                           </Typography>
                         ) : (
                           <Typography variant="body2" color="text.secondary">
-                            {t('participants.inviteExpiry')}: {format(new Date(invite.expires_at), 'PPp', {
-                              locale: dateFnsLocale,
-                            })}
+                            {t('participants.inviteExpiry')}:{' '}
+                            {formatDateTime(new Date(invite.expires_at), dateFnsLocale)}
                           </Typography>
                         )}
                       </Box>

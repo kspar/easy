@@ -158,10 +158,17 @@ test('about-versions', async ({ launch, check }) => {
   )
 
   // --- build times ----------------------------------------------------------------------------------
-  // dd/MM/yyyy HH:mm, British order like every other date in the app. Asserted as a shape rather than
-  // an exact string: these render in the viewer's timezone, so a fixed expectation would pass in
-  // Tartu and fail in CI.
-  const DATE_TIME = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/
+  // `10 Aug 2026, 12:26` — the shared format from i18n/dateLocale.ts. This used to assert
+  // `dd/MM/yyyy HH:mm` on the stated grounds that it was "British order like every other date in the
+  // app"; it was neither British nor like the rest, and slashes are not how Estonian writes a date
+  // (EZ-1870).
+  //
+  // Asserted as a shape rather than an exact string, because these render in the viewer's timezone
+  // and a fixed expectation would pass in Tartu and fail in CI — but the shape is the *English* one,
+  // with no dot after the day. `launch` puts the app in English (see harness.mjs), so Estonian
+  // leaking through the locale wiring would render "10. aug" and fail here. A pattern that accepted
+  // either language would have let exactly the bug EZ-1870 is about walk straight past.
+  const DATE_TIME = /^\d{1,2} \p{L}+ \d{4}, \d{2}:\d{2}$/u
   check(`web has a build time (${rows.web?.builtAt})`, DATE_TIME.test(rows.web?.builtAt ?? ''))
   check(`core's build time is rendered (${rows.core?.builtAt})`, DATE_TIME.test(rows.core?.builtAt ?? ''))
   check(
@@ -170,7 +177,10 @@ test('about-versions', async ({ launch, check }) => {
   )
   // 2026-08-10T09:26:52Z is the 10th in every timezone this app is read in, so the day is safe to
   // assert even though the hour is not.
-  check(`core's date matches what the server sent (${rows.core?.builtAt})`, (rows.core?.builtAt ?? '').startsWith('10/08/2026'))
+  check(
+    `core's date matches what the server sent (${rows.core?.builtAt})`,
+    /^10 \p{L}+ 2026,/u.test(rows.core?.builtAt ?? ''),
+  )
   check(
     'an unreachable executor gets no invented timestamp',
     (rows['executor-2']?.builtAt ?? '') === '',
@@ -207,7 +217,7 @@ test('about-versions', async ({ launch, check }) => {
   )
   check(
     `and still shows when it was built (${at('pygrader')?.builtAt})`,
-    (at('pygrader')?.builtAt ?? '').startsWith('12/03/2024'),
+    /^12 \p{L}+ 2024,/u.test(at('pygrader')?.builtAt ?? ''),
   )
   // Order matters: the images belong to executor-1, so they must appear after it and before the
   // next executor. Rendered flat, position is the only thing saying which executor they are under.

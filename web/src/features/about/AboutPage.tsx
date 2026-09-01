@@ -5,6 +5,7 @@ import config from '../../config.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import { useStatistics } from '../../api/statistics.ts'
 import { useVersions, formatVersion, formatBuiltAt, formatLibraries } from '../../api/versions.ts'
+import { useDateLocale } from '../../i18n/dateLocale.ts'
 import { useOperatingInfo, formatUptime } from '../../api/operatingInfo.ts'
 import { useAuth } from '../../auth/useAuth.ts'
 import harnoLogo from '../../assets/sponsors/harno.svg'
@@ -92,6 +93,7 @@ export default function AboutPage() {
  */
 function OperatingInfo() {
   const { t } = useTranslation()
+  const dateFnsLocale = useDateLocale()
   const { activeRole } = useAuth()
   const isAdmin = activeRole === 'admin'
   const { data, isError } = useOperatingInfo(isAdmin)
@@ -104,7 +106,7 @@ function OperatingInfo() {
     const { jvm, db_pool: pool, schema, disk } = data
     rows.push({
       label: t('about.opUptime'),
-      value: `${formatUptime(jvm.uptime_sec)} (${formatBuiltAt(jvm.started_at)})`,
+      value: `${formatUptime(jvm.uptime_sec)} (${formatBuiltAt(jvm.started_at, dateFnsLocale)})`,
     })
     rows.push({
       label: t('about.opHeap'),
@@ -207,6 +209,7 @@ function OperatingInfo() {
  */
 function Versions() {
   const { t } = useTranslation()
+  const dateFnsLocale = useDateLocale()
   const { activeRole } = useAuth()
   const maySee = activeRole === 'teacher' || activeRole === 'admin'
   const { data, isLoading, isError } = useVersions(maySee)
@@ -229,7 +232,7 @@ function Versions() {
       key: 'web',
       name: 'web',
       value: formatVersion(__APP_VERSION__, __APP_COMMIT__),
-      builtAt: formatBuiltAt(__APP_BUILT_AT__),
+      builtAt: formatBuiltAt(__APP_BUILT_AT__, dateFnsLocale),
     },
   ]
 
@@ -238,7 +241,7 @@ function Versions() {
       key: 'core',
       name: 'core',
       value: formatVersion(data.core.version, data.core.commit),
-      builtAt: formatBuiltAt(data.core.built_at),
+      builtAt: formatBuiltAt(data.core.built_at, dateFnsLocale),
     })
     for (const ex of data.executors) {
       rows.push({
@@ -247,7 +250,7 @@ function Versions() {
         value: ex.reachable && ex.version
           ? formatVersion(ex.version, ex.commit)
           : t('about.versionUnreachable'),
-        builtAt: ex.reachable ? formatBuiltAt(ex.built_at) : '',
+        builtAt: ex.reachable ? formatBuiltAt(ex.built_at, dateFnsLocale) : '',
         muted: !ex.reachable,
       })
       // Only under an executor that answered. An unreachable one gets its own row and nothing
@@ -271,7 +274,7 @@ function Versions() {
                 }))
                 .join(', ')
             : formatLibraries(image) || t('about.versionUnknown'),
-          builtAt: formatBuiltAt(image.created_at),
+          builtAt: formatBuiltAt(image.created_at, dateFnsLocale),
           // Dimmed when there is no version to show. The build date is still worth having: it
           // answers "was this image ever rebuilt?", which is often the real question.
           muted: image.libraries.length === 0 && mismatched.length === 0,

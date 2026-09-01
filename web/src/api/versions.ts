@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
+import type { Locale } from 'date-fns'
+import { formatDateTime } from '../i18n/dateLocale.ts'
 import { apiFetch } from './client.ts'
 
 /**
@@ -109,15 +110,22 @@ export function formatLibraries(image: GradingImage): string {
 }
 
 /**
- * `10/08/2026 09:43` — British order, like every other date in the app, and with the time because
- * several builds share a day and "which build" is the question this whole block exists to answer.
+ * `10. aug 2026, 09:43` / `10 Aug 2026, 09:43` — with the time, because several builds share a day
+ * and "which build" is the question this whole block exists to answer.
+ *
+ * This used to be a hard-coded `dd/MM/yyyy HH:mm` with no locale at all, on the stated grounds that
+ * it matched every other date in the app. It did not: slashes are not the Estonian convention, and
+ * this was one of only two places still writing them (EZ-1870).
  *
  * Rendered in the reader's own timezone: the timestamps arrive as UTC, and a person comparing what
  * the page says against when they pushed is comparing against their own clock.
  */
-export function formatBuiltAt(builtAt: string | null | undefined): string {
+export function formatBuiltAt(
+  builtAt: string | null | undefined,
+  locale: Locale,
+): string {
   if (!builtAt) return ''
   const date = new Date(builtAt)
   if (Number.isNaN(date.getTime())) return ''
-  return format(date, 'dd/MM/yyyy HH:mm')
+  return formatDateTime(date, locale)
 }

@@ -39,8 +39,12 @@ import { RobotIcon, TeacherFaceIcon } from '../../components/icons.tsx'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useParams, useNavigate, useLocation, Link as RouterLink } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
-import { format, isPast, differenceInHours, type Locale } from 'date-fns'
-import { et, enGB } from 'date-fns/locale'
+import { isPast, differenceInHours, type Locale } from 'date-fns'
+import {
+  formatDateTime,
+  formatShortDateTime,
+  useDateLocale,
+} from '../../i18n/dateLocale.ts'
 import { useAuth } from '../../auth/useAuth.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import useSavedGroup from '../../hooks/useSavedGroup.ts'
@@ -110,9 +114,9 @@ export default function CourseExercisesPage() {
 
 function StudentExercises() {
   const { courseId } = useParams<{ courseId: string }>()
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { data: exercises, isLoading, error } = useCourseExercises(courseId!)
-  const dateFnsLocale = i18n.language === 'et' ? et : enGB
+  const dateFnsLocale = useDateLocale()
 
   return (
     <>
@@ -172,8 +176,8 @@ function needsVisibilityChange(ex: TeacherCourseExercise, studentVisible: boolea
 function TeacherExercises() {
   const { courseId } = useParams<{ courseId: string }>()
   const navigate = useNavigate()
-  const { t, i18n } = useTranslation()
-  const dateFnsLocale = i18n.language === 'et' ? et : enGB
+  const { t } = useTranslation()
+  const dateFnsLocale = useDateLocale()
 
   const [filterGroup, setFilterGroup] = useSavedGroup(courseId!)
   const {
@@ -925,7 +929,7 @@ function StudentExerciseRow({
               // The row already knew the deadline had passed and said so in red only — meaning
               // carried by colour alone, which anyone who does not see the red does not get
               // (audit X-029). The label now says which state it is; the colour still agrees.
-              ? `${isPastDeadline ? t('exercises.deadlinePassed') : t('exercises.deadline')}: ${format(deadline, 'PPp', { locale: dateFnsLocale })}`
+              ? `${isPastDeadline ? t('exercises.deadlinePassed') : t('exercises.deadline')}: ${formatDateTime(deadline, dateFnsLocale)}`
               : undefined
           }
           secondaryTypographyProps={{
@@ -1086,7 +1090,7 @@ function TeacherExerciseRow({
             )}
             {vis === 'scheduled' && visibleFrom && (
               <Tooltip
-                title={`${t('exercises.visibleFrom')}: ${format(visibleFrom, 'PPp', { locale: dateFnsLocale })}`}
+                title={`${t('exercises.visibleFrom')}: ${formatDateTime(visibleFrom, dateFnsLocale)}`}
                 arrow
               >
                 <Chip
@@ -1096,8 +1100,8 @@ function TeacherExerciseRow({
                   // else in the product. This pairs with the crossed-out eye used
                   // for plain-hidden above — eye + a date reads "visible from".
                   icon={<VisibilityOutlined />}
-                  // Same month-name style as the deadline line below, just shorter
-                  label={format(visibleFrom, 'd MMM, HH:mm', { locale: dateFnsLocale })}
+                  // Same month-name style as the deadline line below, just without the year
+                  label={formatShortDateTime(visibleFrom, dateFnsLocale)}
                   sx={{ height: 20, '& .MuiChip-label': { px: 0.75, fontSize: 11 } }}
                 />
               </Tooltip>
@@ -1106,7 +1110,7 @@ function TeacherExerciseRow({
         }
         secondary={
           deadline
-            ? `${t('exercises.deadline')}: ${format(deadline, 'PPp', { locale: dateFnsLocale })}`
+            ? `${t('exercises.deadline')}: ${formatDateTime(deadline, dateFnsLocale)}`
             : undefined
         }
       />
