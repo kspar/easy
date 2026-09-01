@@ -15,7 +15,7 @@
   "course-exercise-grading.spec.mjs": 21,
   "course-exercise-layout.spec.mjs": 11,
   "course-exercise-retry-autoassess.spec.mjs": 6,
-  "course-exercise-teacher-testing.spec.mjs": 17,
+  "course-exercise-teacher-testing.spec.mjs": 18,
   "course-exercises.spec.mjs": 110,
   "courses-page.spec.mjs": 16,
   "editor-soft-wrap.spec.mjs": 10,
