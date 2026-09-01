@@ -789,6 +789,33 @@ export function testDefaultName(test: TslTest, t: Translate): string {
   }
 }
 
+/**
+ * A stable, genuinely unique UI key per test — for React `key`s and for anything the editor
+ * remembers per card, such as which ones are expanded.
+ *
+ * Not `test.id`, which is only *supposed* to be unique within a spec (see `nextId`) and often is
+ * not: the old editor numbered tests 1, 2, 3… per session, so specs where several tests — or all
+ * of them — share an id are ordinary. Keying on the raw id made one chevron open every test that
+ * shared the number, and handed React duplicate keys besides (EZ-1850).
+ *
+ * Renumbering on load would be the wrong fix. `passedNext`/`failedNext` reference other tests *by
+ * id*, so rewriting ids silently rewires test chaining — and the ids also reach the generated
+ * Python, and through it a student's feedback.
+ *
+ * Disambiguating by which occurrence of the id this is buys uniqueness without giving up the
+ * stability a bare index would cost: where ids are unique every key is `<id>#0`, unchanged by
+ * reorders and by deletes elsewhere in the list. Only same-id siblings renumber, and only relative
+ * to each other.
+ */
+export function testUiKeys(tests: TslTest[]): string[] {
+  const seen = new Map<number, number>()
+  return tests.map((test) => {
+    const n = seen.get(test.id) ?? 0
+    seen.set(test.id, n + 1)
+    return `${test.id}#${n}`
+  })
+}
+
 /** A copy of `test` with a fresh id, so both can live in the same spec. */
 export function duplicateTest(test: TslTest, copySuffix: string): TslTest {
   return {

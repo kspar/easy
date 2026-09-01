@@ -33,6 +33,7 @@ import {
   specTestProblems,
   testBlankRequired,
   testChecksNothing,
+  testUiKeys,
   visibleToUserField,
 } from '../../src/features/library/tsl/tslModel.ts'
 
@@ -328,5 +329,68 @@ describe('blank required fields gate, checkless tests warn', () => {
     const fine = { ...contains, genericCheck: { ...contains.genericCheck, expectedValue: ['x'] } }
     const spec = { validateFiles: true, requiredFiles: ['lahendus.py'], tslVersion: '1.0', tests: [both, fine] }
     expect(specTestProblems(spec)).toEqual({ blankRequired: 1, checksNothing: 1 })
+  })
+})
+
+/**
+ * Card identity, and the reason it cannot be `test.id`.
+ *
+ * A teacher reported that the chevron on one auto-assessment test opened all of them (EZ-1850).
+ * The editor keyed each card's expanded state — and its React key — on `test.id`, which the model
+ * documents as unique within a spec and which real specs routinely are not: the old editor handed
+ * out 1, 2, 3… per session. In the dev migration corpus 139 of the 675 specs that have tests repeat
+ * an id, one of them eight times over, so this was the common case rather than an edge.
+ *
+ * The property that matters is two-sided, which is why the naive fixes both fail: keys must be
+ * unique even when the ids collide, *and* stable across the reorders and deletes the editor does,
+ * which a bare index is not.
+ */
+describe('UI keys survive the ids real specs actually carry', () => {
+  const withIds = (...ids) => ids.map((id) => ({ type: 'contains_test', id }))
+
+  test('unique ids give one key each', () => {
+    expect(testUiKeys(withIds(1, 2, 3))).toEqual(['1#0', '2#0', '3#0'])
+  })
+
+  test('the reported spec shape — every test numbered 1 — still gets distinct keys', () => {
+    const keys = testUiKeys(withIds(1, 1, 1, 1, 1, 1, 1, 1))
+    expect(new Set(keys).size).toBe(8)
+  })
+
+  test.each([
+    ['partial repeats', [2, 1, 1, 3, 3, 3, 3, 3]],
+    ['old numbering beside generated ids', [1, 1, 10542, 10830]],
+    ['repeats scattered through', [1, 2, 1, 5, 2, 1, 1]],
+  ])('%s: keys stay unique', (_name, ids) => {
+    const keys = testUiKeys(withIds(...ids))
+    expect(new Set(keys).size).toBe(ids.length)
+  })
+
+  test('a key follows its test through a reorder, rather than staying with the position', () => {
+    const tests = withIds(10, 20, 30)
+    const moved = [tests[1], tests[0], tests[2]]
+    const before = testUiKeys(tests)
+    const after = testUiKeys(moved)
+    // Test 20 was open before the move; it must still be the open one after.
+    expect(after[0]).toBe(before[1])
+    expect(after[1]).toBe(before[0])
+  })
+
+  test('and through the deletion of another test', () => {
+    const tests = withIds(10, 20, 30)
+    const before = testUiKeys(tests)
+    const after = testUiKeys([tests[0], tests[2]])
+    expect(after).toEqual([before[0], before[2]])
+  })
+
+  test('keys are derived, not remembered: the same list twice gives the same keys', () => {
+    // The spec is re-parsed on every keystroke, so a key that came from a counter or a WeakMap
+    // would change under the teacher and collapse every open card.
+    const ids = [1, 1, 7]
+    expect(testUiKeys(withIds(...ids))).toEqual(testUiKeys(withIds(...ids)))
+  })
+
+  test('an empty spec has no keys', () => {
+    expect(testUiKeys([])).toEqual([])
   })
 })

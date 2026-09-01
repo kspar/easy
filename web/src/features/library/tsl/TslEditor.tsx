@@ -22,7 +22,7 @@ import CodeEditor from '../../../components/CodeEditor.tsx'
 import { languageFromFilename } from '../../course-exercise/editorLanguage.ts'
 import TslTestCard from './TslTestCard.tsx'
 import { useTslSpec } from './useTslSpec.ts'
-import { duplicateTest, serializeSpec, specTestProblems, type TslTest } from './tslModel.ts'
+import { duplicateTest, serializeSpec, specTestProblems, testUiKeys, type TslTest } from './tslModel.ts'
 import { summarizeCompileError, summarizeParseError } from './tslErrors.ts'
 import { PRESET_GROUPS } from './tslPresets.ts'
 
@@ -54,7 +54,7 @@ export default function TslEditor({
 }) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<TslTab>('tests')
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   // The last deleted test, held for undo (audit X-021): deleting is one click and the model has
   // no history, so the snackbar's undo is the only way back. `textAfter` is the spec text the
   // delete produced: any further change — spec-tab typing, a reorder, another edit — disarms the
@@ -101,6 +101,10 @@ export default function TslEditor({
   }
 
   const tests = spec.tests
+
+  // Card identity, which is not `test.id` — real specs repeat that often enough that keying on it
+  // made one chevron open every test sharing the number (EZ-1850). See `testUiKeys`.
+  const testKeys = useMemo(() => testUiKeys(tests), [tests])
 
   return (
     <Box>
@@ -151,17 +155,17 @@ export default function TslEditor({
             )}
             {tests.map((test, i) => (
               <TslTestCard
-                key={test.id}
+                key={testKeys[i]}
                 test={test}
                 index={i}
                 count={tests.length}
                 editing={editing}
-                expanded={expanded.has(test.id)}
+                expanded={expanded.has(testKeys[i])}
                 onToggle={(open) =>
                   setExpanded((prev) => {
                     const next = new Set(prev)
-                    if (open) next.add(test.id)
-                    else next.delete(test.id)
+                    if (open) next.add(testKeys[i])
+                    else next.delete(testKeys[i])
                     return next
                   })
                 }
@@ -207,7 +211,8 @@ export default function TslEditor({
                           setAddAnchor(null)
                           const test = preset.build(t)
                           setTests([...tests, test])
-                          setExpanded((prev) => new Set(prev).add(test.id))
+                          // `#0`: the id is freshly random, so this is its only occurrence.
+                          setExpanded((prev) => new Set(prev).add(`${test.id}#0`))
                         }}
                       >
                         {t(`tsl.preset.${preset.id}`)}
@@ -238,8 +243,10 @@ export default function TslEditor({
           deliberate delete, while undo costs only the person who slipped. */}
       <Snackbar
         // Keyed so a second delete remounts the snackbar and restarts its timer — without this,
-        // MUI keeps the first delete's timer and the new undo window can be near zero.
-        key={deleted?.test.id}
+        // MUI keeps the first delete's timer and the new undo window can be near zero. Keyed on
+        // the text the delete left rather than the test's id, which repeats across tests often
+        // enough (EZ-1850) to swallow the remount; two deletes cannot leave the same spec behind.
+        key={deleted?.textAfter}
         open={editing && deleted !== null}
         autoHideDuration={8000}
         onClose={(_, reason) => {
@@ -250,9 +257,12 @@ export default function TslEditor({
           <Button
             size="small"
             onClick={() => {
-              // The disarm effect guarantees the spec still is what the delete left, but a
-              // duplicate id would corrupt the spec, so the guard stays as a belt.
-              if (deleted && !tests.some((x) => x.id === deleted.test.id)) {
+              // The disarm effect guarantees the spec still is what the delete left; this is the
+              // belt on the same claim, re-checked at click time. It used to assert the deleted
+              // id was absent, which quietly refused the undo whenever a surviving test shared
+              // that id — routine in real specs (EZ-1850), and no longer something to defend
+              // against, since the spec had duplicates before the delete too.
+              if (deleted && value === deleted.textAfter) {
                 setTests([...tests.slice(0, deleted.index), deleted.test, ...tests.slice(deleted.index)])
               }
               setDeleted(null)

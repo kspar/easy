@@ -222,6 +222,61 @@ test('library-exercise-tsl', async ({ launch, check }) => {
   )
   await shot('04-generated-scripts')
 
+  // --- tests that share an id expand independently (EZ-1850) -------------------------------------
+  //
+  // A teacher reported that the chevron on one test opened all of them. The editor was keying each
+  // card's expanded state on `test.id`, which the model calls unique per spec and which real specs
+  // routinely are not — the old editor numbered tests 1, 2, 3… per session, and a fifth of the
+  // migrated corpus repeats an id. `testUiKeys` is unit-tested; what only a browser can check is
+  // that the cards are actually wired to it, which is precisely where the bug lived.
+  const sharedId = structuredClone(edited)
+  sharedId.tests = ['First test', 'Second test', 'Third test'].map((name) => ({
+    ...structuredClone(edited.tests[0]),
+    id: 1,
+    name,
+  }))
+
+  await page.getByRole('tab', { name: 'Spec', exact: true }).click()
+  await page.locator('.cm-content').first().click()
+  await page.keyboard.press('ControlOrMeta+a')
+  await page.keyboard.insertText(JSON.stringify(sharedId, null, 4))
+  await page.getByRole('tab', { name: 'TSL', exact: true }).click()
+
+  // Only the card headers carry these labels — the advanced-settings disclosure inside an open
+  // card is also aria-expanded, and counting that would make an open card look like two.
+  const chevrons = page.getByRole('button', { name: /^(Expand|Collapse) test$/ })
+  const openFlags = () =>
+    chevrons.evaluateAll((els) => els.map((el) => el.getAttribute('aria-expanded') === 'true'))
+
+  check(
+    'all three same-id tests are listed separately',
+    await waitUntil(async () => (await chevrons.count()) === 3),
+    `${await chevrons.count()} cards`,
+  )
+  check('they start collapsed', (await openFlags()).every((open) => !open))
+
+  await chevrons.nth(0).click()
+  check(
+    'opening the first one opens only the first one',
+    JSON.stringify(await openFlags()) === JSON.stringify([true, false, false]),
+    JSON.stringify(await openFlags()),
+  )
+  await shot('05-shared-id-one-open')
+
+  await chevrons.nth(2).click()
+  check(
+    'a second chevron adds to the first rather than replacing it',
+    JSON.stringify(await openFlags()) === JSON.stringify([true, false, true]),
+    JSON.stringify(await openFlags()),
+  )
+
+  await chevrons.nth(0).click()
+  check(
+    'closing one leaves its same-id sibling open',
+    JSON.stringify(await openFlags()) === JSON.stringify([false, false, true]),
+    JSON.stringify(await openFlags()),
+  )
+
   // --- a spec the compiler rejects blocks Save ---------------------------------------------------
   await page.getByRole('tab', { name: 'Spec', exact: true }).click()
   await page.locator('.cm-content').first().click()
@@ -230,7 +285,7 @@ test('library-exercise-tsl', async ({ launch, check }) => {
 
   const saveBtn = page.getByRole('button', { name: /^Sav(e|ing)/ })
   check('broken JSON disables Save', await waitUntil(() => saveBtn.isDisabled()))
-  await shot('05-parse-error')
+  await shot('06-parse-error')
 
   await close()
 })
