@@ -143,8 +143,16 @@ class MoodleStudentsSyncService(
 
         val response = responseEntity.body
         if (response == null) {
+            // Thrown rather than returned as an empty roster. A sync is a *replace*: every student
+            // missing from the response loses their access to the course, so answering an empty body
+            // with MoodleResponse(emptyList()) unenrolled everyone on the course - and now would
+            // delete every group as well - on the strength of a response Moodle failed to send.
             log.error { "Moodle returned empty response with request $request" }
-            return MoodleResponse(emptyList())
+            throw InvalidRequestException(
+                "Course linking with Moodle failed due to empty response from Moodle.",
+                ReqError.MOODLE_LINKING_ERROR,
+                notify = true
+            )
         }
         return response
     }
@@ -263,12 +271,24 @@ class MoodleStudentsSyncService(
             }
 
             // Delete groups that don't exist in Moodle anymore - group management is Moodle's on a synced course;
-            // memberships were already rebuilt above and exception rows cascade
-            val deletedGroupsCount = CourseGroup.deleteWhere {
-                (CourseGroup.course eq courseId) and CourseGroup.name.notInList(moodleGroups.map { it.name })
-            }
-            if (deletedGroupsCount > 0) {
-                log.debug { "Deleted $deletedGroupsCount groups on course $courseId that no longer exist in Moodle" }
+            // memberships were already rebuilt above and exception rows cascade.
+            //
+            // Only when Moodle actually sent a group list. An absent "groups" field is not the same
+            // claim as an empty one: an empty list says "this course has no groups" and the groups
+            // here should go, while a missing field is a response that says nothing about groups -
+            // an old plugin, or the empty-body fallback above - and deleting every group on the
+            // course on the strength of it also drops each group's per-group exercise exceptions,
+            // which cascade and are not rebuilt by any later sync.
+            val moodleGroupNames = moodleResponse.groups?.map { it.name }
+            if (moodleGroupNames == null) {
+                log.warn { "Moodle sent no groups list for course $courseId, leaving its groups alone" }
+            } else {
+                val deletedGroupsCount = CourseGroup.deleteWhere {
+                    (CourseGroup.course eq courseId) and CourseGroup.name.notInList(moodleGroupNames)
+                }
+                if (deletedGroupsCount > 0) {
+                    log.debug { "Deleted $deletedGroupsCount groups on course $courseId that no longer exist in Moodle" }
+                }
             }
 
             // Send invitations for only new pending accesses
@@ -315,6 +335,16 @@ class MoodleStudentsSyncService(
                     syncStudents(courseId)
                 } catch (_: ResourceLockedException) {
                     log.warn { "Cannot Moodle sync students on course $courseId because it's locked" }
+                } catch (e: InvalidRequestException) {
+                    // One course's unreachable Moodle is not the other courses' problem. Same
+                    // reasoning as the allowlist filter above: uncaught, the first course whose
+                    // request fails ends the run, and every course after it in the list is silently
+                    // not synced until the next cron fires - where it fails in the same place again.
+                    //
+                    // This exception and not Exception: every Moodle-side failure arrives as one, and
+                    // a database error is not something to carry on through - the courses share this
+                    // cron's transaction, so a failed statement leaves it unusable for the rest.
+                    log.error(e) { "Moodle sync failed on course $courseId, continuing with the rest" }
                 }
             }
         }
