@@ -21,7 +21,7 @@ test('bug-report', async ({ launch, check }) => {
    * capture path from an empty one — an activity log that is always blank looks exactly like one
    * that is working and had nothing to say.
    */
-  async function openApp({ failingCall = false } = {}) {
+  async function openApp({ failingCall = false, failCode = 'INVALID_PARAMETER_VALUE', failStatus = 400 } = {}) {
     const { page, shot, close } = await launch({ shotPrefix: 'bug-report-' })
     const posted = []
     await fakeApi(
@@ -48,11 +48,11 @@ test('bug-report', async ({ launch, check }) => {
                   route,
                   {
                     id: KNOWN_ERROR_ID,
-                    code: 'INVALID_PARAMETER_VALUE',
+                    code: failCode,
                     attrs: {},
                     log_msg: 'deliberate failure',
                   },
-                  400,
+                  failStatus,
                 )
               : { courses: [] },
         ],
@@ -86,6 +86,12 @@ test('bug-report', async ({ launch, check }) => {
     const dialog = page.locator('[role=dialog]')
     check('the dialog opens from the account menu', (await dialog.count()) === 1)
     check('it asks what went wrong', (await dialog.innerText()).includes('What went wrong?'))
+    // Reachable from the toolbar with no error in front of it, so the steer has to live in the
+    // dialog too and not only on the alert that offers it (EZ-1861).
+    check(
+      'and sends course questions to the course organiser',
+      (await dialog.innerText()).includes('contact the course organiser'),
+    )
 
     const send = page.getByRole('button', { name: 'Send' })
     check('send is disabled with an empty box', await send.isDisabled())
@@ -207,6 +213,40 @@ test('bug-report', async ({ launch, check }) => {
     check('no diagnostics key is sent when declined', !('diagnostics' in (posted[0] ?? {})))
     check('the message still is', posted[0]?.message === 'Not telling you what I did')
     await shot('04-declined')
+    await close()
+  }
+
+  // --- a refusal is not a breakage, and is not offered a bug reporter (EZ-1861) ---------------------
+  //
+  // EZ-1858 came in because a student who was not enrolled on a course read an accurate "you do not
+  // have access" and was handed a "Report it" button by the very same alert. The pair below is the
+  // point: the same page, the same failing call, differing only in the code core sent back.
+  {
+    const { page, shot, close } = await openApp({
+      failingCall: true,
+      failCode: 'NO_COURSE_ACCESS',
+      failStatus: 403,
+    })
+    const alert = page.locator('[role=alert]').first()
+    await alert.waitFor({ state: 'visible' })
+    const text = await alert.innerText()
+
+    check('an access denial says what it is', text.includes('do not have access'))
+    check('and names someone to ask', text.includes('course organiser'))
+    check(
+      'and does not invite a bug report',
+      (await page.getByRole('button', { name: 'Report it' }).count()) === 0,
+    )
+    await shot('06-access-denied')
+    await close()
+  }
+  {
+    // The control, and the reason the absence above means anything: with a code that *is* a
+    // failure, the button is still there. Without this, deleting the button outright would pass.
+    const { page, close } = await openApp({ failingCall: true })
+    const report = page.getByRole('button', { name: 'Report it' })
+    await report.waitFor({ state: 'visible' })
+    check('a genuine failure still offers the reporter', (await report.count()) === 1)
     await close()
   }
 

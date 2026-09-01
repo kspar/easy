@@ -86,6 +86,32 @@ function unresolvedEmails(attrs: Record<string, string> | undefined): string[] {
     .filter(Boolean)
 }
 
+/**
+ * The codes that mean "you may not", as opposed to "it broke".
+ *
+ * The distinction is not cosmetic. A refusal is the system working, and the person reading it needs
+ * a *person* — whoever runs the course — not the bug tracker. Offering the reporter here is how
+ * EZ-1858 happened: a student who was not enrolled read an accurate sentence, was handed a "Report
+ * it" button by the same alert, and filed an engineering ticket about their own enrolment.
+ *
+ * `CANNOT_MODIFY_OWN` is deliberately absent. It refuses an action rather than an area, the person
+ * hitting it is already a teacher or admin, and there is nobody to be sent to about it.
+ */
+const ACCESS_CODES = new Set([
+  'ROLE_NOT_ALLOWED',
+  'NO_COURSE_ACCESS',
+  'NO_GROUP_ACCESS',
+  'NO_EXERCISE_ACCESS',
+  'NO_DIR_ACCESS',
+])
+
+/** True when core refused on permission grounds — see [ACCESS_CODES]. */
+export function isAccessError(err: unknown): boolean {
+  // Nullable as well as optional: core sends `code: null` on a failure it has no code for.
+  const code = err instanceof ApiResponseError ? err.errorBody?.code : null
+  return code != null && ACCESS_CODES.has(code)
+}
+
 export function errorMessage(err: unknown, t: TFunction): string {
   const generic = t('general.somethingWentWrong')
 

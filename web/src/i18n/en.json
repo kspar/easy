@@ -77,7 +77,8 @@
     "total": "Total",
     "username": "Username",
     "yes": "Yes",
-    "reportIt": "Report it"
+    "reportIt": "Report it",
+    "askCourseOrganiser": "For questions about course access, exercises or tests, please contact the course organiser."
   },
   "auth": {
     "failed": "Authentication failed",

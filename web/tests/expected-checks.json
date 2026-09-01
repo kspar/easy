@@ -8,7 +8,7 @@
   "admin-system-messages.spec.mjs": 17,
   "articles.spec.mjs": 19,
   "auth-redirect-loop.spec.mjs": 16,
-  "bug-report.spec.mjs": 23,
+  "bug-report.spec.mjs": 28,
   "course-exercise-assessment.spec.mjs": 18,
   "course-exercise-embed.spec.mjs": 16,
   "course-exercise-feedback-shapes.spec.mjs": 7,

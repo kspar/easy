@@ -77,7 +77,8 @@
     "total": "Kokku",
     "username": "Kasutajanimi",
     "yes": "Jah",
-    "reportIt": "Anna teada"
+    "reportIt": "Anna teada",
+    "askCourseOrganiser": "Kursuse ligipääsu, ülesandeid või teste puudutavate küsimustega palun pöördu kursuse korraldaja poole."
   },
   "auth": {
     "failed": "Autentimine ebaõnnestus",

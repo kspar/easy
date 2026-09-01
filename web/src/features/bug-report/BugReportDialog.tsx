@@ -144,6 +144,21 @@ export default function BugReportDialog({
       <DialogContent sx={{ pt: '8px !important' }}>
         <DialogContentText sx={{ mb: 2 }}>{t('bugReport.intro')}</DialogContentText>
 
+        {/*
+          Said here as well as on the alert that offers this dialog, because the toolbar entry
+          (EZ-1824) reaches it with no error in front of it at all — and a student wondering why a
+          course will not open has no reason to guess that we are the wrong people to ask. An
+          `info` alert rather than another line of prose: its whole job is to be read by someone
+          about to type the wrong thing, and muted text under an intro is what that person skips.
+
+          `role="note"` overrides MUI's default of `alert`, which is an assertive live region and
+          would have a screen reader interrupt itself to announce standing advice on open. It also
+          leaves the one alert that *is* live — the send failure below — the only `role=alert` here.
+        */}
+        <Alert severity="info" role="note" sx={{ mb: 2 }}>
+          {t('general.askCourseOrganiser')}
+        </Alert>
+
         <TextField
           fullWidth
           multiline
