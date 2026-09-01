@@ -289,8 +289,29 @@ test('auth-redirect-loop', async ({ launch, check }) => {
     contract: false,
   })
 
-  const loginTotal = () =>
-    page.evaluate(() => Number(sessionStorage.getItem('easyStubLoginTotal') ?? 0))
+  // Reading the count races the very navigation this section exists to provoke: `stubLoginNavigates`
+  // makes the stub's `login()` call `location.assign`, and an `evaluate` that lands while that is in
+  // flight is torn down with "Execution context was destroyed" instead of answering. That is a
+  // missed reading, not a reading of zero — the counter lives in sessionStorage and outlives the
+  // load — so wait for the new document and ask again. Letting it through instead failed the build
+  // twice on a spec whose subject was behaving exactly as written.
+  //
+  // Bounded, because a context that stays destroyed is a real failure and should still surface as
+  // one rather than as a spec that never finishes.
+  const loginTotal = async () => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await page.evaluate(() => Number(sessionStorage.getItem('easyStubLoginTotal') ?? 0))
+      } catch (e) {
+        if (attempt >= 10 || !/Execution context was destroyed/.test(e.message ?? '')) throw e
+        // The load-state wait alone can return at once when the teardown falls between two
+        // navigations, which would spend all ten attempts inside a millisecond and re-raise the
+        // flake it is here to stop. The pause is what makes the retries actually cover the gap.
+        await page.waitForLoadState('domcontentloaded').catch(() => {})
+        await page.waitForTimeout(100)
+      }
+    }
+  }
 
   await page.goto(BASE_URL)
   await page.evaluate(() => {
