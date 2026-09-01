@@ -284,7 +284,7 @@
     "preview": "Eelvaade",
     "activity": "Tagasiside",
     "noActivity": "Tagasisidet veel pole",
-    "assessmentReadOnly": "Seadistatakse ülesannete kogus ja on ühine kõigile kursustele, mis seda ülesannet kasutavad.",
+    "assessmentReadOnly": "Seadistatakse ülesandekogus ja on ühine kõigile kursustele, mis seda ülesannet kasutavad.",
     "runTests": "Käivita testid",
     "testSolution": "Testi oma lahendust",
     "previousTests": "Varasemad testid",
