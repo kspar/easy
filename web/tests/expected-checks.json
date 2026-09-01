@@ -17,7 +17,7 @@
   "course-exercise-retry-autoassess.spec.mjs": 6,
   "course-exercise-teacher-testing.spec.mjs": 18,
   "course-exercises.spec.mjs": 110,
-  "courses-page.spec.mjs": 16,
+  "courses-page.spec.mjs": 25,
   "editor-soft-wrap.spec.mjs": 10,
   "embed-exercise.spec.mjs": 41,
   "environment-badge.spec.mjs": 24,

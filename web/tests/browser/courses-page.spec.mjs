@@ -56,8 +56,14 @@ test('courses-page', async ({ launch, check, a11y }) => {
     ['/account/checkin', () => ({})],
     [/\/student\/courses(\?|$)/, () => ({
       courses: [
-        studentCourse('1', 'Programming 101'),
-        studentCourse('2', 'Algorithms', { course_code: 'LTAT.03.001' }),
+        // Deliberately in neither order: 'Programming 101' is the most recently opened and the
+        // last alphabetically, so recency and alphabet disagree and the sort menu has something
+        // to prove. The endpoint's own order is not one of the two, either.
+        studentCourse('1', 'Programming 101', { last_accessed: '2026-08-15T09:00:00.000Z' }),
+        studentCourse('2', 'Algorithms', {
+          course_code: 'LTAT.03.001',
+          last_accessed: '2026-08-10T09:00:00.000Z',
+        }),
       ],
     })],
     [/\/teacher\/courses(\?|$)/, () => ({ courses: [teacherCourse('99', 'Should never be shown')] })],
@@ -120,6 +126,63 @@ test('courses-page', async ({ launch, check, a11y }) => {
   await student.shot('01-student')
   // The first screen of every session.
   await a11y(student.page, 'courses, as a student')
+
+  /**
+   * Ordering (EZ-1856). The page had exactly one order — most recently opened — and no way to see
+   * any other, which is fine until a student has more courses than fit the screen.
+   *
+   * Asserting the *sequence* of the cards, not just that a menu item exists: the sort mode is
+   * remembered in localStorage, so a control that renders its label but never reorders anything
+   * looks entirely correct in a screenshot.
+   */
+  const cardTitles = async (page) =>
+    (await page.locator('a[href*="/courses/"][href$="/exercises"]').allInnerTexts())
+      .map((s) => s.split('\n')[0].trim())
+      .filter(Boolean)
+
+  check(
+    'the default order is still the most recently opened course first',
+    JSON.stringify(await cardTitles(student.page)) ===
+      JSON.stringify(['Programming 101', 'Algorithms']),
+    JSON.stringify(await cardTitles(student.page)),
+  )
+  await student.page.getByRole('button', { name: /last opened/i }).click()
+  const studentSortItems = (await student.page.locator('[role="menuitem"]').allInnerTexts())
+    .map((s) => s.trim())
+  check(
+    'a student is offered recency and alphabet',
+    studentSortItems.includes('Last opened') && studentSortItems.includes('Name'),
+    studentSortItems.join(', '),
+  )
+  check(
+    // There is no activity field on `GET /v2/student/courses` at all, so offering it would sort
+    // every course to a dead heat on 0 and silently look like alphabetical order.
+    'but not activity, which the student endpoint cannot answer',
+    !studentSortItems.includes('Activity'),
+    studentSortItems.join(', '),
+  )
+  await student.page.locator('[role="menuitem"]', { hasText: 'Name' }).click()
+  check(
+    'and picking Name reorders the cards alphabetically',
+    await waitUntil(
+      async () =>
+        JSON.stringify(await cardTitles(student.page)) ===
+        JSON.stringify(['Algorithms', 'Programming 101']),
+    ),
+    JSON.stringify(await cardTitles(student.page)),
+  )
+  // The choice has to survive a reload, or it is not worth having.
+  await student.page.reload()
+  check(
+    'the chosen order is remembered across a reload',
+    await waitUntil(
+      async () =>
+        JSON.stringify(await cardTitles(student.page)) ===
+        JSON.stringify(['Algorithms', 'Programming 101']),
+    ),
+    JSON.stringify(await cardTitles(student.page)),
+  )
+  await student.shot('05-student-sorted-by-name')
   await student.close()
 
   // --- a teacher ------------------------------------------------------------------------------------
@@ -131,11 +194,29 @@ test('courses-page', async ({ launch, check, a11y }) => {
   await fakeApi(teacher.page, [
     ['/account/checkin', () => ({})],
     [/\/teacher\/courses(\?|$)/, () => ({
+      // Three courses whose three orders are all different: recency of access, recency of
+      // submissions, and alphabet each produce a distinct sequence. Two courses would not be
+      // enough — with two, "sorted by activity" and "sorted by name" can be the same list, and a
+      // menu that ignores the mode it was given still passes.
       courses: [
         // An alias, which a teacher sees *instead of* the real title. Distinct strings so the two
         // cannot be confused for one another.
-        teacherCourse('1', 'LTAT.03.001 Programmeerimine', { alias: 'My Python course', student_count: 34 }),
-        teacherCourse('2', 'Empty course', { student_count: 0 }),
+        teacherCourse('1', 'LTAT.03.001 Programmeerimine', {
+          alias: 'My Python course',
+          student_count: 34,
+          last_accessed: '2026-08-15T09:00:00.000Z',
+          last_submission_at: null,
+        }),
+        teacherCourse('2', 'Empty course', {
+          student_count: 0,
+          last_accessed: '2026-08-12T09:00:00.000Z',
+          last_submission_at: '2026-08-20T09:00:00.000Z',
+        }),
+        teacherCourse('3', 'Zebra seminar', {
+          student_count: 5,
+          last_accessed: '2026-08-01T09:00:00.000Z',
+          last_submission_at: '2026-08-31T09:00:00.000Z',
+        }),
       ],
     })],
     [/\/student\/courses(\?|$)/, () => ({ courses: [] })],
@@ -166,6 +247,46 @@ test('courses-page', async ({ launch, check, a11y }) => {
     (await teacher.page.getByRole('button', { name: /new course|create/i }).count()) === 0,
   )
   await teacher.shot('02-teacher')
+  check(
+    'a teacher also starts on most-recently-opened',
+    JSON.stringify(await cardTitles(teacher.page)) ===
+      JSON.stringify(['My Python course', 'Empty course', 'Zebra seminar']),
+    JSON.stringify(await cardTitles(teacher.page)),
+  )
+  await teacher.page.getByRole('button', { name: /last opened/i }).click()
+  const teacherSortItems = (await teacher.page.locator('[role="menuitem"]').allInnerTexts())
+    .map((s) => s.trim())
+  check(
+    'and is offered activity as well, the field the activity dot already reads',
+    teacherSortItems.includes('Activity'),
+    teacherSortItems.join(', '),
+  )
+  await teacher.page.locator('[role="menuitem"]', { hasText: 'Activity' }).click()
+  check(
+    'sorting by activity brings the course with the newest submission to the top',
+    // Not merely "different from the default": this is the one order that neither recency of
+    // access nor alphabet can produce, so it can only come from `last_submission_at`.
+    await waitUntil(
+      async () =>
+        JSON.stringify(await cardTitles(teacher.page)) ===
+        JSON.stringify(['Zebra seminar', 'Empty course', 'My Python course']),
+    ),
+    JSON.stringify(await cardTitles(teacher.page)),
+  )
+  await teacher.page.getByRole('button', { name: /activity/i }).click()
+  await teacher.page.locator('[role="menuitem"]', { hasText: 'Name' }).click()
+  check(
+    'and alphabetical order goes by the alias on the card, not the official title',
+    // 'LTAT.03.001 Programmeerimine' would sort first of the three; 'My Python course' is second.
+    // Sorting by a string the teacher cannot see is the failure this catches.
+    await waitUntil(
+      async () =>
+        JSON.stringify(await cardTitles(teacher.page)) ===
+        JSON.stringify(['Empty course', 'My Python course', 'Zebra seminar']),
+    ),
+    JSON.stringify(await cardTitles(teacher.page)),
+  )
+  await teacher.shot('06-teacher-sorted-by-name')
   await teacher.close()
 
   // --- an admin -------------------------------------------------------------------------------------

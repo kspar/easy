@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Typography,
   Card,
@@ -15,12 +15,22 @@ import {
   DialogActions,
   TextField,
   Snackbar,
+  Menu,
+  MenuItem,
 } from '@mui/material'
-import { GridViewOutlined, ViewListOutlined, LinkOutlined, AddOutlined } from '@mui/icons-material'
+import {
+  GridViewOutlined,
+  ViewListOutlined,
+  LinkOutlined,
+  AddOutlined,
+  SortOutlined,
+} from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth.ts'
 import { useStudentCourses, useTeacherCourses, useCreateCourse } from '../../api/courses.ts'
+import type { StudentCourse, TeacherCourse } from '../../api/types.ts'
+import { readString, writeString } from '../../api/localStorage.ts'
 import { spaLinkProps } from '../../components/spaLink.ts'
 import { alpha } from '@mui/material/styles'
 import { GREEN } from '../../theme/theme.ts'
@@ -34,15 +44,114 @@ type ViewMode = 'grid' | 'list'
 const VIEW_MODE_KEY = 'courses.viewMode'
 
 function useViewMode(): [ViewMode, (mode: ViewMode) => void] {
-  const [mode, setMode] = useState<ViewMode>(() => {
-    const stored = localStorage.getItem(VIEW_MODE_KEY)
-    return stored === 'list' ? 'list' : 'grid'
-  })
+  const [mode, setMode] = useState<ViewMode>(() =>
+    readString(VIEW_MODE_KEY) === 'list' ? 'list' : 'grid',
+  )
   const set = (m: ViewMode) => {
-    localStorage.setItem(VIEW_MODE_KEY, m)
+    // Guarded, via the shared helpers: a bare `setItem` here throws from inside a click handler in
+    // Safari private browsing and on a full quota, on the first screen of every session.
+    writeString(VIEW_MODE_KEY, m)
     setMode(m)
   }
   return [mode, set]
+}
+
+// 'recent' is the order the page has always had: the courses you opened most recently, first.
+// 'activity' reads the same field as the activity dot, so the pulsing courses come to the top —
+// teachers and admins only, because GET /v2/student/courses returns no activity field (EZ-1856).
+type SortMode = 'recent' | 'activity' | 'name'
+
+const SORT_MODE_KEY = 'courses.sortMode'
+
+const STUDENT_SORT_MODES: SortMode[] = ['recent', 'name']
+const TEACHER_SORT_MODES: SortMode[] = ['recent', 'activity', 'name']
+
+const sortLabelKeys: Record<SortMode, string> = {
+  recent: 'courses.sortByRecent',
+  activity: 'courses.sortByActivity',
+  name: 'courses.sortByName',
+}
+
+function useSortMode(allowed: SortMode[]): [SortMode, (mode: SortMode) => void] {
+  const [mode, setMode] = useState<SortMode>(() => {
+    const stored = readString(SORT_MODE_KEY) as SortMode | null
+    // A teacher who picked 'activity' and then switches to the student role would otherwise land
+    // on a mode this list cannot offer, so an unavailable stored mode falls back to the default.
+    return stored && allowed.includes(stored) ? stored : 'recent'
+  })
+  const set = (m: SortMode) => {
+    writeString(SORT_MODE_KEY, m)
+    setMode(m)
+  }
+  return [mode, set]
+}
+
+// The title on the card: a teacher sees their own alias for the course, an admin the real title.
+const studentTitle = (course: StudentCourse) => course.alias ?? course.title
+const teacherTitle = (course: TeacherCourse, isAdmin: boolean) =>
+  isAdmin ? course.title : (course.alias ?? course.title)
+
+type SortableCourse = {
+  last_accessed: string
+  last_submission_at?: string | null
+}
+
+function sortCourses<T extends SortableCourse>(
+  courses: T[],
+  mode: SortMode,
+  displayTitle: (course: T) => string,
+): T[] {
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+  // Sorting by the title on the card, not by `title`: for a teacher the card shows the alias.
+  const byName = (a: T, b: T) => collator.compare(displayTitle(a), displayTitle(b))
+  const time = (at: string | null | undefined) => (at ? new Date(at).getTime() : 0)
+  return [...courses].sort((a, b) => {
+    if (mode === 'name') return byName(a, b)
+    if (mode === 'activity') {
+      return time(b.last_submission_at) - time(a.last_submission_at) || byName(a, b)
+    }
+    return time(b.last_accessed) - time(a.last_accessed) || byName(a, b)
+  })
+}
+
+function SortMenu({
+  mode,
+  modes,
+  onChange,
+}: {
+  mode: SortMode
+  modes: SortMode[]
+  onChange: (mode: SortMode) => void
+}) {
+  const { t } = useTranslation()
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  return (
+    <>
+      <Button
+        variant="outlined"
+        size="small"
+        startIcon={<SortOutlined />}
+        onClick={(e) => setAnchor(e.currentTarget)}
+        sx={{ height: 32 }}
+      >
+        {t(sortLabelKeys[mode])}
+      </Button>
+      <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
+        {modes.map((m) => (
+          <MenuItem
+            key={m}
+            selected={mode === m}
+            onClick={() => {
+              onChange(m)
+              setAnchor(null)
+            }}
+          >
+            {t(sortLabelKeys[m])}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
+  )
 }
 
 const gridSx = {
@@ -150,20 +259,29 @@ function StudentCourses() {
   const navigate = useNavigate()
   const { data: courses, isLoading, error } = useStudentCourses()
   const [viewMode, setViewMode] = useViewMode()
+  const [sortMode, setSortMode] = useSortMode(STUDENT_SORT_MODES)
+
+  const sorted = useMemo(
+    () => sortCourses(courses ?? [], sortMode, studentTitle),
+    [courses, sortMode],
+  )
 
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
         <Typography variant="h5">{t('courses.title')}</Typography>
         <ViewToggle mode={viewMode} onChange={setViewMode} />
+        <Box sx={{ ml: 'auto' }}>
+          <SortMenu mode={sortMode} modes={STUDENT_SORT_MODES} onChange={setSortMode} />
+        </Box>
       </Box>
 
       {isLoading && <CircularProgress />}
       {error && <ErrorAlert error={error} />}
 
       <Box sx={viewMode === 'grid' ? gridSx : listSx}>
-        {courses?.map((course) => {
-          const title = course.alias ?? course.title
+        {sorted.map((course) => {
+          const title = studentTitle(course)
           const color = viewMode === 'grid' ? course.color : null
           return (
             <Card
@@ -291,7 +409,13 @@ function TeacherCourses() {
   const navigate = useNavigate()
   const { data: courses, isLoading, error } = useTeacherCourses()
   const [viewMode, setViewMode] = useViewMode()
+  const [sortMode, setSortMode] = useSortMode(TEACHER_SORT_MODES)
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  const sorted = useMemo(
+    () => sortCourses(courses ?? [], sortMode, (c) => teacherTitle(c, isAdmin)),
+    [courses, sortMode, isAdmin],
+  )
 
   return (
     <>
@@ -300,16 +424,14 @@ function TeacherCourses() {
           {isAdmin ? t('courses.titleAdmin') : t('courses.title')}
         </Typography>
         <ViewToggle mode={viewMode} onChange={setViewMode} />
-        {isAdmin && (
-          <Button
-            startIcon={<AddOutlined />}
-            size="small"
-            onClick={() => setDialogOpen(true)}
-            sx={{ ml: 'auto' }}
-          >
-            {t('courses.newCourse')}
-          </Button>
-        )}
+        <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <SortMenu mode={sortMode} modes={TEACHER_SORT_MODES} onChange={setSortMode} />
+          {isAdmin && (
+            <Button startIcon={<AddOutlined />} size="small" onClick={() => setDialogOpen(true)}>
+              {t('courses.newCourse')}
+            </Button>
+          )}
+        </Box>
       </Box>
       {isAdmin && <CreateCourseDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />}
 
@@ -317,8 +439,8 @@ function TeacherCourses() {
       {error && <ErrorAlert error={error} />}
 
       <Box sx={viewMode === 'grid' ? gridSx : listSx}>
-        {courses?.map((course) => {
-          const title = isAdmin ? course.title : (course.alias ?? course.title)
+        {sorted.map((course) => {
+          const title = teacherTitle(course, isAdmin)
           const color = viewMode === 'grid' ? course.color : null
           const activity = getActivityLevel(course.last_submission_at)
           const secondaryCode = course.moodle_short_name ?? course.course_code
