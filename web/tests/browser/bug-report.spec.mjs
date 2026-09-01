@@ -148,12 +148,37 @@ test('bug-report', async ({ launch, check }) => {
     // `pre` is in the DOM — and readable by innerText — while the panel is still shut. A count-based
     // wait therefore returns instantly and proves nothing about the disclosure opening.
     await dialog.locator('pre').waitFor({ state: 'visible' })
+    // Visible is not the same as finished, and finished is not the same as in view.
+    //
+    // MUI's Collapse animates from height 0 and reports `visible` from the first frame, so the
+    // screenshot below used to be taken of a panel two pixels tall — identical to one that never
+    // opened. And the panel opens below the dialog's fold, so the component scrolls it into view
+    // afterwards; catching that mid-scroll shows one line of a log and looks like a bug.
+    //
+    // Both waits are assertions, not politeness. The second one is the promise the disclosure
+    // makes: expanding it actually shows you the thing.
+    const log = dialog.locator('pre')
+    await waitUntil(async () => ((await log.boundingBox())?.height ?? 0) > 300)
+    await waitUntil(async () => {
+      const [panel, box] = [await log.boundingBox(), await dialog.boundingBox()]
+      return !!panel && !!box && panel.y + panel.height <= box.y + box.height
+    })
 
-    // And `.length > 0` would not do either: the empty state renders "Nothing has been recorded in
-    // this tab yet", which is also text. Asserting the route we actually visited proves the buffer
-    // is being read rather than that a box exists.
+    // And `.length > 0` would not do either: the panel always has a context header in it, which is
+    // also text. Asserting the route we actually visited proves the buffer is being read rather
+    // than that a box exists.
     const shown = await dialog.locator('pre').innerText()
     check(`expanding it reveals real activity (${shown.split('\n')[0]})`, shown.includes('/courses'))
+
+    // The context header, which is the half a reporter could never have supplied themselves: which
+    // build this tab is running, which environment it is pointed at, and who is looking at it.
+    check('the panel opens with the context header', shown.startsWith('filed'))
+    check('the running web build is in it', shown.includes('web build'))
+    check('and the account and role', shown.includes('role') && shown.includes('account'))
+    // Never, under any circumstances, a token. Redaction happens on the way into the buffer and
+    // again on the way out of the header, and this is the assertion that would notice either
+    // being removed.
+    check('and no JWT anywhere in it', !shown.includes('eyJ'))
     await shot('02-disclosure')
     await close()
   }

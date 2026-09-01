@@ -47,16 +47,16 @@ beforeEach(() => {
 })
 
 describe('caps', () => {
-  test('keeps at most 200 entries, dropping the oldest', async () => {
+  test('keeps at most 400 entries, dropping the oldest', async () => {
     const { record, readBreadcrumbs } = await freshModule()
 
-    for (let i = 0; i < 250; i++) record('route', `/page/${i}`)
+    for (let i = 0; i < 450; i++) record('route', `/page/${i}`)
 
     const entries = readBreadcrumbs()
-    expect(entries).toHaveLength(200)
-    // Oldest-first eviction: the survivors are the *last* 200, and the newest is last in the array.
+    expect(entries).toHaveLength(400)
+    // Oldest-first eviction: the survivors are the *last* 400, and the newest is last in the array.
     expect(entries[0].text).toBe('/page/50')
-    expect(entries[199].text).toBe('/page/249')
+    expect(entries[399].text).toBe('/page/449')
   })
 
   test('drops anything older than 30 minutes', async () => {
@@ -105,7 +105,37 @@ describe('caps', () => {
 
     record('console', 'x'.repeat(5000))
 
-    expect(readBreadcrumbs()[0].text).toHaveLength(300)
+    expect(readBreadcrumbs()[0].text).toHaveLength(400)
+  })
+
+  test('the serialised log stays inside what core will accept', async () => {
+    const { record, serialiseBreadcrumbs } = await freshModule()
+
+    // The buffer's own caps multiply out to well over core's `@Size` on the column, so a busy
+    // session used to produce a payload the server rejected outright — a 400 for the reporter
+    // whose session had the most to say. Distinct texts, so nothing is collapsed on the way in.
+    for (let i = 0; i < 400; i++) record('console', `${i} ${'x'.repeat(400)}`)
+
+    const serialised = serialiseBreadcrumbs()
+    // The bound holds *including* the trimming notice, which the budget reserves room for rather
+    // than appending on top of a fully spent allowance. Asserted here because the difference is
+    // invisible until the notice's wording or MAX_TEXT changes and the slack runs out.
+    expect(serialised.length).toBeLessThanOrEqual(40000)
+    // Trimmed from the old end, and said so rather than silently starting mid-story.
+    const [notice, ...rest] = serialised.split('\n')
+    expect(notice).toMatch(/^… \d+ earlier entries trimmed$/)
+    expect(Number(notice.match(/\d+/)[0])).toBe(400 - rest.length)
+    // The newest entry is the one that must survive: it is what the reporter is complaining about.
+    expect(serialised).toContain('399 ')
+  })
+
+  test('says nothing about trimming when everything fits', async () => {
+    const { record, serialiseBreadcrumbs } = await freshModule()
+
+    record('route', '/courses')
+    record('api', 'POST /courses -> 200 in 41ms')
+
+    expect(serialiseBreadcrumbs()).not.toContain('trimmed')
   })
 })
 
@@ -127,6 +157,30 @@ describe('redaction', () => {
     record('api', 'GET /courses failed, Authorization: perm-abc123-not-a-jwt')
 
     expect(readBreadcrumbs()[0].text).not.toContain('perm-abc123')
+  })
+
+  test('the IdP callback URL keeps its shape but loses its authorization code', async () => {
+    const { record, readBreadcrumbs } = await freshModule()
+
+    // Newly reachable: the module records the URL the page loaded on, and one of those is the
+    // callback Keycloak redirects to.
+    record('route', '/?state=8f2c-4a&session_state=aa11&code=6b1e-secret-value (page load)')
+
+    const stored = readBreadcrumbs()[0].text
+    expect(stored).not.toContain('6b1e-secret-value')
+    expect(stored).not.toContain('8f2c-4a')
+    // Still legible as a callback, which is the diagnostic half of the line.
+    expect(stored).toContain('code=[redacted]')
+    expect(stored).toContain('(page load)')
+  })
+
+  test('ordinary prose containing the word code or state is left alone', async () => {
+    const { record, readBreadcrumbs } = await freshModule()
+
+    // The parameter patterns are anchored on `?`/`&`/`#` precisely so this stays readable.
+    record('action', 'save conflict on exercise 42, fields: gradingScript, state')
+
+    expect(readBreadcrumbs()[0].text).toContain('gradingScript, state')
   })
 })
 

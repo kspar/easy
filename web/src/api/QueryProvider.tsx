@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useRef } from 'react'
 import config from '../config.ts'
 import { setCachedTokenProvider, setTokenProvider } from './client.ts'
 import { useAuth } from '../auth/useAuth.ts'
+import { record } from '../features/bug-report/breadcrumbs.ts'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +38,10 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         // permission problem instead of an expired session. With no token the request is
         // unauthenticated, which is the truth, and `AuthContext`'s 401 handler takes it from there.
         console.warn('Token refresh failed in query provider')
+        // The console patch would catch the warning above, but as a `CONSOLE` line among console
+        // noise. As an `AUTH` line it sits with the rest of the session's story, which is where
+        // someone reading "everything says no permission" will be looking.
+        record('auth', 'refreshing the token before a request failed; sending it unauthenticated')
         return undefined
       }
       return kc.token

@@ -64,6 +64,7 @@ import { useCourse } from '../api/courses.ts'
 import EditCourseDialog from '../features/course-settings/EditCourseDialog.tsx'
 import BugReportDialog from '../features/bug-report/BugReportDialog.tsx'
 import { record } from '../features/bug-report/breadcrumbs.ts'
+import { updateReportContext } from '../features/bug-report/reportContext.ts'
 import { spaLinkProps } from '../components/spaLink.ts'
 import useRecentExercises from '../hooks/useRecentExercises.ts'
 import logoSvg from '../assets/logo.svg'
@@ -102,6 +103,14 @@ export default function AppLayout() {
   useEffect(() => {
     record('route', `${location.pathname}${location.search}`)
   }, [location.pathname, location.search])
+
+  // The other half of the same idea: the two settings that change what the app *looks* like, into
+  // the report's context header. Both have been the entire content of a bug — a string that only
+  // overflows in Estonian, a contrast failure that only exists in dark mode — and neither is
+  // visible in a written description of what went wrong.
+  useEffect(() => {
+    updateReportContext({ language: i18n.language, theme: mode })
+  }, [i18n.language, mode])
 
   // Extract courseId from route if inside a course
   const courseMatch = location.pathname.match(/^\/courses\/(\d+)/)

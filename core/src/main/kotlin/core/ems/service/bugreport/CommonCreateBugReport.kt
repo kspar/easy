@@ -21,6 +21,8 @@ import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.boot.info.BuildProperties
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -32,8 +34,13 @@ import org.springframework.web.bind.annotation.RestController
 class CommonCreateBugReportController(
     private val mailService: SendMailService,
     private val forwardService: BugReportForwardService,
+    buildPropertiesProvider: ObjectProvider<BuildProperties>,
 ) {
     private val log = KotlinLogging.logger {}
+
+    // Absent under `bootRun` without `bootBuildInfo`, exactly as VersionsService documents — hence
+    // the ObjectProvider rather than a plain injection, which would fail to start a dev core.
+    private val build: BuildProperties? = buildPropertiesProvider.ifAvailable
 
     data class Req(
         @param:JsonProperty("message", required = true)
@@ -41,8 +48,15 @@ class CommonCreateBugReportController(
 
         // Absent, not empty, when the reporter unticked the consent checkbox. The column keeps that
         // distinction; see changeset 230826-1.
+        //
+        // The limit is a backstop against an abusive client, not a budget the honest one is
+        // expected to notice: web trims its own activity log to fit well inside this (see
+        // MAX_SERIALISED in breadcrumbs.ts) and prepends a context header of a couple of
+        // kilobytes. It was 20000, which the buffer's own caps could exceed — and the failure was
+        // the worst-shaped one available, a 400 rejecting the report of the person whose session
+        // had produced the most evidence.
         @param:JsonProperty("diagnostics")
-        @field:Size(max = 20000) val diagnostics: String?,
+        @field:Size(max = 50000) val diagnostics: String?,
 
         @param:JsonProperty("page_url")
         @field:Size(max = 2000) val pageUrl: String?,
@@ -119,11 +133,24 @@ class CommonCreateBugReportController(
         }
     }
 
+    /**
+     * The admin mail, which is the floor under the YouTrack integration — if forwarding is off or
+     * broken, this is the only thing anyone sees.
+     *
+     * Deliberately not the whole issue. The diagnostics belong in the tracker, where they can be
+     * read in a code block and searched; a mail is a notification that a report exists and enough
+     * of it to judge urgency. `CORE` is the one field added here that the client cannot know, and
+     * it earns its line for the same reason it is in the issue: "which build" is the first
+     * question, and a mail that answers it saves opening anything.
+     */
     private fun notificationText(id: Long, dto: Req, caller: EasyUser) = """
         BUG REPORT: $id
         FROM: ${caller.id} <${caller.email}> ${caller.roles}
         PAGE: ${dto.pageUrl ?: "-"}
         WEB: ${dto.webVersion ?: "-"}
+        CORE: ${build?.version ?: "dev"} (${build?.get("commit") ?: "unknown"})
+        AGENT: ${dto.userAgent ?: "-"}
+        ACTIVITY: ${if (dto.diagnostics == null) "declined" else "${dto.diagnostics.length} chars, see the issue"}
 
         ${dto.message}
     """.trimIndent()

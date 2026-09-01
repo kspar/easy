@@ -9,6 +9,22 @@ import {
   type LoginOptions,
 } from './auth-context.ts'
 import { apiFetch, setUnauthorizedHandler } from '../api/client.ts'
+import { record } from '../features/bug-report/breadcrumbs.ts'
+import { updateReportContext } from '../features/bug-report/reportContext.ts'
+
+/**
+ * How much life is left in the access token, for a breadcrumb.
+ *
+ * A negative number is the interesting one and is printed as such: a request sent with a token
+ * that expired forty seconds ago is a refresh that did not happen, and it looks identical from
+ * the outside to a permission problem.
+ */
+function tokenLifetime(keycloak: Keycloak): string {
+  const exp = keycloak.tokenParsed?.exp
+  if (typeof exp !== 'number') return 'no token'
+  const seconds = Math.round(exp - Date.now() / 1000)
+  return seconds >= 0 ? `valid for ${seconds}s` : `expired ${-seconds}s ago`
+}
 
 // Type-only re-export, so the many existing `import { type Role } from './AuthContext.tsx'`
 // call sites keep working. Erased at runtime, so it doesn't count as a non-component export
@@ -190,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // gets its one attempt.
     if (!initializedRef.current) {
       console.warn(`Ignoring a 401 from before the session was known (${reason})`)
+      record('auth', `ignored a 401 from before the session was known: ${reason}`)
       return
     }
     // Already tried, and here we are again with core still saying no — see
@@ -202,12 +219,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error(
         `Signed in, but core still rejects the session after returning from the identity provider (${reason})`,
       )
+      record('auth', `giving up: core still rejects the session after an IdP round trip (${reason})`)
+      updateReportContext({ session: 'signed in, but core rejects the session' })
       setState((prev) => ({ ...prev, authFailed: true }))
       return
     }
     markRecoveryAttempted()
     recoveringRef.current = true
     console.warn(`Session lost (${reason}); returning to the identity provider`)
+    // The last thing this tab records before it navigates away, and it survives the navigation —
+    // `record('auth', …)` is debounced but `sessionStorage` is per tab, so the log the reporter
+    // sees after coming back from the IdP still contains the bounce that took them there. That is
+    // the whole shape of a login loop, and it was previously invisible.
+    record('auth', `session lost (${reason}); redirecting to the identity provider`)
     keycloak.login({ redirectUri: returnUri() })
   }, [])
 
@@ -225,9 +249,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // App.tsx and so cannot be told which route it is about to render.
     if (window.location.pathname.startsWith('/embed/')) {
       initializedRef.current = true
+      record('auth', 'embedded exercise: the identity provider is deliberately not contacted')
+      updateReportContext({ session: 'embedded, no session by design' })
       setState((s) => ({ ...s, initialized: true, authenticated: false }))
       return
     }
+
+    record('auth', 'contacting the identity provider (check-sso)')
 
     keycloak
       .init({
@@ -262,6 +290,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const activeRole = getPersistedRole(roles) ?? getMainRole(roles)
             localStorage.setItem(ROLE_STORAGE_KEY, activeRole)
 
+            const username = keycloak.tokenParsed?.preferred_username as string | undefined
+            record(
+              'auth',
+              `signed in as ${username ?? 'unknown'}, roles [${roles.join(', ')}], ` +
+                `acting as ${activeRole}, token ${tokenLifetime(keycloak)}`,
+            )
+            updateReportContext({
+              username,
+              availableRoles: roles,
+              activeRole,
+              session: 'authenticated, checking in',
+            })
+
             setState({
               initialized: true,
               initFailed: false,
@@ -284,15 +325,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // last time is not wrong now and the next lost session gets its redirect. See
                 // [RECOVERY_ATTEMPTED_KEY].
                 clearRecoveryAttempt()
+                record('auth', 'account checkin succeeded; the session works')
+                updateReportContext({ session: 'authenticated and checked in' })
                 setState((prev) => ({ ...prev, checkedIn: true }))
               })
               .catch((err) => {
                 console.error('Account checkin failed', err)
+                updateReportContext({ session: 'authenticated, but checkin failed' })
                 // The error too, not just the flag: check-in failing is the first thing a user
                 // meets and the least explicable, and core says why (audit X-035).
                 setState((prev) => ({ ...prev, checkinFailed: true, checkinError: err }))
               })
           } else {
+            record('auth', 'the identity provider reports no session for this browser')
+            updateReportContext({ session: 'not signed in' })
             setState((prev) => ({ ...prev, initialized: true }))
           }
         },
@@ -305,6 +351,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (err) => {
           initializedRef.current = true
           console.error('Keycloak init failed', err)
+          updateReportContext({ session: 'the identity provider could not be reached' })
           // `initFailed`, not just `initialized`. Reporting a failed init as "initialised, no
           // session" told RequireAuth to send the user to the IdP — the very thing that had just
           // failed — and the answer came back to an init that failed the same way, forever. See
@@ -318,22 +365,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // again — see AuthState.authFailed for why that loops rather than recovers.
       .catch((err) => {
         console.error('Signed in, but the session could not be used', err)
+        updateReportContext({ session: 'signed in, but the token could not be used' })
         noRedirectRef.current = true
         setState((prev) => ({ ...prev, initialized: true, authFailed: true }))
       })
 
     keycloak.onTokenExpired = () => {
-      keycloak.updateToken(config.keycloakTokenMinValidSec).catch(() => {
-        // The refresh token is gone or rejected, so there is nothing left to recover from in this
-        // tab. Previously this logged and stopped: every subsequent query 401'd, react-query gave up
-        // after one retry, and the user was left in error and spinner states with no way back that
-        // anything told them about. A reload fixed it, by re-running check-sso.
-        //
-        // So do what the reload does. `login()` goes to the IdP, and if the SSO session is still
-        // alive it comes straight back to the same URL with a fresh token and the user notices
-        // nothing; if it is not, they get the login page, which is the honest answer.
-        recoverSession('the token expired and could not be refreshed')
-      })
+      record('auth', 'access token expired, refreshing')
+      keycloak.updateToken(config.keycloakTokenMinValidSec).then(
+        (refreshed) => {
+          // Recorded even when it worked, and especially then. A silent refresh every few minutes
+          // is the normal rhythm of a long session, so its *absence* in the log around the moment
+          // something broke is itself the finding — and a report from someone who left a tab open
+          // over lunch should show the gap.
+          record('auth', `token refresh ${refreshed ? 'succeeded' : 'not needed'}, ${tokenLifetime(keycloak)}`)
+        },
+        () => {
+          // The refresh token is gone or rejected, so there is nothing left to recover from in
+          // this tab. Previously this logged and stopped: every subsequent query 401'd,
+          // react-query gave up after one retry, and the user was left in error and spinner states
+          // with no way back that anything told them about. A reload fixed it, by re-running
+          // check-sso.
+          //
+          // So do what the reload does. `login()` goes to the IdP, and if the SSO session is still
+          // alive it comes straight back to the same URL with a fresh token and the user notices
+          // nothing; if it is not, they get the login page, which is the honest answer.
+          recoverSession('the token expired and could not be refreshed')
+        },
+      )
     }
 
     // Same recovery, reached the other way: core rejected a token we thought was good. Registered
@@ -351,9 +410,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
       localStorage.setItem(ROLE_STORAGE_KEY, role)
+      // A teacher looking at the student view and reporting that a page is missing is one of the
+      // commonest false bugs there is, and nothing in the log said which view they were in.
+      record('auth', `switched role from ${state.activeRole} to ${role}`)
+      updateReportContext({ activeRole: role })
       setState((prev) => ({ ...prev, activeRole: role }))
     },
-    [state.availableRoles],
+    [state.availableRoles, state.activeRole],
   )
 
   const login = useCallback(
@@ -365,8 +428,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // page's call to action, chiefly) can still reach this.
       if (noRedirectRef.current) {
         console.warn('Ignoring login(): the identity provider could not be reached')
+        record('auth', 'login() ignored: the identity provider could not be reached')
         return
       }
+      record('auth', 'login() requested; leaving for the identity provider')
       keycloak.login({
         locale: options?.locale ?? 'et',
         // Always sent, never left to keycloak-js's own default. Its default is `location.href`,
@@ -387,8 +452,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Same guard as login(), same reason — `createLogoutUrl` reads the same endpoints.
     if (noRedirectRef.current) {
       console.warn('Ignoring logout(): the identity provider could not be reached')
+      record('auth', 'logout() ignored: the identity provider could not be reached')
       return
     }
+    record('auth', 'logout() requested')
     // Explicit for the same reason as login(), and it keeps the destination where it already was:
     // the default is `this.redirectUri`, which `init()` now pins to the page the bundle loaded on,
     // and coming back to *that* page after logging out from somewhere else would be a change.
@@ -399,11 +466,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const refreshed = await keycloak.updateToken(config.keycloakTokenMinValidSec)
       if (refreshed) {
+        record('auth', `token refreshed on demand, ${tokenLifetime(keycloak)}`)
         setState((prev) => ({ ...prev, token: keycloak.token }))
       }
       return true
     } catch {
       console.warn('Token refresh failed')
+      record('auth', 'on-demand token refresh failed')
       return false
     }
   }, [])

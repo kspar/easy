@@ -1,8 +1,10 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Box, Button, Collapse, IconButton } from '@mui/material'
 import { CloseOutlined, RefreshOutlined } from '@mui/icons-material'
 import { useWebUpdate } from '../api/webVersion.ts'
+import { record } from '../features/bug-report/breadcrumbs.ts'
+import { updateReportContext } from '../features/bug-report/reportContext.ts'
 
 /**
  * "A new version is available — reload" (EZ-1752).
@@ -42,9 +44,35 @@ export default function UpdateAvailableBanner({ enabled = true }: { enabled?: bo
   const { available, deployed } = useWebUpdate(enabled)
   const [dismissed, setDismissed] = useState<string | null>(readDismissed)
 
+  /**
+   * Tell the bug reporter that this tab is behind (EZ-1786).
+   *
+   * The single most valuable line a report can carry, and the one nobody would think to mention:
+   * "the fix is deployed, this tab has never loaded it" is a whole triage in one row, and the
+   * reporter has no way of knowing it — that is precisely why the banner exists. It is registered
+   * whether or not they dismissed the banner, because dismissing it does not un-stale the bundle.
+   */
+  // Keyed on the commit rather than on `deployed`, which is a fresh object out of `fetch` every
+  // five minutes — depending on it would write the same line into the buffer all afternoon.
+  const deployedCommit = deployed?.commit
+  useEffect(() => {
+    if (!available || !deployed) {
+      // Cleared, not merely left alone. `isDifferentBuild` compares commits with no ordering, so a
+      // **rollback to the commit this tab is running** makes `available` go false again — and a
+      // header that keeps shouting THIS TAB IS RUNNING AN OLDER BUILD at a tab that is now current
+      // sends whoever reads the report chasing a stale bundle that does not exist.
+      updateReportContext({ deployedBuild: null })
+      return
+    }
+    updateReportContext({ deployedBuild: deployed })
+    record('state', `a newer web build is deployed: ${deployed.version} (${deployed.commit})`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [available, deployedCommit])
+
   const dismiss = useCallback(() => {
     const commit = deployed?.commit
     if (!commit) return
+    record('action', `dismissed the update banner for build ${commit}`)
     setDismissed(commit)
     try {
       localStorage.setItem(DISMISSED_KEY, commit)

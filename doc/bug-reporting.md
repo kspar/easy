@@ -77,7 +77,7 @@ Files: `core/ems/service/bugreport/CommonCreateBugReport.kt` (endpoint),
 | Field | From | Notes |
 | --- | --- | --- |
 | `message` | the reporter | Free text, max 5000. The only required field. |
-| `diagnostics` | their browser | The activity log (§4). **Null means they declined**, which is not the same as empty. |
+| `diagnostics` | their browser | The context header and the activity log (§4). **Null means they declined**, which is not the same as empty. |
 | `page_url` | the client | Path and query string. No hash — that is a scroll position. |
 | `web_version` | the client | `4.0 (b14b916)`, from the build constants. |
 | `user_agent` | the client | The browser's own word. |
@@ -105,22 +105,95 @@ INSERT INTO system_configuration (key, value) VALUES ('bug_report_max_per_hour',
   ON CONFLICT (key) DO UPDATE SET value = excluded.value;
 ```
 
-## 4. The activity log
+## 4. The context header and the activity log
 
-`web/src/features/bug-report/breadcrumbs.ts`. A capped ring buffer with four sources, each hooked at
-the one place the codebase already funnels it:
+`diagnostics` is two things joined by a blank line: a header saying what the world looked like, and
+a log saying what happened in it.
 
-| Source | Hooked in | Recorded |
+### 4.0 The context header
+
+`web/src/features/bug-report/reportContext.ts`. Aligned plain text, because the audience is a person
+reading a YouTrack issue:
+
+```
+filed         2026-09-01T13:37:58.506Z (Europe/Tallinn)
+page          /courses/12/exercises/34?tab=testing
+tab open      41m 12s, currently visible
+web build     4.0 (559bfef), built 2026-09-01T13:37:46.700Z
+deployed      4.1 (aa12cd3)  ← THIS TAB IS RUNNING AN OLDER BUILD
+environment   DEV
+core at       https://dev.core.lahendus.ut.ee/v2
+idp           https://idp.lahendus.ut.ee/auth/ realm master
+account       someone
+role          student of admin, teacher, student
+session       authenticated and checked in
+language      et (browser en-GB)
+theme         dark
+screen        1512×857 viewport, 1512×982 screen @2×
+network       online, 4g, 10 Mbps, 50 ms rtt
+storage       local ok, session unavailable, cookies enabled
+user agent    Mozilla/5.0 …
+```
+
+Three of those rows have each been the entire content of a bug:
+
+- **`deployed`** appears only when this tab is behind, and it ends a triage on its own. The reporter
+  cannot know it — that is what the update banner exists for — and "the fix is deployed, this tab
+  has never loaded it" is otherwise indistinguishable from the fix not working.
+- **`role`** says *which of* the available roles is in use. A teacher looking at the student view and
+  reporting a missing page is one of the commonest false bugs there is.
+- **`storage unavailable`** is the invisible cause behind a family of login and lost-work reports:
+  the breadcrumb buffer, the remembered role and the 401-recovery guard all degrade silently when
+  storage throws.
+
+Half of this is React state and half is global, and the whole thing has to be producible from
+`ErrorBoundary` — which sits outside the router and outside `AuthProvider`, deliberately, so it
+survives a throw in either. So the React side **pushes** into a module-level registry
+(`updateReportContext`) from effects, and a field nobody pushed is simply absent rather than printed
+as `undefined`. An absent row is the honest rendering of "the app never got that far".
+
+Core's own build is not in here. The server adds it (§2) — it is the one field the browser has no
+business claiming.
+
+### 4.1 The activity log
+
+`web/src/features/bug-report/breadcrumbs.ts`. A capped ring buffer. Every source is hooked at the
+one place the codebase already funnels it, which is why this stays cheap to keep correct:
+
+| Kind | Hooked in | Recorded |
 | --- | --- | --- |
-| Uncaught errors, unhandled rejections | `main.tsx` | Message and the first five stack frames |
-| `console.error` / `console.warn` | `main.tsx` | Patched, always forwarding to the real console |
-| Failed API calls | `api/client.ts`, at the throw site | Method, path, status, **and core's error id** |
-| Navigation | `AppLayout` | Path and query string |
+| `error` | `main.tsx`, `ErrorBoundary`, `RouteCrash` | Uncaught throws, rejections, render errors, with the first few stack frames |
+| `console` | `main.tsx` | `console.error` / `console.warn`, patched, always forwarding to the real console |
+| `api` | `api/client.ts` | **Every failure**, every write, every network error, and any read over 5s |
+| `route` | `AppLayout` + page load | Path and query string |
+| `auth` | `AuthContext`, `QueryProvider` | check-sso, sign-in with roles, checkin, every refresh, expiry, 401s, IdP redirects, role switches |
+| `action` | the feature that did it | Merge conflicts by field, draft-save failures, submissions, the error message the user was actually shown |
+| `state` | `main.tsx`, `UpdateAvailableBanner` | Offline/online, tab visibility, a newer build deployed underneath |
 
-Caps: **200 entries, 30 minutes, 300 characters each**, oldest evicted first. Each bounds a different
-failure — a render loop, a tab left open for a week, one enormous serialised object.
+Caps: **400 entries, 30 minutes, 400 characters each**, oldest evicted first, and **40 000 characters
+serialised**. Each bounds a different failure — a render loop, a tab left open for a week, one
+enormous serialised object, and the four of them multiplied together.
 
-### 4.1 Why the error id is the point
+That last cap is the one with a scar. Only the server could see it: `MAX_ENTRIES × MAX_TEXT` is well
+over core's `@Size` on the column, so a busy session produced a payload that came back **400, report
+discarded** — for the reporter whose session had the most to say. The serialiser now trims from the
+old end and says `… N earlier entries trimmed` rather than silently starting mid-story.
+
+#### What is deliberately not recorded
+
+Successful reads, and the successes of three endpoints this app calls on a timer: the statistics
+long poll, the draft autosave, and the notifications poll (`isRepeating` in `api/client.ts`). A
+student coding for half an hour generates hundreds of draft saves, and four hundred slots spent on
+those are four hundred slots not holding the route, auth and error lines a report exists for.
+
+**Only their successes.** A *failed* draft save is the single most valuable line this buffer can
+hold — it is the state behind every "my code disappeared" report — and failures are recorded for
+every path, unconditionally.
+
+Aborts are not recorded either: react-query cancels in-flight queries on unmount, so every
+navigation aborts something, and those read as network failures in a report where nothing failed.
+
+### 4.2 Why the error id is the point
 
 Core's exception handler mints a UUID and writes **the same value** to three places: its own log line,
 the `RequestErrorResponse.id` returned to the browser, and the admin notification email. Recording
@@ -138,7 +211,7 @@ a per-request cost paid for a search nobody was going to run.
 Retention sets the outer bound on how long this stays useful: journald is size-capped at 500 MB, and
 the rolling file keeps 180 days under a 2 GB cap.
 
-### 4.2 sessionStorage, and the two alternatives that are worse
+### 4.3 sessionStorage, and the two alternatives that are worse
 
 The buffer persists to `sessionStorage`, which is neither of the obvious choices:
 
@@ -153,13 +226,26 @@ storage throws in private windows, inside an iframe with third-party cookies blo
 quota. This code runs inside a `console.error` patch, where a throw would turn one logged error into
 two from a place nothing is watching.
 
-### 4.3 Redaction
+### 4.4 Redaction
 
 Bearer- and JWT-shaped strings are replaced **on the way in**, not on the way out. `AuthContext.tsx`
 calls `console.error` when a token refresh fails, so a token reaching this buffer is not
 hypothetical, and one should never sit in storage waiting for somebody to decide whether to send it.
 
-### 4.4 Consent
+**OAuth query parameters too**, since the buffer began recording the URL a page loaded on — and one
+of those URLs is the IdP callback, carrying `?code=…&state=…&session_state=…`. The authorization
+code is single-use and spent by the time anyone reads the report, which is not a reason to write a
+credential into a database, an email and an issue tracker. The parameter name survives, so the line
+still reads as a callback.
+
+That pattern is anchored on the `?`/`&`/`#` that starts a query parameter rather than on a word
+boundary, and the anchoring is load-bearing: `code` and `state` are ordinary words in a log about an
+editor and a state machine, and an unanchored rule would quietly eat sentences containing them.
+
+The context header is redacted on the way *out* as well, because it is assembled locally rather than
+arriving through `record`.
+
+### 4.5 Consent
 
 The checkbox starts **ticked**, and beside it is an expander holding the exact string the request will
 carry — produced by the same function, asserted equal by the browser spec.
@@ -171,6 +257,16 @@ again; do not write a better summary.
 Ticked-by-default is a judgement call. A strict reading of opt-in starts it unticked, and the result
 is reports with no diagnostics at all — which is the situation this feature exists to replace. Full
 disclosure is what makes ticked-by-default fair, and unticking it stores null rather than empty.
+
+The label reads "Include my recent activity **and technical details**". It used to stop at
+"activity", which was accurate until the context header (§4.0) added the account name, the browser,
+the screen and the network to what the checkbox gates. A checkbox that undersells what it covers is
+the same failure as one with no disclosure behind it, only quieter.
+
+Opening the disclosure also scrolls it into view. `DialogContent` is the scroll container and the
+panel opens below its fold, so expanding it used to reveal the first two lines of something the
+reporter was being asked to consent to — and the browser spec asserts the panel is fully on screen,
+not merely present, because a zero-height panel and a working one look identical to a count.
 
 ## 5. YouTrack
 

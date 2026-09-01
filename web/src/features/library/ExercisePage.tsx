@@ -63,6 +63,7 @@ import { parseSpec, specTestProblems } from './tsl/tslModel.ts'
 import { isTslContainer } from './autoEvalTypes.ts'
 import { dirLink, hasAccess, spaLinkProps } from './links.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
+import { record } from '../bug-report/breadcrumbs.ts'
 
 type TabId = 'text' | 'autoassess' | 'testing'
 
@@ -233,10 +234,12 @@ export default function ExercisePage() {
     // a stale copy and only find out at save time.
     const current = await fetchLibraryExercise(exerciseId)
     if (JSON.stringify(draftFrom(current)) !== JSON.stringify(draftFrom(exercise))) {
+      record('action', `exercise ${exerciseId} changed elsewhere; reloaded instead of editing`)
       setSnackbar(t('library.exerciseChangedElsewhere'))
       await refetch()
       return
     }
+    record('action', `started editing exercise ${exerciseId}`)
     baseRef.current = current
     setDraft(draftFrom(current))
     setTslValid(true)
@@ -261,16 +264,26 @@ export default function ExercisePage() {
       const remoteDraft = draftFrom(await fetchLibraryExercise(exerciseId))
 
       const merged = { ...draft } as Record<string, unknown>
-      let conflict = false
+      // Named, not counted. Two teachers editing the same exercise is the situation this merge
+      // exists for, and "the title reverted" versus "the grading script reverted" are different
+      // bugs with different causes — a report that says only "there was a conflict" cannot tell
+      // them apart, and the reporter cannot either, because the prompt does not say which fields.
+      const conflicted: string[] = []
       for (const key of Object.keys(draft) as (keyof Draft)[]) {
         const [value, isConflict] = mergeField(draft[key], remoteDraft[key], base[key])
         merged[key] = value
-        conflict = conflict || isConflict
+        if (isConflict) conflicted.push(key)
       }
+      const conflict = conflicted.length > 0
 
-      if (conflict && !window.confirm(t('library.mergeConflictConfirm'))) {
-        setSaving(false)
-        return
+      if (conflict) {
+        record('action', `save conflict on exercise ${exerciseId}, fields: ${conflicted.join(', ')}`)
+        if (!window.confirm(t('library.mergeConflictConfirm'))) {
+          record('action', `declined to overwrite; save of exercise ${exerciseId} abandoned`)
+          setSaving(false)
+          return
+        }
+        record('action', `chose to overwrite the conflicting fields on exercise ${exerciseId}`)
       }
 
       await updateExercise.mutateAsync(toUpdate(merged as unknown as Draft))
@@ -283,6 +296,9 @@ export default function ExercisePage() {
       const fresh = await refetch()
       if (fresh.data) baseRef.current = fresh.data
     } catch (err) {
+      // The request's own failure is already an `api` line; this says what the reporter was told
+      // about it, which is the sentence they will quote back in the report.
+      record('action', `saving exercise ${exerciseId} failed: ${errorMessage(err, t)}`)
       setSnackbar(errorMessage(err, t))
     } finally {
       setSaving(false)

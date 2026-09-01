@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { isRouteErrorResponse, useRouteError } from 'react-router-dom'
 import CrashScreen from '../components/CrashScreen.tsx'
+import { record } from '../features/bug-report/breadcrumbs.ts'
 
 /**
  * Whatever was thrown, as an Error whose message still says something. `useRouteError()` is not
@@ -30,5 +32,23 @@ function asError(thrown: unknown): Error {
  */
 export default function RouteCrash() {
   const error = useRouteError()
-  return <CrashScreen error={asError(error)} />
+  const asErrorValue = asError(error)
+
+  /**
+   * Into the activity buffer, the way `ErrorBoundary` does for the throws it catches.
+   *
+   * The two boundaries catch disjoint sets — a throw the router handles never reaches the outer
+   * one — so a route crash was reaching a report only as whatever React happened to write to
+   * `console.error`, which is a warning about a component tree rather than the error with its
+   * stack. The reporter is looking at this screen while they file, so the line that says what
+   * broke should be the first thing in their log.
+   *
+   * In an effect, so React's double-invoked render in development does not record it twice.
+   */
+  useEffect(() => {
+    const stack = asErrorValue.stack?.split('\n').slice(1, 4).map((l) => l.trim()).join(' < ')
+    record('error', `route crash: ${asErrorValue.message}${stack ? ` | ${stack}` : ''}`)
+  }, [asErrorValue.message, asErrorValue.stack])
+
+  return <CrashScreen error={asErrorValue} />
 }

@@ -20,7 +20,22 @@
  * submitted report, only with the checkbox ticked.
  */
 
-export type BreadcrumbKind = 'console' | 'error' | 'api' | 'route'
+/**
+ * What kind of thing happened.
+ *
+ * The kind is a filter for the reader, not a taxonomy: someone triaging scans the column for the
+ * `ERROR` lines first, then reads backwards through `ACTION` and `AUTH` to see what led there.
+ *
+ * - `console` — a `console.error`/`console.warn` the app made on its own.
+ * - `error` — an uncaught throw, an unhandled rejection, or a React render error.
+ * - `api` — one request to core: every write, and every failure of anything.
+ * - `route` — a page the reporter was on.
+ * - `auth` — the session: init, refresh, expiry, recovery, role.
+ * - `action` — something the person or the app *did* that no request describes on its own: a
+ *   merge conflict resolved, a draft restored, a confirmation declined.
+ * - `state` — the tab's own circumstances changing: offline, hidden, a new build deployed under it.
+ */
+export type BreadcrumbKind = 'console' | 'error' | 'api' | 'route' | 'auth' | 'action' | 'state'
 
 export interface Breadcrumb {
   /** Epoch millis. */
@@ -32,16 +47,36 @@ export interface Breadcrumb {
 const STORAGE_KEY = 'bugReportBreadcrumbs'
 
 /**
- * Three caps, because each bounds a different way of going wrong.
+ * Four caps, because each bounds a different way of going wrong.
  *
  * [MAX_ENTRIES] bounds a render loop logging every frame; [MAX_AGE_MS] bounds a tab left open for a
  * week, where yesterday's noise would push out the thing that just happened; [MAX_TEXT] bounds one
  * enormous entry, which is the realistic case — a stack trace or a serialised object is easily
- * kilobytes, and thirty of them would fill the request on their own.
+ * kilobytes, and thirty of them would fill the request on their own; [MAX_SERIALISED] bounds the
+ * three of them multiplied together, which is the only one the *server* can see.
+ *
+ * [MAX_ENTRIES] is generous because the kinds recorded now outnumber the four this started with —
+ * a minute of ordinary work is a route, half a dozen writes and their auth, and half an hour of
+ * that is the window worth keeping.
  */
-const MAX_ENTRIES = 200
+const MAX_ENTRIES = 400
 const MAX_AGE_MS = 30 * 60 * 1000
-const MAX_TEXT = 300
+const MAX_TEXT = 400
+
+/**
+ * The hard ceiling on what [serialiseBreadcrumbs] returns, matching core's `@Size` on the column
+ * with room to spare.
+ *
+ * This is not tidiness. Without it, `MAX_ENTRIES * MAX_TEXT` is comfortably over the annotation's
+ * limit, and a reporter with a busy buffer got a **400 with a validation message** — the report
+ * discarded, and the dialog showing the generic failure, precisely for the person whose session
+ * produced the most evidence. The budget trims the oldest lines instead, which is the same
+ * preference every other cap here expresses.
+ */
+const MAX_SERIALISED = 40000
+
+/** Room set aside inside [MAX_SERIALISED] for the "… N earlier entries trimmed" line. */
+const TRIM_NOTICE_BUDGET = 64
 
 /** How many stack frames to keep. Enough to place the throw, not enough to bury the message. */
 const STACK_FRAMES = 5
@@ -62,8 +97,27 @@ const TOKEN_SHAPE = /\beyJ[\w-]{10,}(\.[\w-]+)*/g
 /** Bearer values in a header-ish string, which the JWT pattern alone would miss for opaque tokens. */
 const BEARER_SHAPE = /\b(bearer|authorization)\b\s*:?\s*\S+/gi
 
+/**
+ * The OAuth parameters Keycloak puts in a URL.
+ *
+ * Also not hypothetical, and newly reachable: this module now records the URL the page loaded on,
+ * and one of the URLs the page loads on is the IdP callback — `?code=…&state=…&session_state=…`.
+ * The authorization code is single-use and has been redeemed by the time anyone reads the report,
+ * but "spent by now" is not a reason to write a credential into a database, an email and an issue
+ * tracker. The parameter name is kept so the log still shows *that* it was a callback.
+ *
+ * Anchored on the `?`/`&`/`#` that starts a query parameter rather than on a word boundary, so
+ * this stays a rule about URLs. `code` and `state` are ordinary words in a log about an editor and
+ * a state machine, and an unanchored pattern would quietly eat sentences containing them.
+ */
+const OAUTH_PARAM_SHAPE =
+  /([?&#])(code|state|session_state|id_token|access_token|refresh_token|token|client_secret)=[^&\s"']+/gi
+
 export function redact(text: string): string {
-  return text.replace(TOKEN_SHAPE, '[redacted-token]').replace(BEARER_SHAPE, '$1 [redacted]')
+  return text
+    .replace(TOKEN_SHAPE, '[redacted-token]')
+    .replace(BEARER_SHAPE, '$1 [redacted]')
+    .replace(OAUTH_PARAM_SHAPE, '$1$2=[redacted]')
 }
 
 // --- storage, guarded exactly as api/localStorage.ts is -----------------------------------------
@@ -135,9 +189,11 @@ export function record(kind: BreadcrumbKind, text: string): void {
 
     buffer = prune([...buffer, entry], now)
 
-    // An error is flushed immediately rather than debounced: the plausible next event is the page
-    // going away, and a debounced write would not survive it.
-    if (kind === 'error') flush()
+    // Errors and auth events are flushed immediately rather than debounced: the plausible next
+    // event is the page going away, and a debounced write would not survive it. For an error that
+    // next event is a crash; for an auth event it is very often a deliberate redirect to the IdP,
+    // and the line saying *why* we redirected is the one a login loop is diagnosed from.
+    if (kind === 'error' || kind === 'auth') flush()
     else scheduleFlush()
   } catch {
     // Deliberately swallowed. See above.
@@ -170,9 +226,34 @@ function stamp(t: number): string {
  * sent is not consent. What they read is, character for character, what leaves the browser.
  */
 export function serialiseBreadcrumbs(): string {
-  return readBreadcrumbs()
-    .map((e) => `${stamp(e.t)}  ${e.kind.toUpperCase().padEnd(7)}  ${e.text}`)
-    .join('\n')
+  const lines = readBreadcrumbs().map(
+    (e) => `${stamp(e.t)}  ${e.kind.toUpperCase().padEnd(7)}  ${e.text}`,
+  )
+
+  // Newest-first while filling the budget, then reversed back. Dropping from the old end is the
+  // same choice `prune` makes: whatever the reporter is complaining about just happened.
+  //
+  // The budget is reduced by the notice's own worst case up front rather than being spent in full
+  // and then overrun by it. An unshift after the loop is off by the length of the line it adds,
+  // which is harmless against the current server limit and would stop being harmless the moment
+  // either number moved — the kind of accounting that is only ever wrong in a way nobody notices.
+  const budget = MAX_SERIALISED - TRIM_NOTICE_BUDGET
+  const kept: string[] = []
+  let size = 0
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const cost = lines[i].length + 1
+    if (size + cost > budget) break
+    kept.push(lines[i])
+    size += cost
+  }
+  kept.reverse()
+
+  const dropped = lines.length - kept.length
+  // Said out loud rather than silently: a log that begins mid-story reads as the whole story, and
+  // "nothing before this" is a conclusion someone triaging would otherwise draw.
+  if (dropped > 0) kept.unshift(`… ${dropped} earlier entr${dropped === 1 ? 'y' : 'ies'} trimmed`)
+
+  return kept.join('\n')
 }
 
 // --- the four sources --------------------------------------------------------------------------
@@ -219,6 +300,26 @@ export function installBreadcrumbs(): void {
   // must not be quietly eaten by the bug reporter.
   patchConsole('error')
   patchConsole('warn')
+
+  // The network going away is the single most common cause of "everything broke at once", and it
+  // is invisible in a log of failed requests: an offline tab produces `TypeError: Failed to fetch`
+  // from every query and nothing that says why. Recorded from both events, so the log shows the
+  // gap rather than just its start.
+  window.addEventListener('offline', () => record('state', 'browser went offline'))
+  window.addEventListener('online', () => record('state', 'browser came back online'))
+
+  // Whether the tab was in front matters for the whole class of "it did not save" reports: the
+  // draft autosave, the statistics long poll and the update check all behave differently in a
+  // hidden tab, and a report filed after coming back to a tab left for an hour reads very
+  // differently once that hour is visible in the log.
+  document.addEventListener('visibilitychange', () => {
+    record('state', `tab became ${document.visibilityState}`)
+  })
+
+  // The page this load started on. `AppLayout` records every navigation, but it only mounts on the
+  // authenticated routes — the landing page, an embedded exercise and the IdP callback all happen
+  // before it exists, and those are exactly where a login problem is reported from.
+  record('route', `${window.location.pathname}${window.location.search} (page load)`)
 
   // Last chance to persist before the tab goes. `pagehide` rather than `unload`, which browsers no
   // longer fire reliably and which blocks the back/forward cache.

@@ -20,6 +20,7 @@ import {
 import type { ExerciseDetails } from '../../api/types.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import { record } from '../bug-report/breadcrumbs.ts'
 
 export interface SolutionEditorHandle {
   setSolution: (solution: string) => void
@@ -146,6 +147,7 @@ export default forwardRef<SolutionEditorHandle, {
       const solution = currentDoc()
       if (solution === lastSavedRef.current) return
       if (!autosaveEnabledRef.current) {
+        record('action', `autosave is off for exercise ${courseExerciseId}; nothing was saved`)
         setDraftState('error')
         throw new Error('draft endpoint unavailable')
       }
@@ -157,6 +159,9 @@ export default forwardRef<SolutionEditorHandle, {
             resolve()
           },
           onError: () => {
+            // The student's editor now holds work the server does not, which is the state every
+            // "my code disappeared" report is really about.
+            record('action', `draft save failed for exercise ${courseExerciseId}; ${solution.length} chars unsaved`)
             setDraftState('error')
             reject(new Error('draft save failed'))
           },
@@ -166,7 +171,7 @@ export default forwardRef<SolutionEditorHandle, {
     // The chain survives a failed link, so the next save still runs.
     saveChainRef.current = attempt.catch(() => {})
     return attempt
-  }, [cancelSaveTimer, currentDoc, markSaved, writeDraftCache, saveDraftMutate])
+  }, [cancelSaveTimer, currentDoc, markSaved, writeDraftCache, saveDraftMutate, courseExerciseId])
 
   const scheduleDraftSave = useCallback(() => {
     // This runs on every keystroke, so the exact compare — O(doc) allocation included — is only
@@ -230,7 +235,10 @@ export default forwardRef<SolutionEditorHandle, {
     if (blocker.state !== 'blocked') return
     flushDraftSave().then(
       () => blocker.proceed(),
-      () => setLeaveDialogOpen(true),
+      () => {
+        record('action', 'navigation blocked: unsaved work could not be saved')
+        setLeaveDialogOpen(true)
+      },
     )
     // Deliberately keyed on the state alone: the promise above resolves this particular block,
     // and re-running on unrelated renders would fire the save twice.
@@ -413,6 +421,12 @@ export default forwardRef<SolutionEditorHandle, {
     const solution = getSolution()
     if (!solution.trim()) return
 
+    // The length, not the content. "I submitted it and it graded the wrong thing" is a real
+    // report, and the character count separates the two candidate causes — an empty or truncated
+    // editor versus a grader disagreeing with correct code — without putting a student's solution
+    // into an issue tracker.
+    record('action', `submitting solution for exercise ${courseExerciseId} (${solution.length} chars)`)
+
     submit.mutate(solution, {
       onSuccess: () => {
         // The submission now holds this content, so the draft machinery has nothing to protect.
@@ -449,14 +463,22 @@ export default forwardRef<SolutionEditorHandle, {
         setSnackMsg(t('submission.submitSuccess'))
         refetchAfterSubmit()
         if (exercise.grader_type === 'AUTO') {
+          record('action', 'submission accepted; waiting for auto-assessment')
           onAutogradeStart?.()
           awaitAutograde.mutate()
         } else {
+          record('action', 'submission accepted; teacher-graded, nothing to wait for')
           onSubmitted?.()
         }
       },
+      onError: (err) => {
+        // The request's status is already an `api` line. This is the one that says the *submission*
+        // failed rather than some background query — "I pressed submit and nothing happened" is
+        // otherwise indistinguishable from a 400 on an unrelated poll.
+        record('action', `submission failed: ${err instanceof Error ? err.message : String(err)}`)
+      },
     })
-  }, [getSolution, submit, awaitAutograde, exercise.grader_type, t, onSubmitted, onAutogradeStart, refetchAfterSubmit, currentDoc, cancelSaveTimer, saveDraftMutate, writeDraftCache, scheduleDraftSave])
+  }, [getSolution, submit, awaitAutograde, exercise.grader_type, t, onSubmitted, onAutogradeStart, refetchAfterSubmit, currentDoc, cancelSaveTimer, saveDraftMutate, writeDraftCache, scheduleDraftSave, courseExerciseId])
 
   // When autograde completes: refetch submissions, which carry the results. The exercises list is
   // the parent's to refresh — it does so on the same transition, from `onSubmitted`.

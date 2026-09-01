@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   Accordion,
   AccordionDetails,
@@ -14,7 +14,6 @@ import {
   DialogTitle,
   FormControlLabel,
   TextField,
-  Typography,
 } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { useTranslation } from 'react-i18next'
@@ -22,6 +21,7 @@ import { useCreateBugReport } from '../../api/bugReports.ts'
 import { ApiResponseError } from '../../api/client.ts'
 import { runningBuild } from '../../api/webVersion.ts'
 import { clearBreadcrumbs, serialiseBreadcrumbs } from './breadcrumbs.ts'
+import { describeReportContext } from './reportContext.ts'
 
 /** Matches the server's `@Size(max = 5000)`, so the limit is felt in the field rather than as a 400. */
 const MAX_MESSAGE = 5000
@@ -49,6 +49,11 @@ const MONO =
  * unticked, and the result is reports with no diagnostics at all — which is the situation this
  * feature exists to replace. Ticked-with-full-disclosure gets useful reports while leaving the
  * decision genuinely theirs, and unticking it means the column is stored as null rather than empty.
+ *
+ * The label says "and technical details" because the payload grew past what "my recent activity"
+ * honestly covers: it now opens with a context header carrying the account name, the build, the
+ * browser, the screen and the network. A checkbox that undersells what it gates is the same
+ * failure as a checkbox with no disclosure behind it, just quieter.
  */
 export default function BugReportDialog({
   open,
@@ -77,6 +82,9 @@ export default function BugReportDialog({
 
   const [message, setMessage] = useState(initialMessage)
   const [includeActivity, setIncludeActivity] = useState(true)
+  /** Whether the disclosure is expanded. See the note on the Accordion for why this is controlled. */
+  const [activityShown, setActivityShown] = useState(false)
+  const logRef = useRef<HTMLElement>(null)
 
   /**
    * Snapshotted once, at mount, via the lazy initialiser.
@@ -90,7 +98,15 @@ export default function BugReportDialog({
    * always-mounted dialog would need, along with the `set-state-in-effect` warning that comes with
    * one. The cost is the exit transition, which does not play on an unmount.
    */
-  const [diagnostics] = useState(serialiseBreadcrumbs)
+  const [diagnostics] = useState(() => {
+    // The header is included even when nothing was recorded, and that is the case it earns its
+    // place in: a report from a session with an empty buffer still says which build, which role,
+    // which language and which environment — which was the whole of what was missing before it
+    // existed. The empty activity log is spelled out rather than left blank, so the panel never
+    // trails off into whitespace that looks like something failed to render.
+    const activity = serialiseBreadcrumbs() || '(nothing recorded in this tab)'
+    return `${describeReportContext(pageUrl)}\n\n${activity}`
+  })
 
   const rateLimited =
     createReport.error instanceof ApiResponseError &&
@@ -185,6 +201,20 @@ export default function BugReportDialog({
           <Accordion
             disableGutters
             elevation={0}
+            /*
+              Controlled, purely so the expansion can scroll itself into view.
+              `DialogContent` is the scroll container, and the panel opens below its fold: the
+              reporter clicked "see exactly what will be sent", the summary row stayed put, and
+              what they were shown was the first two lines of a log they had to know to scroll for.
+              A disclosure nobody can read is not one, so opening it brings it into view — after
+              the transition, since scrolling to an element still animating from height 0 lands
+              somewhere between where it was and where it will be.
+            */
+            expanded={activityShown}
+            onChange={(_, isExpanded) => setActivityShown(isExpanded)}
+            TransitionProps={{
+              onEntered: () => logRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' }),
+            }}
             sx={{
               mt: 1,
               '&:before': { display: 'none' },
@@ -207,45 +237,47 @@ export default function BugReportDialog({
               MUI's default AccordionDetails padding; `pt: 0` because the summary row already leaves
               a gap and a second one reads as a hole.
             */}
+            {/*
+              No empty state any more, and the reason is the context header: the panel now always
+              has something in it — which build, which role, which environment — even from a tab
+              where nothing has happened yet. `bugReport.nothingRecorded` used to fill that gap and
+              is now said by the log itself.
+            */}
             <AccordionDetails sx={{ px: 0, pt: 0 }}>
-              {diagnostics ? (
-                <Box
-                  component="pre"
-                  sx={{
-                    m: 0,
-                    // 8px was not enough for a monospace log — the text touched the edges and the
-                    // faint background read as a smudge rather than a panel.
-                    px: 1.5,
-                    py: 1.25,
-                    maxHeight: 220,
-                    // Both axes: a stack frame is one long line, and wrapping it would make the log
-                    // unreadable, so it scrolls sideways inside its own box instead.
-                    overflow: 'auto',
-                    fontFamily: MONO,
-                    fontSize: '0.75rem',
-                    // Logs are scanned, not read. Looser than body text so the eye can find the line
-                    // it wants.
-                    lineHeight: 1.65,
-                    // Secondary, so the reporter's own words stay the most prominent thing in the
-                    // dialog and this stays evidence attached to them.
-                    color: 'text.secondary',
-                    bgcolor: 'action.hover',
-                    // The border is what makes it a panel. `action.hover` alone is 4% black, which
-                    // all but disappears against the dialog and vanishes entirely in dark mode.
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                  }}
-                >
-                  {diagnostics}
-                </Box>
-              ) : (
-                // Prose, not code. The empty state is a sentence, and rendering it inside the
-                // monospace box made it look like log output claiming nothing had been logged.
-                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                  {t('bugReport.nothingRecorded')}
-                </Typography>
-              )}
+              <Box
+                component="pre"
+                ref={logRef}
+                sx={{
+                  m: 0,
+                  // 8px was not enough for a monospace log — the text touched the edges and the
+                  // faint background read as a smudge rather than a panel.
+                  px: 1.5,
+                  py: 1.25,
+                  // Taller than the 220 it was, because the panel now opens on the context header
+                  // and 220px showed the header and nothing else — the activity log, which is the
+                  // part the consent is really about, was entirely below the fold.
+                  maxHeight: 320,
+                  // Both axes: a stack frame is one long line, and wrapping it would make the log
+                  // unreadable, so it scrolls sideways inside its own box instead.
+                  overflow: 'auto',
+                  fontFamily: MONO,
+                  fontSize: '0.75rem',
+                  // Logs are scanned, not read. Looser than body text so the eye can find the line
+                  // it wants.
+                  lineHeight: 1.65,
+                  // Secondary, so the reporter's own words stay the most prominent thing in the
+                  // dialog and this stays evidence attached to them.
+                  color: 'text.secondary',
+                  bgcolor: 'action.hover',
+                  // The border is what makes it a panel. `action.hover` alone is 4% black, which
+                  // all but disappears against the dialog and vanishes entirely in dark mode.
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                }}
+              >
+                {diagnostics}
+              </Box>
             </AccordionDetails>
           </Accordion>
         )}

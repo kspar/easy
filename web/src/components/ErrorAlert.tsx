@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Alert, Box, Button, Snackbar, type SxProps, type Theme } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 import BugReportDialog from '../features/bug-report/BugReportDialog.tsx'
 import { errorMessage, isAccessError } from '../api/errorMessage.ts'
+import { record } from '../features/bug-report/breadcrumbs.ts'
 
 /**
  * The generic "something went wrong" alert, with the one thing the old copy lacked: somewhere to go.
@@ -33,6 +34,25 @@ export default function ErrorAlert({ sx, error }: { sx?: SxProps<Theme>; error?:
 
   // A refusal is not a defect, so it gets a person to ask instead of a bug reporter (EZ-1861).
   const refused = isAccessError(error)
+  const shown = error === undefined ? t('general.somethingWentWrong') : errorMessage(error, t)
+
+  /**
+   * What the reporter was actually looking at (EZ-1862).
+   *
+   * A page issues several requests and any of them can fail, so a log of failed calls does not say
+   * which failure the person in front of the screen *saw* — and the sentence they saw is the one
+   * they will quote in the report, in their own language. This line is what joins the two.
+   *
+   * A refusal is labelled as one rather than left to look like a defect, for the same reason it
+   * gets no reporter button: "you may not" and "it broke" are different findings, and a triage
+   * reading this log should not have to re-derive which it was from the wording.
+   *
+   * In an effect keyed on the text, so it is recorded once per distinct error rather than on every
+   * render of a page that has one.
+   */
+  useEffect(() => {
+    record('action', `${refused ? 'refusal' : 'error'} shown to the user: ${shown}`)
+  }, [shown, refused])
 
   return (
     <>
@@ -47,7 +67,7 @@ export default function ErrorAlert({ sx, error }: { sx?: SxProps<Theme>; error?:
           )
         }
       >
-        {error === undefined ? t('general.somethingWentWrong') : errorMessage(error, t)}
+        {shown}
         {refused && (
           <Box component="span" display="block" mt={0.5}>
             {t('general.askCourseOrganiser')}
