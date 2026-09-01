@@ -123,11 +123,38 @@ if [ "$REF" = "latest" ]; then
         | sort_by(.createdAt) | last // empty' <<<"$runs")"
     [ -n "$run" ] || die "no green $WORKFLOW run found on $DEPLOY_BRANCH in the last 100 runs"
 else
-    # Newest first, so a re-run of the same commit wins over the original.
+    # The newest GREEN run for this commit — green first, newest second, and that order is the
+    # whole point.
+    #
+    # This used to take the newest run outright and gate on its conclusion afterwards, which meant
+    # any run created after a commit was validated got to overrule the ones that passed. A
+    # promotion push rebuilding the same tree on a release branch is enough. It happened to
+    # `929718ea` while it was live in production: green on master and on dev-releases, then a third
+    # run of the identical tree flaked in the browser suite, and the rollback target became
+    # undeployable — at exactly the moment nobody wants to be told to go and re-run Playwright.
+    #
+    # Filtering first keeps what "newest wins" was for — re-run a flake and the re-run counts — and
+    # drops only the case nobody wants. It is not a loosening: CI on a fixed tree is deterministic
+    # apart from flake and infrastructure, so a later red run against identical source says nothing
+    # new about the code. `latest` above has always worked this way, and so does
+    # easy-autodeploy.py, which is why dev never met this.
     run="$(jq -c --arg sha "$REF" '
-        [ .[] | select(.headSha | startswith($sha)) ]
+        [ .[] | select((.headSha | startswith($sha))
+                       and .status == "completed" and .conclusion == "success") ]
         | sort_by(.createdAt) | last // empty' <<<"$runs")"
-    [ -n "$run" ] || die "no $WORKFLOW run found for '$REF' in the last 100 runs"
+
+    if [ -z "$run" ]; then
+        # Say which runs exist and how they ended, so "wait" and "re-run it" are distinguishable
+        # without a trip to the Actions tab. The old message named one run and left the rest unsaid.
+        seen="$(jq -r --arg sha "$REF" '
+            [ .[] | select(.headSha | startswith($sha)) ]
+            | sort_by(.createdAt)
+            | if length == 0 then "  (no runs at all for that commit)"
+              else map("  \(.headBranch)  \(.status)/\(.conclusion // "-")  \(.url)") | join("\n")
+              end' <<<"$runs")"
+        die "no green $WORKFLOW run for '$REF' in the last 100 runs. Runs for it:
+$seen"
+    fi
 fi
 
 SHA="$(jq -r .headSha <<<"$run")"
@@ -142,6 +169,11 @@ echo "  run     $RUN_URL"
 
 # The gate. Artifacts are published per-job, so a jar can exist for a run whose web job failed —
 # only the run's own conclusion says the whole thing was green.
+#
+# Both selectors above now filter on this themselves, so in normal operation neither line can fire.
+# Kept deliberately rather than deleted: the property "we only ever install a run that concluded
+# success" is the one thing here that must not be lost to an edit of a jq expression, and it costs
+# two lines to state it where it is enforced instead of trusting a filter twenty lines up.
 [ "$RUN_STATUS" = "completed" ] \
     || die "run is '$RUN_STATUS', not finished yet — $RUN_URL"
 [ "$RUN_CONCLUSION" = "success" ] \
