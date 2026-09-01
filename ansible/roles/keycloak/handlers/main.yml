@@ -5,6 +5,23 @@
     state: restarted
   when: not ansible_check_mode
 
+# Defined before the restart handlers on purpose: Ansible runs handlers in the order they are
+# DECLARED here, not the order they were notified, so this is what makes the purge happen first.
+#
+# Keycloak keeps pre-compressed copies of static theme resources under data/tmp/kc-gzip-cache, on
+# disk, and neither a restart nor replacing the theme invalidates them. The effect is a theme deploy
+# that only half-lands: Keycloak serves the new file to a client that sends no `Accept-Encoding`
+# and the old one to every real browser.
+#
+# That is not hypothetical. On 2026-09-01 the CSS change in EZ-1860 was verified with curl — which
+# accepts no encoding by default — reported as deployed, and was still serving the previous
+# stylesheet to Chromium, complete with the two CDN imports it was meant to remove. Found only by
+# opening the page in a browser and reading the network panel.
+- name: Purge the gzip cache
+  ansible.builtin.file:
+    path: "{{ keycloak_home }}/data/tmp/kc-gzip-cache"
+    state: absent
+
 # A config change is not enough on its own: the unit runs `kc.sh start --optimized`, which reads the
 # baked-in build rather than re-deriving it. Changing a *build* option (db, features) and only
 # restarting would leave the server running the previous build — or refusing to start, if it noticed.

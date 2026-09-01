@@ -217,7 +217,12 @@
     - keycloak_theme_install | bool
     - keycloak_theme_stat.stat.exists | default(false)
     - not keycloak_theme_installed.stat.exists | default(false)
-  notify: Restart keycloak
+  notify:
+    # Both, and the cache purge matters as much as the restart: Keycloak keeps pre-compressed copies
+    # of theme assets on disk and a restart does not invalidate them, so without this a new
+    # stylesheet reaches curl and never reaches a browser. See the handler.
+    - Purge the gzip cache
+    - Restart keycloak
 
 # --- the stylesheet fixes that used to live here ---------------------------------------------------
 # Until Keycloak 26.7 this role rewrote two lines of the theme's login/theme.properties on the way in:
