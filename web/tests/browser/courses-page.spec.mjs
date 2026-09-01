@@ -183,6 +183,44 @@ test('courses-page', async ({ launch, check, a11y }) => {
     JSON.stringify(await cardTitles(student.page)),
   )
   await student.shot('05-student-sorted-by-name')
+
+  /**
+   * The colour stripe, in **both** views. A course's colour is the only thing telling one card from
+   * another at a glance, and list view — the denser layout, where more courses are on screen and
+   * that matters most — used to drop it.
+   *
+   * Read off `getComputedStyle`, because the stripe is an *inset box-shadow* rather than a border or
+   * a child element: there is nothing in the DOM to assert on.
+   *
+   * **The list assertion must come after a reload, not straight after clicking the toggle.** The
+   * old code chose the colour with `viewMode === 'grid' ? course.color : null`, so the key was
+   * *absent* from the `sx` object in list view — and MUI hands both variants the same emotion class
+   * (`css-1985iru…`), whose rule keeps the stripe until the page is rebuilt. Asserting right after
+   * the click therefore passed against the very code this is meant to catch; after a reload the old
+   * code reports `none`. A conditional key in `sx` is the trap, and the fix removes it rather than
+   * working around it.
+   */
+  const cardShadow = async (page) =>
+    page.locator('a[href="/courses/1/exercises"]').evaluate((el) => getComputedStyle(el).boxShadow)
+  const hasStripe = async (page) => {
+    const shadow = await cardShadow(page)
+    return shadow.includes('inset') && shadow.includes('rgb(25, 118, 210)')
+  }
+
+  check(
+    'a grid card carries its course colour as an inset stripe',
+    await waitUntil(() => hasStripe(student.page)),
+    await cardShadow(student.page),
+  )
+  await student.page.getByRole('button', { name: /list view/i }).click()
+  await student.page.reload()
+  await waitUntil(async () => (await student.page.getByText('Programming 101').count()) > 0)
+  check(
+    'and so does a list row, rendered fresh in list view, which used to lose it',
+    await waitUntil(() => hasStripe(student.page)),
+    await cardShadow(student.page),
+  )
+  await student.shot('07-student-list-view')
   await student.close()
 
   // --- a teacher ------------------------------------------------------------------------------------

@@ -282,7 +282,11 @@ function StudentCourses() {
       <Box sx={viewMode === 'grid' ? gridSx : listSx}>
         {sorted.map((course) => {
           const title = studentTitle(course)
-          const color = viewMode === 'grid' ? course.color : null
+          // The colour stripe is the course's identity, and a list row has a left edge just as a
+          // grid card does. It used to be dropped in list view, so the one thing you pick a colour
+          // for disappeared in the denser layout — the view where more courses are on screen at
+          // once and telling them apart at a glance is worth the most.
+          const color = course.color
           return (
             <Card
               key={course.id}
@@ -441,7 +445,11 @@ function TeacherCourses() {
       <Box sx={viewMode === 'grid' ? gridSx : listSx}>
         {sorted.map((course) => {
           const title = teacherTitle(course, isAdmin)
-          const color = viewMode === 'grid' ? course.color : null
+          // The colour stripe is the course's identity, and a list row has a left edge just as a
+          // grid card does. It used to be dropped in list view, so the one thing you pick a colour
+          // for disappeared in the denser layout — the view where more courses are on screen at
+          // once and telling them apart at a glance is worth the most.
+          const color = course.color
           const activity = getActivityLevel(course.last_submission_at)
           const secondaryCode = course.moodle_short_name ?? course.course_code
           const secondaryParts = [secondaryCode, isAdmin && course.alias].filter(Boolean)
