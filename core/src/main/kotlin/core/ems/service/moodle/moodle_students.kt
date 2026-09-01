@@ -148,9 +148,13 @@ class MoodleStudentsSyncService(
             // with MoodleResponse(emptyList()) unenrolled everyone on the course - and now would
             // delete every group as well - on the strength of a response Moodle failed to send.
             log.error { "Moodle returned empty response with request $request" }
+            // MOODLE_EMPTY_RESPONSE and not MOODLE_LINKING_ERROR: the code was already declared and
+            // thrown nowhere, with both translations written against it — "Moodle answered with
+            // nothing", which is a better thing to read than "unexpected response" when the
+            // response is the empty one.
             throw InvalidRequestException(
                 "Course linking with Moodle failed due to empty response from Moodle.",
-                ReqError.MOODLE_LINKING_ERROR,
+                ReqError.MOODLE_EMPTY_RESPONSE,
                 notify = true
             )
         }

@@ -284,7 +284,9 @@ class MoodleGroupSyncTest(@Autowired private val syncService: MoodleStudentsSync
         // Not a roster of nobody. The sync replaces the course's students with what it is given, so
         // reading a body Moodle failed to send as an empty list unenrolled everyone on the course.
         val e = assertThrows(InvalidRequestException::class.java) { syncService.syncStudents(courseId) }
-        assertEquals(ReqError.MOODLE_LINKING_ERROR, e.code)
+        // The code the web client already has a translated message for, rather than the generic
+        // linking error it shares with every other Moodle failure.
+        assertEquals(ReqError.MOODLE_EMPTY_RESPONSE, e.code)
 
         assertEquals(listOf("Lab 1", "Old lab"), groupNames()) { "An empty response deleted the groups." }
         assertEquals(1L, transaction {
