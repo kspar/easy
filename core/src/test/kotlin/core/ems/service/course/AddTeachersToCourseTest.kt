@@ -1,12 +1,15 @@
 package core.ems.service.course
 
+import core.db.Account
 import core.db.TeacherCourseAccess
 import core.testing.Auth
 import core.testing.Fixtures
 import core.testing.HttpApi
 import core.testing.IntegrationTest
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -116,5 +119,72 @@ class AddTeachersToCourseTest(@Autowired mockMvc: MockMvc) {
         assertEquals(200, resp.status)
         assertEquals("1", resp.field("accesses_added"))
         assertEquals(2L, accessCount(), "the caller's own access, plus the one just granted")
+    }
+
+    /**
+     * EZ-1863. `account.email` is only ever written lowercase (`account_checkin.kt`) and is a plain
+     * `text` column, so an exact `eq` made every capitalised spelling unresolvable — a teacher
+     * pasting an address as their mail client displays it was told, correctly formatted and quite
+     * wrongly, that no such user exists.
+     */
+    @Test
+    fun `an address is matched however it is capitalised`() {
+        val resp = add("Uus-Opetaja@Example.Test")
+
+        assertEquals(200, resp.status, "capitals in an address are not a different address")
+        assertEquals("1", resp.field("accesses_added"))
+        assertEquals(2L, accessCount())
+    }
+
+    @Test
+    fun `an address pasted with surrounding whitespace is matched`() {
+        val resp = add("  $known\t")
+
+        assertEquals(200, resp.status)
+        assertEquals("1", resp.field("accesses_added"))
+    }
+
+    /**
+     * The other half of matching case-insensitively: two spellings of one address are one teacher.
+     * Deduplicating on the raw string let both through to `TeacherCourseAccess.batchInsert`, whose
+     * primary key is (course, teacher) — a 500 rather than the 400 that used to hide it.
+     */
+    @Test
+    fun `two spellings of one address add one teacher`() {
+        val resp = add(known, known.uppercase())
+
+        assertEquals(200, resp.status)
+        assertEquals("1", resp.field("accesses_added"), "the same person twice is one access")
+        assertEquals(2L, accessCount(), "the caller's own access, plus the one just granted")
+    }
+
+    /**
+     * The other direction, and the reason the *column* is lowered rather than only the input.
+     * `account.email` has been written lowercase since 2019 (`67913654`), so a row with a capital in
+     * it predates that or was written around it — and lowering only the input would make such a row
+     * unreachable by every possible input, having previously been reachable by typing its stored
+     * spelling exactly. Nobody knows the stored spelling; everybody knows their own address.
+     */
+    @Test
+    fun `an address stored with capitals is found by the lowercase spelling`() {
+        transaction {
+            Account.update({ Account.id eq "uus-opetaja" }) { it[email] = "Uus-Opetaja@Example.Test" }
+        }
+
+        val resp = add(known)
+
+        assertEquals(200, resp.status)
+        assertEquals("1", resp.field("accesses_added"))
+    }
+
+    @Test
+    fun `an unknown address is still reported as the teacher typed it`() {
+        // Normalising is for the lookup, not for the message: a teacher scanning their paste for the
+        // line to fix is looking for what they wrote, not a lowercased version of it.
+        val resp = add("Kadri@Example.Test")
+
+        assertEquals(400, resp.status)
+        assertEquals("ACCOUNT_EMAIL_NOT_FOUND", resp.errorCode)
+        assertEquals("Kadri@Example.Test", resp.jsonOrNull?.get("attrs")?.get("email")?.asString())
     }
 }

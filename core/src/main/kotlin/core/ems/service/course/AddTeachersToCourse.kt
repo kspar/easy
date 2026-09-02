@@ -59,7 +59,12 @@ class AddTeachersToCourse {
             teacherOnCourse(courseId)
         }
 
-        val requested = body.teachers.distinctBy { it.email }
+        // Deduplicated the same way the lookup below matches, which is case-insensitively
+        // (`normaliseEmail`). Two spellings of one address are one teacher, and letting both through
+        // put two rows with the same (course, teacher) into `TeacherCourseAccess.batchInsert` — a
+        // primary key violation and a 500. Invisible until EZ-1863, because before that the
+        // capitalised spelling failed to resolve and the request 400'd first.
+        val requested = body.teachers.distinctBy { normaliseEmail(it.email) }
         val resolved = requested.map { it to getUsernameByEmail(it.email) }
 
         // Every address is looked up before any is reported. This is a bulk paste — a teacher adds
