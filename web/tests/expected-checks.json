@@ -40,7 +40,7 @@
   "participants-groups-membership.spec.mjs": 12,
   "participants-groups-moodle-locked.spec.mjs": 5,
   "participants-groups.spec.mjs": 11,
-  "participants-moodle.spec.mjs": 15,
+  "participants-moodle.spec.mjs": 18,
   "participants-roster.spec.mjs": 11,
   "route-guards.spec.mjs": 21,
   "runtime-config.spec.mjs": 9,

@@ -49,6 +49,8 @@ const CODE_KEYS: Record<string, string> = {
   // Grading and Moodle — transient, and the advice differs from "something went wrong".
   ASSESSMENT_AWAIT_TIMEOUT: 'errors.assessmentAwaitTimeout',
   MOODLE_SYNC_IN_PROGRESS: 'errors.moodleSyncInProgress',
+  // The fallback only: with `attrs.course_title` present, `errorMessage` names the course instead.
+  MOODLE_COURSE_ALREADY_LINKED: 'errors.moodleCourseAlreadyLinked',
   MOODLE_LINKING_ERROR: 'errors.moodleLinkingError',
   MOODLE_EMPTY_RESPONSE: 'errors.moodleEmptyResponse',
   MOODLE_GRADE_SYNC_ERROR: 'errors.moodleGradeSyncError',
@@ -133,6 +135,12 @@ export function errorMessage(err: unknown, t: TFunction): string {
     // One address reads better in a sentence; several read better as a list after a colon.
     if (emails.length === 1) return t('errors.emailNotFound', { value: emails[0] })
     if (emails.length > 1) return t('errors.emailsNotFound', { value: emails.join(', ') })
+  }
+
+  // The admin's next step is to unlink the *other* course, so the sentence has to say which one
+  // (EZ-1877). Core sends its title; the id is there too but a title is what the course list shows.
+  if (body.code === 'MOODLE_COURSE_ALREADY_LINKED' && body.attrs?.course_title) {
+    return t('errors.moodleCourseAlreadyLinkedTo', { value: body.attrs.course_title })
   }
 
   if (EMAIL_CODES.has(body.code)) {

@@ -25,6 +25,8 @@
     "invalidParameterValue": "Üht väärtust ei võetud vastu. Kontrolli vormi ja proovi uuesti.",
     "assessmentAwaitTimeout": "Testid võtavad tavalisest kauem aega. Tulemus ilmub, kui need lõpetavad.",
     "moodleSyncInProgress": "Moodle'i sünkroonimine juba käib. Oota, kuni see lõpeb.",
+    "moodleCourseAlreadyLinked": "Selle Moodle'i kursusega on juba seotud teine kursus. Eemalda enne selle seos.",
+    "moodleCourseAlreadyLinkedTo": "Selle Moodle'i kursusega on juba seotud kursus „{{value}}”. Eemalda enne selle seos.",
     "moodleLinkingError": "Moodle keeldus sidumisest. Kontrolli kursuse Moodle'i identifikaatorit.",
     "moodleEmptyResponse": "Moodle vastas tühjalt. Kontrolli kursuse Moodle'i identifikaatorit.",
     "moodleGradeSyncError": "Moodle ei võtnud hindeid vastu.",

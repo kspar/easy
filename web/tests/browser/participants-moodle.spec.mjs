@@ -14,7 +14,7 @@
  *   cd web && npx playwright test participants-moodle
  */
 import { test } from '../support/spec.mjs'
-import { fakeApi, waitUntil, BASE_URL } from '../support/harness.mjs'
+import { fakeApi, json, waitUntil, BASE_URL } from '../support/harness.mjs'
 
 const COURSE = '42'
 
@@ -86,14 +86,26 @@ test('participants-moodle', async ({ launch, check }) => {
   let props = moodleProps()
   let moodleGets = 0
   const puts = []
+  // While set, every PUT is refused the way core refuses a short name another course holds.
+  let rejectPuts = false
 
   await fakeApi(page, [
     ['/account/checkin', () => ({})],
     [`/courses/${COURSE}/groups`, () => ({ groups: [] })],
     [new RegExp(`/courses/${COURSE}/participants(\\?|$)`), () => participants],
     [`/courses/${COURSE}/basic`, () => COURSE_BASIC],
-    [new RegExp(`/courses/${COURSE}/moodle(\\?|$)`), ({ method, body }) => {
+    [new RegExp(`/courses/${COURSE}/moodle(\\?|$)`), ({ route, method, body }) => {
       if (method === 'PUT') {
+        if (rejectPuts) {
+          // `RequestErrorResponse` exactly, as `LinkCourseMoodle.alreadyLinked` fills it in.
+          json(route, {
+            id: 'e1',
+            code: 'MOODLE_COURSE_ALREADY_LINKED',
+            attrs: { course_id: '7', course_title: 'Algorithms 2026' },
+            log_msg: "Moodle course 'ALGO-2026' is already linked to course 7",
+          }, 400)
+          return undefined
+        }
         puts.push(body)
         return {}
       }
@@ -181,6 +193,38 @@ test('participants-moodle', async ({ launch, check }) => {
     moodleGets === settled,
     `${moodleGets - settled} request(s) after both syncs finished`,
   )
+
+  // --- a Moodle course that another course already holds ------------------------------------------
+  // EZ-1877. Core refuses the second link and names the course holding the short name, because the
+  // admin's next move is to go and unlink *that* one. Before this, nothing on the panel showed a
+  // failed save at all — the field simply stayed where it was.
+  //
+  // Through the inline edit with pending invitations, deliberately: that is the path with a
+  // confirmation in front of it, and a refusal that arrives behind a still-open dialog is invisible.
+  rejectPuts = true
+  await page.getByText('PROG-2026').first().click()
+  const shortNameField = page.getByRole('textbox')
+  await shortNameField.fill('ALGO-2026')
+  await shortNameField.press('Enter')
+  await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click()
+
+  check(
+    'a short name another course holds is refused, naming that course',
+    await waitUntil(async () =>
+      (await page.getByText('The course “Algorithms 2026” is already linked to that Moodle course. Unlink it first.').count()) === 1,
+    ),
+  )
+  check(
+    'the confirmation closes so the refusal can be read',
+    await waitUntil(async () => (await page.getByRole('dialog').count()) === 0),
+  )
+  check(
+    'and the field stays open with the rejected name in it',
+    (await page.getByRole('textbox').inputValue()) === 'ALGO-2026',
+  )
+  await shot('03b-already-linked')
+  await shortNameField.press('Escape')
+  rejectPuts = false
 
   // --- unlinking -------------------------------------------------------------------------------------
   // `moodle_props: null` specifically, not an empty object and not a flag: null is what core reads

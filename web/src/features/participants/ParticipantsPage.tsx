@@ -921,6 +921,8 @@ export default function ParticipantsPage() {
                 size="small"
                 onClick={() => {
                   setMoodleShortNameDraft('')
+                  // A refusal from a previous attempt belongs to that attempt, not to this one.
+                  updateMoodleProps.reset()
                   setLinkMoodleOpen(true)
                 }}
               >
@@ -1309,6 +1311,14 @@ export default function ParticipantsPage() {
           {/* ===== Moodle tab ===== */}
           {isMoodleLinked && tab === 3 && moodleProps && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/*
+                Every save on this panel — the short name, either sync switch — goes through one
+                mutation, and until EZ-1877 none of them showed a failure: the field stayed where it
+                was and the switch flipped back, which reads as "nothing happened" rather than "no".
+                The one refusal core makes on purpose here is a short name another course already
+                holds, and that message names the course, so it has to be somewhere it can be read.
+              */}
+              {updateMoodleProps.isError && <ErrorAlert error={updateMoodleProps.error} />}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2" color="text.secondary">
                   {t('participants.moodleShortName')}:
@@ -1333,6 +1343,10 @@ export default function ParticipantsPage() {
                               setEditingMoodleShortName(false)
                               setSnackMsg(t('general.saved'))
                             },
+                            // The alert is on the panel behind the confirmation; leave the dialog
+                            // up and the refusal is invisible. The field stays in edit mode with
+                            // the rejected name still in it, which is the right place to correct it.
+                            onError: () => setConfirm(null),
                           })
                         // Pointing the course at a *different* Moodle course drops its outstanding
                         // invitations, exactly as unlinking does — they were minted for the course
@@ -1549,6 +1563,8 @@ export default function ParticipantsPage() {
           <Typography variant="body2" color="text.secondary">
             {t('participants.moodleNotLinked')}
           </Typography>
+          {/* Inside the dialog, because the dialog stays open: the name is corrected here (EZ-1877). */}
+          {updateMoodleProps.isError && <ErrorAlert error={updateMoodleProps.error} />}
           <TextField
             label={t('participants.moodleShortName')}
             size="small"

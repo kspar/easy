@@ -25,6 +25,8 @@
     "invalidParameterValue": "One of the values was not accepted. Check the form and try again.",
     "assessmentAwaitTimeout": "The tests are taking longer than usual. The result will appear once they finish.",
     "moodleSyncInProgress": "A Moodle sync is already running. Wait for it to finish.",
+    "moodleCourseAlreadyLinked": "Another course is already linked to that Moodle course. Unlink it first.",
+    "moodleCourseAlreadyLinkedTo": "The course “{{value}}” is already linked to that Moodle course. Unlink it first.",
     "moodleLinkingError": "Moodle refused the link. Check the course's Moodle identifier.",
     "moodleEmptyResponse": "Moodle answered with nothing. Check the course's Moodle identifier.",
     "moodleGradeSyncError": "Moodle did not accept the grades.",

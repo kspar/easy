@@ -676,4 +676,35 @@
                             constraintName="uq_submission_number_per_student_per_course_exercise"/>
     </changeSet>
 
+    <!--
+        EZ-1877. Two courses could be linked to the same Moodle course: `PUT /courses/{id}/moodle`
+        wrote whatever short name it was given and nothing compared it against the other courses.
+        The result is not an error anywhere but two nightly student syncs and two grade syncs running
+        against one Moodle course from two rosters — a cloned course or a typo, never an intention.
+
+        The endpoint now refuses it, naming the course that holds the short name. This is the
+        backstop for the race that check cannot see (two admins, one instant, READ COMMITTED), and
+        the guarantee that no other write path — there is none today — can recreate the state.
+
+        Postgres treats NULLs as distinct in a unique constraint, so every unlinked course keeps its
+        NULL and the constraint only bites on two equal non-null names. No trimming or case folding:
+        Moodle short names are exact, and the endpoint stores what it was given.
+
+        **This fails the migration if the database already holds a duplicate**, and a failed
+        migration means core does not start. Dev (an anonymised copy of production) had none when
+        this was written, with one linked course in total — which says little about production.
+        Before deploying, run against production:
+
+            SELECT moodle_short_name, count(*) FROM course
+            WHERE moodle_short_name IS NOT NULL GROUP BY 1 HAVING count(*) > 1;
+
+        and unlink the wrong one of each pair by hand. Deliberately not automated: which of two
+        courses is the wrong one is a question about the courses, not the rows.
+    -->
+    <changeSet id="020926-1" author="kspar">
+        <addUniqueConstraint tableName="course"
+                             columnNames="moodle_short_name"
+                             constraintName="uq_course_moodle_short_name"/>
+    </changeSet>
+
 </databaseChangeLog>
