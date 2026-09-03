@@ -1,5 +1,76 @@
 # Managed by Ansible (roles/keycloak) — local edits are overwritten.
 
+{% macro proxy_to_keycloak() -%}
+        proxy_pass http://{{ keycloak_http_host }}:{{ keycloak_http_port }};
+
+        # These four are the security boundary for `proxy-headers=xforwarded` in keycloak.conf.
+        # Keycloak trusts them to decide the scheme and host it builds redirects and the token
+        # `issuer` from. Every one is SET, not appended and not passed through — a client sending its
+        # own X-Forwarded-Host must not be able to choose the issuer in the tokens Keycloak mints.
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header X-Forwarded-Port  443;
+
+        # Keycloak's response headers do not fit in nginx's default 4k proxy_buffer_size, and when
+        # they overflow it nginx does not truncate — it gives up and returns 502. The authorization
+        # endpoint is where this bites: KC_RESTART alone is a ~2.2k JWE because it encodes the whole
+        # redirect_uri, and an already-authenticated request adds KEYCLOAK_IDENTITY (a signed JWT),
+        # KEYCLOAK_SESSION, AUTH_SESSION_ID and a Location carrying the redirect_uri back again.
+        # Whether it clears 4k then depends on how long the redirect_uri is, which is why this
+        # presented as an intermittent 502 on reload and back-navigation rather than a broken login.
+        #
+        # 32k is not a measured ceiling, it is headroom: the header size scales with the token's
+        # claims and the client's redirect_uri, so a limit set just above today's observed size
+        # would be one extra role or one longer URL away from failing the same way again.
+        proxy_buffer_size       32k;
+        proxy_buffers         4 32k;
+        proxy_busy_buffers_size 64k;
+
+        proxy_http_version 1.1;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+{%- endmacro %}
+
+{% if keycloak_legacy_adapter_enabled | bool %}
+# --- the loopback-origin exception, for the retired Thonny login flow ----------------------------
+# Why this exists at all is in roles/keycloak/defaults/main.yml. In short: pre-10.0.0 plugin
+# installs exchange the authorization code in the browser, from http://127.0.0.1:<random port>,
+# and Keycloak refuses that origin (403 "Invalid origin") because the client's Web Origins names
+# the site and nothing matches a wildcard port. These two maps are the whole mechanism.
+#
+# `map` is an http-context directive, so it sits out here rather than in the server block below —
+# this file is included from inside `http {}`.
+
+# The Origin nginx will admit: a loopback one, echoed back verbatim, and otherwise empty. The port
+# is bounded to five digits so the pattern cannot match something longer that merely starts right.
+map $http_origin $easy_loopback_origin {
+    default                                "";
+    "~^http://127\.0\.0\.1:[0-9]{1,5}$"    $http_origin;
+}
+
+# And the Origin Keycloak gets to see. Empty when the map above matched — nginx omits a header
+# whose value is the empty string, and Keycloak's CORS check only runs when there is an Origin to
+# check. Anything else is passed through exactly as it arrived, so for every other caller Keycloak
+# keeps deciding this for itself.
+map $easy_loopback_origin $easy_origin_upstream {
+    default    "";
+    ""         $http_origin;
+}
+
+# Whether this request is a preflight from an origin the first map admitted. Both halves have to be
+# true, and that is the whole point: answering a preflight here means it never reaches Keycloak, so
+# short-circuiting every OPTIONS on the token endpoint would break any client Keycloak would have
+# answered for itself. The pattern needs at least one character before the colon, which an
+# unmatched origin cannot supply.
+map "$easy_loopback_origin:$request_method" $easy_loopback_preflight {
+    default          0;
+    "~^.+:OPTIONS$"  1;
+}
+{% endif %}
+
 # --- HTTP: ACME, and otherwise go away -----------------------------------------------------------
 server {
     listen 80;
@@ -74,46 +145,77 @@ server {
     }
 {% endif %}
 
-    location / {
-        proxy_pass http://{{ keycloak_http_host }}:{{ keycloak_http_port }};
+{% if keycloak_legacy_adapter_enabled | bool %}
+    # --- the retired Thonny login flow: two exact-match locations -------------------------------
+    # Both are `location =`, which nginx prefers over any prefix match regardless of order, so each
+    # intercepts exactly one URI and nothing else under this prefix changes. Exact match is also
+    # what makes turning the flag off a complete removal: if a future Keycloak ever serves
+    # /js/keycloak.js again, one of these two lines is what shadowed it.
 
+    # The adapter itself. Served by nginx, from a file this role installs — the version and the
+    # reason for it are in defaults/main.yml.
+    location = {{ keycloak_http_relative_path }}/js/keycloak.js {
+        alias {{ keycloak_legacy_adapter_dir }}/keycloak.js;
+        default_type application/javascript;
+
+        # Repeated because nginx's add_header does not inherit into a block that has any add_header
+        # of its own. Unlike the proxied locations, nothing upstream sends these for this response.
+        add_header Cache-Control "public, max-age=3600" always;
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    }
+
+    # The token endpoint, and only it. A loopback caller reaches Keycloak with no Origin header at
+    # all, so Keycloak answers as it would to any native client, and nginx supplies the one CORS
+    # header the browser then needs to let the page read that answer. Every other origin arrives
+    # at Keycloak untouched and gets Keycloak's own verdict, which for a browser is still a 403.
+    location = {{ keycloak_http_relative_path }}/realms/{{ keycloak_legacy_token_realm }}/protocol/openid-connect/token {
+        {{ proxy_to_keycloak() }}
+        proxy_set_header Origin $easy_origin_upstream;
+
+        # Empty for every non-loopback caller, and nginx adds no header with an empty value — so
+        # this grants nothing to anyone the map above did not match. `Vary` because the response
+        # now depends on the request's Origin, and a cache that missed that would serve one
+        # student's CORS answer to a page that is not allowed to read it.
+        add_header Access-Control-Allow-Origin $easy_loopback_origin always;
+        add_header Vary Origin always;
+
+        # The server-level Strict-Transport-Security / X-Content-Type-Options / Referrer-Policy are
+        # NOT repeated here, unlike in the static block above, and that is deliberate: Keycloak
+        # sends all three itself on this path, so adding them back produced two of each on a live
+        # host. `location /` has the same shape for the same reason — its own add_header suppresses
+        # the inherited three, and Keycloak's copies are what the client actually gets.
+        #
+        # The old adapter's exchange is a form-urlencoded POST with no custom headers, which the
+        # browser sends without asking first — so nothing in the flow this exists for reaches here.
+        # It is for a loopback caller that does preflight, and it is gated on the origin having
+        # matched: an ungated OPTIONS branch would swallow every other client's preflight too and
+        # answer it without an Allow-Origin, which is a preflight failure for a request Keycloak
+        # would have accepted.
+        if ($easy_loopback_preflight) {
+            add_header Access-Control-Allow-Origin $easy_loopback_origin always;
+            add_header Access-Control-Allow-Methods "POST, OPTIONS" always;
+            # Authorization included so a confidential client's exchange is not refused here; the
+            # flow this serves is a public client and sends neither.
+            add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
+            add_header Access-Control-Max-Age 600 always;
+            add_header Vary Origin always;
+            return 204;
+        }
+    }
+{% endif %}
+
+    location / {
+        {{ proxy_to_keycloak() }}
 {% if keycloak_csp_form_action %}
+
         # Where a form on a Keycloak page may post. The login form is the most phishing-adjacent
         # thing this host serves, and `form-action` is the directive that says a stolen page cannot
         # post the password somewhere else. `always` because the interesting responses here are
         # redirects and 4xx, which the bare form of this directive would skip.
         add_header Content-Security-Policy "form-action {{ keycloak_csp_form_action }};" always;
 {% endif %}
-
-        # These four are the security boundary for `proxy-headers=xforwarded` in keycloak.conf.
-        # Keycloak trusts them to decide the scheme and host it builds redirects and the token
-        # `issuer` from. Every one is SET, not appended and not passed through — a client sending its
-        # own X-Forwarded-Host must not be able to choose the issuer in the tokens Keycloak mints.
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host  $host;
-        proxy_set_header X-Forwarded-Port  443;
-
-        # Keycloak's response headers do not fit in nginx's default 4k proxy_buffer_size, and when
-        # they overflow it nginx does not truncate — it gives up and returns 502. The authorization
-        # endpoint is where this bites: KC_RESTART alone is a ~2.2k JWE because it encodes the whole
-        # redirect_uri, and an already-authenticated request adds KEYCLOAK_IDENTITY (a signed JWT),
-        # KEYCLOAK_SESSION, AUTH_SESSION_ID and a Location carrying the redirect_uri back again.
-        # Whether it clears 4k then depends on how long the redirect_uri is, which is why this
-        # presented as an intermittent 502 on reload and back-navigation rather than a broken login.
-        #
-        # 32k is not a measured ceiling, it is headroom: the header size scales with the token's
-        # claims and the client's redirect_uri, so a limit set just above today's observed size
-        # would be one extra role or one longer URL away from failing the same way again.
-        proxy_buffer_size       32k;
-        proxy_buffers         4 32k;
-        proxy_busy_buffers_size 64k;
-
-        proxy_http_version 1.1;
-        proxy_read_timeout 60s;
-        proxy_send_timeout 60s;
     }
 
     # The management port, which serves /health and /metrics. Not proxied on purpose: it is bound to

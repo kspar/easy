@@ -217,6 +217,37 @@ Keycloak 24, removed in 26.
 shapes, which is more machinery than two templates. **If a third vhost appears, reconsider** — the
 executor is the likely candidate.
 
+### 3.7 Two locations that exist for a retired client, and are meant to be deleted
+
+`keycloak_legacy_adapter_enabled` adds an adapter file and one CORS exception to the vhost. Both are
+for Thonny plugin installs older than 10.0.0, which log in through a JavaScript adapter fetched from
+this host and exchange the authorization code **in the browser**, from
+`http://127.0.0.1:<random port>`. Keycloak 26 broke that twice over:
+
+- `{relative path}/js/keycloak.js` is gone — the adapter moved to npm on its own release cycle, and
+  the endpoint 404s. The old page's `new Keycloak(...)` then hits an undefined global, which leaves a
+  blank page and a plugin that waits five minutes for a login that cannot happen (EZ-1803, EZ-1880).
+- Even with the adapter back, the exchange is refused: `POST .../token` with
+  `Origin: http://127.0.0.1:56928` answers **403 `{"error":"Invalid origin"}`**, while the same
+  request without an `Origin` header gets as far as `400 invalid_grant`. The client's Web Origins is
+  the site's own name, and Keycloak matches those exactly — a wildcard port is not something it
+  accepts, so `*` would be the only value that worked.
+
+So the vhost serves `keycloak-js` **25.0.6** (the last release with a UMD build, since the old page
+is a `<script src>` expecting a global) at that path, and gives the realm's token endpoint — that URI
+and no other — an exception: for a loopback origin only, nginx drops the `Origin` before proxying and
+answers the CORS half itself. Every other origin reaches Keycloak untouched and still gets a 403.
+
+What it costs: a page running on the user's own machine can read token-endpoint responses for the
+public client. PKCE and the registered redirect URIs are that client's real boundary — CORS was never
+load-bearing for a flow that runs on 127.0.0.1 — which is why this is scoped to one URI and one
+origin shape instead of widening Web Origins on a production client.
+
+**This is a stopgap with an expiry.** Turn the flag off once the old installs are gone: the tasks take
+the file away and the vhost stops shadowing a path that belongs to Keycloak. Pinning a retired adapter
+major to serve a retired flow is not something to carry, and EZ-1880 is the fix that makes it
+unnecessary.
+
 ---
 
 ## 4. The realm
@@ -681,9 +712,17 @@ administrator, and gives no clue at all if you are not (§4.6).
   users would no longer be able to reach, and the paragraph in §4.1 explaining why they exist. The
   ledger for that move is longer than the realm itself, which is the honest reason it keeps not
   happening.
-- **Production.** `easyidpprod` (193.40.22.67) has never been touched by this role. The role takes
-  its hostname from the inventory and has no dev assumptions in it, but production is running an
-  older Keycloak whose realm holds real accounts — that is a migration, not an apply.
+- ~~**Production.** The production IdP has never been touched by this role.~~ **Out of date as of
+  2026-09-03** — checked, and it has been. Whatever remains to say about that host belongs where the
+  rest of production's detail lives, not in this repo.
+
+  What is worth writing down here, because it is about the role rather than about any host: **a
+  vhost-only apply is possible.** A throwaway playbook whose tasks are two `include_role` calls with
+  `tasks_from: legacy_adapter.yml` and `tasks_from: nginx.yml` changes the adapter file and the vhost
+  and nothing else. Going through `site.yml` instead would also run `install.yml` and `service.yml`,
+  which own the pinned version and `kc.sh build` — a server restart, and possibly a version move, in
+  service of a config file. `nginx.yml` brings its own `nginx -t` and its own rollback, so a bad
+  template is refused rather than reloaded.
 
 Not this document's, but found here and affecting this host: EZ-1746 (A reboot-required left by
 manual apt is never acted on, so hosts run indefinitely on superseded kernels).

@@ -48,6 +48,11 @@
 - name: Configure and start it
   ansible.builtin.import_tasks: service.yml
 
+- name: Install the adapter the retired Thonny login flow asks for
+  # Before nginx, so the file exists by the time the vhost that serves it is written. A stopgap with
+  # a switch-off date — see defaults/main.yml.
+  ansible.builtin.import_tasks: legacy_adapter.yml
+
 - name: Put nginx in front of it
   ansible.builtin.import_tasks: nginx.yml
 
