@@ -14,9 +14,11 @@ Two properties every check here has to keep:
     and requires a grade below full marks. A suite that only ever submitted the right answer would
     pass against an executor that grades everything 100 — which is exactly the kind of broken that
     looks fine from outside. See doc/testing.md on detectors that need a positive case.
-  * **It leaves nothing behind that anyone else sees.** It only ever writes as two synthetic
-    accounts, into one course that exists for it, and the submissions it makes are the only
-    writes. No teacher action grades, comments or edits anything.
+  * **It writes as little as it can, and only as its own two accounts.** Per attempt: two
+    submissions by the smoke student into the smoke course, each tagged with a nonce so the run
+    reads back its own and not a concurrent run's; a `checkin` by each account, which core answers
+    by updating that account's name, email and last-seen. Nothing else. A grading failure the suite
+    reports is one core has already mailed the system address about, as it would for any student.
 
 Configuration comes from the rollout config (`smoke` block) and credentials from a separate
 secrets file the role creates as a placeholder and never reads. Stdlib only, like everything else
@@ -32,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import secrets as secrets_mod
 import socket
 import ssl
 import sys
@@ -45,6 +48,7 @@ from pathlib import Path
 
 USER_AGENT = "easy-smoke"
 CRITICAL, WARN = "critical", "warn"
+API_PREFIX = "/v2"
 
 
 # ---------------------------------------------------------------------------------------------
@@ -81,12 +85,17 @@ def urllib_http(method: str, url: str, headers: dict | None = None, data: bytes 
 
 
 def tls_days_left(hostname: str, port: int = 443) -> float:
-    """Days until the served certificate expires; negative if already expired."""
+    """Days until the served certificate expires.
+
+    The default context verifies the chain, so an already-expired or untrusted certificate is
+    reported as the SSL error itself rather than as a negative number — still a failure, and a
+    more useful one.
+    """
     ctx = ssl.create_default_context()
     with socket.create_connection((hostname, port), timeout=15) as sock:
         with ctx.wrap_socket(sock, server_hostname=hostname) as tls:
             cert = tls.getpeercert()
-    not_after = datetime.strptime(cert["notAfter"], "%b %d %H:%M:%S %Y %Z").replace(tzinfo=timezone.utc)
+    not_after = datetime.fromtimestamp(ssl.cert_time_to_seconds(cert["notAfter"]), tz=timezone.utc)
     return (not_after - datetime.now(timezone.utc)).total_seconds() / 86400
 
 
@@ -107,6 +116,7 @@ class Check:
 class Report:
     checks: list[Check] = field(default_factory=list)
     not_configured: bool = False
+    reason: str = ""
 
     @property
     def ok(self) -> bool:
@@ -118,11 +128,11 @@ class Report:
 
     def text(self) -> str:
         if self.not_configured:
-            return "smoke: NOT CONFIGURED — the secrets file is absent or still a placeholder"
+            return f"smoke: NOT CONFIGURED — {self.reason or 'the secrets file is absent or still a placeholder'}"
         lines = []
         for c in self.checks:
             mark = "ok  " if c.ok else ("warn" if c.severity == WARN else "FAIL")
-            lines.append(f"  {mark} {c.name:<32} {c.seconds:5.1f}s  {c.detail}"[:400])
+            lines.append(f"  {mark} {c.name:<36} {c.seconds:5.1f}s  {c.detail}"[:400])
         n_fail = sum(1 for c in self.failures if c.severity == CRITICAL)
         n_warn = sum(1 for c in self.failures if c.severity == WARN)
         lines.append(f"smoke: {'PASS' if self.ok else 'FAIL'} — {len(self.checks)} checks, "
@@ -130,7 +140,7 @@ class Report:
         return "\n".join(lines)
 
     def as_dict(self) -> dict:
-        return {"ok": self.ok, "not_configured": self.not_configured,
+        return {"ok": self.ok, "not_configured": self.not_configured, "reason": self.reason,
                 "checks": [c.__dict__ for c in self.checks]}
 
 
@@ -144,16 +154,18 @@ class Fail(Exception):
 
 class Smoke:
     def __init__(self, cfg: dict, secrets: dict, expect_sha: str | None, log=print,
-                 http=urllib_http, tls_days=tls_days_left, sleep=time.sleep):
+                 http=urllib_http, tls_days=tls_days_left, sleep=time.sleep, nonce: str | None = None):
         self.cfg, self.secrets, self.expect_sha = cfg, secrets, (expect_sha or "")
         self.log, self.http, self.tls_days, self.sleep = log, http, tls_days, sleep
         self.report = Report()
         self.web = cfg["web_url"].rstrip("/")
-        self.api = cfg["api_url"].rstrip("/")
+        self.api = cfg["api_url"].rstrip("/")          # the ORIGIN; every call appends /v2
         self.idp = cfg["idp_url"].rstrip("/")          # includes the /auth prefix, as config.json does
         self.realm = cfg.get("realm", "master")
+        self.nonce = nonce or secrets_mod.token_hex(6)
         self.tokens: dict[str, str] = {}
         self.index_html = ""
+        self.submitted: dict[str, str] = {}            # "good"/"bad" -> submission id
 
     # -- plumbing -------------------------------------------------------------------------------
     def check(self, name: str, fn, severity: str = CRITICAL) -> None:
@@ -168,6 +180,9 @@ class Smoke:
         c = self.report.checks[-1]
         self.log(f"  {'ok  ' if c.ok else 'FAIL'} {name}: {c.detail[:160]}")
 
+    def v2(self, path: str) -> str:
+        return f"{self.api}{API_PREFIX}{path}"
+
     def get(self, url: str, token: str | None = None, **kw) -> Response:
         h = {"Authorization": f"Bearer {token}"} if token else {}
         return self.http("GET", url, headers=h, **kw)
@@ -176,7 +191,7 @@ class Smoke:
         h = {"Content-Type": "application/json"}
         if token:
             h["Authorization"] = f"Bearer {token}"
-        return self.http("POST", url, headers=h, data=json.dumps(body).encode(), **kw)
+        return self.http("POST", url, headers=h, data=None if body is None else json.dumps(body).encode(), **kw)
 
     def expect(self, resp: Response, *codes: int, what: str) -> Response:
         if resp.status not in codes:
@@ -216,38 +231,48 @@ class Smoke:
             raise Fail(f"config.json Cache-Control is {r.header('Cache-Control')!r}, must contain no-store "
                        f"(doc/release-procedure.md: a cached one hands a deploy the previous backend)")
         c = r.json()
-        if (c.get("emsRoot") or "").rstrip("/") != self.api:
-            raise Fail(f"emsRoot is {c.get('emsRoot')!r}, this environment's API is {self.api}")
+        # emsRoot carries the API prefix — the SPA appends `/unauth/...` to it — so it must be this
+        # environment's API origin plus exactly that prefix.
+        ems = (c.get("emsRoot") or "").rstrip("/")
+        want = f"{self.api}{API_PREFIX}"
+        if ems != want:
+            raise Fail(f"emsRoot is {c.get('emsRoot')!r}, this environment's API is {want}")
         kc = c.get("keycloak") or {}
         if (kc.get("url") or "").rstrip("/") != self.idp or kc.get("realm") != self.realm:
             raise Fail(f"keycloak {kc.get('url')!r}/{kc.get('realm')!r} does not match {self.idp}/{self.realm}")
-        return f"emsRoot {c['emsRoot']}, realm {kc['realm']}"
+        if not kc.get("clientId"):
+            raise Fail("config.json has no keycloak.clientId")
+        return f"emsRoot {ems}, realm {kc['realm']}"
+
+    def web_version(self) -> str:
+        # The build writes version.json beside the bundle (EZ-1752) — the same commit the About
+        # page shows. Read that rather than grep the chunks, which move when the build changes.
+        r = self.expect(self.get(f"{self.web}/version.json"), 200, what="GET /version.json")
+        v = r.json()
+        commit = str(v.get("commit") or "")
+        if self.expect_sha and not self.expect_sha.startswith(commit or "\0"):
+            raise Fail(f"version.json says commit {commit!r}, expected {self.expect_sha[:7]} — the served bundle is "
+                       f"not the release that was deployed (stale cache, or the symlink did not flip)")
+        return f"web {v.get('version')} ({commit})"
 
     def web_assets(self) -> str:
         if not self.index_html:
             raise Fail("index.html was not fetched")
         refs = re.findall(r'<script[^>]+src="([^"]+)"', self.index_html)
-        refs += re.findall(r'<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"', self.index_html)
-        refs += re.findall(r'<link[^>]+href="([^"]+)"[^>]+rel="stylesheet"', self.index_html)
+        refs += re.findall(r'<link[^>]+rel="(?:stylesheet|modulepreload)"[^>]+href="([^"]+)"', self.index_html)
+        refs += re.findall(r'<link[^>]+href="([^"]+)"[^>]+rel="(?:stylesheet|modulepreload)"', self.index_html)
         refs = sorted({r for r in refs if not r.startswith(("http:", "https:", "data:"))})
         if not refs:
             raise Fail("index.html references no local scripts or stylesheets")
         bad = []
-        sha_seen = False
         for ref in refs:
-            url = ref if ref.startswith("http") else f"{self.web}/{ref.lstrip('/')}"
-            r = self.get(url)
+            r = self.get(f"{self.web}/{ref.lstrip('/')}")
             ct = r.header("Content-Type")
-            if r.status != 200 or not (ct.startswith(("text/", "application/javascript", "application/x-javascript"))):
+            if r.status != 200 or not ct.startswith(("text/", "application/javascript", "application/x-javascript")):
                 bad.append(f"{ref} → {r.status} {ct}")
-            elif self.expect_sha and self.expect_sha[:7] in r.text():
-                sha_seen = True
         if bad:
             raise Fail("; ".join(bad))
-        if self.expect_sha and not sha_seen:
-            raise Fail(f"none of {len(refs)} assets contains the commit {self.expect_sha[:7]} — the served bundle "
-                       f"is not the release that was deployed (stale cache, or the symlink did not flip)")
-        return f"{len(refs)} assets served" + (f", bundle stamped {self.expect_sha[:7]}" if sha_seen else "")
+        return f"{len(refs)} assets served"
 
     def web_spa_fallback(self) -> str:
         r = self.expect(self.get(f"{self.web}/courses"), 200, what="GET /courses (deep route)")
@@ -258,7 +283,7 @@ class Smoke:
     def tls(self) -> str:
         min_days = float(self.cfg.get("tls_min_days", 21))
         out = []
-        for url in {self.web, self.api, self.idp}:
+        for url in sorted({self.web, self.api, self.idp}):
             host = urllib.parse.urlparse(url).hostname
             if not host or not url.startswith("https"):
                 continue
@@ -276,11 +301,12 @@ class Smoke:
 
     # -- core, anonymous -------------------------------------------------------------------------
     def api_unauth(self) -> str:
-        self.expect(self.get(f"{self.api}/v2/"), 401, what="GET /v2/ without a token")
+        self.expect(self.get(self.v2("/")), 401, what="GET /v2/ without a token")
         return "401 — filter chain up behind the proxy"
 
     def api_statistics(self) -> str:
-        r = self.expect(self.post_json(f"{self.api}/v2/unauth/statistics/common", {}), 200,
+        # No body: that is "I have nothing yet, answer now" (statistics.kt). A body is a long poll.
+        r = self.expect(self.post_json(self.v2("/unauth/statistics/common"), None), 200,
                         what="POST /v2/unauth/statistics/common")
         s = r.json()
         for k in ("total_submissions", "total_users", "in_auto_assessing"):
@@ -307,13 +333,13 @@ class Smoke:
     # -- student ---------------------------------------------------------------------------------
     def student_checkin(self) -> str:
         tok = self.token("student")
-        self.expect(self.post_json(f"{self.api}/v2/account/checkin",
+        self.expect(self.post_json(self.v2("/account/checkin"),
                                    {"first_name": "Smoke", "last_name": "Student"}, tok), 200,
                     what="student checkin")
         return "200"
 
     def student_courses(self) -> str:
-        r = self.expect(self.get(f"{self.api}/v2/student/courses", self.token("student")), 200,
+        r = self.expect(self.get(self.v2("/student/courses"), self.token("student")), 200,
                         what="student course list")
         ids = [c["id"] for c in r.json().get("courses", [])]
         if str(self.cfg["course_id"]) not in ids:
@@ -321,7 +347,7 @@ class Smoke:
         return f"{len(ids)} courses, smoke course present"
 
     def student_exercises(self) -> str:
-        r = self.expect(self.get(f"{self.api}/v2/student/courses/{self.cfg['course_id']}/exercises",
+        r = self.expect(self.get(self.v2(f"/student/courses/{self.cfg['course_id']}/exercises"),
                                  self.token("student")), 200, what="student exercise list")
         exs = r.json().get("exercises", [])
         ex = next((e for e in exs if e["id"] == str(self.cfg["exercise_id"])), None)
@@ -334,37 +360,45 @@ class Smoke:
         return f"{ex['effective_title']!r}, AUTO, open"
 
     def student_exercise_details(self) -> str:
-        r = self.expect(self.get(f"{self.api}/v2/student/courses/{self.cfg['course_id']}/exercises/"
-                                 f"{self.cfg['exercise_id']}", self.token("student")), 200,
+        r = self.expect(self.get(self.v2(f"/student/courses/{self.cfg['course_id']}/exercises/"
+                                         f"{self.cfg['exercise_id']}"), self.token("student")), 200,
                         what="student exercise details")
         return f"{len(r.body)} bytes"
 
-    def _submit_and_grade(self, solution: str) -> dict:
+    def tagged(self, solution: str, which: str) -> str:
+        # A Python comment the grader ignores and this run can recognise its own submission by.
+        return f"{solution.rstrip()}\n# easy-smoke {self.nonce} {which}\n"
+
+    def _submit_and_grade(self, which: str) -> dict:
         tok = self.token("student")
-        base = f"{self.api}/v2/student/courses/{self.cfg['course_id']}/exercises/{self.cfg['exercise_id']}/submissions"
+        base = self.v2(f"/student/courses/{self.cfg['course_id']}/exercises/{self.cfg['exercise_id']}/submissions")
+        solution = self.tagged(self.cfg["solutions"][which], which)
         self.expect(self.post_json(base, {"solution": solution}, tok), 200, what="submit")
         timeout = int(self.cfg.get("grade_timeout_s", 240))
-        # /latest/await blocks server-side until grading finishes; the client timeout is the cap.
+        # /latest/await blocks server-side until the student's newest submission is graded; the
+        # client timeout is the cap. It may return for somebody else's submission if two runs
+        # overlap, which is why the read below matches on the solution and polls a little longer.
         self.expect(self.get(f"{base}/latest/await", tok, timeout=timeout), 200, what="await grading")
-        # A few more polls after the await returns, for the status write that lands just after it.
+        mine = None
         for _ in range(15):
             subs = self.expect(self.get(f"{base}/all", tok), 200, what="read submissions").json().get("submissions", [])
-            if not subs:
-                raise Fail("no submissions returned after submitting")
-            latest = max(subs, key=lambda s: s["number"])
-            if latest.get("autograde_status") != "IN_PROGRESS":
+            mine = next((s for s in subs if s.get("solution") == solution), None)
+            if mine is None:
+                raise Fail("the submission just made is not in the student's submissions")
+            if mine.get("autograde_status") != "IN_PROGRESS":
                 break
             self.sleep(2)
-        if latest.get("autograde_status") == "FAILED":
-            raise Fail(f"autograde FAILED for submission {latest['id']} — executor or grading image problem")
-        if latest.get("autograde_status") == "IN_PROGRESS":
-            raise Fail(f"submission {latest['id']} still grading after {timeout}s")
-        if not latest.get("grade"):
-            raise Fail(f"submission {latest['id']} finished ({latest.get('autograde_status')}) but has no grade")
-        return latest
+        if mine.get("autograde_status") == "FAILED":
+            raise Fail(f"autograde FAILED for submission {mine['id']} — executor or grading image problem")
+        if mine.get("autograde_status") == "IN_PROGRESS":
+            raise Fail(f"submission {mine['id']} still grading after {timeout}s")
+        if not mine.get("grade"):
+            raise Fail(f"submission {mine['id']} finished ({mine.get('autograde_status')}) but has no grade")
+        self.submitted[which] = str(mine["id"])
+        return mine
 
     def autograde_good(self) -> str:
-        latest = self._submit_and_grade(self.cfg["solutions"]["good"])
+        latest = self._submit_and_grade("good")
         g = latest["grade"]["grade"]
         if g < int(self.cfg.get("good_min_grade", 100)):
             fb = ((latest.get("auto_assessment") or {}).get("feedback") or "")[:200]
@@ -372,7 +406,7 @@ class Smoke:
         return f"submission {latest['id']} graded {g} by the executor"
 
     def autograde_bad(self) -> str:
-        latest = self._submit_and_grade(self.cfg["solutions"]["bad"])
+        latest = self._submit_and_grade("bad")
         g = latest["grade"]["grade"]
         if g >= int(self.cfg.get("good_min_grade", 100)):
             raise Fail(f"known-BAD solution graded {g} — grading cannot fail, which means it proves nothing")
@@ -380,16 +414,17 @@ class Smoke:
 
     # -- teacher ---------------------------------------------------------------------------------
     def teacher_checkin(self) -> str:
-        self.expect(self.post_json(f"{self.api}/v2/account/checkin",
+        self.expect(self.post_json(self.v2("/account/checkin"),
                                    {"first_name": "Smoke", "last_name": "Teacher"}, self.token("teacher")), 200,
                     what="teacher checkin")
         return "200"
 
+    def _versions(self) -> dict:
+        return self.expect(self.get(self.v2("/versions"), self.token("teacher")), 200, what="GET /v2/versions").json()
+
     def teacher_versions(self) -> str:
-        r = self.expect(self.get(f"{self.api}/v2/versions", self.token("teacher")), 200, what="GET /v2/versions")
-        v = r.json()
+        v = self._versions()
         core = v.get("core") or {}
-        parts = [f"core {core.get('version')} ({core.get('commit')})"]
         if self.expect_sha and not self.expect_sha.startswith(str(core.get("commit") or "\0")):
             raise Fail(f"core reports commit {core.get('commit')!r}, expected {self.expect_sha[:7]} — the running jar "
                        f"is not the deployed release")
@@ -399,21 +434,36 @@ class Smoke:
         down = [e["name"] for e in execs if not e.get("reachable")]
         if down:
             raise Fail(f"executor(s) unreachable from core: {down}")
+        return f"core {core.get('version')} ({core.get('commit')}); " + \
+            ", ".join(f"{e['name']} {e.get('version')}" for e in execs)
+
+    def teacher_grading_images(self) -> str:
+        # Empty is one of three "cannot say" states in versions.kt (old aae, docker down, no answer),
+        # so this warns rather than blocks; the grade round-trip above is the real check.
+        execs = (self._versions().get("executors") or [])
         no_images = [e["name"] for e in execs if not e.get("grading_images")]
         if no_images:
             raise Fail(f"executor(s) report no grading images: {no_images}")
-        parts.append(", ".join(f"{e['name']} {e.get('version')} {len(e['grading_images'])} images" for e in execs))
-        return "; ".join(parts)
+        return ", ".join(f"{e['name']} {len(e['grading_images'])} images" for e in execs)
 
     def teacher_sees_grade(self) -> str:
-        r = self.expect(self.get(f"{self.api}/v2/teacher/courses/{self.cfg['course_id']}/exercises/"
-                                 f"{self.cfg['exercise_id']}/submissions/latest/students", self.token("teacher")),
+        r = self.expect(self.get(self.v2(f"/teacher/courses/{self.cfg['course_id']}/exercises/"
+                                         f"{self.cfg['exercise_id']}/submissions/latest/students"), self.token("teacher")),
                         200, what="teacher submission summaries")
-        text = r.text()
         student = self.secrets["student"]["username"]
-        if student not in text:
-            raise Fail(f"the smoke student {student!r} does not appear in the teacher's latest-submissions view")
-        return "teacher sees the student's submission"
+        rows = r.json().get("latest_submissions") or []
+        row = next((x for x in rows if x.get("student_id") == student), None)
+        if row is None:
+            raise Fail(f"the smoke student {student!r} is not on the teacher's roster for the exercise")
+        sub = row.get("submission")
+        if not sub:
+            raise Fail(f"the teacher sees no submission for {student!r} although this run just made one")
+        want = self.submitted.get("bad") or self.submitted.get("good")
+        if want and str(sub.get("id")) != want:
+            raise Fail(f"the teacher's latest submission for {student!r} is {sub.get('id')}, this run's was {want}")
+        if not sub.get("grade"):
+            raise Fail(f"the teacher sees submission {sub.get('id')} without a grade")
+        return f"teacher sees submission {sub['id']} graded {sub['grade'].get('grade')}"
 
     # -- Thonny plugin contract ------------------------------------------------------------------
     def thonny_token_endpoint(self) -> str:
@@ -433,7 +483,7 @@ class Smoke:
     def thonny_api_surface(self) -> str:
         # The plugin uses the ordinary student API with an ordinary token — the same call it makes
         # first after login.
-        r = self.expect(self.get(f"{self.api}/v2/student/courses", self.token("student")), 200,
+        r = self.expect(self.get(self.v2("/student/courses"), self.token("student")), 200,
                         what="plugin's first call (student courses)")
         return f"{len(r.json().get('courses', []))} courses"
 
@@ -457,7 +507,8 @@ class Smoke:
     def run(self) -> Report:
         self.check("web: index.html", self.web_index)
         self.check("web: config.json", self.web_config_json)
-        self.check("web: assets and version stamp", self.web_assets)
+        self.check("web: version.json matches release", self.web_version)
+        self.check("web: assets served", self.web_assets)
         self.check("web: SPA deep route", self.web_spa_fallback)
         self.check("tls: certificates", self.tls)
         self.check("web: security headers", self.security_headers, WARN)
@@ -474,7 +525,8 @@ class Smoke:
         self.check("executor: bad solution → not full marks", self.autograde_bad)
         self.check("teacher: checkin", self.teacher_checkin)
         self.check("teacher: /v2/versions", self.teacher_versions)
-        self.check("teacher: sees student's submission", self.teacher_sees_grade)
+        self.check("teacher: executors report grading images", self.teacher_grading_images, WARN)
+        self.check("teacher: sees this run's submission", self.teacher_sees_grade)
         self.check("thonny: token/logout endpoints", self.thonny_token_endpoint)
         self.check("thonny: student API surface", self.thonny_api_surface)
         self.check("thonny: keycloak.js adapter", self.thonny_keycloak_js, WARN)
@@ -487,34 +539,44 @@ class Smoke:
 # entry points
 # ---------------------------------------------------------------------------------------------
 
-REQUIRED_SECRETS = ("client_id", "student", "teacher")
+REQUIRED_SECRETS = ("client_id", "client_secret", "student", "teacher")
 
 
-def load_secrets(path: str | Path) -> dict | None:
-    """The smoke accounts, or None while the file is absent or still the role's placeholder."""
+def load_secrets(path: str | Path) -> tuple[dict | None, str]:
+    """(the smoke accounts, "") — or (None, why) while the file is not usable."""
     p = Path(path)
-    if not p.exists():
-        return None
-    text = p.read_text()
-    if "CHANGEME" in text or not text.strip():
-        return None
-    s = json.loads(text)
-    if any(k not in s for k in REQUIRED_SECRETS):
-        return None
+    try:
+        text = p.read_text()
+    except FileNotFoundError:
+        return None, f"{p} does not exist"
+    except OSError as e:
+        return None, f"{p} is not readable by this account ({e.strerror}) — run as the rollout account"
+    if not text.strip() or "CHANGEME" in text:
+        return None, f"{p} still holds the placeholder"
+    try:
+        s = json.loads(text)
+    except ValueError as e:
+        return None, f"{p} is not valid JSON: {e}"
+    if not isinstance(s, dict):
+        return None, f"{p} is not a JSON object"
+    missing = [k for k in REQUIRED_SECRETS if not s.get(k)]
+    if missing:
+        return None, f"{p} lacks {', '.join(missing)}"
     for who in ("student", "teacher"):
-        if not s[who].get("username") or not s[who].get("password"):
-            return None
-    return s
+        if not isinstance(s[who], dict) or not s[who].get("username") or not s[who].get("password"):
+            return None, f"{p}: {who} needs username and password"
+    return s, ""
 
 
 def run(cfg: dict, expect_sha: str | None = None, log=print, http=urllib_http, tls_days=tls_days_left,
-        sleep=time.sleep, secrets: dict | None = None) -> Report:
-    secrets = secrets if secrets is not None else load_secrets(cfg.get("secrets_file", "/etc/easy/smoke-secrets.json"))
+        sleep=time.sleep, secrets: dict | None = None, nonce: str | None = None) -> Report:
     if secrets is None:
-        r = Report(not_configured=True)
-        log(r.text())
-        return r
-    return Smoke(cfg, secrets, expect_sha, log=log, http=http, tls_days=tls_days, sleep=sleep).run()
+        secrets, why = load_secrets(cfg.get("secrets_file", "/etc/easy/smoke-secrets.json"))
+        if secrets is None:
+            r = Report(not_configured=True, reason=why)
+            log(r.text())
+            return r
+    return Smoke(cfg, secrets, expect_sha, log=log, http=http, tls_days=tls_days, sleep=sleep, nonce=nonce).run()
 
 
 def main(argv=None) -> int:

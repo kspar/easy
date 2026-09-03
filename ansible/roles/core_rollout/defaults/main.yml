@@ -61,6 +61,20 @@ core_rollout_deploy_group: "{{ easy_core_deploy_group | default('easy-deploy') }
 core_rollout_token_file: /etc/easy/github-token
 core_rollout_config_file: /etc/easy/rollout.json
 core_rollout_lib_dir: /usr/local/lib/easy-rollout
+# Where the root helper keeps what only it may write: the scratch database's password, the
+# rehearsal config, and the rehearsal JVM's working directory. Root-owned and outside both the
+# release tree and the state directory — a root process must never create paths inside a
+# directory the caller can rename.
+core_rollout_helper_dir: /var/lib/easy-rollout-db
+# The account the rehearsal JVM runs as: no sudo, no group memberships, one writable directory.
+# It is deliberately not the rollout account, which can restart core and call the helper.
+core_rollout_rehearsal_user: easy-rehearsal
+
+# The unit's ceiling on one rollout: dump, scratch restore, rehearsal boot, deploy, health with a
+# migration, three smoke attempts, and possibly a rollback with a second restore behind it. The
+# program budgets its own waits inside this and rolls back when the budget runs out, so the unit
+# timeout is the backstop rather than the mechanism.
+core_rollout_unit_timeout_s: 14400
 
 # --- scheduling -----------------------------------------------------------------------------------
 # When a rollout may START. Everything before the window — waiting for CI, the soak — happens
@@ -111,6 +125,17 @@ core_rollout_min_gap_hours: 20
 core_rollout_stuck_after_hours: 96
 core_rollout_stuck_repeat_hours: 24
 
+# A rollout that failed before production was touched for a reason that is not a property of the
+# commit — GitHub unreachable, the dump unit busy, the disk full — is retried, but not on the very
+# next tick: this many hours later at the earliest, so a window is not spent re-dumping the
+# database ten times. Failures that ARE the commit's (a migration that dies in rehearsal, a config
+# key it needs) park the commit until a person looks.
+core_rollout_min_retry_gap_hours: 6
+
+# `easy-rollout deploy-now` expires after this long, so an override left behind for a commit that
+# then failed CI cannot fire weeks later on whatever the branch points at by then.
+core_rollout_deploy_now_ttl_hours: 24
+
 core_rollout_min_free_gb: 4
 
 # --- the rehearsal --------------------------------------------------------------------------------
@@ -134,12 +159,20 @@ core_rollout_rehearsal_java_opts: "-Xmx1g"
 # `required: true` means a rollout refuses to proceed while the suite is unconfigured. It is the
 # whole point of this role; a host that wants to deploy without it should say so here.
 core_rollout_smoke_required: true
+# After a deploy: retried, because caches are cold and executors wake up. Before it: two attempts,
+# so one slow grading run does not park a commit, but not three — a broken production should be
+# reported, not re-tested for a quarter of an hour.
 core_rollout_smoke_attempts: 3
+core_rollout_smoke_baseline_attempts: 2
 core_rollout_smoke_retry_delay_s: 60
 core_rollout_smoke_secrets_file: /etc/easy/smoke-secrets.json
 core_rollout_smoke_web_url: "{{ easy_core_web_base_url | default('') }}"
-core_rollout_smoke_api_url: ""          # e.g. https://ems.lahendus.ut.ee — no default, no path
-core_rollout_smoke_idp_url: ""          # e.g. https://idp.lahendus.ut.ee/auth — as config.json has it
+# The API's ORIGIN, no path: e.g. https://api.example.org. The suite appends /v2 itself and checks
+# that config.json's emsRoot is exactly that. No default.
+core_rollout_smoke_api_url: ""
+# The IdP as config.json names it, prefix included — and derived from the same variables core is
+# configured with, so the issuer the suite checks is the issuer core validates.
+core_rollout_smoke_idp_url: "{{ (easy_core_idp_base_url ~ (easy_core_idp_path_prefix | default('/auth'))) if easy_core_idp_base_url is defined else '' }}"
 core_rollout_smoke_realm: "{{ easy_core_keycloak_realm | default('master') }}"
 # The smoke course and the auto-graded exercise in it, as the ids the API uses. Created once per
 # environment through the UI by the smoke teacher; see the manual.
@@ -156,6 +189,9 @@ core_rollout_smoke_tls_min_days: 21
 # Where the executor answers /v1/version, as reachable from THIS host. Empty skips the direct check;
 # the through-core check in /v2/versions still runs.
 core_rollout_smoke_executor_version_url: ""
+
+# What `easy-rollout status` shows dev running comes from here, e.g. https://dev.example.org/.well-known/easy-release
+# (roles/nginx serves it where easy_nginx_publish_release_sha is on). Production names dev's; dev has none.
 
 # --- rollback -------------------------------------------------------------------------------------
 # What to do with the database when the previous release will not come back up after a rollback:
@@ -189,7 +225,9 @@ core_rollout_notify_webhook_url_file: /etc/easy/rollout-webhook-url
 core_rollout_notify_webhook_format: json
 
 # YouTrack: files an issue on CRITICAL. Same ids as core's own bug-report integration; the token
-# is a separate file so it can be a separate, narrower permanent token.
+# is a separate file so it can be a separate, narrower permanent token. The visibility group is
+# NOT optional where this channel is on: the instance has guest access, and a rollout report
+# carries core's log tail. The program refuses to file without it and the role asserts it.
 core_rollout_notify_youtrack_base_url: "{{ easy_core_youtrack_base_url | default('') }}"
 core_rollout_notify_youtrack_project_id: "{{ easy_core_youtrack_project_id | default('') }}"
 core_rollout_notify_youtrack_visibility_group_id: "{{ easy_core_youtrack_visibility_group_id | default('') }}"

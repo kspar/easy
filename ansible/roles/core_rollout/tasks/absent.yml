@@ -25,4 +25,5 @@
     - "{{ core_rollout_lib_dir }}"
     - /etc/sudoers.d/easy-rollout
     - "{{ core_rollout_config_file }}"
+    - "{{ core_rollout_helper_dir }}"
   notify: Reload systemd after removing the rollout units

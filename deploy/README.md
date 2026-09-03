@@ -29,9 +29,11 @@ branch, or a deploy while the automatic one is paused. On production it asks fir
 git push origin master:dev-releases     # dev updates itself within a few minutes
 ```
 
-A timer on the dev host polls GitHub every minute for the newest **green** CI run on
-`dev-releases`, and installs it if it differs from what is live. Nothing else is needed: no SSH, no
-laptop, no command.
+A timer on the dev host polls GitHub every minute, and when `dev-releases` points at a commit that
+is not what is live and has a **green** CI run, installs it. Nothing else is needed: no SSH, no
+laptop, no command. (Not "the newest green commit on the branch": a red commit on top of a green
+one deploys nothing until it is fixed or the branch is moved back, and `easy-rollout status` on the
+host says so.)
 
 **Since 2026-09-03 the timer is `easy-rollout`, not `easy-autodeploy`** — the same guarded deployer
 production runs, with dev's settings: no window, no soak, but still a database dump before every
@@ -43,6 +45,7 @@ left broken. Watch it work:
 ```sh
 ssh easycoredev 'sudo journalctl -u easy-rollout -n 60 --no-pager'
 ssh easycoredev 'easy-rollout status'
+ssh easycoredev 'sudo -u easy-rollout easy-rollout check'      # needs the token: as the rollout account
 ssh easycoredev 'cat /srv/easy/current-sha'
 ```
 

@@ -2,23 +2,32 @@
 #
 # Managed by Ansible (roles/core_rollout) — local edits are overwritten.
 #
-# The database side of a rollout, as root, with the argument list as the whole privilege.
+# The privileged side of a rollout, as root, with the argument list as the whole privilege.
 #
 # easy-rollout runs as an account that can write the release tree and restart core, and nothing
-# else. A rehearsal needs a scratch database created from a dump, a rollback may need the real one
-# restored from that dump, and both need to be done by somebody who can talk to postgres as its
-# superuser. Rather than grant the rollout account `sudo -u postgres` — which is every database on
-# the host — this script is granted, and it does exactly the things below to exactly the names
-# rendered into it. Same shape as easy-core-log in roles/core_service: root-owned, unwritable by the
-# caller, every path fixed here rather than taken from the command line.
+# else. A rehearsal needs a scratch database created from a dump and a JVM started under an account
+# with no privileges at all; a rollback may need the real database restored from that dump; and all
+# of it needs somebody who can talk to postgres as its superuser. Rather than grant the rollout
+# account `sudo -u postgres` — which is every database on the host — this script is granted, and it
+# does exactly the things below to exactly the names rendered into it. Same shape as easy-core-log
+# in roles/core_service: root-owned, unwritable by the caller, every path fixed here rather than
+# taken from the command line — and every path it creates lives under a directory the caller can
+# neither own nor rename.
 #
 #   easy-rollout-db ping                      postgres accepts connections
 #   easy-rollout-db newest-dump               path of the newest finished dump, or nothing
 #   easy-rollout-db changelog-count [rehearsal]
-#                                             rows in databasechangelog, of production or the scratch db
-#   easy-rollout-db rehearsal-create <dump>   drop+create the scratch db and its role, restore <dump>
+#                                             rows in databasechangelog, of production or the scratch db;
+#                                             fails loudly rather than answering 0 when it cannot tell
+#   easy-rollout-db rehearsal-create <dump>   drop+create the scratch db and its role, restore <dump>,
+#                                             point its executor rows at nowhere
 #   easy-rollout-db rehearsal-config <port>   write the rehearsal config, print its path
-#   easy-rollout-db rehearsal-drop            drop the scratch db (the role stays; it owns nothing)
+#   easy-rollout-db rehearsal-run <sha> <port>
+#                                             start the release's jar under the rehearsal account as a
+#                                             transient unit; print the path of its log
+#   easy-rollout-db rehearsal-status          active | failed:<exit status> | inactive
+#   easy-rollout-db rehearsal-stop            stop that unit, if it runs
+#   easy-rollout-db rehearsal-drop            drop the scratch db, lock its role, remove its files
 #   easy-rollout-db restore <dump>            STOP CORE, recreate the production db from <dump>, start core
 #
 # `restore` is the one destructive command here, and the rollout only reaches it when the previous
@@ -33,27 +42,60 @@ DB_HOST={{ easy_core_db_host | quote }}
 DB_PORT={{ easy_core_db_port | quote }}
 REHEARSAL_DB="easyems_rehearsal"
 REHEARSAL_USER="easyems_rehearsal"
+REHEARSAL_ACCOUNT={{ core_rollout_rehearsal_user | quote }}
+REHEARSAL_UNIT="easy-rehearsal.service"
 DUMP_DIR={{ postgres_backup_dir | quote }}
 SERVICE={{ core_rollout_service | quote }}
-STATE_DIR={{ core_rollout_state_dir | quote }}
-REHEARSAL_DIR="$STATE_DIR/rehearsal"
+ROOT={{ core_rollout_root | quote }}
 ROLLOUT_USER={{ core_rollout_user | quote }}
 APP_YAML={{ easy_core_config_path | quote }}
 SECRETS_YAML={{ easy_core_secrets_path | quote }}
 LIB={{ core_rollout_lib_dir | quote }}
+JAVA={{ easy_core_java | default('/usr/bin/java') | quote }}
+JAVA_OPTS={{ core_rollout_rehearsal_java_opts | quote }}
+# Root-owned, and NOT under the release tree or the state directory: those are group-writable by
+# every deployer, and a root process that creates or chowns paths inside a directory somebody else
+# owns can be pointed at any file on the host with one rename.
+HELPER_DIR={{ core_rollout_helper_dir | quote }}
+REHEARSAL_DIR="$HELPER_DIR/rehearsal"        # root-owned: the password and the config
+WORK_DIR="$HELPER_DIR/work"                  # the rehearsal account's: cwd, logs, scratch storage
 
 die() { echo "easy-rollout-db: $*" >&2; exit 1; }
 psql_super() { sudo -u postgres psql -X -q -v ON_ERROR_STOP=1 "$@"; }
 
-# A dump path has to be a finished dump in the dump directory — not a path the caller made up.
+# A dump has to be a finished dump that postgres itself wrote into the real dump directory — not a
+# path the caller made up, not a file behind a directory the caller swapped in. Resolved before it
+# is trusted, and ownership is the proof.
 check_dump() {
-    local d="$1"
-    case "$d" in
-        "$DUMP_DIR"/"$DB"-*.dump) ;;
-        *) die "not a dump in $DUMP_DIR: $d" ;;
-    esac
-    [ -f "$d" ] || die "no such dump: $d"
+    local d="$1" real real_dir
     case "$d" in *.partial) die "refusing a partial dump" ;; esac
+    real=$(realpath -e -- "$d" 2>/dev/null) || die "no such dump: $d"
+    real_dir=$(realpath -e -- "$DUMP_DIR") || die "no dump directory at $DUMP_DIR"
+    [ "$(dirname "$real")" = "$real_dir" ] || die "not a dump in $DUMP_DIR: $d"
+    case "$(basename "$real")" in "$DB"-*.dump) ;; *) die "not a dump of $DB: $d" ;; esac
+    [ -f "$real" ] && [ ! -L "$d" ] || die "not a regular file: $d"
+    [ "$(stat -c %U "$real_dir")" = postgres ] || die "$real_dir is not owned by postgres — refusing"
+    [ "$(stat -c %U "$real")" = postgres ] || die "$real is not owned by postgres — refusing"
+    DUMP="$real"
+}
+
+live_locale() {
+    # The real database's collation and ctype, so a database created from template0 matches it.
+    # roles/postgres creates the real one with an explicit locale for the same reason.
+    psql_super -d postgres -Atc "SELECT datcollate || '|' || datctype FROM pg_database WHERE datname = '$DB'"
+}
+
+create_db_like_live() {
+    local name="$1" owner="$2" loc collate ctype
+    loc=$(live_locale)
+    [ -n "$loc" ] || die "cannot read the locale of $DB"
+    collate=${loc%%|*}; ctype=${loc##*|}
+    psql_super -d postgres -c "CREATE DATABASE $name OWNER $owner TEMPLATE template0 ENCODING 'UTF8' LC_COLLATE '$collate' LC_CTYPE '$ctype'"
+}
+
+stop_rehearsal_unit() {
+    systemctl stop "$REHEARSAL_UNIT" 2>/dev/null || true
+    systemctl reset-failed "$REHEARSAL_UNIT" 2>/dev/null || true
 }
 
 cmd="${1:-}"; shift || true
@@ -71,29 +113,45 @@ case "$cmd" in
     changelog-count)
         target="$DB"
         [ "${1:-}" = "rehearsal" ] && target="$REHEARSAL_DB"
-        psql_super -d "$target" -Atc "SELECT count(*) FROM databasechangelog" 2>/dev/null || echo 0
+        # No `|| echo 0`: a count that cannot be taken must not look like an empty changelog, because
+        # the rollout decides whether a rollback restores the database from the difference.
+        psql_super -d "$target" -Atc "SELECT count(*) FROM databasechangelog"
         ;;
 
     rehearsal-create)
-        dump="${1:-}"; [ -n "$dump" ] || die "rehearsal-create needs a dump path"
-        check_dump "$dump"
-        install -d -m 0750 -o root -g "$ROLLOUT_USER" "$REHEARSAL_DIR"
-        install -d -m 0770 -o "$ROLLOUT_USER" -g "$ROLLOUT_USER" "$REHEARSAL_DIR/files"
-        # A fresh password every time; the file the rollout account can read holds only this.
+        check_dump "${1:-}"
+        stop_rehearsal_unit
+        # Fresh every time, never `install -d` on something that exists: the parent is root's.
+        rm -rf "$REHEARSAL_DIR" "$WORK_DIR"
+        install -d -m 0755 -o root -g root "$HELPER_DIR"
+        install -d -m 0750 -o root -g "$REHEARSAL_ACCOUNT" "$REHEARSAL_DIR"
+        # Logs readable by the rollout account (group), writable only by the JVM's own account.
+        install -d -m 0750 -o "$REHEARSAL_ACCOUNT" -g "$ROLLOUT_USER" "$WORK_DIR"
+        install -d -m 0700 -o "$REHEARSAL_ACCOUNT" -g "$REHEARSAL_ACCOUNT" "$WORK_DIR/files"
+        # A fresh password every time, root-only on disk, never on a command line: psql reads the
+        # statement from stdin, so it is in neither `ps` nor the shell's history.
         pw=$(head -c 24 /dev/urandom | base64 | tr -d '/+=')
-        install -m 0640 -o root -g "$ROLLOUT_USER" /dev/null "$REHEARSAL_DIR/db-password"
+        install -m 0600 -o root -g root /dev/null "$REHEARSAL_DIR/db-password"
         printf '%s\n' "$pw" > "$REHEARSAL_DIR/db-password"
         psql_super -d postgres -c "DROP DATABASE IF EXISTS $REHEARSAL_DB WITH (FORCE)"
-        psql_super -d postgres -c "DO \$\$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$REHEARSAL_USER') THEN
-                CREATE ROLE $REHEARSAL_USER LOGIN;
-            END IF; END \$\$"
-        psql_super -d postgres -c "ALTER ROLE $REHEARSAL_USER WITH LOGIN PASSWORD '$pw'"
-        psql_super -d postgres -c "CREATE DATABASE $REHEARSAL_DB OWNER $REHEARSAL_USER TEMPLATE template0 ENCODING 'UTF8'"
+        # `$$` is the shell's pid inside double quotes; a heredoc keeps the DO block literal.
+        psql_super -d postgres <<SQL
+DO \$body\$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$REHEARSAL_USER') THEN
+        CREATE ROLE $REHEARSAL_USER NOLOGIN;
+    END IF;
+END \$body\$;
+SQL
+        printf "ALTER ROLE %s WITH LOGIN PASSWORD '%s';\n" "$REHEARSAL_USER" "$pw" | psql_super -d postgres -f -
+        create_db_like_live "$REHEARSAL_DB" "$REHEARSAL_USER"
         # --no-owner --no-privileges on the way out (easy-db-backup) and --role on the way in: every
         # object belongs to the rehearsal role, which is what lets the rehearsal core migrate them.
         sudo -u postgres pg_restore --dbname="$REHEARSAL_DB" --role="$REHEARSAL_USER" \
-            --no-owner --no-privileges --jobs=2 --exit-on-error "$dump"
+            --no-owner --no-privileges --jobs=2 --exit-on-error "$DUMP"
+        # The executors are rows, not config, and they rode in with the data: point every one of
+        # them at the discard port and drain it, so the rehearsal core cannot send anything to be
+        # graded on a real machine even if something asks it to.
+        psql_super -d "$REHEARSAL_DB" -c "UPDATE executor SET base_url = 'http://127.0.0.1:9', drain = true"
         echo "$REHEARSAL_DB"
         ;;
 
@@ -104,40 +162,102 @@ case "$cmd" in
         [ -f "$SECRETS_YAML" ] || die "$SECRETS_YAML does not exist"
         out="$REHEARSAL_DIR/application.yaml"
         tmp="$out.tmp"
-        install -m 0640 -o root -g "$ROLLOUT_USER" /dev/null "$tmp"
+        install -m 0640 -o root -g "$REHEARSAL_ACCOUNT" /dev/null "$tmp"
         python3 "$LIB/easy_rehearsal_config.py" \
             --application-yaml "$APP_YAML" --secrets-yaml "$SECRETS_YAML" \
             --port "$port" --db-password-file "$REHEARSAL_DIR/db-password" \
-            --storage-dir "$REHEARSAL_DIR/files" --out "$tmp"
+            --db-host "$DB_HOST" --db-port "$DB_PORT" \
+            --storage-dir "$WORK_DIR/files" --out "$tmp"
         mv -f "$tmp" "$out"
+        # The rollout account re-reads and re-checks this before starting anything, so it must be
+        # able to: group-readable by the rehearsal account already, add the rollout account via ACL.
+        setfacl -m "u:$ROLLOUT_USER:r" "$out"
         echo "$out"
         ;;
 
+    rehearsal-run)
+        sha="${1:-}"; port="${2:-}"
+        [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || die "rehearsal-run needs a full commit id"
+        [[ "$port" =~ ^[0-9]{4,5}$ ]] || die "rehearsal-run needs a port"
+        jar="$ROOT/releases/$sha/core.jar"
+        [ -f "$jar" ] || die "no such jar: $jar"
+        [ -f "$REHEARSAL_DIR/application.yaml" ] || die "run rehearsal-config first"
+        [ -d "$WORK_DIR" ] || die "run rehearsal-create first"
+        stop_rehearsal_unit
+        # A transient unit under an account that can do nothing: no sudo, no privileges, one
+        # writable directory, the jar it was given. The release under test is the one thing here
+        # that came from outside, and this is the least that should run it.
+        # shellcheck disable=SC2086
+        systemd-run --unit="${REHEARSAL_UNIT%.service}" --quiet \
+            --uid="$REHEARSAL_ACCOUNT" --gid="$REHEARSAL_ACCOUNT" \
+            --working-directory="$WORK_DIR" \
+            --setenv=EASY_LOG_PATH="$WORK_DIR/easy.log" \
+            -p NoNewPrivileges=yes -p PrivateTmp=yes -p PrivateDevices=yes \
+            -p ProtectSystem=strict -p ProtectHome=yes -p ProtectKernelTunables=yes \
+            -p ProtectControlGroups=yes -p RestrictSUIDSGID=yes -p LockPersonality=yes \
+            -p RestrictAddressFamilies="AF_INET AF_INET6 AF_UNIX" \
+            -p ReadWritePaths="$WORK_DIR" \
+            -p StandardOutput="append:$WORK_DIR/core.log" -p StandardError=inherit \
+            -p TimeoutStopSec=60 \
+            "$JAVA" $JAVA_OPTS -jar "$jar" "--spring.config.location=file:$REHEARSAL_DIR/application.yaml"
+        chmod 0640 "$WORK_DIR/core.log" 2>/dev/null || true
+        chgrp "$ROLLOUT_USER" "$WORK_DIR/core.log" 2>/dev/null || true
+        echo "$WORK_DIR/core.log"
+        ;;
+
+    rehearsal-status)
+        state=$(systemctl is-active "$REHEARSAL_UNIT" 2>/dev/null || true)
+        case "$state" in
+            active|activating) echo active ;;
+            failed) echo "failed:$(systemctl show -p ExecMainStatus --value "$REHEARSAL_UNIT" 2>/dev/null || echo '?')" ;;
+            *) echo inactive ;;
+        esac
+        ;;
+
+    rehearsal-stop)
+        stop_rehearsal_unit
+        echo stopped
+        ;;
+
     rehearsal-drop)
+        stop_rehearsal_unit
         psql_super -d postgres -c "DROP DATABASE IF EXISTS $REHEARSAL_DB WITH (FORCE)"
-        rm -f "$REHEARSAL_DIR/db-password" "$REHEARSAL_DIR/application.yaml"
-        rm -rf "$REHEARSAL_DIR/files"
+        # The role stays (it owns nothing) but may not log in between rehearsals.
+        psql_super -d postgres -c "ALTER ROLE $REHEARSAL_USER NOLOGIN" 2>/dev/null || true
+        rm -rf "$REHEARSAL_DIR" "$WORK_DIR/files"
         echo dropped
         ;;
 
     restore)
-        dump="${1:-}"; [ -n "$dump" ] || die "restore needs a dump path"
-        check_dump "$dump"
-        echo "restoring $DB from $dump — stopping $SERVICE"
+        check_dump "${1:-}"
+        echo "restoring $DB from $DUMP — stopping $SERVICE"
         systemctl stop "$SERVICE"
+        # Whatever happens from here, core is started again on the way out — a restore that fails
+        # half way must not also leave the service stopped. Cleared only after a full success.
+        trap 'echo "restore failed; starting $SERVICE on whatever database exists" >&2; systemctl start "$SERVICE" || true' EXIT
+        # Anything still attached — a psql somebody left open, a backup that overran — blocks the
+        # rename; the superuser can end them all.
+        psql_super -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB' AND pid <> pg_backend_pid()" >/dev/null
         # Keep the broken state around under a name, in case the decision to restore was wrong: a
         # rename is instant and a drop is forever.
         stamp=$(date +%Y%m%dT%H%M%S)
         psql_super -d postgres -c "ALTER DATABASE $DB RENAME TO ${DB}_pre_restore_$stamp"
-        psql_super -d postgres -c "CREATE DATABASE $DB OWNER $DB_USER TEMPLATE template0 ENCODING 'UTF8'"
+        create_db_like_live_from() {
+            local loc collate ctype
+            loc=$(psql_super -d postgres -Atc "SELECT datcollate || '|' || datctype FROM pg_database WHERE datname = '${DB}_pre_restore_$stamp'")
+            collate=${loc%%|*}; ctype=${loc##*|}
+            psql_super -d postgres -c "CREATE DATABASE $DB OWNER $DB_USER TEMPLATE template0 ENCODING 'UTF8' LC_COLLATE '$collate' LC_CTYPE '$ctype'"
+        }
+        create_db_like_live_from
         sudo -u postgres pg_restore --dbname="$DB" --role="$DB_USER" \
-            --no-owner --no-privileges --jobs=2 --exit-on-error "$dump"
+            --no-owner --no-privileges --jobs=2 --exit-on-error "$DUMP"
+        trap - EXIT
         systemctl start "$SERVICE"
         echo "restored; the replaced database is kept as ${DB}_pre_restore_$stamp — drop it by hand once sure"
         ;;
 
     ""|-h|--help)
-        sed -n '9,24p' "$0"
+        sed -n '5,36p' "$0"
         ;;
     *)
         die "unknown command '$cmd'"

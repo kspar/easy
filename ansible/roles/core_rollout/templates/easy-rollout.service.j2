@@ -19,9 +19,15 @@ ExecStart=/usr/local/bin/easy-rollout --config {{ core_rollout_config_file }} ti
 
 # A failed rollout is loud, has already rolled back or paused itself, and should be left alone.
 Restart=no
-# Preflight, a dump, a restore into the scratch database, a JVM boot, a deploy, a full smoke
-# suite, possibly a rollback and a second restore. Two hours is generous; it should not be tight.
-TimeoutStartSec=7200
+# The backstop, not the mechanism: the program reads this budget, keeps its own clock and rolls
+# back on its own before the budget runs out. If systemd ever does have to intervene, the SIGTERM it
+# sends is handled the same way — rollback, pause, record — before the process exits.
+TimeoutStartSec={{ core_rollout_unit_timeout_s }}
+Environment=EASY_ROLLOUT_BUDGET_S={{ core_rollout_unit_timeout_s }}
+# Stop the main process only: the rehearsal JVM is a transient unit of its own and the database
+# helper's pg_restore must finish or fail on its own terms, not be killed half way through.
+KillMode=mixed
+TimeoutStopSec=900
 
 # --- confinement --------------------------------------------------------------------------------
 # It talks to GitHub and to this environment's public URLs, unpacks an archive, starts a JVM

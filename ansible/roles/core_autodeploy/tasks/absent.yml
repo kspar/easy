@@ -13,14 +13,17 @@
 # is what makes that visible while it happens rather than afterwards.
 
 - name: Look for anything autodeploy left on this host
+  # config.json is left alone where core_rollout has taken over: it writes the same path, and a
+  # converge that deleted it here and re-created it a few roles later would take it away from a
+  # rollout landing in between — whose activate, and then whose rollback, would both fail on it.
   ansible.builtin.stat:
     path: "{{ item }}"
-  loop:
-    - /etc/systemd/system/easy-autodeploy.timer
-    - /etc/systemd/system/easy-autodeploy.service
-    - /usr/local/bin/easy-autodeploy
-    - /etc/sudoers.d/easy-autodeploy
-    - "{{ core_autodeploy_config_json }}"
+  loop: >-
+    {{ ['/etc/systemd/system/easy-autodeploy.timer',
+        '/etc/systemd/system/easy-autodeploy.service',
+        '/usr/local/bin/easy-autodeploy',
+        '/etc/sudoers.d/easy-autodeploy']
+       + ([] if (core_rollout_enabled | default(false) | bool) else [core_autodeploy_config_json]) }}
   register: core_autodeploy_leftovers
   check_mode: false
 

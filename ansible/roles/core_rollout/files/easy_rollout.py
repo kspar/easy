@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """easy-rollout — unattended, guarded updates of a Lahendus environment.
 
-The dev host's `easy-autodeploy` installs whatever its branch points at, as soon as CI is green.
+The dev host's `easy-autodeploy` installed whatever its branch pointed at, as soon as CI was green.
 This does the same job for an environment where a bad release has an audience: it tracks a
 branch, but between "the branch moved" and "core was restarted" it puts every check that can be
 automated, and after the restart it proves the whole system works before it calls the rollout done.
@@ -14,29 +14,36 @@ The flow, on every timer tick:
       ├─ paused?                       → say so, do nothing
       ├─ record what dev is running    (the soak gate needs a history)
       ├─ branch head == current-sha?   → steady state, silent
-      ├─ head already failed once?     → never retried automatically
+      ├─ head failed before?           → never retried automatically; remind daily
       ├─ green CI run for head?        → wait
-      ├─ gates: window, freeze, CI age, soak on dev, ancestry of master, gap since last rollout
+      ├─ gates: window, freeze, CI age, soak on dev, ancestry of master, gap since last rollout,
+      │         gap since a retryable failure
       │      unmet → remember why (`easy-rollout status`), alarm if it has been stuck for days
       └─ ROLLOUT
-           1. preflight    disk, database, core healthy NOW, previous release intact,
-                           baseline smoke — production must pass its own tests before we change it
-           2. fetch        the CI artifacts (same layout as deploy.sh and easy-autodeploy)
-           3. dump         the database, through the nightly backup unit
-           4. rehearse     restore that dump into a scratch database and boot the NEW jar against
-                           it, with every outbound integration pointed at nowhere. Migrations that
-                           fail against real data, and config keys the release needs and the host
-                           lacks, fail HERE — before production is touched.
-           5. activate     flip the symlinks, restart core
-           6. health       401 from /v2/ through the public vhost, unit active
-           7. smoke        the full end-to-end suite: web, API, IdP, student and teacher flows,
+           1. preflight    disk, database, core healthy NOW, previous release intact
+           2. baseline     the smoke suite against the CURRENT release — production must pass its
+                           own tests before we change it, or a failure afterwards proves nothing
+           3. fetch        the CI artifacts (same layout as deploy.sh and easy-autodeploy)
+           4. dump         the database, through the nightly backup unit
+           5. rehearse     restore that dump into a scratch database and boot the NEW jar against
+                           it — under an account with no privileges, with every outbound
+                           integration pointed at nowhere. Migrations that fail against real
+                           data, and config keys the release needs and the host lacks, fail HERE.
+           6. activate     flip the symlinks, restart core
+           7. health       401 from /v2/ through the public vhost, unit active
+           8. smoke        the full end-to-end suite: web, API, IdP, student and teacher flows,
                            an autograded submission through the executor, the Thonny contract
-           8. done         current-sha, DEPLOYED, prune, notify with the commit list
-         on failure at 5–7:
+           9. mark         current-sha, DEPLOYED — the last step a failure of which rolls back
+          10. prune        old releases; never a reason to roll back
+         on failure at 6–9:
            rollback        previous symlinks, restart, health, smoke
-                           → if the old jar does not come up and the release migrated the schema,
-                             restore the dump taken in step 3 (policy-controlled)
+                           → if the old jar does not START (unit not active) and the release
+                             migrated the schema, restore the dump taken in step 4 (policy)
                            → pause the rollout, mark the sha failed, escalate
+         on failure at 1–5, production untouched:
+                           → a failure that is the commit's (rehearsal, config) parks the sha
+                           → a failure that is not (network, disk, a busy backup) is retried
+                             after a gap, and reported if it keeps happening
 
 Pull, not push, for the same reason as easy-autodeploy: nothing in GitHub holds a credential for
 this host. The only secrets on the host are the ones it needs anyway — a read-only Actions token,
@@ -60,10 +67,12 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import filecmp
 import json
 import os
 import re
 import shutil
+import signal
 import smtplib
 import socket
 import subprocess
@@ -89,6 +98,11 @@ INFO, WARN, CRITICAL = "info", "warn", "critical"
 
 # Every wait goes through this so the tests can make a minute take no time.
 sleep = time.sleep
+
+# Records, logs and state are for the deploy group, not for every account on the host: they carry
+# core's log tail and the smoke report.
+FILE_MODE = 0o640
+DIR_MODE = 0o750
 
 
 # ---------------------------------------------------------------------------------------------
@@ -116,7 +130,7 @@ def short(sha: str | None) -> str:
     return (sha or "")[:8] or "nothing"
 
 
-def write_atomic(path: Path, text: str, mode: int = 0o644) -> None:
+def write_atomic(path: Path, text: str, mode: int = FILE_MODE) -> None:
     """A half-written state file is worse than a stale one, so write beside and rename over."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name("." + path.name + ".tmp")
@@ -126,7 +140,21 @@ def write_atomic(path: Path, text: str, mode: int = 0o644) -> None:
 
 
 class RolloutError(Exception):
-    """A step failed in a way that was detected and explained. Anything else is a bug."""
+    """A step failed in a way that was detected and explained. Anything else is a bug.
+
+    `retryable` says whether the failure is a property of the commit (a migration that dies, a
+    missing config key — it will fail again identically) or of the moment (GitHub down, the disk
+    full, the backup unit busy — worth another go later). Only matters before production is
+    touched; afterwards every failure ends in a rollback and a pause.
+    """
+
+    def __init__(self, msg: str, retryable: bool = False):
+        super().__init__(msg)
+        self.retryable = retryable
+
+
+class Interrupted(RolloutError):
+    """SIGTERM arrived, or the time budget ran out: finish the way a failure would."""
 
 
 class Log:
@@ -141,8 +169,13 @@ class Log:
         print(msg, flush=True)
         self.lines.append(line)
         if self.sink is not None:
-            with self.sink.open("a") as f:
-                f.write(line + "\n")
+            try:
+                fd = os.open(self.sink, os.O_WRONLY | os.O_CREAT | os.O_APPEND, FILE_MODE)
+                with os.fdopen(fd, "a") as f:
+                    f.write(line + "\n")
+            except OSError as e:
+                # The journal still has it. A full disk must not turn a rollback into a crash.
+                print(f"  (could not write {self.sink}: {e})", flush=True)
 
     def tail(self, n: int = 60) -> str:
         return "\n".join(self.lines[-n:])
@@ -167,11 +200,11 @@ DEFAULTS: dict = {
     "health_url": "",
     "health_timeout_s": 300,
     # A release that migrates the schema may spend a long time in Liquibase before the filter
-    # chain is up. Killing it half way would be worse than waiting.
+    # chain is up. Killing it half way would be worse than waiting. Used whenever a migration is
+    # not known NOT to have happened.
     "health_timeout_migrating_s": 1800,
     "dump_service": "easy-db-backup.service",
     "db_helper": "/usr/local/bin/easy-rollout-db",
-    "java": "/usr/bin/java",
     "window": {"days": ["Tue", "Thu"], "start": "04:00", "end": "05:30", "tz": "Europe/Tallinn"},
     "freeze": [],
     "gates": {
@@ -181,6 +214,8 @@ DEFAULTS: dict = {
         "require_seen_on_dev": True,
         "require_on_master": True,
         "min_gap_hours": 20,
+        "min_retry_gap_hours": 6,
+        "deploy_now_ttl_hours": 24,
         "stuck_after_hours": 96,
         "stuck_repeat_hours": 24,
         "min_free_gb": 4,
@@ -189,9 +224,8 @@ DEFAULTS: dict = {
         "enabled": True,
         "port": 8091,
         "timeout_s": 1200,
-        "java_opts": "-Xmx1g",
     },
-    "smoke": {"required": True, "attempts": 3, "retry_delay_s": 60},
+    "smoke": {"required": True, "attempts": 3, "baseline_attempts": 2, "retry_delay_s": 60},
     "rollback": {"restore_db": "auto"},   # auto | never | always
     "notify": {
         "channels": {INFO: ["mail"], WARN: ["mail"], CRITICAL: ["mail", "webhook", "youtrack"]},
@@ -200,6 +234,9 @@ DEFAULTS: dict = {
         "youtrack": {},
     },
 }
+
+RESTORE_POLICIES = ("auto", "never", "always")
+CHANNELS = ("mail", "webhook", "youtrack")
 
 
 def deep_merge(base: dict, over: dict) -> dict:
@@ -212,23 +249,65 @@ def deep_merge(base: dict, over: dict) -> dict:
     return out
 
 
+def validate_config(cfg: dict) -> list[str]:
+    """What is wrong with a config, all of it at once. Empty means usable."""
+    bad = []
+    if not cfg.get("health_url"):
+        bad.append("health_url is not configured")
+    if cfg["rollback"]["restore_db"] not in RESTORE_POLICIES:
+        bad.append(f"rollback.restore_db is {cfg['rollback']['restore_db']!r}, must be one of {RESTORE_POLICIES}")
+    for sev, chans in cfg["notify"]["channels"].items():
+        if sev not in (INFO, WARN, CRITICAL):
+            bad.append(f"notify.channels has an unknown severity {sev!r}")
+        for c in chans:
+            if c not in CHANNELS:
+                bad.append(f"notify.channels.{sev} names an unknown channel {c!r}")
+    for key in ("keep_releases", "health_timeout_s", "health_timeout_migrating_s"):
+        if not isinstance(cfg.get(key), int) or cfg[key] < 0:
+            bad.append(f"{key} must be a non-negative integer")
+    for key in ("port", "timeout_s"):
+        if not isinstance(cfg["rehearsal"].get(key), int):
+            bad.append(f"rehearsal.{key} must be an integer")
+    w = cfg["window"]
+    if not w.get("always"):
+        for key in ("start", "end"):
+            if not re.fullmatch(r"\d{2}:\d{2}", str(w.get(key, ""))):
+                bad.append(f"window.{key} must be HH:MM")
+        try:
+            ZoneInfo(w.get("tz", "UTC"))
+        except Exception:  # noqa: BLE001
+            bad.append(f"window.tz {w.get('tz')!r} is not a known timezone")
+        for d in w.get("days") or []:
+            if d not in DAY_NAMES and d != "*":
+                bad.append(f"window.days contains {d!r}")
+    for f in cfg["freeze"]:
+        for key in ("from", "to"):
+            try:
+                datetime.fromisoformat(str(f.get(key)))
+            except ValueError:
+                bad.append(f"freeze entry {f!r}: {key} is not a date")
+    return bad
+
+
 def load_config(path: Path) -> dict:
     cfg = deep_merge(DEFAULTS, json.loads(path.read_text()))
     cfg["root"] = Path(cfg["root"])
     cfg["state_dir"] = Path(cfg.get("state_dir") or (cfg["root"] / "rollout"))
-    if not cfg["health_url"]:
-        raise RolloutError("health_url is not configured")
+    bad = validate_config(cfg)
+    if bad:
+        raise RolloutError(f"{path}: " + "; ".join(bad))
     return cfg
 
 
 def read_secret_file(path: str | Path | None) -> str | None:
-    """A credential file's content, or None when it is absent or still a placeholder."""
+    """A credential file's content, or None when it is absent, unreadable or still a placeholder."""
     if not path:
         return None
     p = Path(path)
-    if not p.exists():
+    try:
+        value = p.read_text().strip()
+    except OSError:
         return None
-    value = p.read_text().strip()
     if not value or value.startswith("CHANGEME"):
         return None
     return value
@@ -243,20 +322,48 @@ class State:
 
     `candidates` — shas the branch has pointed at and why they have not deployed yet.
     `dev_seen`   — which shas have been observed running on the environment named by
-                   gates.dev_version_url, and when: the soak gate's evidence.
+                   gates.dev_version_url, for how long CONTIGUOUSLY, and which one is there now:
+                   the soak gate's evidence.
     `failed`     — shas that failed a rollout; never retried without a human clearing them.
     `history`    — the last rollout summaries, newest last.
     """
 
+    EMPTY = {"candidates": {}, "dev_seen": {}, "dev_current": None, "failed": {}, "history": [],
+             "notices": {}, "last_success_at": None}
+
     def __init__(self, path: Path):
         self.path = path
-        self.data = {"candidates": {}, "dev_seen": {}, "failed": {}, "history": [],
-                     "notices": {}, "last_success_at": None}
+        self.data = json.loads(json.dumps(self.EMPTY))
+        self.corrupt: str | None = None
         if path.exists():
-            self.data.update(json.loads(path.read_text()))
+            try:
+                loaded = json.loads(path.read_text())
+                if not isinstance(loaded, dict):
+                    raise ValueError("not an object")
+                self.data.update(loaded)
+            except ValueError as e:
+                # Keep the evidence, start fresh, and say so — a state file that cannot be read
+                # must not stop every tick until somebody finds the traceback.
+                aside = path.with_name(f"{path.name}.corrupt-{now_utc().strftime('%Y%m%dT%H%M%SZ')}")
+                try:
+                    os.replace(path, aside)
+                except OSError:
+                    pass
+                self.corrupt = f"{path} was unreadable ({e}); moved to {aside} and started empty"
 
     def save(self) -> None:
         write_atomic(self.path, json.dumps(self.data, indent=2, sort_keys=True) + "\n")
+
+    def reload_failed_from_disk(self) -> None:
+        """A `forget` typed while a rollout ran must not be undone by that rollout's save."""
+        if not self.path.exists():
+            return
+        try:
+            disk = json.loads(self.path.read_text()).get("failed", {})
+        except (ValueError, OSError):
+            return
+        for sha in [s for s in self.data["failed"] if s not in disk and s != self.data.get("_this_run")]:
+            del self.data["failed"][sha]
 
     # -- convenience --------------------------------------------------------------------------
     @property
@@ -299,6 +406,10 @@ class _StripAuthOnRedirect(urllib.request.HTTPRedirectHandler):
         return new
 
 
+class GitHubUnavailable(Exception):
+    """GitHub could not be asked: network, outage, or a token it no longer accepts."""
+
+
 class GitHub:
     def __init__(self, repo: str, workflow: str, token: str):
         self.repo, self.workflow, self.token = repo, workflow, token
@@ -311,8 +422,17 @@ class GitHub:
                      "Accept": "application/vnd.github+json",
                      "X-GitHub-Api-Version": "2022-11-28",
                      "User-Agent": USER_AGENT})
-        with self.opener.open(req, timeout=300) as resp:
-            return resp.read() if raw else json.load(resp)
+        try:
+            with self.opener.open(req, timeout=300) as resp:
+                return resp.read() if raw else json.load(resp)
+        except urllib.error.HTTPError as e:
+            if e.code in (401, 403):
+                raise GitHubUnavailable(f"GitHub answered {e.code} — the token in the token file is expired or wrong") from e
+            if e.code == 404:
+                raise
+            raise GitHubUnavailable(f"GitHub answered {e.code} for {path}") from e
+        except (urllib.error.URLError, socket.timeout, ConnectionError, OSError) as e:
+            raise GitHubUnavailable(f"cannot reach GitHub: {e}") from e
 
     def branch_head(self, branch: str) -> str:
         return self.api(f"/repos/{self.repo}/git/ref/heads/{branch}")["object"]["sha"]
@@ -343,10 +463,11 @@ class GitHub:
         return out
 
     def is_ancestor_of(self, sha: str, branch: str) -> bool:
-        """True when `sha` is on `branch` — behind it or identical to it."""
-        # `behind` means the branch has moved on past sha; `identical` means it is the tip. `ahead`
-        # and `diverged` both mean the branch does NOT contain sha, which is the case this exists
-        # to catch: a commit pushed straight at the release branch that master never saw.
+        """True when `sha` is on `branch` — behind it or identical to it.
+
+        `ahead` and `diverged` both mean the branch does NOT contain sha, which is the case this
+        exists to catch: a commit pushed straight at the release branch that master never saw.
+        """
         cmp = self.api(f"/repos/{self.repo}/compare/{sha}...{branch}")
         return cmp["status"] in ("behind", "identical")
 
@@ -396,7 +517,8 @@ class Host:
 
     def release_complete(self, sha: str) -> bool:
         rel = self.release_dir(sha)
-        return (rel / "core.jar").is_file() and (rel / "web" / "index.html").is_file()
+        return (rel / "core.jar").is_file() and (rel / "web" / "index.html").is_file() \
+            and not (rel / ".partial").exists()
 
     def free_gb(self, path: Path) -> float:
         p = path
@@ -405,32 +527,56 @@ class Host:
         return shutil.disk_usage(p).free / 1e9
 
     def materialise(self, gh: GitHub, run: dict, sha: str) -> Path:
+        """Download and unpack into releases/<sha>/, all or nothing.
+
+        Built beside and renamed into place: a download interrupted by a full disk must not leave
+        a directory that LOOKS like a release, because the next attempt would skip the download and
+        install the half of it that exists.
+        """
         rel = self.release_dir(sha)
         if self.release_complete(sha):
             log("  release already on disk, not re-downloading")
             return rel
         urls = gh.artifact_urls(run["id"], sha)
+        partial = rel.with_name(f".{sha}.partial")
+        if partial.exists():
+            shutil.rmtree(partial)
+        if rel.exists():
+            shutil.rmtree(rel)
         with tempfile.TemporaryDirectory() as td:
             tmp = Path(td)
             for name, url in urls.items():
                 log(f"  downloading {name}")
                 zp = tmp / f"{name}.zip"
-                zp.write_bytes(gh.api(url, raw=True))
+                try:
+                    zp.write_bytes(gh.api(url, raw=True))
+                except GitHubUnavailable as e:
+                    raise RolloutError(str(e), retryable=True) from e
                 with zipfile.ZipFile(zp) as z:
+                    for member in z.infolist():
+                        # A zip has no `filter="data"`; refuse anything that would land outside.
+                        if member.filename.startswith(("/", "..")) or ".." in Path(member.filename).parts:
+                            raise RolloutError(f"artifact {name} contains an unsafe path {member.filename!r}")
                     z.extractall(tmp)
                 zp.unlink()
             jar = next(iter(tmp.rglob(f"core-{sha}.jar")), None)
             tgz = next(iter(tmp.rglob(f"web-{sha}.tar.gz")), None)
             if jar is None or tgz is None:
                 raise RolloutError("downloaded artifacts do not contain the jar and the dist")
-            rel.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(jar, rel / "core.jar")
-            web = rel / "web"
-            if web.exists():
-                shutil.rmtree(web)
+            partial.mkdir(parents=True)
+            shutil.copy2(jar, partial / "core.jar")
+            web = partial / "web"
             web.mkdir()
             with tarfile.open(tgz) as t:
                 t.extractall(web, filter="data")
+            # The data filter strips group-write; the tree is the deploy group's, and whoever
+            # deploys next must be able to rewrite config.json in here.
+            for p in [partial, web, *web.rglob("*")]:
+                try:
+                    os.chmod(p, (p.stat().st_mode | 0o020) & 0o7777)
+                except OSError:
+                    pass
+        os.replace(partial, rel)
         return rel
 
     def activate(self, sha: str) -> None:
@@ -442,14 +588,25 @@ class Host:
         cfg_src = Path(self.cfg["config_json"])
         if not cfg_src.is_file():
             raise RolloutError(f"{cfg_src} does not exist — it is this environment's config.json")
-        shutil.copy2(cfg_src, web / "config.json")
-        c = json.loads((web / "config.json").read_text())
+        c = json.loads(cfg_src.read_text())
         missing = [k for k in ("emsRoot",) if not c.get(k)]
         missing += ["keycloak." + k for k in ("url", "realm", "clientId") if not c.get("keycloak", {}).get(k)]
         if missing:
             raise RolloutError("config.json is missing: " + ", ".join(missing))
         if not (web / "index.html").is_file():
             raise RolloutError("no index.html in the unpacked dist")
+        dst = web / "config.json"
+        # A release somebody else installed may not be writable here. That is fine as long as
+        # its config.json already says what ours says — which for a rollback it does.
+        if not (dst.is_file() and filecmp.cmp(cfg_src, dst, shallow=False)):
+            try:
+                tmp = web / ".config.json.new"
+                shutil.copyfile(cfg_src, tmp)
+                os.chmod(tmp, 0o664)
+                os.replace(tmp, dst)
+            except PermissionError as e:
+                raise RolloutError(f"cannot write {dst}: {e} — the release was installed by another account "
+                                   f"and its config.json differs from {cfg_src}") from e
         for link, target in ((self.root / "web" / "current", web),
                              (self.root / "core" / "current.jar", rel / "core.jar")):
             link.parent.mkdir(parents=True, exist_ok=True)
@@ -460,15 +617,21 @@ class Host:
             os.replace(tmp_link, link)
 
     def mark_current(self, sha: str) -> None:
-        (self.release_dir(sha) / "DEPLOYED").write_text(iso(now_utc()) + "\n")
-        write_atomic(self.root / "current-sha", sha + "\n")
+        try:
+            (self.release_dir(sha) / "DEPLOYED").write_text(iso(now_utc()) + "\n")
+        except OSError:
+            pass  # somebody else's release; the sha file below is the record that matters
+        write_atomic(self.root / "current-sha", sha + "\n", mode=0o664)
 
     def prune(self, keep_shas: set[str]) -> None:
-        rels = sorted((self.root / "releases").glob("*/"), key=lambda p: p.stat().st_mtime, reverse=True)
+        rels = sorted((p for p in (self.root / "releases").glob("*/") if not p.name.startswith(".")),
+                      key=lambda p: p.stat().st_mtime, reverse=True)
         for i, d in enumerate(rels):
             if i < int(self.cfg["keep_releases"]) or d.name in keep_shas:
                 continue
             log(f"  pruning {d.name}")
+            shutil.rmtree(d, ignore_errors=True)
+        for d in (self.root / "releases").glob(".*.partial"):
             shutil.rmtree(d, ignore_errors=True)
 
     # -- services -------------------------------------------------------------------------------
@@ -486,11 +649,14 @@ class Host:
     def dump_database(self) -> str:
         """Take a restore point through the nightly backup unit; returns the dump's path."""
         before = self.db("newest-dump")
-        self.sudo(["/usr/bin/systemctl", "start", self.cfg["dump_service"]], timeout=3600)
+        try:
+            self.sudo(["/usr/bin/systemctl", "start", self.cfg["dump_service"]], timeout=3600)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            raise RolloutError(f"{self.cfg['dump_service']} failed: {e}", retryable=True) from e
         after = self.db("newest-dump")
         if not after or after == before:
             raise RolloutError(f"{self.cfg['dump_service']} finished but no new dump appeared "
-                               f"(newest is still {before or 'none'})")
+                               f"(newest is still {before or 'none'})", retryable=True)
         return after
 
     # -- HTTP -----------------------------------------------------------------------------------
@@ -525,11 +691,6 @@ class Host:
         with socket.socket() as s:
             return s.connect_ex(("127.0.0.1", port)) != 0
 
-    def popen(self, argv: list[str], cwd: Path, log_path: Path, env: dict | None = None) -> subprocess.Popen:
-        f = log_path.open("w")
-        return subprocess.Popen(argv, cwd=cwd, stdout=f, stderr=subprocess.STDOUT,
-                                env={**os.environ, **(env or {})})
-
 
 # ---------------------------------------------------------------------------------------------
 # notifications
@@ -549,7 +710,7 @@ class Notifier:
         self.env = env_label
         self.sent: list[tuple[str, str, str]] = []   # (severity, channel, subject) — for tests
 
-    def __call__(self, severity: str, subject: str, body: str) -> None:
+    def __call__(self, severity: str, subject: str, body: str) -> list[str]:
         subject = f"[easy-rollout {self.env}] {severity.upper()}: {subject}"
         log(f"notify {severity}: {subject}")
         delivered = []
@@ -563,7 +724,8 @@ class Notifier:
         if not delivered:
             # The journal is then the only place this went. Say so, so that a host with every
             # channel still a placeholder is at least visibly mute.
-            log(f"  NO notification channel is configured for {severity} — this message reached nobody")
+            log(f"  NO notification channel delivered this {severity} — it reached nobody")
+        return delivered
 
     def _mail(self, severity: str, subject: str, body: str) -> bool:
         m = self.cfg.get("mail") or {}
@@ -609,12 +771,15 @@ class Notifier:
         token = read_secret_file(y.get("token_file"))
         if not token or not y.get("base_url") or not y.get("project_id"):
             return False
+        if not y.get("visibility_group_id"):
+            # The instance has guest access and the body carries core's log tail. Never public.
+            log("  youtrack: no visibility group configured, refusing to file an issue publicly")
+            return False
         issue = {"summary": subject[:200],
                  "description": body[:20000],
-                 "project": {"id": y["project_id"]}}
-        if y.get("visibility_group_id"):
-            issue["visibility"] = {"$type": "LimitedVisibility",
-                                   "permittedGroups": [{"id": y["visibility_group_id"]}]}
+                 "project": {"id": y["project_id"]},
+                 "visibility": {"$type": "LimitedVisibility",
+                                "permittedGroups": [{"id": y["visibility_group_id"]}]}}
         req = urllib.request.Request(f"{y['base_url'].rstrip('/')}/api/issues?fields=idReadable",
                                      data=json.dumps(issue).encode(),
                                      headers={"Authorization": f"Bearer {token}",
@@ -652,7 +817,7 @@ def in_window(window: dict, now: datetime) -> tuple[bool, str]:
 
 
 def in_freeze(freeze: list[dict], now: datetime, tz_name: str) -> str | None:
-    """The reason for an active freeze period, or None."""
+    """The reason for an active freeze period, or None. Dates are local, inclusive."""
     local_day = now.astimezone(ZoneInfo(tz_name)).date()
     for f in freeze:
         start = datetime.fromisoformat(f["from"]).date()
@@ -663,10 +828,18 @@ def in_freeze(freeze: list[dict], now: datetime, tz_name: str) -> str | None:
 
 
 def soak_satisfied(state: State, sha: str, soak_hours: float) -> tuple[bool, str]:
+    """Has `sha` run on dev for `soak_hours` in one unbroken stretch, and is it still there?
+
+    Contiguous, not first-to-last: a commit that was on dev for twenty minutes, replaced for a
+    week, and put back for twenty minutes has soaked for forty minutes, not a week. And still
+    there: a commit dev has since rolled back from is one dev found wanting.
+    """
     seen = state.dev_seen.get(sha)
     if not seen:
         return False, "never observed running on dev"
-    hours = hours_between(parse_iso(seen["first"]), parse_iso(seen["last"]))
+    hours = float(seen.get("hours", 0.0))
+    if state.data.get("dev_current") != sha:
+        return False, f"dev has moved on from it (was there {hours:.1f}h; dev now runs {short(state.data.get('dev_current'))})"
     if hours < soak_hours:
         return False, f"observed on dev for {hours:.1f}h, needs {soak_hours}h"
     return True, ""
@@ -679,26 +852,35 @@ def soak_satisfied(state: State, sha: str, soak_hours: float) -> tuple[bool, str
 class Rollout:
     """One attempt to move production from `previous` to `sha`, recorded step by step."""
 
-    def __init__(self, cfg: dict, host: Host, gh: GitHub, notify: Notifier, smoke, sha: str, run: dict):
+    def __init__(self, cfg: dict, host: Host, gh: GitHub, notify: Notifier, smoke, sha: str, run: dict,
+                 deadline: float | None = None):
         self.cfg, self.host, self.gh, self.notify, self.smoke = cfg, host, gh, notify, smoke
         self.sha, self.run = sha, run
         self.previous = host.current_sha()
         self.started = now_utc()
+        self.deadline = deadline          # time.monotonic() value; None means no budget
         self.steps: list[dict] = []
         self.dump: str | None = None
         self.migrates: bool | None = None
         self.touched_production = False
         self.outcome = "unknown"
         self.detail = ""
+        self.retryable = False
+        self.rehearsal_log: Path | None = None
         rollouts = cfg["state_dir"] / "rollouts"
-        rollouts.mkdir(parents=True, exist_ok=True)
+        rollouts.mkdir(parents=True, exist_ok=True, mode=DIR_MODE)
         stamp = self.started.strftime("%Y-%m-%dT%H%M%SZ")
         self.record_path = rollouts / f"{stamp}-{sha[:8]}.json"
         log.sink = rollouts / f"{stamp}-{sha[:8]}.log"
 
     # -- bookkeeping ----------------------------------------------------------------------------
+    def check_budget(self) -> None:
+        if self.deadline is not None and time.monotonic() > self.deadline:
+            raise Interrupted("the rollout's time budget is spent")
+
     def step(self, name: str, fn, *args, **kw):
         log(f"==> {name}")
+        self.check_budget()
         t0 = time.monotonic()
         try:
             result = fn(*args, **kw)
@@ -719,11 +901,15 @@ class Rollout:
     def summary(self) -> dict:
         return {"sha": self.sha, "previous": self.previous, "started": iso(self.started),
                 "outcome": self.outcome, "detail": self.detail, "migrates": self.migrates,
+                "retryable": self.retryable,
                 "dump": self.dump, "run_url": self.run.get("html_url"), "steps": self.steps,
                 "touched_production": self.touched_production}
 
     def save(self) -> None:
-        write_atomic(self.record_path, json.dumps(self.summary(), indent=2) + "\n")
+        try:
+            write_atomic(self.record_path, json.dumps(self.summary(), indent=2) + "\n")
+        except OSError as e:
+            log(f"  (could not write {self.record_path}: {e})")
 
     def report(self) -> str:
         lines = [f"environment  {self.cfg.get('environment', '?')}",
@@ -745,8 +931,11 @@ class Rollout:
         gates = cfg["gates"]
         free = host.free_gb(host.root)
         if free < gates["min_free_gb"]:
-            raise RolloutError(f"only {free:.1f} GB free under {host.root}, need {gates['min_free_gb']}")
-        host.db("ping")
+            raise RolloutError(f"only {free:.1f} GB free under {host.root}, need {gates['min_free_gb']}", retryable=True)
+        try:
+            host.db("ping")
+        except RolloutError as e:
+            raise RolloutError(str(e), retryable=True) from e
         if not self.previous or not host.release_complete(self.previous):
             raise RolloutError(f"the current release {short(self.previous)} is not intact on disk, so there "
                                f"would be nothing to roll back to")
@@ -758,10 +947,16 @@ class Rollout:
         return f"{free:.0f} GB free, core healthy, previous release {short(self.previous)} intact"
 
     def baseline_smoke(self) -> str:
-        ok, text = self.run_smoke(expect_sha=self.previous, attempts=1)
+        ok, text, configured = self.run_smoke(expect_sha=self.previous,
+                                              attempts=int(self.cfg["smoke"].get("baseline_attempts", 2)))
+        if not configured and self.cfg["smoke"].get("required", True):
+            raise RolloutError("the smoke suite is required on this environment and is not configured — "
+                               "fill in the smoke secrets (doc/production-rollout.md §setup)", retryable=True)
+        if not configured:
+            return text
         if not ok:
             raise RolloutError("the smoke suite fails against the CURRENT release, so a failure after the "
-                               "deploy could not be attributed. Not deploying. Details:\n" + text)
+                               "deploy could not be attributed. Not deploying. Details:\n" + text, retryable=True)
         return "current release passes the full suite"
 
     def fetch(self) -> str:
@@ -772,6 +967,14 @@ class Rollout:
         self.dump = self.host.dump_database()
         return self.dump
 
+    def changelog_count(self, *args: str) -> int | None:
+        """Rows in databasechangelog, or None when the helper could not say — never a made-up 0."""
+        try:
+            return int(self.host.db("changelog-count", *args))
+        except (RolloutError, ValueError) as e:
+            log(f"  could not count changesets ({e}); treating the schema change as unknown")
+            return None
+
     def rehearse(self) -> str:
         """Boot the new jar against a copy of production's data, with every integration disabled."""
         cfg, host = self.cfg, self.host
@@ -781,45 +984,46 @@ class Rollout:
         if not self.dump:
             raise RolloutError("no dump to rehearse against")
         if not host.port_free(int(r["port"])):
-            raise RolloutError(f"port {r['port']} is in use — a previous rehearsal may still be running")
-        work = cfg["state_dir"] / "rehearsal"
-        work.mkdir(parents=True, exist_ok=True)
-        before = int(host.db("changelog-count"))
-        host.db("rehearsal-create", self.dump, timeout=3600)
+            raise RolloutError(f"port {r['port']} is in use — a previous rehearsal may still be running", retryable=True)
+        before = self.changelog_count()
+        try:
+            host.db("rehearsal-create", self.dump, timeout=3600)
+        except RolloutError as e:
+            raise RolloutError(str(e), retryable=True) from e
         try:
             config_path = host.db("rehearsal-config", str(r["port"]))
             assert_rehearsal_config_is_harmless(Path(config_path).read_text(), int(r["port"]))
-            argv = [cfg["java"], *str(r["java_opts"]).split(),
-                    "-jar", str(host.release_dir(self.sha) / "core.jar"),
-                    f"--spring.config.location=file:{config_path}"]
-            proc = host.popen(argv, cwd=work, log_path=work / "core.log",
-                              env={"EASY_LOG_PATH": str(work / "easy.log")})
+            log_path = Path(host.db("rehearsal-run", self.sha, str(r["port"])))
+            self.rehearsal_log = log_path
             try:
                 deadline = time.monotonic() + int(r["timeout_s"])
                 while time.monotonic() < deadline:
-                    if proc.poll() is not None:
-                        raise RolloutError(f"the new release exited with status {proc.returncode} during the "
-                                           f"rehearsal — migration or configuration failure. Last log lines:\n"
-                                           + tail_of(work / "core.log"))
+                    self.check_budget()
+                    status = host.db("rehearsal-status")
+                    if status.startswith("failed") or status == "inactive":
+                        raise RolloutError(f"the new release exited ({status}) during the rehearsal — "
+                                           f"migration or configuration failure. Last log lines:\n"
+                                           + tail_of(log_path))
                     if host.http_status(f"http://127.0.0.1:{r['port']}/v2/") in (401, 403, 200):
                         break
                     sleep(3)
                 else:
                     raise RolloutError(f"the new release did not answer within {r['timeout_s']}s in the rehearsal:\n"
-                                       + tail_of(work / "core.log"))
+                                       + tail_of(log_path))
             finally:
-                proc.terminate()
                 try:
-                    proc.wait(60)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-            after = int(host.db("changelog-count", "rehearsal"))
+                    host.db("rehearsal-stop")
+                except RolloutError as e:
+                    log(f"  warning: {e}")
+            after = self.changelog_count("rehearsal")
         finally:
             try:
                 host.db("rehearsal-drop")
             except RolloutError as e:
                 log(f"  warning: {e}")
-        self.migrates = after > before
+        self.migrates = None if (before is None or after is None) else after > before
+        if self.migrates is None:
+            return "new release booted against a copy of production; schema change UNKNOWN (count failed)"
         return (f"new release booted against a copy of production; {after - before} changeset(s) applied"
                 if self.migrates else "new release booted against a copy of production; no schema change")
 
@@ -831,7 +1035,9 @@ class Rollout:
 
     def health(self, sha: str) -> str:
         cfg, host = self.cfg, self.host
-        timeout = cfg["health_timeout_migrating_s"] if self.migrates else cfg["health_timeout_s"]
+        # Unknown counts as migrating: the cost of waiting longer is minutes, the cost of
+        # restarting core in the middle of a migration is a restore.
+        timeout = cfg["health_timeout_s"] if self.migrates is False else cfg["health_timeout_migrating_s"]
         if not host.wait_healthy(cfg["health_url"], int(timeout)):
             raise RolloutError(f"core did not answer at {cfg['health_url']} within {timeout}s after installing "
                                f"{short(sha)}. Log:\n{host.core_log_tail()}")
@@ -839,36 +1045,43 @@ class Rollout:
             raise RolloutError(f"{cfg['health_url']} answers but {cfg['service']} is not active")
         return "401 from the public API, unit active"
 
-    def run_smoke(self, expect_sha: str, attempts: int | None = None) -> tuple[bool, str]:
+    def run_smoke(self, expect_sha: str, attempts: int | None = None) -> tuple[bool, str, bool]:
+        """(passed, report text, configured)."""
         s = self.cfg["smoke"]
         attempts = attempts or int(s["attempts"])
         text = ""
         for i in range(1, attempts + 1):
             report = self.smoke(expect_sha=expect_sha)
             text = report.text()
-            if report.ok:
-                return True, text
             if report.not_configured:
-                # An unconfigured suite is a failed gate wherever the suite is required. Where it is
-                # not, say so in the record rather than pretend a check happened.
+                # An unconfigured suite is a failed gate wherever the suite is required. Where it
+                # is not, say so in the record rather than pretend a check happened.
                 if not s.get("required", True):
-                    return True, "smoke suite not configured, and not required on this environment"
-                break
+                    return True, "smoke suite not configured, and not required on this environment", False
+                return False, text, False
+            if report.ok:
+                return True, text, True
             if i < attempts:
                 log(f"  smoke attempt {i}/{attempts} failed; retrying in {s['retry_delay_s']}s")
                 sleep(int(s["retry_delay_s"]))
-        return False, text
+        return False, text, True
 
     def post_smoke(self) -> str:
-        ok, text = self.run_smoke(expect_sha=self.sha)
+        ok, text, _ = self.run_smoke(expect_sha=self.sha)
         if not ok:
             raise RolloutError("smoke suite failed against the new release:\n" + text)
         return "every check passed"
 
-    def finish(self) -> str:
+    def mark(self) -> str:
         self.host.mark_current(self.sha)
-        self.host.prune({self.sha, self.previous})
         return f"{short(self.sha)} is live"
+
+    def prune(self) -> str:
+        try:
+            self.host.prune({self.sha, self.previous})
+        except Exception as e:  # noqa: BLE001 — housekeeping is never a reason to roll back
+            return f"prune failed, ignored: {e}"
+        return "old releases pruned"
 
     # -- rollback -------------------------------------------------------------------------------
     def rollback(self, why: str) -> None:
@@ -876,11 +1089,27 @@ class Rollout:
         log(f"!!! rolling back to {short(self.previous)}: {why[:200]}")
         try:
             self.step("rollback: reactivate previous", self._reactivate_previous)
+        except RolloutError as e:
+            # The symlinks could not even be moved back. Restoring the database would not help
+            # and would discard data for nothing.
+            self.outcome, self.detail = "DOWN", f"could not reactivate the previous release: {e}"
+            return
+        try:
             self.step("rollback: health", self.health, self.previous)
         except RolloutError as e:
             policy = cfg["rollback"]["restore_db"]
+            unit_down = not host.core_active()
+            # Restore only on positive evidence that the previous JAR does not start — the unit is
+            # down or crash-looping — never because the public URL is quiet: that is nginx, DNS or
+            # a slow warm-up, and a restore would throw data away to fix none of them.
+            if not unit_down:
+                self.outcome = "DOWN"
+                self.detail = (f"{cfg['service']} is active on {short(self.previous)} but {cfg['health_url']} does "
+                               f"not answer — not a database problem, so the database was left alone: {e}")
+                return
             if self.dump and (policy == "always" or (policy == "auto" and self.migrates is not False)):
-                log(f"!!! previous release does not come up; restoring the database from {self.dump} (policy {policy})")
+                log(f"!!! previous release does not start; restoring the database from {self.dump} "
+                    f"(policy {policy}, migrates={self.migrates})")
                 try:
                     self.step("rollback: restore database", lambda: host.db("restore", self.dump, timeout=7200))
                     self.step("rollback: health after restore", self.health, self.previous)
@@ -889,7 +1118,7 @@ class Rollout:
                     return
             else:
                 self.outcome = "DOWN"
-                self.detail = (f"previous release does not come up and the database was not restored "
+                self.detail = (f"previous release does not start and the database was not restored "
                                f"(policy {policy}, migrates={self.migrates}): {e}")
                 return
         try:
@@ -899,36 +1128,46 @@ class Rollout:
             self.outcome, self.detail = "rolled-back-degraded", (f"production is back on {short(self.previous)} and "
                                                                  f"answers, but the smoke suite fails: {e}")
 
-    def _smoke_previous(self) -> str:
-        ok, text = self.run_smoke(expect_sha=self.previous)
-        if not ok:
-            raise RolloutError(text)
-        return "every check passes on the previous release"
-
     def _reactivate_previous(self) -> str:
         self.host.activate(self.previous)
         self.host.restart_core()
+        # current-sha names what is live, whatever happens next.
+        self.host.mark_current(self.previous)
         return f"symlinks back to {short(self.previous)}"
+
+    def _smoke_previous(self) -> str:
+        ok, text, _ = self.run_smoke(expect_sha=self.previous)
+        if not ok:
+            raise RolloutError(text)
+        return "every check passes on the previous release"
 
     # -- the whole thing ------------------------------------------------------------------------
     def execute(self) -> dict:
         log(f"### rollout {short(self.previous)} -> {short(self.sha)} — {self.run.get('html_url')}")
         try:
-            self.step("preflight", self.preflight)
-            self.step("baseline smoke", self.baseline_smoke)
-            self.step("fetch artifacts", self.fetch)
-            self.step("database dump", self.take_dump)
-            self.step("rehearsal", self.rehearse)
-            self.step("activate", self.activate)
-            self.step("health", self.health, self.sha)
-            self.step("smoke", self.post_smoke)
-            self.step("finish", self.finish)
-            self.outcome = "deployed"
-        except RolloutError as e:
-            if self.touched_production:
-                self.rollback(str(e))
-            else:
-                self.outcome, self.detail = "aborted", f"production untouched: {e}"
+            try:
+                self.step("preflight", self.preflight)
+                self.step("baseline smoke", self.baseline_smoke)
+                self.step("fetch artifacts", self.fetch)
+                self.step("database dump", self.take_dump)
+                self.step("rehearsal", self.rehearse)
+                self.step("activate", self.activate)
+                self.step("health", self.health, self.sha)
+                self.step("smoke", self.post_smoke)
+                self.step("mark current", self.mark)
+                self.outcome = "deployed"
+            except RolloutError as e:
+                if self.touched_production:
+                    self.rollback(str(e))
+                else:
+                    self.retryable = e.retryable
+                    self.outcome, self.detail = "aborted", f"production untouched: {e}"
+            if self.outcome == "deployed":
+                self.step("prune", self.prune)
+        except BaseException as e:  # noqa: BLE001 — never leave without a verdict on disk
+            self.outcome = "DOWN" if self.touched_production else "aborted"
+            self.detail = f"unexpected failure ({type(e).__name__}: {e}); state of the host unknown — look"
+            self.retryable = not self.touched_production
         self.save()
         log.sink = None
         return self.summary()
@@ -967,9 +1206,10 @@ def assert_rehearsal_config_is_harmless(text: str, port: int) -> None:
 
 class Controller:
     def __init__(self, cfg: dict, host: Host, gh: GitHub, notify: Notifier, smoke, state: State,
-                 clock=now_utc):
+                 clock=now_utc, deadline: float | None = None):
         self.cfg, self.host, self.gh, self.notify, self.smoke, self.state = cfg, host, gh, notify, smoke, state
         self.clock = clock
+        self.deadline = deadline
 
     # -- files a person may drop into the state directory ---------------------------------------
     @property
@@ -984,7 +1224,13 @@ class Controller:
         write_atomic(self.pause_file, f"{iso(self.clock())} {reason}\n", mode=0o664)
 
     def paused_reason(self) -> str | None:
-        return self.pause_file.read_text().strip() if self.pause_file.exists() else None
+        """Presence pauses. An empty file is `touch`ed by a person in a hurry, and means it."""
+        if not self.pause_file.exists():
+            return None
+        try:
+            return self.pause_file.read_text().strip() or "(no reason given)"
+        except OSError:
+            return "(pause file unreadable)"
 
     # -- observing dev --------------------------------------------------------------------------
     def record_dev_sighting(self) -> None:
@@ -997,13 +1243,21 @@ class Controller:
         sha = extract_sha(text)
         if not sha:
             return
-        now = iso(self.clock())
-        entry = self.state.dev_seen.setdefault(sha, {"first": now, "last": now})
-        entry["last"] = now
+        now = self.clock()
+        state = self.state
+        entry = state.dev_seen.get(sha)
+        previous = state.data.get("dev_current")
+        if entry is None or previous != sha:
+            # First sighting, or dev came back to it: a new stretch starts now.
+            state.dev_seen[sha] = {"first": iso(now), "last": iso(now), "hours": 0.0}
+        else:
+            entry["hours"] = round(float(entry.get("hours", 0.0)) + hours_between(parse_iso(entry["last"]), now), 3)
+            entry["last"] = iso(now)
+        state.data["dev_current"] = sha
         # Forget sightings older than a month; the file should not grow forever.
-        cutoff = self.clock() - timedelta(days=31)
-        for k in [k for k, v in self.state.dev_seen.items() if parse_iso(v["last"]) < cutoff]:
-            del self.state.dev_seen[k]
+        cutoff = now - timedelta(days=31)
+        for k in [k for k, v in state.dev_seen.items() if parse_iso(v["last"]) < cutoff]:
+            del state.dev_seen[k]
 
     # -- gates ----------------------------------------------------------------------------------
     def gate_reasons(self, sha: str, run: dict, now: datetime) -> list[str]:
@@ -1031,19 +1285,51 @@ class Controller:
         last = self.state.data.get("last_success_at")
         if last and hours_between(parse_iso(last), now) < g["min_gap_hours"]:
             reasons.append(f"last rollout was {hours_between(parse_iso(last), now):.1f}h ago, minimum gap {g['min_gap_hours']}h")
+        attempt = self.state.candidates.get(sha, {}).get("last_attempt")
+        if attempt and hours_between(parse_iso(attempt), now) < g.get("min_retry_gap_hours", 0):
+            reasons.append(f"last attempt failed {hours_between(parse_iso(attempt), now):.1f}h ago for a reason that may "
+                           f"pass later; retrying after {g['min_retry_gap_hours']}h")
         return reasons
 
-    def override_for(self, sha: str) -> bool:
-        """`deploy-now` holding this sha or `head` skips the scheduling gates — never the checks."""
+    def deploy_now(self) -> tuple[str, datetime] | None:
+        """The pending override as (sha-or-'head', written-at), or None if absent or expired."""
         if not self.deploy_now_file.exists():
+            return None
+        try:
+            parts = self.deploy_now_file.read_text().split()
+        except OSError:
+            return None
+        if not parts:
+            return None
+        want = parts[0]
+        written = parse_iso(parts[1]) if len(parts) > 1 else self.clock()
+        ttl = float(self.cfg["gates"].get("deploy_now_ttl_hours", 24))
+        if hours_between(written, self.clock()) > ttl:
+            log(f"deploy-now for {want} written {iso(written)} has expired ({ttl}h); ignoring and removing it")
+            self.deploy_now_file.unlink(missing_ok=True)
+            return None
+        return want, written
+
+    def override_for(self, sha: str) -> bool:
+        """`deploy-now` naming this sha (7+ chars) or `head` skips the scheduling gates — never the checks."""
+        pending = self.deploy_now()
+        if pending is None:
             return False
-        want = self.deploy_now_file.read_text().split()[0] if self.deploy_now_file.read_text().split() else ""
-        return want == "head" or (len(want) >= 7 and sha.startswith(want))
+        want, _ = pending
+        if want == "head":
+            return True
+        if len(want) >= 7 and sha.startswith(want):
+            return True
+        log(f"deploy-now names {want} but the branch points at {short(sha)} — not applying it")
+        return False
 
     # -- one tick -------------------------------------------------------------------------------
     def tick(self) -> str:
         now = self.clock()
         state = self.state
+        if state.corrupt and state.notice_due("state-corrupt", 24, now):
+            self.notify(WARN, "state file was unreadable and has been reset", state.corrupt)
+            state.noticed("state-corrupt", now)
         try:
             self.record_dev_sighting()
         except Exception as e:  # noqa: BLE001
@@ -1054,11 +1340,15 @@ class Controller:
             state.save()
             return f"paused: {reason}"
 
-        head = self.gh.branch_head(self.cfg["branch"])
+        try:
+            head = self.gh.branch_head(self.cfg["branch"])
+        except GitHubUnavailable as e:
+            return self.github_unavailable(str(e), now)
         current = self.host.current_sha()
         if head == current:
             state.candidates.clear()
-            state.clear_notice("stuck")
+            for key in ("stuck", "github"):
+                state.clear_notice(key)
             state.save()
             return "steady"
 
@@ -1066,10 +1356,15 @@ class Controller:
         if head in state.failed:
             cand["reasons"] = [f"failed on {state.failed[head]['at']}: {state.failed[head]['why'][:200]} — "
                                f"`easy-rollout forget {head[:8]}` to allow a retry"]
+            self.maybe_alarm_stuck(head, cand, now)
             state.save()
             return "failed-candidate"
 
-        run = self.gh.green_run_for(head)
+        try:
+            run = self.gh.green_run_for(head)
+        except GitHubUnavailable as e:
+            return self.github_unavailable(str(e), now)
+        state.clear_notice("github")
         if run is None:
             cand["reasons"] = ["no green CI run yet"]
             self.maybe_alarm_stuck(head, cand, now)
@@ -1090,6 +1385,21 @@ class Controller:
             log(f"deploy-now override for {short(head)} — scheduling gates skipped, checks are not")
             self.deploy_now_file.unlink(missing_ok=True)
         return self.rollout(head, run)
+
+    def github_unavailable(self, why: str, now: datetime) -> str:
+        """Not a crash, not a CRITICAL every five minutes: a WARN once a day while it lasts."""
+        log(f"github unavailable: {why}")
+        g = self.cfg["gates"]
+        first = self.state.data["notices"].get("github-since")
+        if not first:
+            self.state.data["notices"]["github-since"] = iso(now)
+        elif hours_between(parse_iso(first), now) >= 1 and self.state.notice_due("github", g["stuck_repeat_hours"], now):
+            self.notify(WARN, "GitHub has been unreachable for hours",
+                        f"Every tick since {first} has failed to ask GitHub: {why}\n\nNothing is wrong with "
+                        f"production. If the message names the token, put a new one in the token file.")
+            self.state.noticed("github", now)
+        self.state.save()
+        return "github-unavailable"
 
     def maybe_alarm_stuck(self, head: str, cand: dict, now: datetime) -> None:
         g = self.cfg["gates"]
@@ -1112,25 +1422,37 @@ class Controller:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except OSError:
                 return "another rollout holds the lock"
-            r = Rollout(cfg, self.host, self.gh, self.notify, self.smoke, sha, run)
+            self.state.data["_this_run"] = sha
+            r = Rollout(cfg, self.host, self.gh, self.notify, self.smoke, sha, run, deadline=self.deadline)
             summary = r.execute()
         now = self.clock()
+        self.state.reload_failed_from_disk()
         self.state.record_history({k: summary[k] for k in ("sha", "previous", "started", "outcome", "detail")})
         outcome = summary["outcome"]
+        cand = self.state.candidates.setdefault(sha, {"first_seen": iso(now)})
         if outcome == "deployed":
             self.state.data["last_success_at"] = iso(now)
             self.state.candidates.clear()
             commits = self.gh.commits_between(summary["previous"], sha) if summary["previous"] else []
             self.notify(INFO, f"deployed {short(sha)}",
                         r.report() + "\n\nCommits:\n  " + "\n  ".join(commits or ["(none listed)"]))
+        elif outcome == "aborted" and summary.get("retryable"):
+            # Production was never touched and the reason is not the commit's: GitHub, the disk,
+            # the backup unit, a smoke suite that could not run. Try again after a gap, and say
+            # so — once, not on every attempt.
+            cand["last_attempt"] = iso(now)
+            cand["reasons"] = [f"attempt at {iso(now)} aborted (will retry): {summary['detail'][:200]}"]
+            if self.state.notice_due(f"retry-{sha[:8]}", self.cfg["gates"]["stuck_repeat_hours"], now):
+                self.notify(WARN, f"rollout of {short(sha)} aborted before touching production; will retry",
+                            r.report() + f"\n\nRetried no sooner than {self.cfg['gates']['min_retry_gap_hours']}h from now, "
+                            f"at the next window. If this keeps happening, look at the reason above.")
+                self.state.noticed(f"retry-{sha[:8]}", now)
         elif outcome == "aborted":
-            # Production was never touched. Deterministic failures (a migration that does not apply,
-            # a missing config key, a smoke suite that fails against the CURRENT release) will not
-            # fix themselves, so the sha is parked until a person looks — but nothing is paused,
-            # because a *new* commit that fixes the problem should deploy on its own.
+            # Production was never touched and the failure is the commit's. It will not fix itself,
+            # so the sha is parked until a person looks — but nothing is paused, because a NEW
+            # commit that fixes the problem should deploy on its own.
             self.state.failed[sha] = {"at": iso(now), "why": summary["detail"]}
-            severity = CRITICAL if "CURRENT release" in summary["detail"] else WARN
-            self.notify(severity, f"rollout of {short(sha)} aborted before touching production",
+            self.notify(WARN, f"rollout of {short(sha)} aborted before touching production",
                         r.report() + "\n\nA fixed commit pushed to the branch will be attempted at the next window. "
                         f"To retry this same commit: `easy-rollout forget {sha[:8]}`.")
         else:
@@ -1141,6 +1463,7 @@ class Controller:
             self.notify(CRITICAL, f"{outcome.upper()}: {short(sha)} failed after deploy", r.report() +
                         "\n\nAutomatic rollouts are PAUSED. `easy-rollout status` on the host; "
                         "`easy-rollout resume` when the cause is understood.")
+        self.state.data.pop("_this_run", None)
         self.state.save()
         return outcome
 
@@ -1165,19 +1488,27 @@ def extract_sha(text: str) -> str | None:
 # CLI
 # ---------------------------------------------------------------------------------------------
 
-def build(cfg: dict, smoke_factory=None):
+class TokenMissing(RolloutError):
+    """The token file is absent or a placeholder: nothing can be asked of GitHub yet."""
+
+
+def build(cfg: dict, smoke_factory=None, deadline: float | None = None):
     token = read_secret_file(cfg["token_file"])
     if token is None:
-        raise RolloutError(f"{cfg['token_file']} is absent or still a placeholder — nothing can be resolved "
-                           f"until a GitHub token with Actions:read is in it")
+        raise TokenMissing(f"{cfg['token_file']} is absent, unreadable or still a placeholder — nothing can be "
+                           f"resolved until a GitHub token with Actions:read is in it")
     host = Host(cfg)
     gh = GitHub(cfg["repo"], cfg["workflow"], token)
     notify = Notifier(cfg, cfg.get("environment", cfg["branch"]))
+    state = load_state(cfg)
+    smoke = (smoke_factory or default_smoke_factory)(cfg)
+    return Controller(cfg, host, gh, notify, smoke, state, deadline=deadline)
+
+
+def load_state(cfg: dict) -> State:
     state_dir: Path = cfg["state_dir"]
     state_dir.mkdir(parents=True, exist_ok=True)
-    state = State(state_dir / "state.json")
-    smoke = (smoke_factory or default_smoke_factory)(cfg)
-    return Controller(cfg, host, gh, notify, smoke, state)
+    return State(state_dir / "state.json")
 
 
 def default_smoke_factory(cfg: dict):
@@ -1190,14 +1521,21 @@ def default_smoke_factory(cfg: dict):
     return run
 
 
-def cmd_status(ctrl: Controller) -> int:
-    s = ctrl.state.data
-    print(f"branch        {ctrl.cfg['branch']}")
-    print(f"current-sha   {ctrl.host.current_sha() or 'nothing'}")
-    print(f"paused        {ctrl.paused_reason() or 'no'}")
-    if ctrl.deploy_now_file.exists():
-        print(f"deploy-now    {ctrl.deploy_now_file.read_text().strip()}")
+def cmd_status(cfg: dict) -> int:
+    state = load_state(cfg)
+    s = state.data
+    host = Host(cfg)
+    state_dir: Path = cfg["state_dir"]
+    print(f"branch        {cfg['branch']}")
+    print(f"current-sha   {host.current_sha() or 'nothing'}")
+    pause = state_dir / "pause"
+    print(f"paused        {(pause.read_text().strip() or '(no reason given)') if pause.exists() else 'no'}")
+    dn = state_dir / "deploy-now"
+    if dn.exists():
+        print(f"deploy-now    {dn.read_text().strip()}")
     print(f"last success  {s.get('last_success_at') or 'never'}")
+    if s.get("dev_current"):
+        print(f"dev runs      {s['dev_current'][:8]}")
     for sha, c in s["candidates"].items():
         print(f"candidate     {sha[:8]} since {c['first_seen']}")
         for r in c.get("reasons", []):
@@ -1205,7 +1543,7 @@ def cmd_status(ctrl: Controller) -> int:
     for sha, f in s["failed"].items():
         print(f"failed        {sha[:8]} at {f['at']}: {f['why'][:160]}")
     if s["dev_seen"]:
-        print("seen on dev   " + ", ".join(f"{k[:8]} ({v['first'][:16]}..{v['last'][:16]})"
+        print("seen on dev   " + ", ".join(f"{k[:8]} ({v.get('hours', 0):.1f}h)"
                                           for k, v in sorted(s["dev_seen"].items(), key=lambda kv: kv[1]["last"])[-5:]))
     for h in s["history"][-5:]:
         print(f"history       {h['started']} {h['previous'][:8] if h['previous'] else '-':>8} -> {h['sha'][:8]} {h['outcome']}: {h['detail'][:120]}")
@@ -1215,7 +1553,11 @@ def cmd_status(ctrl: Controller) -> int:
 def cmd_check(ctrl: Controller) -> int:
     """What the next tick would decide, without doing it."""
     now = ctrl.clock()
-    head = ctrl.gh.branch_head(ctrl.cfg["branch"])
+    try:
+        head = ctrl.gh.branch_head(ctrl.cfg["branch"])
+    except GitHubUnavailable as e:
+        print(f"decision      cannot ask GitHub: {e}")
+        return 1
     current = ctrl.host.current_sha()
     print(f"branch head   {head}")
     print(f"current-sha   {current or 'nothing'}")
@@ -1226,13 +1568,16 @@ def cmd_check(ctrl: Controller) -> int:
         print(f"decision      paused: {ctrl.paused_reason()}")
         return 0
     if head in ctrl.state.failed:
-        print(f"decision      {head[:8]} failed before and will not be retried automatically")
+        print(f"decision      {head[:8]} failed before and will not be retried automatically (`forget` to allow it)")
         return 0
     run = ctrl.gh.green_run_for(head)
     if run is None:
         print("decision      waiting for a green CI run")
         return 0
     print(f"ci run        {run['html_url']}")
+    pending = ctrl.deploy_now()
+    if pending:
+        print(f"deploy-now    {pending[0]} (written {iso(pending[1])})")
     reasons = ctrl.gate_reasons(head, run, now)
     if ctrl.override_for(head):
         print("decision      deploy-now override present — would roll out on the next tick")
@@ -1245,10 +1590,18 @@ def cmd_check(ctrl: Controller) -> int:
     return 0
 
 
+def install_signal_handlers() -> None:
+    def on_term(signum, frame):
+        raise Interrupted(f"received signal {signum}; finishing the way a failure would")
+    signal.signal(signal.SIGTERM, on_term)
+    signal.signal(signal.SIGINT, on_term)
+
+
 def main(argv: list[str] | None = None) -> int:
+    os.umask(0o027)
     p = argparse.ArgumentParser(prog="easy-rollout", description=__doc__.split("\n\n")[0])
     p.add_argument("--config", default="/etc/easy/rollout.json")
-    sub = p.add_subparsers(dest="cmd")
+    sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("tick", help="what the timer runs: decide, and roll out if everything allows it")
     sub.add_parser("status", help="state, candidates and why they wait, recent history")
     sub.add_parser("check", help="what the next tick would decide, without acting")
@@ -1256,22 +1609,24 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("reason", nargs="*")
     sub.add_parser("resume", help="allow automatic rollouts again")
     sp = sub.add_parser("deploy-now", help="skip the scheduling gates for one commit (never the checks)")
-    sp.add_argument("sha", help="a commit id prefix (7+ chars), or `head`")
+    sp.add_argument("sha", help="a commit id prefix (7+ chars) that the branch points at, or `head`")
     sp = sub.add_parser("forget", help="allow a failed commit to be attempted again")
     sp.add_argument("sha")
     sp = sub.add_parser("smoke", help="run the end-to-end suite now, against whatever is live")
     sp.add_argument("--expect-sha", default=None)
     sp = sub.add_parser("rollback", help="put a release that is on disk back, by hand")
     sp.add_argument("sha")
+    sub.add_parser("notify-test", help="send a test notification at every severity and say which channels delivered")
     sp = sub.add_parser("notify-failure", help="used by systemd OnFailure=: report that a unit failed")
     sp.add_argument("unit")
     args = p.parse_args(argv)
 
     cfg = load_config(Path(args.config))
-    cmd = args.cmd or "tick"
-
-    # Commands that only write a file need no token and no network.
+    cmd = args.cmd
     state_dir: Path = cfg["state_dir"]
+
+    # Commands that only touch the state directory need no token and no network, and run as the
+    # person typing them.
     if cmd == "pause":
         state_dir.mkdir(parents=True, exist_ok=True)
         write_atomic(state_dir / "pause", f"{iso(now_utc())} {' '.join(args.reason) or 'paused by hand'}\n", 0o664)
@@ -1281,16 +1636,31 @@ def main(argv: list[str] | None = None) -> int:
         (state_dir / "pause").unlink(missing_ok=True)
         print("resumed — the next tick may roll out")
         return 0
-    if cmd == "deploy-now":
-        write_atomic(state_dir / "deploy-now", args.sha + "\n", 0o664)
-        print(f"the next tick will roll out {args.sha} if CI is green and every check passes")
-        return 0
     if cmd == "forget":
-        st = State(state_dir / "state.json")
+        st = load_state(cfg)
         for k in [k for k in st.failed if k.startswith(args.sha)]:
             del st.failed[k]
             print(f"forgot {k}")
         st.save()
+        return 0
+    if cmd == "status":
+        return cmd_status(cfg)
+    if cmd == "deploy-now":
+        want = args.sha
+        if want != "head" and not re.fullmatch(r"[0-9a-f]{7,40}", want):
+            print("deploy-now needs `head` or at least 7 hex characters of a commit id", file=sys.stderr)
+            return 2
+        if want == "head":
+            # Pin it to the commit the branch points at NOW: an override must name one commit, not
+            # whatever somebody pushes next week.
+            try:
+                want = build(cfg).gh.branch_head(cfg["branch"])
+                print(f"head is {want}")
+            except (RolloutError, GitHubUnavailable) as e:
+                print(f"could not resolve head ({e}); storing `head` — it applies to the branch tip at the next "
+                      f"tick and expires in {cfg['gates']['deploy_now_ttl_hours']}h", file=sys.stderr)
+        write_atomic(state_dir / "deploy-now", f"{want} {iso(now_utc())}\n", 0o664)
+        print(f"the next tick will roll out {want[:8]} if the branch points at it, CI is green and every check passes")
         return 0
     if cmd == "notify-failure":
         Notifier(cfg, cfg.get("environment", cfg["branch"]))(
@@ -1298,14 +1668,38 @@ def main(argv: list[str] | None = None) -> int:
             f"systemd reports {args.unit} failed. This is the rollout machinery itself, not a release: "
             f"`journalctl -u {args.unit} -n 100` on the host.")
         return 0
+    if cmd == "notify-test":
+        n = Notifier(cfg, cfg.get("environment", cfg["branch"]))
+        ok = True
+        for sev in (INFO, WARN, CRITICAL):
+            got = n(sev, "test notification", f"easy-rollout notify-test at {iso(now_utc())}: this is a test of the {sev} channels.")
+            print(f"{sev:<9} {', '.join(got) if got else 'REACHED NOBODY'}")
+            ok = ok and bool(got)
+        return 0 if ok else 1
 
-    ctrl = build(cfg)
-    if cmd == "status":
-        return cmd_status(ctrl)
+    # Everything below needs GitHub or the smoke credentials, i.e. runs as the rollout account.
+    budget = os.environ.get("EASY_ROLLOUT_BUDGET_S")
+    deadline = (time.monotonic() + int(budget) * 0.9) if budget else None
+    try:
+        ctrl = build(cfg, deadline=deadline)
+    except TokenMissing as e:
+        if cmd == "tick":
+            # An unconfigured host says so once a tick and exits cleanly, as autodeploy did: a
+            # unit that fails every five minutes would page somebody about a host that is simply
+            # not finished being set up.
+            print(str(e))
+            return 0
+        raise
     if cmd == "check":
         return cmd_check(ctrl)
     if cmd == "smoke":
-        report = ctrl.smoke(expect_sha=args.expect_sha or ctrl.host.current_sha())
+        with (state_dir / "lock").open("w") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                print("a rollout is running; not starting a second smoke run against the same accounts", file=sys.stderr)
+                return 1
+            report = ctrl.smoke(expect_sha=args.expect_sha or ctrl.host.current_sha())
         print(report.text())
         return 0 if report.ok else 1
     if cmd == "rollback":
@@ -1313,14 +1707,24 @@ def main(argv: list[str] | None = None) -> int:
         if not target or not ctrl.host.release_complete(target):
             print(f"no complete release matching {args.sha} under {cfg['root']}/releases", file=sys.stderr)
             return 1
-        ctrl.pause(f"manual rollback to {target[:8]}")
-        ctrl.host.activate(target)
-        ctrl.host.restart_core()
-        ok = ctrl.host.wait_healthy(cfg["health_url"], int(cfg["health_timeout_s"]))
-        if ok:
+        with (state_dir / "lock").open("w") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                print("a rollout is running; wait for it or stop easy-rollout.service first", file=sys.stderr)
+                return 1
+            was = ctrl.host.current_sha()
+            ctrl.pause(f"manual rollback from {short(was)} to {target[:8]}")
+            if was and was != target:
+                ctrl.state.failed[was] = {"at": iso(now_utc()), "why": f"rolled back by hand to {target[:8]}"}
+                ctrl.state.save()
+            ctrl.host.activate(target)
+            ctrl.host.restart_core()
             ctrl.host.mark_current(target)
-        print(f"{'healthy' if ok else 'NOT ANSWERING'} on {target[:8]}; automatic rollouts paused")
+            ok = ctrl.host.wait_healthy(cfg["health_url"], int(cfg["health_timeout_migrating_s"]))
+        print(f"{'healthy' if ok else 'NOT ANSWERING'} on {target[:8]}; automatic rollouts paused, {short(was)} marked failed")
         return 0 if ok else 1
+    install_signal_handlers()
     result = ctrl.tick()
     if result not in ("steady",):
         log(f"tick: {result}")

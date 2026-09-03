@@ -20,7 +20,6 @@
   "health_timeout_migrating_s": core_rollout_health_timeout_migrating_s | int,
   "dump_service": core_rollout_dump_service,
   "db_helper": "/usr/local/bin/easy-rollout-db",
-  "java": easy_core_java | default("/usr/bin/java"),
   "window": core_rollout_window,
   "freeze": core_rollout_freeze,
   "gates": {
@@ -30,6 +29,8 @@
     "require_seen_on_dev": core_rollout_require_seen_on_dev | bool,
     "require_on_master": core_rollout_require_on_master | bool,
     "min_gap_hours": core_rollout_min_gap_hours,
+    "min_retry_gap_hours": core_rollout_min_retry_gap_hours,
+    "deploy_now_ttl_hours": core_rollout_deploy_now_ttl_hours,
     "stuck_after_hours": core_rollout_stuck_after_hours,
     "stuck_repeat_hours": core_rollout_stuck_repeat_hours,
     "min_free_gb": core_rollout_min_free_gb
@@ -37,12 +38,12 @@
   "rehearsal": {
     "enabled": core_rollout_rehearsal_enabled | bool,
     "port": core_rollout_rehearsal_port | int,
-    "timeout_s": core_rollout_rehearsal_timeout_s | int,
-    "java_opts": core_rollout_rehearsal_java_opts
+    "timeout_s": core_rollout_rehearsal_timeout_s | int
   },
   "smoke": {
     "required": core_rollout_smoke_required | bool,
     "attempts": core_rollout_smoke_attempts | int,
+    "baseline_attempts": core_rollout_smoke_baseline_attempts | int,
     "retry_delay_s": core_rollout_smoke_retry_delay_s | int,
     "secrets_file": core_rollout_smoke_secrets_file,
     "web_url": core_rollout_smoke_web_url,

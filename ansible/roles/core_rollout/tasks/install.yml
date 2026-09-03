@@ -25,10 +25,45 @@
     append: true
   when: not ansible_check_mode
 
+- name: Create the account the rehearsal JVM runs as
+  # Separate from the rollout account on purpose. The release under test is the one thing in this
+  # whole arrangement that came from outside, and the rehearsal is where it first executes on this
+  # host — under an account that has no sudo, no groups, and one writable directory, rather than
+  # under the one that can restart core and call the database helper.
+  ansible.builtin.user:
+    name: "{{ core_rollout_rehearsal_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ core_rollout_helper_dir }}/work"
+    create_home: false
+    state: present
+
+- name: Create the helper's private directory
+  ansible.builtin.file:
+    path: "{{ core_rollout_helper_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Let the rehearsal account read the release tree
+  # It runs the jar from there. Read is what the tree's mode already gives everyone; this exists so
+  # that a future tightening of the tree's mode does not silently break the rehearsal.
+  ansible.builtin.user:
+    name: "{{ core_rollout_rehearsal_user }}"
+    groups: "{{ core_rollout_deploy_group }}"
+    append: true
+  when: not ansible_check_mode
+
 - name: Grant it exactly what a rollout needs
   # The same four grants a human deployer has (roles/core_service/templates/sudoers-deploy.j2),
   # plus the database helper. `easy-rollout-db *` is a wildcard on a script that validates its own
   # arguments and takes no paths from them; the script is root-owned and this role keeps it so.
+  #
+  # The last line is for people: `sudo -u easy-rollout easy-rollout smoke` is how a deployer runs
+  # the parts of the CLI that need the GitHub token or the smoke credentials, which stay readable
+  # by the rollout account alone. The state-only subcommands (pause, resume, status, forget,
+  # deploy-now <sha>) need neither and run as the person.
   ansible.builtin.copy:
     dest: /etc/sudoers.d/easy-rollout
     owner: root
@@ -44,6 +79,8 @@
       {{ core_rollout_user }} ALL=(root) NOPASSWD: {{ easy_core_log_helper_path | default('/usr/local/bin/easy-core-log') }} *
       {{ core_rollout_user }} ALL=(root) NOPASSWD: /usr/local/bin/easy-rollout-db
       {{ core_rollout_user }} ALL=(root) NOPASSWD: /usr/local/bin/easy-rollout-db *
+      %{{ core_rollout_deploy_group }} ALL=({{ core_rollout_user }}) NOPASSWD: /usr/local/bin/easy-rollout
+      %{{ core_rollout_deploy_group }} ALL=({{ core_rollout_user }}) NOPASSWD: /usr/local/bin/easy-rollout *
 
 - name: Create the config directory
   ansible.builtin.file:
@@ -100,19 +137,23 @@
 
 - name: Find out which credentials are still placeholders
   ansible.builtin.command:
-    cmd: grep -l '^CHANGEME\|"CHANGEME' {{ core_rollout_token_file | quote }} {{ core_rollout_smoke_secrets_file | quote }}
+    cmd: >-
+      grep -l '^CHANGEME\|"CHANGEME' {{ core_rollout_token_file | quote }} {{ core_rollout_smoke_secrets_file | quote }}
+      {{ core_rollout_notify_webhook_url_file | quote }} {{ core_rollout_notify_youtrack_token_file | quote }}
   register: core_rollout_placeholders
   changed_when: false
   failed_when: false
   check_mode: false
 
-- name: Say that rollouts will not start until they are filled in
+- name: Say what is still a placeholder, and what that means
   ansible.builtin.debug:
     msg: >-
-      Still placeholders: {{ core_rollout_placeholders.stdout_lines | join(', ') }}. The timer is
-      installed and running but every tick exits without deploying until a real GitHub token
-      (Actions:read) and the smoke accounts are in place — doc/production-rollout.md §setup. No
-      restart needed afterwards.
+      Still placeholders: {{ core_rollout_placeholders.stdout_lines | join(', ') }}. The token and the
+      smoke accounts gate every rollout — until they are real, each tick says so in the journal and
+      exits. The webhook and YouTrack files only matter if those channels are in
+      core_rollout_notify_channels; a CRITICAL with no working channel reaches nobody but the
+      journal. `easy-rollout notify-test` on the host says which channels actually deliver.
+      doc/production-rollout.md §setup. No restart needed afterwards.
   when: core_rollout_placeholders.rc == 0
 
 # --- this environment's config.json ---------------------------------------------------------------
@@ -188,11 +229,14 @@
     validate: "bash -n %s"
 
 - name: Write the configuration
+  # Readable by the deploy group, not only the rollout account: it holds paths and settings and no
+  # credential (those are named by path and live in the 0640 files above), and every subcommand a
+  # person runs — `pause` before a manual deploy, above all — reads it first.
   ansible.builtin.template:
     src: rollout.json.j2
     dest: "{{ core_rollout_config_file }}"
     owner: root
-    group: "{{ core_rollout_user }}"
+    group: "{{ core_rollout_deploy_group }}"
     mode: "0640"
     validate: "python3 -m json.tool %s"
 
@@ -223,7 +267,7 @@
 
 - name: Say what it thinks
   ansible.builtin.command:
-    cmd: /usr/local/bin/easy-rollout status
+    cmd: /usr/local/bin/easy-rollout --config {{ core_rollout_config_file | quote }} status
   register: core_rollout_status
   changed_when: false
   failed_when: false

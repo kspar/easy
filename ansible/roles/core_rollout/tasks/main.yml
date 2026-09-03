@@ -53,6 +53,20 @@
     - core_rollout_enabled | bool
     - core_rollout_smoke_required | bool
 
+- name: Refuse a YouTrack channel that would file issues publicly
+  ansible.builtin.assert:
+    that:
+      - core_rollout_notify_youtrack_visibility_group_id | string | length > 0
+    fail_msg: >-
+      'youtrack' is among core_rollout_notify_channels but core_rollout_notify_youtrack_visibility_group_id
+      is empty. The instance has guest access and a rollout report carries core's log tail, so an
+      issue filed without a visibility group is public. Set the group id (the same one core's
+      bug-report integration uses) or take youtrack out of the channel lists.
+    quiet: true
+  when:
+    - core_rollout_enabled | bool
+    - "'youtrack' in (core_rollout_notify_channels.values() | list | flatten)"
+
 - name: Install it
   ansible.builtin.include_tasks: install.yml
   when: core_rollout_enabled | bool

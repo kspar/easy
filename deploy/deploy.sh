@@ -265,6 +265,11 @@ set -euo pipefail
 sha="$1"; root="$2"; service="$3"; keep="$4"; dump="$5"; dump_service="$6"
 rel="$root/releases/$sha"
 
+# The release tree is setgid for the deploy group, so a release this person installs is one the
+# host's own deployer (roles/core_rollout) may later have to roll back to — which means rewriting
+# its config.json. Group-writable from the start, or that rollback fails on a permission error.
+umask 002
+
 # Core reads this through --spring.config.location and dies on an unresolved @Value placeholder,
 # so a release that adds a config key takes the environment down on restart. That is by design —
 # dev is where that gets caught instead of production (§8.4) — but a missing file entirely is

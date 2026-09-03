@@ -489,17 +489,25 @@ requires the `email` claim:
 
 ```sh
 for who in student teacher; do
+  pw=$(openssl rand -base64 30)
   $K create users -r master -s username=easy-smoke-$who -s enabled=true -s emailVerified=true \
-    -s email=easy-smoke-$who@lahendus.ut.ee -s firstName=Smoke -s lastName=${who^}
-  $K set-password -r master --username easy-smoke-$who --new-password "$(openssl rand -base64 30)"   # note it
+    -s email=easy-smoke-$who@example.invalid -s firstName=Smoke -s lastName=${who^}
+  $K set-password -r master --username easy-smoke-$who --new-password "$pw"
   $K add-roles -r master --uusername easy-smoke-$who --cclientid lahendus.ut.ee --rolename $who
+  echo "easy-smoke-$who: $pw"      # goes into /etc/easy/smoke-secrets.json, then nowhere else
 done
 ```
 
+The names are what the suite's `checkin` posts (`Smoke` / `Student`, `Smoke` / `Teacher`), so
+core has nothing to update on every run. The addresses need not deliver — the two accounts get no
+mail that matters — but they must be set, because core requires the `email` claim.
+
 What the client can do is bounded by what those two accounts can do: a student in one course and
-a teacher of that same course, both with nothing else. The secret and the two passwords go into
-`/etc/easy/smoke-secrets.json` on the core host and nowhere else. Rotate all three by hand once a
-year; `easy-smoke` on the host says immediately if a rotation was incomplete.
+a teacher of that same course, both with nothing else — and in particular neither is an admin,
+which is why the smoke course itself is created by one (doc/production-rollout.md §9). The secret
+and the two passwords go into `/etc/easy/smoke-secrets.json` on the core host and nowhere else.
+Rotate all three by hand once a year; `easy-smoke` on the host says immediately if a rotation was
+incomplete.
 
 ## 5. The hostname, which went round in a circle
 
