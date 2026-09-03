@@ -15,6 +15,12 @@
 # easy_nginx_api_host — serves core
 
 easy_nginx_web_root: /srv/easy/web/current
+
+# Serve the running commit id at /.well-known/easy-release. Off by default; dev turns it on because
+# production's rollout reads it as proof that a commit has soaked there (roles/core_rollout, the
+# `require_seen_on_dev` gate). The file is what both deployers write after a successful deploy.
+easy_nginx_publish_release_sha: false
+easy_nginx_release_sha_file: /srv/easy/current-sha
 easy_nginx_api_upstream: "127.0.0.1:8080"
 
 # --- TLS ------------------------------------------------------------------------------------------

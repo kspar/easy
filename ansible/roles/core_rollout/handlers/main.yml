@@ -1,0 +1,16 @@
+---
+- name: Reload the rollout timer
+  # daemon-reload alone leaves the already-scheduled tick in place; restart so a changed interval
+  # takes effect now.
+  ansible.builtin.systemd_service:
+    name: easy-rollout.timer
+    state: restarted
+    daemon_reload: true
+  when:
+    - not ansible_check_mode
+    - core_rollout_enabled | bool
+
+- name: Reload systemd after removing the rollout units
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: not ansible_check_mode

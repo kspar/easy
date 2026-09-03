@@ -83,12 +83,19 @@ jobs:
       # external application.yaml, so the artifact dev exercises is byte-for-byte the one that
       # can later go to production.
       #
+      # `prod-releases` is in the condition because production's rollout (roles/core_rollout) asks
+      # for the artifacts of whatever commit that branch points at. A commit that came through
+      # master has them from master's run; a hotfix pushed straight at the branch has only this
+      # run, and until 2026-09-03 this line did not name it — so such a hotfix built, went green,
+      # and could never be deployed by anything. The condition on the four packaging steps is the
+      # same on purpose; change all four together.
+      #
       # Steps are sequential, so a failing build or test above publishes nothing. The web job is
       # independent though, and a green backend with a red web job still leaves a jar behind —
       # which is why the deploy script gates on the *run's* conclusion rather than on an artifact
       # merely existing.
       - name: Package core jar
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || github.ref == 'refs/heads/prod-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
         run: |
           # Found by pattern rather than named core-1.jar, so that `version` in
           # core/build.gradle.kts stays something CI has no opinion about. The exclusion matters:
@@ -106,7 +113,7 @@ jobs:
           cp "${boot[0]}" "core-${{ github.sha }}.jar"
 
       - name: Publish core jar
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || github.ref == 'refs/heads/prod-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
         uses: actions/upload-artifact@v7
         with:
           name: core-${{ github.sha }}
@@ -185,7 +192,7 @@ jobs:
       # The dist has been environment-agnostic since EZ-1726 — config.json is read at boot rather
       # than baked in — so one tarball serves dev and production both. See §8.1.
       - name: Package web dist
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || github.ref == 'refs/heads/prod-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
         run: |
           # config.json is deliberately NOT shipped. web/public/config.json holds the *production*
           # IdP and API as local-dev defaults, so an artifact carrying it is one forgotten deploy
@@ -197,7 +204,7 @@ jobs:
           tar -czf "../web-${{ github.sha }}.tar.gz" -C dist .
 
       - name: Publish web dist
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev-releases' || github.ref == 'refs/heads/prod-releases' || startsWith(github.ref, 'refs/heads/releases/') }}
         uses: actions/upload-artifact@v7
         with:
           name: web-${{ github.sha }}
@@ -237,10 +244,16 @@ jobs:
       # being reverted, a broken digest not being retried every five minutes forever — and the
       # alternative to testing that here is finding out on the host that grades real submissions.
       #
-      # `working-directory: .` because this job otherwise runs in aae/, and neither of these is aae's.
-      - name: Helper scripts — pins, the grading-image reconciler, the adoc-to-md classifier
+      # The production rollout (ansible/roles/core_rollout) runs here for the same reason as the
+      # reconciler: its interesting paths are the ones that must not happen — a release that fails
+      # its smoke suite must be rolled back, a rollback must pause further rollouts, a rehearsal
+      # config that could reach Moodle must be refused — and the alternative to testing them here
+      # is finding out on production at four in the morning.
+      #
+      # `working-directory: .` because this job otherwise runs in aae/, and none of these is aae's.
+      - name: Helper scripts — pins, the grading-image reconciler, the rollout, the adoc-to-md classifier
         working-directory: .
-        run: python -m pytest bin/tests ansible/roles/executor_images/tests doc/core/adoc-to-md/tests -q
+        run: python -m pytest bin/tests ansible/roles/executor_images/tests ansible/roles/core_rollout/tests doc/core/adoc-to-md/tests -q
       # tiivad is the grader that consumes the TSL compiler's output, and doc/aae/pins/dev.yml is
       # the source of truth for which version dev's executor runs — so the version is read from
       # there rather than pinned a second time here. A test asserts the installed version matches

@@ -1,0 +1,18 @@
+# Managed by Ansible (roles/core_rollout) — local edits are overwritten.
+
+[Unit]
+Description=Ask whether {{ core_rollout_branch }} has something to roll out
+
+[Timer]
+OnBootSec=3min
+# OnCalendar rather than OnUnitInactiveSec: a rollout can take an hour, and the question "is it the
+# window yet" is one about the clock, not about how long the last run took. systemd will not start
+# a second instance while one is running, so an overlapping tick is simply skipped.
+OnCalendar={{ core_rollout_interval }}
+RandomizedDelaySec=20
+# Not Persistent: a missed tick is answered by the next one looking at the same branch.
+Persistent=false
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

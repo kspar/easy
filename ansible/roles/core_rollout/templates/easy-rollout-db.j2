@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+#
+# Managed by Ansible (roles/core_rollout) — local edits are overwritten.
+#
+# The database side of a rollout, as root, with the argument list as the whole privilege.
+#
+# easy-rollout runs as an account that can write the release tree and restart core, and nothing
+# else. A rehearsal needs a scratch database created from a dump, a rollback may need the real one
+# restored from that dump, and both need to be done by somebody who can talk to postgres as its
+# superuser. Rather than grant the rollout account `sudo -u postgres` — which is every database on
+# the host — this script is granted, and it does exactly the things below to exactly the names
+# rendered into it. Same shape as easy-core-log in roles/core_service: root-owned, unwritable by the
+# caller, every path fixed here rather than taken from the command line.
+#
+#   easy-rollout-db ping                      postgres accepts connections
+#   easy-rollout-db newest-dump               path of the newest finished dump, or nothing
+#   easy-rollout-db changelog-count [rehearsal]
+#                                             rows in databasechangelog, of production or the scratch db
+#   easy-rollout-db rehearsal-create <dump>   drop+create the scratch db and its role, restore <dump>
+#   easy-rollout-db rehearsal-config <port>   write the rehearsal config, print its path
+#   easy-rollout-db rehearsal-drop            drop the scratch db (the role stays; it owns nothing)
+#   easy-rollout-db restore <dump>            STOP CORE, recreate the production db from <dump>, start core
+#
+# `restore` is the one destructive command here, and the rollout only reaches it when the previous
+# release will not start after a rollback and the policy allows it. It is still the right tool to
+# have written down: a restore that is only ever improvised at 4am is a restore that goes wrong.
+
+set -euo pipefail
+
+DB={{ easy_core_db_name | quote }}
+DB_USER={{ easy_core_db_user | quote }}
+DB_HOST={{ easy_core_db_host | quote }}
+DB_PORT={{ easy_core_db_port | quote }}
+REHEARSAL_DB="easyems_rehearsal"
+REHEARSAL_USER="easyems_rehearsal"
+DUMP_DIR={{ postgres_backup_dir | quote }}
+SERVICE={{ core_rollout_service | quote }}
+STATE_DIR={{ core_rollout_state_dir | quote }}
+REHEARSAL_DIR="$STATE_DIR/rehearsal"
+ROLLOUT_USER={{ core_rollout_user | quote }}
+APP_YAML={{ easy_core_config_path | quote }}
+SECRETS_YAML={{ easy_core_secrets_path | quote }}
+LIB={{ core_rollout_lib_dir | quote }}
+
+die() { echo "easy-rollout-db: $*" >&2; exit 1; }
+psql_super() { sudo -u postgres psql -X -q -v ON_ERROR_STOP=1 "$@"; }
+
+# A dump path has to be a finished dump in the dump directory — not a path the caller made up.
+check_dump() {
+    local d="$1"
+    case "$d" in
+        "$DUMP_DIR"/"$DB"-*.dump) ;;
+        *) die "not a dump in $DUMP_DIR: $d" ;;
+    esac
+    [ -f "$d" ] || die "no such dump: $d"
+    case "$d" in *.partial) die "refusing a partial dump" ;; esac
+}
+
+cmd="${1:-}"; shift || true
+case "$cmd" in
+    ping)
+        sudo -u postgres pg_isready -q -h "$DB_HOST" -p "$DB_PORT" || die "postgres is not accepting connections"
+        echo ok
+        ;;
+
+    newest-dump)
+        # Sorted by name: the stamp in the name is chronological, and mtime is not to be trusted.
+        find "$DUMP_DIR" -maxdepth 1 -name "$DB-*.dump" -type f | sort | tail -n 1
+        ;;
+
+    changelog-count)
+        target="$DB"
+        [ "${1:-}" = "rehearsal" ] && target="$REHEARSAL_DB"
+        psql_super -d "$target" -Atc "SELECT count(*) FROM databasechangelog" 2>/dev/null || echo 0
+        ;;
+
+    rehearsal-create)
+        dump="${1:-}"; [ -n "$dump" ] || die "rehearsal-create needs a dump path"
+        check_dump "$dump"
+        install -d -m 0750 -o root -g "$ROLLOUT_USER" "$REHEARSAL_DIR"
+        install -d -m 0770 -o "$ROLLOUT_USER" -g "$ROLLOUT_USER" "$REHEARSAL_DIR/files"
+        # A fresh password every time; the file the rollout account can read holds only this.
+        pw=$(head -c 24 /dev/urandom | base64 | tr -d '/+=')
+        install -m 0640 -o root -g "$ROLLOUT_USER" /dev/null "$REHEARSAL_DIR/db-password"
+        printf '%s\n' "$pw" > "$REHEARSAL_DIR/db-password"
+        psql_super -d postgres -c "DROP DATABASE IF EXISTS $REHEARSAL_DB WITH (FORCE)"
+        psql_super -d postgres -c "DO \$\$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$REHEARSAL_USER') THEN
+                CREATE ROLE $REHEARSAL_USER LOGIN;
+            END IF; END \$\$"
+        psql_super -d postgres -c "ALTER ROLE $REHEARSAL_USER WITH LOGIN PASSWORD '$pw'"
+        psql_super -d postgres -c "CREATE DATABASE $REHEARSAL_DB OWNER $REHEARSAL_USER TEMPLATE template0 ENCODING 'UTF8'"
+        # --no-owner --no-privileges on the way out (easy-db-backup) and --role on the way in: every
+        # object belongs to the rehearsal role, which is what lets the rehearsal core migrate them.
+        sudo -u postgres pg_restore --dbname="$REHEARSAL_DB" --role="$REHEARSAL_USER" \
+            --no-owner --no-privileges --jobs=2 --exit-on-error "$dump"
+        echo "$REHEARSAL_DB"
+        ;;
+
+    rehearsal-config)
+        port="${1:-}"; [[ "$port" =~ ^[0-9]{4,5}$ ]] || die "rehearsal-config needs a port"
+        [ -f "$REHEARSAL_DIR/db-password" ] || die "run rehearsal-create first"
+        [ -f "$APP_YAML" ] || die "$APP_YAML does not exist"
+        [ -f "$SECRETS_YAML" ] || die "$SECRETS_YAML does not exist"
+        out="$REHEARSAL_DIR/application.yaml"
+        tmp="$out.tmp"
+        install -m 0640 -o root -g "$ROLLOUT_USER" /dev/null "$tmp"
+        python3 "$LIB/easy_rehearsal_config.py" \
+            --application-yaml "$APP_YAML" --secrets-yaml "$SECRETS_YAML" \
+            --port "$port" --db-password-file "$REHEARSAL_DIR/db-password" \
+            --storage-dir "$REHEARSAL_DIR/files" --out "$tmp"
+        mv -f "$tmp" "$out"
+        echo "$out"
+        ;;
+
+    rehearsal-drop)
+        psql_super -d postgres -c "DROP DATABASE IF EXISTS $REHEARSAL_DB WITH (FORCE)"
+        rm -f "$REHEARSAL_DIR/db-password" "$REHEARSAL_DIR/application.yaml"
+        rm -rf "$REHEARSAL_DIR/files"
+        echo dropped
+        ;;
+
+    restore)
+        dump="${1:-}"; [ -n "$dump" ] || die "restore needs a dump path"
+        check_dump "$dump"
+        echo "restoring $DB from $dump — stopping $SERVICE"
+        systemctl stop "$SERVICE"
+        # Keep the broken state around under a name, in case the decision to restore was wrong: a
+        # rename is instant and a drop is forever.
+        stamp=$(date +%Y%m%dT%H%M%S)
+        psql_super -d postgres -c "ALTER DATABASE $DB RENAME TO ${DB}_pre_restore_$stamp"
+        psql_super -d postgres -c "CREATE DATABASE $DB OWNER $DB_USER TEMPLATE template0 ENCODING 'UTF8'"
+        sudo -u postgres pg_restore --dbname="$DB" --role="$DB_USER" \
+            --no-owner --no-privileges --jobs=2 --exit-on-error "$dump"
+        systemctl start "$SERVICE"
+        echo "restored; the replaced database is kept as ${DB}_pre_restore_$stamp — drop it by hand once sure"
+        ;;
+
+    ""|-h|--help)
+        sed -n '9,24p' "$0"
+        ;;
+    *)
+        die "unknown command '$cmd'"
+        ;;
+esac

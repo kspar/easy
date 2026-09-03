@@ -85,6 +85,17 @@ executor:
 #                                 one named source
 #   group_vars/all/smoke.yml      the public listeners this environment genuinely has, so that
 #                                 smoke.yml's "nothing else answers" check means something
+#   group_vars/all/rollout.yml    the unattended deployer (roles/core_rollout): at least
+#                                   core_rollout_enabled: true
+#                                   core_rollout_environment: prod
+#                                   core_rollout_branch: prod-releases
+#                                   core_rollout_config_src: "{{ playbook_dir }}/../deploy/prod/config.json"
+#                                   core_rollout_health_url, core_rollout_dev_version_url
+#                                   core_rollout_smoke_web_url / _api_url / _idp_url
+#                                   core_rollout_smoke_course_id / _exercise_id
+#                                   core_rollout_smoke_executor_version_url
+#                                 and whatever of the window, freeze and notification values differ
+#                                 from the role's defaults. doc/production-rollout.md walks through it.
 #   group_vars/<group>.yml        per-group overrides, e.g. the executor's own firewall rule
 #
 # Two values worth deciding rather than inheriting, whenever a production inventory is written:

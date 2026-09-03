@@ -1,0 +1,196 @@
+---
+# Unattended, guarded rollouts: the host tracks a branch, and between "the branch moved" and "core
+# was restarted" it puts every check that can be automated — a maintenance window, a soak on dev,
+# a database dump, a rehearsal of the new release against a copy of that dump — and after the
+# restart it proves the whole system works end to end before calling the rollout done. When
+# anything fails after core was touched it puts the previous release back by itself, and when
+# anything fails at all it stops and tells a person.
+#
+# This is `core_autodeploy` grown up. Same pull-not-push decision (nothing in GitHub holds a
+# credential for this host), same on-host release layout as deploy/deploy.sh, and the same account
+# shape — a system user in the deploy group with a handful of exact sudo commands. What differs is
+# everything between the download and the restart, and everything after it. doc/production-rollout.md
+# is the manual; the header of files/easy_rollout.py is the flow.
+#
+# The objection doc/production-update.md raised against a polling deployer on production — that a
+# rollback is undone a minute later — is answered by construction: a rollout that fails after
+# touching core PAUSES the machinery and marks the commit failed. Nothing re-asserts the branch tip
+# until a person has looked.
+
+# Off unless a host asks, like core_autodeploy, and for the same reason. Where this is false the
+# role removes what it would otherwise install.
+core_rollout_enabled: false
+
+# Cannot be on together with core_autodeploy: two deployers of one release tree would race. The
+# role asserts it.
+
+core_rollout_repo: kspar/easy
+
+# `core_rollout_branch` — no default, deliberately. See core_autodeploy_branch: a default is how a
+# production host inherits `dev-releases`. Production names `prod-releases`, dev `dev-releases`.
+
+# `core_rollout_config_src` — this environment's config.json, from the controller (deploy/<env>/).
+# No default either.
+
+# `core_rollout_environment` — a label for notifications ("prod", "dev"). Defaults to the branch.
+
+core_rollout_workflow: CI
+
+# How often the timer asks. Production every five minutes: a rollout waits for a window anyway, and
+# the cost of a tick is one API call. Dev wants a minute, as the autodeploy timer had.
+core_rollout_interval: "*:0/5"
+
+# --- what it deploys into (mirrors roles/core_service) --------------------------------------------
+core_rollout_root: "{{ easy_core_root | default('/srv/easy') }}"
+core_rollout_service: "{{ easy_core_service_name | default('easy-core') }}"
+core_rollout_keep_releases: 5
+core_rollout_config_json: /srv/easy/conf/config.json
+core_rollout_state_dir: "{{ core_rollout_root }}/rollout"
+
+# Core answers 401 to an unauthenticated request once its filter chain is up; any /v2 path works.
+core_rollout_health_url: "{{ easy_core_health_url | default('') }}"
+core_rollout_health_timeout_s: 300
+# A release that migrates the schema may spend a long time in Liquibase before it listens.
+core_rollout_health_timeout_migrating_s: 1800
+
+core_rollout_dump_service: "{{ easy_core_deploy_dump_service | default('easy-db-backup.service') }}"
+
+# --- the account -----------------------------------------------------------------------------------
+core_rollout_user: easy-rollout
+core_rollout_deploy_group: "{{ easy_core_deploy_group | default('easy-deploy') }}"
+core_rollout_token_file: /etc/easy/github-token
+core_rollout_config_file: /etc/easy/rollout.json
+core_rollout_lib_dir: /usr/local/lib/easy-rollout
+
+# --- scheduling -----------------------------------------------------------------------------------
+# When a rollout may START. Everything before the window — waiting for CI, the soak — happens
+# whenever; the window is for the part that restarts core. Tuesday and Thursday before six in the
+# morning, Estonian time: nobody is submitting, and a rollout that turns out badly is found by a
+# person on a working day rather than discovered on Monday.
+#
+# `always: true` disables the window (dev).
+core_rollout_window:
+  days: [Tue, Thu]
+  start: "04:00"
+  end: "05:30"
+  tz: Europe/Tallinn
+
+# Dates during which nothing rolls out whatever the window says — exam sessions, the first week of
+# term. Local dates in the window's timezone, inclusive.
+#
+#   core_rollout_freeze:
+#     - {from: "2027-01-04", to: "2027-01-24", reason: "exam session"}
+core_rollout_freeze: []
+
+# --- gates: what has to be true of a commit before it may roll out ---------------------------------
+# A CI run has to be at least this old. It gives a bad commit time to be noticed and reverted on
+# master before it reaches production, and it makes "push and it deploys within the hour" impossible
+# by accident.
+core_rollout_min_ci_age_hours: 6
+
+# The soak: the commit must have been observed running on another environment — dev — for this many
+# hours. The observation is made by fetching `core_rollout_dev_version_url` every tick and recording
+# when each commit was first and last seen, so it needs dev to publish what it runs (see
+# `easy_nginx_publish_release_sha` in roles/nginx). Off where there is no upstream environment.
+core_rollout_require_seen_on_dev: true
+core_rollout_soak_hours: 12
+core_rollout_dev_version_url: ""
+
+# The commit must be on master. A commit pushed straight at the release branch is a hotfix nobody
+# reviewed; it can still be deployed, with `easy-rollout deploy-now`, which is a decision rather than
+# an accident.
+core_rollout_require_on_master: true
+
+# At most one rollout per this many hours, so two pushes in one window do not restart production
+# twice, and so the effect of one release is observable before the next.
+core_rollout_min_gap_hours: 20
+
+# When the branch has pointed at an undeployed commit for this long, say so (WARN), and repeat no
+# more often than this. Nothing is wrong with production when this fires; something is wrong with
+# the pipeline, and it is the kind of thing that otherwise goes unnoticed for a month.
+core_rollout_stuck_after_hours: 96
+core_rollout_stuck_repeat_hours: 24
+
+core_rollout_min_free_gb: 4
+
+# --- the rehearsal --------------------------------------------------------------------------------
+# Restore the pre-deploy dump into a scratch database and boot the NEW jar against it, on loopback,
+# with every outbound integration pointed at nowhere (files/easy_rehearsal_config.py). A migration
+# that fails against real data, or a configuration key the release needs and this host lacks, fails
+# here — before production is touched. It also tells the rollout whether the release changes the
+# schema, which decides how a rollback treats the database.
+#
+# Costs a second copy of the database for a few minutes, a JVM's worth of memory, and PyYAML on the
+# host. Turn it off only where the host genuinely cannot afford it.
+core_rollout_rehearsal_enabled: true
+core_rollout_rehearsal_port: 8091
+core_rollout_rehearsal_timeout_s: 1200
+core_rollout_rehearsal_java_opts: "-Xmx1g"
+
+# --- the smoke suite ------------------------------------------------------------------------------
+# files/easy_smoke.py — the end-to-end suite that runs before (baseline) and after every rollout.
+# It needs two synthetic accounts and one course that exists for it; doc/production-rollout.md §setup.
+#
+# `required: true` means a rollout refuses to proceed while the suite is unconfigured. It is the
+# whole point of this role; a host that wants to deploy without it should say so here.
+core_rollout_smoke_required: true
+core_rollout_smoke_attempts: 3
+core_rollout_smoke_retry_delay_s: 60
+core_rollout_smoke_secrets_file: /etc/easy/smoke-secrets.json
+core_rollout_smoke_web_url: "{{ easy_core_web_base_url | default('') }}"
+core_rollout_smoke_api_url: ""          # e.g. https://ems.lahendus.ut.ee — no default, no path
+core_rollout_smoke_idp_url: ""          # e.g. https://idp.lahendus.ut.ee/auth — as config.json has it
+core_rollout_smoke_realm: "{{ easy_core_keycloak_realm | default('master') }}"
+# The smoke course and the auto-graded exercise in it, as the ids the API uses. Created once per
+# environment through the UI by the smoke teacher; see the manual.
+core_rollout_smoke_course_id: ""
+core_rollout_smoke_exercise_id: ""
+# The two solutions the suite submits. `good` must earn full marks and `bad` must NOT — a suite that
+# cannot fail proves nothing. The defaults fit the exercise the manual asks you to create.
+core_rollout_smoke_good_solution: |
+  print("Hello, smoke!")
+core_rollout_smoke_bad_solution: |
+  print("Goodbye, smoke.")
+core_rollout_smoke_grade_timeout_s: 240
+core_rollout_smoke_tls_min_days: 21
+# Where the executor answers /v1/version, as reachable from THIS host. Empty skips the direct check;
+# the through-core check in /v2/versions still runs.
+core_rollout_smoke_executor_version_url: ""
+
+# --- rollback -------------------------------------------------------------------------------------
+# What to do with the database when the previous release will not come back up after a rollback:
+#   auto    restore the pre-deploy dump only if the release changed the schema (or that is unknown)
+#   always  restore whenever the previous release fails health after a rollback
+#   never   leave the database alone; the rollout is reported DOWN and a person decides
+# A restore discards everything written between the deploy and the rollback — minutes, at four in
+# the morning, in a window nobody is meant to be using. Dev wants `never`.
+core_rollout_restore_db: auto
+
+# --- who is told, and how -------------------------------------------------------------------------
+# Channels per severity. `mail` goes through the same relay core uses; `webhook` POSTs to a URL kept
+# on the host (ntfy, Slack, anything that takes JSON); `youtrack` files an issue. Every channel is
+# best-effort and no failure to notify ever fails a rollout.
+core_rollout_notify_channels:
+  info: [mail]
+  warn: [mail]
+  critical: [mail, webhook, youtrack]
+
+core_rollout_notify_mail_to: "{{ [easy_core_mail_sys_to] if (easy_core_mail_sys_to | default('')) else [] }}"
+core_rollout_notify_mail_from: "{{ easy_core_mail_from | default('easy-rollout@localhost') }}"
+core_rollout_notify_mail_host: "{{ easy_core_mail_host | default('127.0.0.1') }}"
+core_rollout_notify_mail_port: "{{ easy_core_mail_port | default(25) }}"
+core_rollout_notify_mail_starttls: "{{ easy_core_mail_starttls | default(false) }}"
+# `user:password`, if the relay needs it. Placeholder created by the role, never read by it.
+core_rollout_notify_mail_auth_file: /etc/easy/rollout-mail-auth
+
+# The webhook URL is a credential (it is what lets anyone post), so it lives in a file the role
+# creates as a placeholder. Format: ntfy | slack | json.
+core_rollout_notify_webhook_url_file: /etc/easy/rollout-webhook-url
+core_rollout_notify_webhook_format: json
+
+# YouTrack: files an issue on CRITICAL. Same ids as core's own bug-report integration; the token
+# is a separate file so it can be a separate, narrower permanent token.
+core_rollout_notify_youtrack_base_url: "{{ easy_core_youtrack_base_url | default('') }}"
+core_rollout_notify_youtrack_project_id: "{{ easy_core_youtrack_project_id | default('') }}"
+core_rollout_notify_youtrack_visibility_group_id: "{{ easy_core_youtrack_visibility_group_id | default('') }}"
+core_rollout_notify_youtrack_token_file: /etc/easy/rollout-youtrack-token

@@ -1,0 +1,81 @@
+{# Managed by Ansible (roles/core_rollout) — local edits are overwritten. #}
+{#
+  Everything easy-rollout needs and nothing secret: credentials are named here by PATH and live in
+  files the role creates as placeholders and never reads. Keys mirror files/easy_rollout.py's
+  DEFAULTS; anything omitted takes the program's default.
+#}
+{{ {
+  "environment": core_rollout_environment | default(core_rollout_branch),
+  "repo": core_rollout_repo,
+  "branch": core_rollout_branch,
+  "workflow": core_rollout_workflow,
+  "root": core_rollout_root,
+  "service": core_rollout_service,
+  "keep_releases": core_rollout_keep_releases | int,
+  "token_file": core_rollout_token_file,
+  "config_json": core_rollout_config_json,
+  "state_dir": core_rollout_state_dir,
+  "health_url": core_rollout_health_url,
+  "health_timeout_s": core_rollout_health_timeout_s | int,
+  "health_timeout_migrating_s": core_rollout_health_timeout_migrating_s | int,
+  "dump_service": core_rollout_dump_service,
+  "db_helper": "/usr/local/bin/easy-rollout-db",
+  "java": easy_core_java | default("/usr/bin/java"),
+  "window": core_rollout_window,
+  "freeze": core_rollout_freeze,
+  "gates": {
+    "min_ci_age_hours": core_rollout_min_ci_age_hours,
+    "soak_hours": core_rollout_soak_hours,
+    "dev_version_url": core_rollout_dev_version_url,
+    "require_seen_on_dev": core_rollout_require_seen_on_dev | bool,
+    "require_on_master": core_rollout_require_on_master | bool,
+    "min_gap_hours": core_rollout_min_gap_hours,
+    "stuck_after_hours": core_rollout_stuck_after_hours,
+    "stuck_repeat_hours": core_rollout_stuck_repeat_hours,
+    "min_free_gb": core_rollout_min_free_gb
+  },
+  "rehearsal": {
+    "enabled": core_rollout_rehearsal_enabled | bool,
+    "port": core_rollout_rehearsal_port | int,
+    "timeout_s": core_rollout_rehearsal_timeout_s | int,
+    "java_opts": core_rollout_rehearsal_java_opts
+  },
+  "smoke": {
+    "required": core_rollout_smoke_required | bool,
+    "attempts": core_rollout_smoke_attempts | int,
+    "retry_delay_s": core_rollout_smoke_retry_delay_s | int,
+    "secrets_file": core_rollout_smoke_secrets_file,
+    "web_url": core_rollout_smoke_web_url,
+    "api_url": core_rollout_smoke_api_url,
+    "idp_url": core_rollout_smoke_idp_url,
+    "realm": core_rollout_smoke_realm,
+    "course_id": core_rollout_smoke_course_id | string,
+    "exercise_id": core_rollout_smoke_exercise_id | string,
+    "solutions": {"good": core_rollout_smoke_good_solution, "bad": core_rollout_smoke_bad_solution},
+    "grade_timeout_s": core_rollout_smoke_grade_timeout_s | int,
+    "tls_min_days": core_rollout_smoke_tls_min_days | int,
+    "executor_version_url": core_rollout_smoke_executor_version_url
+  },
+  "rollback": {"restore_db": core_rollout_restore_db},
+  "notify": {
+    "channels": core_rollout_notify_channels,
+    "mail": {
+      "to": core_rollout_notify_mail_to,
+      "from": core_rollout_notify_mail_from,
+      "host": core_rollout_notify_mail_host,
+      "port": core_rollout_notify_mail_port | int,
+      "starttls": core_rollout_notify_mail_starttls | bool,
+      "auth_file": core_rollout_notify_mail_auth_file
+    },
+    "webhook": {
+      "url_file": core_rollout_notify_webhook_url_file,
+      "format": core_rollout_notify_webhook_format
+    },
+    "youtrack": {
+      "base_url": core_rollout_notify_youtrack_base_url,
+      "project_id": core_rollout_notify_youtrack_project_id,
+      "visibility_group_id": core_rollout_notify_youtrack_visibility_group_id,
+      "token_file": core_rollout_notify_youtrack_token_file
+    }
+  }
+} | to_nice_json }}

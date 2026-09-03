@@ -1,0 +1,62 @@
+---
+# The account, its grants, the scripts, the config, and the timer that runs it.
+#
+# Depends on core_service (release tree, deploy group, the unit it restarts), postgres (the dump
+# unit and the dump directory) and core_config (the application.yaml the rehearsal is derived from).
+#
+# Gated whole, as core_autodeploy is: nothing is installed unless the host asks, and a host that
+# asks must name its branch and its config.json.
+
+- name: Refuse to run two deployers against one release tree
+  ansible.builtin.assert:
+    that:
+      - not (core_rollout_enabled | bool and core_autodeploy_enabled | default(false) | bool)
+    fail_msg: >-
+      core_rollout_enabled and core_autodeploy_enabled are both true. They install the same layout
+      and would race each other on every push; pick one. Switching a host from autodeploy to rollout
+      means setting core_autodeploy_enabled: false so that role removes its timer.
+    quiet: true
+
+- name: Refuse to install the rollout without knowing what it deploys
+  ansible.builtin.assert:
+    that:
+      - core_rollout_branch is defined
+      - core_rollout_branch | length > 0
+      - core_rollout_config_src is defined
+      - core_rollout_config_src | length > 0
+      - core_rollout_health_url | length > 0
+    fail_msg: >-
+      core_rollout_enabled is true, so this host must name the branch it deploys from
+      (core_rollout_branch), the config.json that goes with it (core_rollout_config_src) and the
+      public API URL to health-check (core_rollout_health_url / easy_core_health_url). None of these
+      has a value that is right for an unspecified host.
+    quiet: true
+  when: core_rollout_enabled | bool
+
+- name: Refuse a smoke configuration that cannot run
+  # `required` without the values is a rollout that can never proceed — say so at converge time
+  # rather than in the journal at 4am.
+  ansible.builtin.assert:
+    that:
+      - core_rollout_smoke_web_url | length > 0
+      - core_rollout_smoke_api_url | length > 0
+      - core_rollout_smoke_idp_url | length > 0
+      - core_rollout_smoke_course_id | string | length > 0
+      - core_rollout_smoke_exercise_id | string | length > 0
+    fail_msg: >-
+      core_rollout_smoke_required is true but the suite is not configured: it needs the web, API and
+      IdP URLs and the ids of the smoke course and exercise (core_rollout_smoke_*). See
+      doc/production-rollout.md §setup. Set core_rollout_smoke_required: false to deploy without it,
+      which is a decision worth writing down.
+    quiet: true
+  when:
+    - core_rollout_enabled | bool
+    - core_rollout_smoke_required | bool
+
+- name: Install it
+  ansible.builtin.include_tasks: install.yml
+  when: core_rollout_enabled | bool
+
+- name: Remove it where it is not wanted
+  ansible.builtin.include_tasks: absent.yml
+  when: not core_rollout_enabled | bool

@@ -454,6 +454,53 @@ teacher's courses, which is the deliberate, auditable way to get realistic acces
 
 ---
 
+### 4.8 The smoke client and its two accounts
+
+The unattended deployer (`roles/core_rollout`, `doc/production-rollout.md`) proves an environment
+works by logging in as a student and as a teacher and doing what they do — without a browser. §4.3
+turned the password grant off on the SPA's client on purpose, and §6.3 turns it on for one request
+and back off again; a suite that runs twice per rollout cannot do that. So it gets a client of its
+own, confidential, with the password grant and nothing else:
+
+```sh
+$K create clients -r master \
+  -s clientId=easy-smoke -s enabled=true \
+  -s publicClient=false -s standardFlowEnabled=false -s implicitFlowEnabled=false \
+  -s directAccessGrantsEnabled=true -s serviceAccountsEnabled=false
+SMOKE=$($K get clients -r master -q clientId=easy-smoke --fields id --format csv --noquotes | head -1)
+
+# core reads `easy_role` and checks no audience (EasyUserJwtConverter.kt), so a token from this
+# client works exactly like one from the SPA as long as it carries the same claim — the SPA
+# client's roles, mapped by the same mapper.
+$K create clients/$SMOKE/protocol-mappers/models -r master \
+  -s name=easy_role -s protocol=openid-connect \
+  -s protocolMapper=oidc-usermodel-client-role-mapper \
+  -s 'config."usermodel.clientRoleMapping.clientId"=lahendus.ut.ee' \
+  -s 'config."claim.name"=easy_role' -s 'config."jsonType.label"=String' \
+  -s 'config."multivalued"=true' -s 'config."access.token.claim"=true' \
+  -s 'config."id.token.claim"=false' -s 'config."userinfo.token.claim"=true'
+
+$K get clients/$SMOKE/client-secret -r master --fields value --format csv --noquotes   # → smoke-secrets.json
+```
+
+Two accounts, created like any other (§4.7) with the SPA client's `student` and `teacher` roles
+respectively, long random passwords, and email addresses that exist somewhere harmless — core
+requires the `email` claim:
+
+```sh
+for who in student teacher; do
+  $K create users -r master -s username=easy-smoke-$who -s enabled=true -s emailVerified=true \
+    -s email=easy-smoke-$who@lahendus.ut.ee -s firstName=Smoke -s lastName=${who^}
+  $K set-password -r master --username easy-smoke-$who --new-password "$(openssl rand -base64 30)"   # note it
+  $K add-roles -r master --uusername easy-smoke-$who --cclientid lahendus.ut.ee --rolename $who
+done
+```
+
+What the client can do is bounded by what those two accounts can do: a student in one course and
+a teacher of that same course, both with nothing else. The secret and the two passwords go into
+`/etc/easy/smoke-secrets.json` on the core host and nowhere else. Rotate all three by hand once a
+year; `easy-smoke` on the host says immediately if a rotation was incomplete.
+
 ## 5. The hostname, which went round in a circle
 
 Every config in this repo pointed the IdP at **`dev.idp.lahendus.ut.ee`**, and on 2026-08-08 that

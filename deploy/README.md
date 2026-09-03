@@ -9,8 +9,10 @@ production half in `doc/production-update.md`; this is the operating manual for 
 omitted environment should fail at the command line rather than resolve to whichever one somebody
 hardcoded. `deploy/deploy.sh 1a2b3c4` is a usage error, not a deploy.
 
-On dev there are two paths and the automatic one is the normal one. On production there is one, and
-it asks first.
+On both environments there are two paths and the automatic one is the normal one: a push to the
+environment's release branch, picked up by `roles/core_rollout` on the host (`doc/production-rollout.md`).
+This script is the manual path — a rollback to a named commit, a deploy of something off the
+branch, or a deploy while the automatic one is paused. On production it asks first.
 
 > **This covers core and web only.** Since EZ-1781 the grading images are on their own track: they
 > are published to GHCR by CI and pulled by a timer on the host, following `master` rather than
@@ -24,12 +26,30 @@ it asks first.
 ## Automatic: push to `dev-releases`
 
 ```sh
-git push origin master:dev-releases     # dev updates itself within a couple of minutes
+git push origin master:dev-releases     # dev updates itself within a few minutes
 ```
 
 A timer on the dev host polls GitHub every minute for the newest **green** CI run on
 `dev-releases`, and installs it if it differs from what is live. Nothing else is needed: no SSH, no
 laptop, no command.
+
+**Since 2026-09-03 the timer is `easy-rollout`, not `easy-autodeploy`** — the same guarded deployer
+production runs, with dev's settings: no window, no soak, but still a database dump before every
+deploy, a rehearsal of the new jar against a copy of that dump, and — once dev's smoke course exists
+— the end-to-end smoke suite, with an automatic rollback when any of it fails. A push therefore
+lands a few minutes later than it used to, and a push that breaks something is put back rather than
+left broken. Watch it work:
+
+```sh
+ssh easycoredev 'sudo journalctl -u easy-rollout -n 60 --no-pager'
+ssh easycoredev 'easy-rollout status'
+ssh easycoredev 'cat /srv/easy/current-sha'
+```
+
+A rollback shows as `current-sha` NOT changing plus a `pause` file under `/srv/easy/rollout/`; that
+pause stops all further automatic deploys until `easy-rollout resume` on the host. The old
+`core_autodeploy` role stays in the repo for reference and is disabled everywhere. What follows in
+this section describes the mechanism both share.
 
 **Pull, not push, and that is the point.** The alternative — a deploy job in the workflow that
 SSHes in — needs a private key for the dev host stored in GitHub, on a *public* repository,
@@ -156,9 +176,23 @@ Same script and the same seven steps. Three differences, all in `prod/prod.env`:
   been written *and* verified. Liquibase is forward-only: this is the only way back across a
   migration, and production had no backups at all before 2026-08.
 
-Deliberately **no polling autodeploy on production**. The dev timer re-asserts what `dev-releases`
-points at within a minute, which is exactly right there and turns a rollback here into a rollback
-plus a remembered `systemctl stop`. Production's deploys are named by a person.
+**Production deploys itself too, since 2026-09-03** — from `prod-releases`, through `roles/core_rollout`
+(`doc/production-rollout.md`), inside a maintenance window and only after the commit has soaked on
+dev, with a dump, a rehearsal, the smoke suite and an automatic rollback around the restart. This
+script is production's *manual* path. Two rules when using it there:
+
+- **Pause the rollout first**: `ssh <prod> easy-rollout pause "manual deploy of <sha>"`. Otherwise
+  the next tick sees `current-sha` disagree with the branch tip and — if the gates allow — puts the
+  branch tip back. This is the objection the old text below raised against a timer on production,
+  and the pause is its answer: a rollout that fails pauses itself, and a person pauses it by hand
+  before overriding it.
+- **Or move the branch instead.** `git push origin <sha>:prod-releases` is a deploy that goes
+  through every check; `deploy.sh prod` is a deploy that goes through none of them.
+
+Until 2026-09-03 this section said: *deliberately no polling autodeploy on production — the dev
+timer re-asserts what `dev-releases` points at within a minute, which turns a rollback into a
+rollback plus a remembered `systemctl stop`.* True of `easy-autodeploy`, and the reason
+`easy-rollout` pauses on failure and never retries a commit that failed.
 
 `DEPLOY_BRANCH` is **`prod-releases`** rather than `master`, so a hotfix is a deliberate push to a
 named branch. It mirrors `dev-releases`, and the name is stable on purpose: it means "what

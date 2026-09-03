@@ -40,6 +40,10 @@
     # After core_service: the release tree, the deploy group and the unit it restarts all come
     # from there. Pull-based, so nothing in GitHub holds a credential for this host — see the role.
     - core_autodeploy
+    # The guarded deployer: the same pull, with a window, a dump, a rehearsal, an end-to-end smoke
+    # suite and an automatic rollback around it. A host enables one of these two, never both; the
+    # role asserts it. After postgres too, because its database helper talks to the cluster.
+    - core_rollout
     - nginx
     # Last, and after postgres: it registers itself in core's database, so the database has to
     # exist and be migrated first. Grading is also the one thing here that runs other people's

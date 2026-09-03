@@ -1,0 +1,234 @@
+---
+# Included by main.yml only where core_rollout_enabled is true.
+
+- name: Install what the rehearsal needs
+  # PyYAML, to read production's application.yaml when deriving the rehearsal config. Everything
+  # else here is the standard library.
+  ansible.builtin.apt:
+    name: python3-yaml
+    state: present
+  when: core_rollout_rehearsal_enabled | bool
+
+- name: Create the account the rollouts run as
+  ansible.builtin.user:
+    name: "{{ core_rollout_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "/var/lib/{{ core_rollout_user }}"
+    create_home: true
+    state: present
+
+- name: Let it write the release tree
+  ansible.builtin.user:
+    name: "{{ core_rollout_user }}"
+    groups: "{{ core_rollout_deploy_group }}"
+    append: true
+  when: not ansible_check_mode
+
+- name: Grant it exactly what a rollout needs
+  # The same four grants a human deployer has (roles/core_service/templates/sudoers-deploy.j2),
+  # plus the database helper. `easy-rollout-db *` is a wildcard on a script that validates its own
+  # arguments and takes no paths from them; the script is root-owned and this role keeps it so.
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/easy-rollout
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+    content: |
+      # Managed by Ansible (roles/core_rollout) — local edits are overwritten.
+      {{ core_rollout_user }} ALL=(root) NOPASSWD: /usr/bin/systemctl restart {{ core_rollout_service }}
+      {{ core_rollout_user }} ALL=(root) NOPASSWD: /usr/bin/systemctl start {{ core_rollout_dump_service }}
+      {{ core_rollout_user }} ALL=(root) NOPASSWD: /usr/bin/journalctl -u {{ core_rollout_service }} -n 40 --no-pager
+      {{ core_rollout_user }} ALL=(root) NOPASSWD: {{ easy_core_log_helper_path | default('/usr/local/bin/easy-core-log') }}
+      {{ core_rollout_user }} ALL=(root) NOPASSWD: {{ easy_core_log_helper_path | default('/usr/local/bin/easy-core-log') }} *
+      {{ core_rollout_user }} ALL=(root) NOPASSWD: /usr/local/bin/easy-rollout-db
+      {{ core_rollout_user }} ALL=(root) NOPASSWD: /usr/local/bin/easy-rollout-db *
+
+- name: Create the config directory
+  ansible.builtin.file:
+    path: /etc/easy
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# --- credentials, which stay on the host -----------------------------------------------------------
+# Created as placeholders, never read, shape-checked. The token is shared with core_autodeploy's
+# file name on purpose: a host switching from one to the other keeps its token.
+
+- name: Create the credential files if they do not exist
+  ansible.builtin.copy:
+    dest: "{{ item.path }}"
+    owner: root
+    group: "{{ core_rollout_user }}"
+    mode: "0640"
+    content: "{{ item.content }}"
+    force: false
+  loop:
+    - path: "{{ core_rollout_token_file }}"
+      content: "CHANGEME-github-token-with-actions-read\n"
+    - path: "{{ core_rollout_smoke_secrets_file }}"
+      content: |
+        {"_": "CHANGEME — see doc/production-rollout.md §setup",
+         "client_id": "easy-smoke", "client_secret": "CHANGEME",
+         "student": {"username": "easy-smoke-student", "password": "CHANGEME"},
+         "teacher": {"username": "easy-smoke-teacher", "password": "CHANGEME"}}
+    - path: "{{ core_rollout_notify_mail_auth_file }}"
+      content: "CHANGEME-user:password-or-leave-as-is-for-an-open-relay\n"
+    - path: "{{ core_rollout_notify_webhook_url_file }}"
+      content: "CHANGEME-https://ntfy.example/topic\n"
+    - path: "{{ core_rollout_notify_youtrack_token_file }}"
+      content: "CHANGEME-permanent-token\n"
+  loop_control:
+    label: "{{ item.path }}"
+  when: not ansible_check_mode
+
+- name: Make sure the credential files are not world-readable
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: root
+    group: "{{ core_rollout_user }}"
+    mode: "0640"
+  loop:
+    - "{{ core_rollout_token_file }}"
+    - "{{ core_rollout_smoke_secrets_file }}"
+    - "{{ core_rollout_notify_mail_auth_file }}"
+    - "{{ core_rollout_notify_webhook_url_file }}"
+    - "{{ core_rollout_notify_youtrack_token_file }}"
+  when: not ansible_check_mode
+
+- name: Find out which credentials are still placeholders
+  ansible.builtin.command:
+    cmd: grep -l '^CHANGEME\|"CHANGEME' {{ core_rollout_token_file | quote }} {{ core_rollout_smoke_secrets_file | quote }}
+  register: core_rollout_placeholders
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Say that rollouts will not start until they are filled in
+  ansible.builtin.debug:
+    msg: >-
+      Still placeholders: {{ core_rollout_placeholders.stdout_lines | join(', ') }}. The timer is
+      installed and running but every tick exits without deploying until a real GitHub token
+      (Actions:read) and the smoke accounts are in place — doc/production-rollout.md §setup. No
+      restart needed afterwards.
+  when: core_rollout_placeholders.rc == 0
+
+# --- this environment's config.json ---------------------------------------------------------------
+
+- name: Place this environment's config.json
+  ansible.builtin.copy:
+    src: "{{ core_rollout_config_src }}"
+    dest: "{{ core_rollout_config_json }}"
+    owner: root
+    group: "{{ core_rollout_deploy_group }}"
+    mode: "0644"
+
+# --- state ----------------------------------------------------------------------------------------
+
+- name: Create the state directory, writable by everyone who may deploy
+  # `pause`, `deploy-now` and the state file live here. Group-writable so a human in the deploy
+  # group can `easy-rollout pause` without sudo, and setgid so what the timer creates stays so.
+  ansible.builtin.file:
+    path: "{{ core_rollout_state_dir }}"
+    state: directory
+    owner: "{{ core_rollout_user }}"
+    group: "{{ core_rollout_deploy_group }}"
+    mode: "2775"
+
+# --- the programs ------------------------------------------------------------------------------------
+
+- name: Create the library directory
+  ansible.builtin.file:
+    path: "{{ core_rollout_lib_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the modules
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ core_rollout_lib_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "python3 -m py_compile %s"
+  loop:
+    - easy_rollout.py
+    - easy_smoke.py
+    - easy_rehearsal_config.py
+
+- name: Install the commands
+  ansible.builtin.copy:
+    dest: "/usr/local/bin/{{ item.name }}"
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      # Managed by Ansible (roles/core_rollout). The program is {{ core_rollout_lib_dir }}/{{ item.module }}.
+      exec python3 {{ core_rollout_lib_dir }}/{{ item.module }} "$@"
+  loop:
+    - {name: easy-rollout, module: easy_rollout.py}
+    - {name: easy-smoke, module: easy_smoke.py}
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Install the database helper, root-owned and unwritable by the caller
+  # The sudoers grant above makes this script equivalent to the privileges it exercises, so its
+  # ownership is the security property. bash -n catches a template that renders to a syntax error.
+  ansible.builtin.template:
+    src: easy-rollout-db.j2
+    dest: /usr/local/bin/easy-rollout-db
+    owner: root
+    group: root
+    mode: "0755"
+    validate: "bash -n %s"
+
+- name: Write the configuration
+  ansible.builtin.template:
+    src: rollout.json.j2
+    dest: "{{ core_rollout_config_file }}"
+    owner: root
+    group: "{{ core_rollout_user }}"
+    mode: "0640"
+    validate: "python3 -m json.tool %s"
+
+- name: Install the units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "systemd-analyze verify %s"
+  loop:
+    - easy-rollout.service
+    - easy-rollout-alert.service
+    - easy-rollout.timer
+  notify: Reload the rollout timer
+
+- name: Apply the units before enabling the timer
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable the timer
+  ansible.builtin.systemd_service:
+    name: easy-rollout.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: not ansible_check_mode
+
+- name: Say what it thinks
+  ansible.builtin.command:
+    cmd: /usr/local/bin/easy-rollout status
+  register: core_rollout_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Show it
+  ansible.builtin.debug:
+    var: core_rollout_status.stdout_lines

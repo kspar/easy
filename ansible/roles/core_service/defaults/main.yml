@@ -47,9 +47,14 @@ easy_core_deploy_users: []
 # to the release tree mid-deploy. Where it is off, the account should lose the group: absent.yml
 # leaves the account itself alone deliberately, and membership of the group that may replace the jar
 # core runs is the part of it that is a privilege.
+#
+# core_rollout's account is the same case: it replaces autodeploy where it is enabled, and is the
+# other thing on the host allowed to swap the jar.
 easy_core_deploy_group_service_accounts: >-
-  {{ [core_autodeploy_user | default('easy-autodeploy')]
-     if (core_autodeploy_enabled | default(false) | bool) else [] }}
+  {{ ([core_autodeploy_user | default('easy-autodeploy')]
+      if (core_autodeploy_enabled | default(false) | bool) else [])
+     + ([core_rollout_user | default('easy-rollout')]
+        if (core_rollout_enabled | default(false) | bool) else []) }}
 
 # A root-owned reader for core's journal, granted NOPASSWD alongside the restart. It exists because
 # the unit cannot be pinned in sudoers: journalctl takes `-u` repeatedly, and a sudoers wildcard

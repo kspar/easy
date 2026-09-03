@@ -158,10 +158,47 @@ easy_nginx_acme_email: kaspar.papli@helmes.com
 grading_check_fixture: true
 
 # --- automatic deploys ------------------------------------------------------------------------------
-# Dev's, and stated here rather than assumed by the role. All three of these used to be role defaults
-# describing dev, which meant every other environment inherited dev's answers by saying nothing —
-# production ended up with dev's deploy script and dev's config.json installed on it, harmless only
-# because the timer was switched off by hand. The role is opt-in now and asserts the branch.
-core_autodeploy_enabled: true
-core_autodeploy_branch: dev-releases
-core_autodeploy_config_src: "{{ playbook_dir }}/../deploy/dev/config.json"
+# Dev's, and stated here rather than assumed by the role. These used to be role defaults describing
+# dev, which meant every other environment inherited dev's answers by saying nothing — production
+# ended up with dev's deploy script and dev's config.json installed on it, harmless only because the
+# timer was switched off by hand. Both roles are opt-in now and assert the branch.
+#
+# Since 2026-09-03 dev runs `core_rollout` — the guarded deployer written for production — rather
+# than `core_autodeploy`, so that every push to dev-releases exercises the machinery production
+# depends on: the dump, the rehearsal against a copy of the database, the end-to-end smoke suite,
+# and the rollback. Off here, and the role removes the old timer on the next converge.
+core_autodeploy_enabled: false
+
+core_rollout_enabled: true
+core_rollout_environment: dev
+core_rollout_branch: dev-releases
+core_rollout_config_src: "{{ playbook_dir }}/../deploy/dev/config.json"
+core_rollout_health_url: https://dev.ems.lahendus.ut.ee/v2/
+# Every minute, as the autodeploy timer had: a push should be live within a few minutes.
+core_rollout_interval: "*:*:00"
+# No window, no soak, no gap: dev IS the soak, and a promotion should land when it is green.
+core_rollout_window: {always: true}
+core_rollout_require_seen_on_dev: false
+core_rollout_min_ci_age_hours: 0
+core_rollout_min_gap_hours: 0
+# A dump before every deploy and a rehearsal against it, as on production — this is where the
+# rehearsal gets exercised before production trusts it.
+core_rollout_rehearsal_enabled: true
+# Dev's data is a disposable import; if the previous release will not come back after a rollback,
+# a person looks rather than the machine restoring anything.
+core_rollout_restore_db: never
+# The smoke suite. The course and exercise are created once through the UI by the smoke teacher
+# (doc/production-rollout.md §setup); until they exist the suite is not required here, so dev keeps
+# deploying — with dump, rehearsal, health check and rollback, but without the end-to-end proof.
+# Fill in the two ids and flip `required` to true as soon as they exist.
+core_rollout_smoke_required: false
+core_rollout_smoke_web_url: https://dev.lahendus.ut.ee
+core_rollout_smoke_api_url: https://dev.ems.lahendus.ut.ee
+core_rollout_smoke_idp_url: https://dev.idp.lahendus.ut.ee/auth
+core_rollout_smoke_course_id: ""
+core_rollout_smoke_exercise_id: ""
+core_rollout_smoke_executor_version_url: http://127.0.0.1:5111/v1/version
+
+# Publish what dev runs at /.well-known/easy-release, which production's rollout reads as evidence
+# that a commit has been live here (its `require_seen_on_dev` gate).
+easy_nginx_publish_release_sha: true

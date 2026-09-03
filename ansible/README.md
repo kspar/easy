@@ -211,6 +211,8 @@ roles/keycloak/              the IdP host entire: JVM, postgres, Keycloak, its u
 roles/core_config/           core's config, its secrets file, and the guards on both
 roles/postgres/              cluster on loopback, role, database
 roles/core_service/          the systemd unit, the release tree, the deploy grant
+roles/core_rollout/          unattended, guarded deploys: window, dump, rehearsal, end-to-end smoke,
+                             automatic rollback, escalation — see doc/production-rollout.md
 roles/nginx/                 TLS, the SPA vhost, the API proxy
 roles/executor/              Docker, the aae service as a non-root user, and the database rows
                              that make core aware of it

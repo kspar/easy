@@ -1,0 +1,28 @@
+---
+# Included by main.yml where core_rollout_enabled is false. Removes the timer, the programs and the
+# grants. Leaves the account, the credential files and the state directory: a `pause` reason and
+# the rollout records are history worth keeping, and a token is a thing to revoke deliberately.
+
+- name: Stop and disable the timer
+  ansible.builtin.systemd_service:
+    name: easy-rollout.timer
+    enabled: false
+    state: stopped
+  failed_when: false
+  when: not ansible_check_mode
+
+- name: Remove the units, the programs and the grant
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/systemd/system/easy-rollout.timer
+    - /etc/systemd/system/easy-rollout.service
+    - /etc/systemd/system/easy-rollout-alert.service
+    - /usr/local/bin/easy-rollout
+    - /usr/local/bin/easy-smoke
+    - /usr/local/bin/easy-rollout-db
+    - "{{ core_rollout_lib_dir }}"
+    - /etc/sudoers.d/easy-rollout
+    - "{{ core_rollout_config_file }}"
+  notify: Reload systemd after removing the rollout units

@@ -131,6 +131,24 @@ server {
         try_files $uri =404;
     }
 
+{% if easy_nginx_publish_release_sha | default(false) | bool %}
+    # Which commit this host is running, as plain text. Read by another environment's rollout
+    # (roles/core_rollout) as evidence that a commit has been live here — the soak gate — so it is
+    # only worth turning on where some other environment treats this one as its proving ground,
+    # which is dev. The value is a commit id of a public repository; the About page shows the same
+    # thing to anyone logged in.
+    location = /.well-known/easy-release {
+        alias {{ easy_nginx_release_sha_file }};
+        default_type text/plain;
+        add_header Cache-Control "no-store" always;
+        # Repeated, not inherited — see the note at the top of this file.
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy-Report-Only $easy_csp always;
+    }
+
+{% endif %}
     # Vite emits content-hashed filenames, so these can be cached hard and for a long time.
     location /assets/ {
         add_header Cache-Control "public, max-age=31536000, immutable" always;

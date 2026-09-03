@@ -1,0 +1,20 @@
+# Managed by Ansible (roles/core_rollout) — local edits are overwritten.
+#
+# Started by systemd when easy-rollout.service fails — a crash, a timeout, a traceback the program
+# did not catch. Anything the program caught it reported itself; this covers the case where it could
+# not, which is otherwise a journal entry nobody reads until the next release is overdue.
+
+[Unit]
+Description=Tell a person that the rollout machinery itself failed
+After=network-online.target
+
+[Service]
+Type=oneshot
+User={{ core_rollout_user }}
+Group={{ core_rollout_user }}
+ExecStart=/usr/local/bin/easy-rollout --config {{ core_rollout_config_file }} notify-failure easy-rollout.service
+TimeoutStartSec=120
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes

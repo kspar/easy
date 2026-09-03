@@ -1,0 +1,46 @@
+# Managed by Ansible (roles/core_rollout) — local edits are overwritten.
+
+[Unit]
+Description=Guarded rollout of the newest green build of {{ core_rollout_branch }}
+Documentation=https://github.com/{{ core_rollout_repo }}/blob/master/doc/production-rollout.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+# The machinery failing — not a release failing, which the program reports itself — is reported by
+# a separate unit, because a program that has crashed cannot send its own alert.
+OnFailure=easy-rollout-alert.service
+
+[Service]
+Type=oneshot
+User={{ core_rollout_user }}
+Group={{ core_rollout_user }}
+SupplementaryGroups={{ core_rollout_deploy_group }}
+
+ExecStart=/usr/local/bin/easy-rollout --config {{ core_rollout_config_file }} tick
+
+# A failed rollout is loud, has already rolled back or paused itself, and should be left alone.
+Restart=no
+# Preflight, a dump, a restore into the scratch database, a JVM boot, a deploy, a full smoke
+# suite, possibly a rollback and a second restore. Two hours is generous; it should not be tight.
+TimeoutStartSec=7200
+
+# --- confinement --------------------------------------------------------------------------------
+# It talks to GitHub and to this environment's public URLs, unpacks an archive, starts a JVM
+# against a scratch database, and writes one tree.
+NoNewPrivileges=no
+# ^ NOT yes: this unit's work ends in `sudo systemctl restart`, and NoNewPrivileges makes sudo
+#   fail with a message that never mentions it. What it can gain is listed in /etc/sudoers.d/easy-rollout.
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+# The release tree, the state directory (under it) and the rehearsal's working directory.
+ReadWritePaths={{ core_rollout_root }}
