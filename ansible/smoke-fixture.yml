@@ -1,0 +1,109 @@
+# The smoke suite's course and exercise (roles/core_rollout, doc/production-rollout.md §9), seeded the
+# way grading-check.yml seeds its fixture — by title, created if missing, the grader updated in place,
+# at whatever ids the sequences hand out. Prints the two ids core_rollout's inventory needs.
+#
+#   ./run.sh smoke-fixture.yml --limit <core host>
+#
+# Needs the two smoke accounts to exist in core, which their first `checkin` creates: the play runs
+# the suite once first for exactly that reason, so /etc/easy/smoke-secrets.json must already be real
+# (smoke-secrets.yml). Writes rows by psql as postgres, which is fine on dev; production may prefer
+# to create the same course as an admin in the UI — the grader below is what the exercise needs.
+- hosts: core
+  become: true
+  gather_facts: false
+  vars:
+    smoke_db: "{{ easy_core_db_name }}"
+    smoke_course_title: "Smoke (automatic checks)"
+    smoke_exercise_title: "Smoke: print Hello, smoke!"
+    smoke_image: tiivad
+    # Feedback, then a line of fifty #, then the grade — the shape the executor parses.
+    smoke_grading_script: |
+      #!/bin/bash
+      expected='Hello, smoke!'
+      actual=$(cd /student-submission && timeout 10 python3 submission.py 2>&1)
+      if [ "$actual" = "$expected" ]; then
+        echo "Output was exactly: $expected"
+        printf '%0.s#' $(seq 1 50); echo
+        echo "grade: 100"
+      else
+        echo "Expected exactly: $expected"
+        echo "Got: $actual"
+        printf '%0.s#' $(seq 1 50); echo
+        echo "grade: 0"
+      fi
+  tasks:
+    - name: Let the smoke accounts check in once, so core knows them
+      ansible.builtin.command:
+        cmd: sudo -u easy-rollout easy-smoke
+      changed_when: false
+      failed_when: false
+
+    - name: Find or create the smoke exercise and course
+      ansible.builtin.shell:
+        cmd: |
+          psql -d {{ smoke_db }} -v ON_ERROR_STOP=1 -tA <<'SQL'
+          DO $$ BEGIN
+            IF (SELECT count(*) FROM account WHERE username IN ('easy-smoke-student', 'easy-smoke-teacher')) <> 2 THEN
+              RAISE EXCEPTION 'the smoke accounts have not checked in yet';
+            END IF;
+          END $$;
+          WITH existing AS (
+              SELECT exercise_id AS id FROM exercise_version
+              WHERE title = $t${{ smoke_exercise_title }}$t$ AND valid_to IS NULL LIMIT 1
+          ), d AS (
+              INSERT INTO exercise_dir (name, implicit, created_at, modified_at)
+              SELECT $t${{ smoke_exercise_title }}$t$, false, now(), now()
+              WHERE NOT EXISTS (SELECT 1 FROM existing) RETURNING id
+          ), a AS (
+              INSERT INTO automatic_exercise (grading_script, container_image_id, max_time_sec, max_mem_mb)
+              SELECT $script${{ smoke_grading_script }}$script$, $i${{ smoke_image }}$i$, 60, 256
+              WHERE NOT EXISTS (SELECT 1 FROM existing) RETURNING id
+          ), e AS (
+              INSERT INTO exercise (created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
+              SELECT now(), 'easy-smoke-teacher', false, d.id, false FROM d RETURNING id
+          ), v AS (
+              INSERT INTO exercise_version (exercise_id, author_id, valid_from, grader_type, title,
+                                            solution_file_name, solution_file_type, auto_exercise_id)
+              SELECT e.id, 'easy-smoke-teacher', now(), 'AUTO', $t${{ smoke_exercise_title }}$t$, 'solution.py', 0, a.id
+              FROM e, a RETURNING exercise_id
+          ), ex AS (
+              SELECT coalesce((SELECT id FROM existing), (SELECT exercise_id FROM v)) AS id
+          ), upd AS (
+              UPDATE automatic_exercise SET grading_script = $script${{ smoke_grading_script }}$script$
+              WHERE id = (SELECT auto_exercise_id FROM exercise_version WHERE exercise_id = (SELECT id FROM ex) AND valid_to IS NULL)
+                AND grading_script IS DISTINCT FROM $script${{ smoke_grading_script }}$script$
+          ), existing_course AS (
+              SELECT id FROM course WHERE title = $t${{ smoke_course_title }}$t$ LIMIT 1
+          ), c AS (
+              INSERT INTO course (created_at, title, color, course_code)
+              SELECT now(), $t${{ smoke_course_title }}$t$, coalesce((SELECT color FROM course ORDER BY id LIMIT 1), '#6b8e6b'), 'SMOKE'
+              WHERE NOT EXISTS (SELECT 1 FROM existing_course) RETURNING id
+          ), co AS (
+              SELECT coalesce((SELECT id FROM existing_course), (SELECT id FROM c)) AS id
+          ), t AS (
+              INSERT INTO teacher_course_access (teacher_id, course_id, created_at)
+              SELECT 'easy-smoke-teacher', co.id, now() FROM co
+              WHERE NOT EXISTS (SELECT 1 FROM teacher_course_access WHERE teacher_id = 'easy-smoke-teacher' AND course_id = (SELECT id FROM co))
+          ), s AS (
+              INSERT INTO student_course_access (student_id, course_id, created_at)
+              SELECT 'easy-smoke-student', co.id, now() FROM co
+              WHERE NOT EXISTS (SELECT 1 FROM student_course_access WHERE student_id = 'easy-smoke-student' AND course_id = (SELECT id FROM co))
+          ), existing_ce AS (
+              SELECT id FROM course_exercise WHERE course_id = (SELECT id FROM co) AND exercise_id = (SELECT id FROM ex) LIMIT 1
+          ), ce AS (
+              INSERT INTO course_exercise (course_id, exercise_id, created_at, modified_at, grade_threshold,
+                                           student_visible_from, ordering_index, assessments_student_visible, instructions_md)
+              SELECT co.id, ex.id, now(), now(), 100, now(), 0, true,
+                     'Print exactly `Hello, smoke!`. This exercise exists for the automatic smoke suite; nothing else uses it.'
+              FROM co, ex WHERE NOT EXISTS (SELECT 1 FROM existing_ce) RETURNING id
+          )
+          SELECT (SELECT id FROM co), coalesce((SELECT id FROM existing_ce), (SELECT id FROM ce));
+          SQL
+      become_user: postgres
+      register: fixture
+      changed_when: false
+
+    - name: The ids for the inventory
+      # The last line: psql prints the DO block's command tag before the query's row.
+      ansible.builtin.debug:
+        msg: "core_rollout_smoke_course_id={{ fixture.stdout_lines[-1].split('|')[0] }} core_rollout_smoke_exercise_id={{ fixture.stdout_lines[-1].split('|')[1] }}"

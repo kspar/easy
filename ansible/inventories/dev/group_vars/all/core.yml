@@ -188,16 +188,15 @@ core_rollout_rehearsal_enabled: true
 # Dev's data is a disposable import; if the previous release will not come back after a rollback,
 # a person looks rather than the machine restoring anything.
 core_rollout_restore_db: never
-# The smoke suite. The course and exercise are created once through the UI by the smoke teacher
-# (doc/production-rollout.md §setup); until they exist the suite is not required here, so dev keeps
-# deploying — with dump, rehearsal, health check and rollback, but without the end-to-end proof.
-# Fill in the two ids and flip `required` to true as soon as they exist.
-core_rollout_smoke_required: false
+# The smoke suite. The course and exercise were seeded on 2026-09-04 by `smoke-fixture.yml` (found
+# by title, so re-running it is harmless); the accounts and the `easy-smoke` client live on dev's IdP
+# (doc/idp-setup.md §4.8), their credentials in /etc/easy/smoke-secrets.json on the host.
+core_rollout_smoke_required: true
 core_rollout_smoke_web_url: https://dev.lahendus.ut.ee
 core_rollout_smoke_api_url: https://dev.ems.lahendus.ut.ee
 core_rollout_smoke_idp_url: https://dev.idp.lahendus.ut.ee/auth
-core_rollout_smoke_course_id: ""
-core_rollout_smoke_exercise_id: ""
+core_rollout_smoke_course_id: "160"
+core_rollout_smoke_exercise_id: "6485"
 core_rollout_smoke_executor_version_url: http://127.0.0.1:5111/v1/version
 
 # Publish what dev runs at /.well-known/easy-release, which production's rollout reads as evidence

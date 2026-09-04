@@ -1,0 +1,54 @@
+# Finish the `easy-smoke` client and its two accounts on an IdP the way doc/idp-setup.md §4.8
+# describes — the easy_role mapper (without which core rejects every token from this client), the
+# SPA client roles, the display names. The client and the users themselves are created in the
+# console first; realm contents stay a person's, this only completes what a person started.
+#
+#   ./run.sh smoke-idp-setup.yml --limit <idp host>
+#
+# Idempotent: every step looks before it creates. Runs kcadm as root on the host with the admin
+# password read from /etc/keycloak/keycloak.env, as every command in that document does.
+- hosts: idp
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Add the mapper and the roles
+      ansible.builtin.shell: |
+        set -uo pipefail
+        export JAVA_HOME=$(ls -d /usr/lib/jvm/java-21-openjdk-* | head -1)
+        export HOME=/root
+        K=/opt/keycloak/bin/kcadm.sh
+        $K config credentials --server http://127.0.0.1:8080/auth --realm master \
+          --user "$(grep '^KC_BOOTSTRAP_ADMIN_USERNAME=' /etc/keycloak/keycloak.env | cut -d= -f2-)" \
+          --password "$(grep '^KC_BOOTSTRAP_ADMIN_PASSWORD=' /etc/keycloak/keycloak.env | cut -d= -f2-)" >/dev/null 2>&1 || { echo "login failed"; exit 1; }
+        ID=$($K get clients -r master -q clientId=easy-smoke --fields id --format csv --noquotes | head -1)
+        if $K get clients/$ID/protocol-mappers/models -r master --fields name --format csv --noquotes | grep -qx easy_role; then
+          echo "mapper easy_role: already present"
+        else
+          $K create clients/$ID/protocol-mappers/models -r master \
+            -s name=easy_role -s protocol=openid-connect \
+            -s protocolMapper=oidc-usermodel-client-role-mapper \
+            -s 'config."usermodel.clientRoleMapping.clientId"=lahendus.ut.ee' \
+            -s 'config."claim.name"=easy_role' -s 'config."jsonType.label"=String' \
+            -s 'config."multivalued"=true' -s 'config."access.token.claim"=true' \
+            -s 'config."id.token.claim"=false' -s 'config."userinfo.token.claim"=true' 2>&1 && echo "mapper easy_role: created"
+        fi
+        SPA=$($K get clients -r master -q clientId=lahendus.ut.ee --fields id --format csv --noquotes | head -1)
+        for who in student teacher; do
+          U=$($K get users -r master -q username=easy-smoke-$who -q exact=true --fields id --format csv --noquotes | head -1)
+          Last=$(echo "$who" | sed 's/./\U&/')
+          $K update users/$U -r master -s firstName=Smoke -s lastName="$Last" 2>&1 && echo "easy-smoke-$who: names set"
+          if $K get users/$U/role-mappings/clients/$SPA -r master --fields name --format csv --noquotes | grep -qx "$who"; then
+            echo "easy-smoke-$who: role $who already assigned"
+          else
+            $K add-roles -r master --uusername easy-smoke-$who --cclientid lahendus.ut.ee --rolename "$who" 2>&1 && echo "easy-smoke-$who: role $who assigned"
+          fi
+          echo "easy-smoke-$who: spa roles now: $($K get users/$U/role-mappings/clients/$SPA -r master --fields name --format csv --noquotes | tr '\n' ' ')"
+        done
+        echo "mappers now: $($K get clients/$ID/protocol-mappers/models -r master --fields name,protocolMapper --format csv --noquotes | tr '\n' ' ')"
+      args:
+        executable: /bin/bash
+      register: fix
+      changed_when: "'created' in fix.stdout or 'assigned' in fix.stdout"
+    - name: Output
+      ansible.builtin.debug:
+        var: fix.stdout_lines

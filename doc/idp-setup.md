@@ -533,6 +533,12 @@ The names are what the suite's `checkin` posts (`Smoke` / `Student`, `Smoke` / `
 core has nothing to update on every run. The addresses need not deliver — the two accounts get no
 mail that matters — but they must be set, because core requires the `email` claim.
 
+Or, having created the client and the two users in the console, let `ansible/smoke-idp-setup.yml`
+do the mapper, the roles and the names — idempotently, over kcadm on the host. In the console the
+mapper is: Clients → `easy-smoke` → Client scopes → `easy-smoke-dedicated` → Add mapper → By
+configuration → **User Client Role**, with Client ID `lahendus.ut.ee` (where the roles live, not
+`easy-smoke`), Token Claim Name `easy_role`, Multivalued on, JSON type String, in the access token.
+
 What the client can do is bounded by what those two accounts can do: a student in one course and
 a teacher of that same course, both with nothing else — and in particular neither is an admin,
 which is why the smoke course itself is created by one (doc/production-rollout.md §9). The secret

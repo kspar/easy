@@ -238,15 +238,19 @@ understanding why it paused; it will happily roll out the next commit.
 
 ## 9. Setup, once per environment
 
-1. **The IdP**: the `easy-smoke` client and the two accounts — `doc/idp-setup.md` §4.8.
-2. **The smoke course**: as an **admin** (only admins create courses), create a course named
-   `Smoke (automatic checks)`, add `easy-smoke-teacher` as its teacher and `easy-smoke-student` as
-   its student. Then, as the smoke teacher, create one exercise in it: Python, auto-graded, open,
-   no deadline, whose grader gives full marks to a program that prints exactly `Hello, smoke!` and
-   less to anything else — a TSL spec with a single stdout check is enough. The suite appends a
-   comment line to each solution it submits; a stdout check does not see it. Change
-   `core_rollout_smoke_good_solution` / `_bad_solution` if the exercise differs. Note the course id
-   and the *course exercise* id from the URL.
+1. **The IdP**: the `easy-smoke` client and the two accounts — `doc/idp-setup.md` §4.8. Create the
+   client (confidential, direct access grants on, standard flow off) and the two users in the admin
+   console, then `./run.sh smoke-idp-setup.yml --limit <idp host>` adds the `easy_role` mapper,
+   assigns the two client roles and sets the names, idempotently. Without the mapper a token from
+   this client carries no `easy_role` and core answers 401 to everything.
+2. **The smoke course**: `./run.sh smoke-fixture.yml --limit <core host>` seeds a course named
+   `Smoke (automatic checks)` with both accounts on it and one auto-graded exercise whose grader
+   gives full marks to a program printing exactly `Hello, smoke!` and 0 to anything else, then
+   prints the two ids for the inventory. Found by title, so re-running is harmless; the accounts
+   must have checked in once first, which the play does by running the suite. It writes rows by
+   psql the way `grading-check.yml` does — fine on dev; on production, decide whether you would
+   rather create the same thing as an admin in the UI (the grader script is in the playbook).
+   The suite appends a comment line to each solution it submits; the grader only looks at stdout.
 3. **Inventory**: the `core_rollout_*` values in the environment's group_vars (production's are
    gitignored — the block in `ansible/inventories/production/hosts.example.yml` lists them; dev's
    are committed). `easy_core_mail_sys_to` must be set for anyone to hear from it.
@@ -255,9 +259,11 @@ understanding why it paused; it will happily roll out the next commit.
    helper, the units, and creates the placeholder credential files.
 5. **Credentials on the host** (the role reports which are still placeholders):
    `/etc/easy/github-token` (a fine-grained PAT, Actions: read — shared with autodeploy's file
-   name), `/etc/easy/smoke-secrets.json` (the client secret and the two passwords),
-   optionally `/etc/easy/rollout-webhook-url`, `/etc/easy/rollout-youtrack-token`,
-   `/etc/easy/rollout-mail-auth`.
+   name), `/etc/easy/smoke-secrets.json` (the client secret and the two passwords —
+   `./run.sh smoke-secrets.yml -e @<file with smoke_student_pw and smoke_teacher_pw>` reads the
+   client secret off the IdP with kcadm and writes the file without either crossing a command line,
+   then runs the suite), optionally `/etc/easy/rollout-webhook-url`,
+   `/etc/easy/rollout-youtrack-token`, `/etc/easy/rollout-mail-auth`.
 6. **Prove it before trusting it**: `sudo -u easy-rollout easy-rollout smoke` must pass;
    `sudo -u easy-rollout easy-rollout check` must say something sensible; `easy-rollout notify-test`
    must reach somebody at CRITICAL. On a first production install, `easy-rollout pause "first
