@@ -78,6 +78,8 @@ ansible/inventories/production/group_vars/
 # the most useful single document an attacker could be handed about these hosts, and it exists to be
 # worked from rather than published. Ask kspar.
 doc/production-update.md
+doc/post-release-followups.md
+doc/exercises-needing-hands.md
 
 # Production's deploy environment, for the same reason as its group_vars above: the SSH target, the
 # release branch it is allowed to run, and the hostnames. `deploy/dev/` stays in the repo — dev is
