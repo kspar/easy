@@ -25,7 +25,7 @@ so a person can always take over with the tools they already have.
 ## 2. The flow
 
 ```
-every tick (5 min prod, 1 min dev)
+every tick (1 min prod, 30 s dev)
   paused?  ─────────────────────────── yes → nothing (say why in the journal)
   record what dev is running          (GET dev's /.well-known/easy-release; the soak's evidence)
   branch head == current-sha? ─────── yes → steady, silent

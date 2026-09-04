@@ -174,8 +174,9 @@ core_rollout_environment: dev
 core_rollout_branch: dev-releases
 core_rollout_config_src: "{{ playbook_dir }}/../deploy/dev/config.json"
 core_rollout_health_url: https://dev.ems.lahendus.ut.ee/v2/
-# Every minute, as the autodeploy timer had: a push should be live within a few minutes.
-core_rollout_interval: "*:*:00"
+# Every thirty seconds: a push should be live within a few minutes, and most of those minutes are
+# the dump and the rehearsal rather than the wait for a tick.
+core_rollout_interval: "*:*:00,30"
 # No window, no soak, no gap: dev IS the soak, and a promotion should land when it is green.
 core_rollout_window: {always: true}
 core_rollout_require_seen_on_dev: false

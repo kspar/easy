@@ -36,9 +36,10 @@ core_rollout_repo: kspar/easy
 
 core_rollout_workflow: CI
 
-# How often the timer asks. Production every five minutes: a rollout waits for a window anyway, and
-# the cost of a tick is one API call. Dev wants a minute, as the autodeploy timer had.
-core_rollout_interval: "*:0/5"
+# How often the timer asks, as a systemd OnCalendar expression. Every minute here: a tick in the
+# steady state is one GitHub call, so this is about 1.5% of the authenticated rate limit, and a
+# hotfix pushed with `deploy-now` should not wait longer than it has to. Dev halves it.
+core_rollout_interval: "*:*:00"
 
 # --- what it deploys into (mirrors roles/core_service) --------------------------------------------
 core_rollout_root: "{{ easy_core_root | default('/srv/easy') }}"

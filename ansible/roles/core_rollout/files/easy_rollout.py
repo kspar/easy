@@ -1443,7 +1443,7 @@ class Controller:
         return self.rollout(head, d["run"])
 
     def github_unavailable(self, why: str, now: datetime) -> str:
-        """Not a crash, not a CRITICAL every five minutes: a WARN once a day while it lasts."""
+        """Not a crash, not a CRITICAL every tick: a WARN once a day while it lasts."""
         log(f"github unavailable: {why}")
         g = self.cfg["gates"]
         first = self.state.data["notices"].get("github-since")
@@ -1726,7 +1726,7 @@ def main(argv: list[str] | None = None) -> int:
     except TokenMissing as e:
         if cmd == "tick":
             # An unconfigured host says so once a tick and exits cleanly, as autodeploy did: a
-            # unit that fails every five minutes would page somebody about a host that is simply
+            # unit that fails every minute would page somebody about a host that is simply
             # not finished being set up.
             print(str(e))
             return 0
