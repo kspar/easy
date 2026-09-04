@@ -40,6 +40,7 @@ import type {
   StudentParticipant,
   GroupResp,
 } from '../../api/types.ts'
+import SafeText from '../../components/SafeText.tsx'
 
 type VisibilityMode = 'visible' | 'hidden' | 'scheduled'
 // Exception visibility adds a "no override" option
@@ -615,7 +616,9 @@ export default function ExerciseSettingsDialog({
             variant="contained"
             disabled={!canSave || isSaving}
           >
-            {isSaving ? t('general.saving') : t('general.save')}
+            {/* Same reason as ConfirmDialog's confirm button: a text-only swap inside a Button
+                goes stale rather than crashing on a translated page. See SafeText. */}
+            <SafeText>{isSaving ? t('general.saving') : t('general.save')}</SafeText>
           </Button>
         </DialogActions>
       </Dialog>

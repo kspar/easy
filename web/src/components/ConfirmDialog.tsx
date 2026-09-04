@@ -7,6 +7,7 @@ import {
   Typography,
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import SafeText from './SafeText.tsx'
 
 export default function ConfirmDialog({
   open,
@@ -52,9 +53,15 @@ export default function ConfirmDialog({
           variant="contained"
           disabled={isPending}
         >
-          {isPending
-            ? (pendingLabel ?? t('general.removing'))
-            : (confirmLabel ?? t('general.remove'))}
+          {/* Wrapped so the label actually changes on a translated page. A MUI Button's children
+              are an array, so a bare string here gets a real text node — and an in-place update to
+              one the translator has replaced lands nowhere, leaving the button reading "Remove"
+              while the deletion runs. No crash, no error, just no feedback. See SafeText. */}
+          <SafeText>
+            {isPending
+              ? (pendingLabel ?? t('general.removing'))
+              : (confirmLabel ?? t('general.remove'))}
+          </SafeText>
         </Button>
       </DialogActions>
     </Dialog>

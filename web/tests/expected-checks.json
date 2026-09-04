@@ -48,5 +48,6 @@
   "similarity-page.spec.mjs": 15,
   "system-messages.spec.mjs": 18,
   "terms-redirect.spec.mjs": 4,
+  "translated-page-crash.spec.mjs": 7,
   "web-update-banner.spec.mjs": 14
 }

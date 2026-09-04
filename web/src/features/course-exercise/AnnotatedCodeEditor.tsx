@@ -51,6 +51,7 @@ import { useFileDropExtension } from '../../components/markdown/useFileDropExten
 import { COMPACT_TOOLS } from '../../components/markdown/markdownTools.ts'
 import { applyFormat } from '../../components/markdown/markdownActions.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import SafeText from '../../components/SafeText.tsx'
 
 /* ───────── Types ───────── */
 
@@ -848,7 +849,9 @@ function CommentEditor({
           disabled={!text.trim() || saving}
           sx={{ textTransform: 'none', fontSize: '0.75rem', minWidth: 0, px: 1.5, py: 0.25 }}
         >
-          {saving ? <CircularProgress size={16} /> : t('general.save')}
+          {/* Wrapped against the translated-DOM `removeChild` crash, as in ActivityFeed and the
+              autograde status line. See SafeText. */}
+          {saving ? <CircularProgress size={16} /> : <SafeText>{t('general.save')}</SafeText>}
         </Button>
         <Button
           size="small"

@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<!-- lang is Estonian because that is the app's default and what an unconfigured visitor gets.
+     `src/i18n/i18n.ts` owns it from the moment it is evaluated and keeps it on the language
+     actually being displayed — so change it there, not only here, or the two will drift. It
+     matters more than it looks: a screen reader picks its voice from this attribute, and it is
+     what decides whether the browser offers a translation the page does not need (EZ-1888). -->
 <html lang="et">
   <head>
     <meta charset="UTF-8" />
