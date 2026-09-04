@@ -105,6 +105,16 @@ if [ "$DRY_RUN" = false ]; then
 
     ssh -o BatchMode=yes -o ConnectTimeout=10 "$SSH_TARGET" true \
         || die "cannot SSH to $SSH_TARGET (needs key-based auth, no password prompt)"
+
+    # A host that deploys itself (roles/core_rollout) re-asserts its branch tip on the next tick, so
+    # a hand deploy there — a rollback, above all — is undone within minutes unless the rollout is
+    # paused first. Refuse rather than let that happen at night; the pause is one command.
+    if ssh "$SSH_TARGET" "systemctl is-active --quiet easy-rollout.timer 2>/dev/null && ! test -e '$REMOTE_ROOT/rollout/pause'"; then
+        die "easy-rollout.timer is active on $SSH_TARGET and not paused: the next tick would put the branch tip back.
+  Pause it first:   ssh $SSH_TARGET easy-rollout pause 'manual deploy of $REF'
+  Or roll back through it, which pauses and records the failure itself:
+                    ssh $SSH_TARGET sudo -u easy-rollout easy-rollout rollback $REF"
+    fi
 fi
 
 # --- resolve the commit to a green CI run ------------------------------------------------------

@@ -231,8 +231,11 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: aae/requirements-dev.txt
+      # PyYAML is for the rollout's rehearsal-config test (ansible/roles/core_rollout/tests), which
+      # reads a real application.yaml the way the host does. Not in aae's requirements because aae
+      # does not use it; without it that one test would skip — silently, and green.
       - name: Install
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements-dev.txt pyyaml
       # bin/pins.py decides which version of each grading library an environment runs, and — once
       # .github/workflows/pins-automerge.yml exists — whether a pull request from somebody with no
       # write access may merge itself. Most of its tests are refusals, so they run here rather than

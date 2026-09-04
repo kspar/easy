@@ -45,7 +45,8 @@ every tick (5 min prod, 1 min dev)
                        points at nowhere (§5); wait for it to answer or die; count applied
                        changesets; drop the scratch database
     6 activate         flip both symlinks, restart core
-    7 health           401 from /v2/ through the public vhost, unit active
+    7 health           401 from /v2/ through the public vhost, unit active — and no waiting out
+                       the timeout for a unit that is failed or crash-looping
     8 smoke            the whole suite against the new release, up to 3 attempts a minute apart
     9 mark             current-sha, DEPLOYED — the last step whose failure rolls back
    10 prune            old releases; INFO notification with the commit list. Never a rollback reason.
@@ -189,14 +190,14 @@ notification failure ever fails a rollout — the record on disk is the thing of
 | --- | --- | --- |
 | INFO | deployed; the commit list is in the body | mail |
 | WARN | aborted before touching production (once a day while a retryable reason recurs); branch stuck for days; GitHub unreachable for hours; state file reset | mail |
-| CRITICAL | rolled back; rolled back but smoke still fails; DOWN; the machinery itself crashed (`OnFailure=`) | mail, webhook, YouTrack issue |
+| CRITICAL | rolled back; rolled back but smoke still fails; DOWN; the machinery itself crashed (`OnFailure=`) | mail, webhook — plus a YouTrack issue where that channel is added |
 
 Mail goes through the relay core uses (`easy_core_mail_*`), to `easy_core_mail_sys_to`, which is
 not a role default and has to be set in the environment's group_vars — a rollout with nowhere to
 send mail is mute. The webhook URL, the mail credentials and the YouTrack token are files under
-`/etc/easy/`, created as placeholders by the role and never read by it. YouTrack is only ever
-filed with a visibility group (the instance has guest access; the role refuses to enable the
-channel without one). A severity with no configured channel is logged as having reached nobody, and
+`/etc/easy/`, created as placeholders by the role and never read by it. YouTrack is opt-in — add
+`youtrack` to the `critical` list in `core_rollout_notify_channels` — and only ever filed with a
+visibility group (the instance has guest access; the role refuses the channel without one). A severity with no configured channel is logged as having reached nobody, and
 **`easy-rollout notify-test`** sends one message at each severity and reports which channels
 delivered — run it as part of setup, and after changing any of them.
 
@@ -225,8 +226,10 @@ sudo journalctl -u easy-rollout                    what every tick said
 `touch /srv/easy/rollout/pause` pauses too — presence is what counts, the reason is for the reader.
 
 **Before any manual deploy with `deploy.sh prod`: `easy-rollout pause`.** Otherwise the next tick
-sees `current-sha` disagree with the branch and, if the gates allow, puts the branch tip back. The
-better manual deploy is `git push origin <sha>:prod-releases` — it goes through every check.
+sees `current-sha` disagree with the branch and, if the gates allow, puts the branch tip back.
+`deploy.sh` refuses to run against a host whose rollout timer is active and not paused, and says
+so. The better manual deploy is `git push origin <sha>:prod-releases` — it goes through every
+check — and the better manual rollback is `easy-rollout rollback`, which pauses and records itself.
 
 **After a CRITICAL:** read the record named in the message, `easy-rollout status`, look at core's
 log. Decide whether the commit is wrong (fix on master, push, the fix deploys at the next window

@@ -48,5 +48,8 @@ RestrictNamespaces=yes
 LockPersonality=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 
-# The release tree, the state directory (under it) and the rehearsal's working directory.
-ReadWritePaths={{ core_rollout_root }}
+# The release tree and the state directory under it — and the root helper's own directory,
+# because `sudo easy-rollout-db` runs INSIDE this unit's mount namespace: ProtectSystem=strict
+# applies to root children too, and the helper's `install -d` under /var/lib would otherwise
+# meet a read-only filesystem on every rehearsal.
+ReadWritePaths={{ core_rollout_root }} {{ core_rollout_helper_dir }}

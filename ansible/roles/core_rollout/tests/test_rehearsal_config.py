@@ -53,7 +53,7 @@ PROD = {
 }
 SECRETS = ["spring.datasource.password", "easy.core.keycloak.client-secret", "easy.core.moodle-sync.wstoken",
            "easy.core.youtrack.token", "easy.core.storage.s3.access-key", "easy.core.storage.s3.secret-key"]
-STORAGE = "/var/lib/easy-rollout-db/work/rehearsal/files"
+STORAGE = "/var/lib/easy-rollout-db/work/files"     # exactly what easy-rollout-db passes
 
 
 def rehearsal(port=8091, **kw):
@@ -182,8 +182,17 @@ def test_secret_key_paths_are_names_only():
     assert "hunter2" not in " ".join(paths)
 
 
+def test_helper_and_guard_agree_on_the_storage_path():
+    # The shell passes "$WORK_DIR/files" with WORK_DIR="$HELPER_DIR/work"; the guard only sees the
+    # tail. If these drift apart the rehearsal refuses its own config on every run.
+    helper = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                               "templates", "easy-rollout-db.j2")).read()
+    assert 'WORK_DIR="$HELPER_DIR/work"' in helper and '--storage-dir "$WORK_DIR/files"' in helper
+    assert STORAGE.endswith(rc.STORAGE_SUFFIX)
+
+
 def test_main_refuses_to_write_a_config_the_guard_rejects(tmp_path, monkeypatch):
-    yaml = pytest.importorskip("yaml")
+    import yaml   # CI installs PyYAML for this test on purpose; a skip here would hide a regression
     app = tmp_path / "application.yaml"
     app.write_text(yaml.safe_dump(PROD))
     sec = tmp_path / "secrets.yaml"

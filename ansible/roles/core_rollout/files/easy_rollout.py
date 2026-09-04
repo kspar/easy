@@ -118,7 +118,7 @@ def iso(dt: datetime) -> str:
 
 
 def parse_iso(s: str) -> datetime:
-    dt = datetime.fromisoformat(s)
+    dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
@@ -154,7 +154,13 @@ class RolloutError(Exception):
 
 
 class Interrupted(RolloutError):
-    """SIGTERM arrived, or the time budget ran out: finish the way a failure would."""
+    """SIGTERM arrived, or the time budget ran out: finish the way a failure would.
+
+    Retryable: a signal or a clock is not a property of the commit.
+    """
+
+    def __init__(self, msg: str):
+        super().__init__(msg, retryable=True)
 
 
 class Log:
@@ -228,7 +234,7 @@ DEFAULTS: dict = {
     "smoke": {"required": True, "attempts": 3, "baseline_attempts": 2, "retry_delay_s": 60},
     "rollback": {"restore_db": "auto"},   # auto | never | always
     "notify": {
-        "channels": {INFO: ["mail"], WARN: ["mail"], CRITICAL: ["mail", "webhook", "youtrack"]},
+        "channels": {INFO: ["mail"], WARN: ["mail"], CRITICAL: ["mail", "webhook"]},
         "mail": {},
         "webhook": {},
         "youtrack": {},
@@ -463,13 +469,16 @@ class GitHub:
         return out
 
     def is_ancestor_of(self, sha: str, branch: str) -> bool:
-        """True when `sha` is on `branch` — behind it or identical to it.
+        """True when `branch` contains `sha`.
 
-        `ahead` and `diverged` both mean the branch does NOT contain sha, which is the case this
-        exists to catch: a commit pushed straight at the release branch that master never saw.
+        GitHub's compare `base...head` reports the status of HEAD relative to BASE. With base=sha
+        and head=branch: `identical` means the branch is at sha, `ahead` means the branch has
+        moved on past sha — both mean the branch contains it. `behind` means sha has commits the
+        branch lacks (a hotfix on top of master that master never got) and `diverged` means
+        neither contains the other. Those two are what this exists to catch.
         """
         cmp = self.api(f"/repos/{self.repo}/compare/{sha}...{branch}")
-        return cmp["status"] in ("behind", "identical")
+        return cmp["status"] in ("ahead", "identical")
 
     def commits_between(self, base: str, head: str, limit: int = 40) -> list[str]:
         """One line per commit from base (exclusive) to head, oldest first."""
@@ -569,11 +578,14 @@ class Host:
             web.mkdir()
             with tarfile.open(tgz) as t:
                 t.extractall(web, filter="data")
-            # The data filter strips group-write; the tree is the deploy group's, and whoever
-            # deploys next must be able to rewrite config.json in here.
-            for p in [partial, web, *web.rglob("*")]:
+            # Explicit modes, whatever the umask and whatever the archive said: core (easy-core)
+            # runs the jar and nginx (www-data) serves the dist, and neither is in the deploy
+            # group — so the tree must be world-readable; and whoever deploys next must be able
+            # to rewrite config.json in here, so it must be group-writable. The state directory's
+            # 0640s are this program's own files, not these.
+            for p in [partial, *partial.rglob("*")]:
                 try:
-                    os.chmod(p, (p.stat().st_mode | 0o020) & 0o7777)
+                    os.chmod(p, 0o775 if p.is_dir() else 0o664)
                 except OSError:
                     pass
         os.replace(partial, rel)
@@ -641,6 +653,17 @@ class Host:
     def core_active(self) -> bool:
         return self.run(["systemctl", "is-active", "--quiet", self.cfg["service"]], check=False).returncode == 0
 
+    def core_unit(self) -> tuple[str, int]:
+        """(ActiveState, NRestarts) of core's unit — the evidence that a slow start is a crash loop."""
+        cp = self.run(["systemctl", "show", "-p", "ActiveState,NRestarts", "--value", self.cfg["service"]], check=False)
+        lines = cp.stdout.split()
+        state = lines[0] if lines else "unknown"
+        try:
+            restarts = int(lines[1]) if len(lines) > 1 else 0
+        except ValueError:
+            restarts = 0
+        return state, restarts
+
     def core_log_tail(self) -> str:
         cp = self.run(["sudo", "-n", "/usr/bin/journalctl", "-u", self.cfg["service"], "-n", "40", "--no-pager"],
                       check=False)
@@ -678,12 +701,23 @@ class Host:
         except Exception:  # noqa: BLE001
             return None
 
-    def wait_healthy(self, url: str, timeout_s: int, interval: int = 4) -> bool:
-        """401 (or 200) through the public vhost proves nginx, core and its filter chain."""
+    def wait_healthy(self, url: str, timeout_s: int, interval: int = 4, max_restarts: int = 2) -> bool:
+        """401 (or 200) through the public vhost proves nginx, core and its filter chain.
+
+        Waits the full timeout only while the unit is honestly still starting. A JVM that dies at
+        boot is restarted by systemd and dies again; waiting half an hour for a URL that a crash
+        loop will never answer is half an hour of outage before the rollback begins, so the unit's
+        state is the other half of the evidence: `failed`, or more than a couple of restarts, ends
+        the wait now.
+        """
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
             if self.http_status(url) in (200, 401, 403):
                 return True
+            state, restarts = self.core_unit()
+            if state == "failed" or restarts > max_restarts:
+                log(f"  {self.cfg['service']} is {state} after {restarts} restart(s); not waiting for the URL")
+                return False
             sleep(interval)
         return False
 
@@ -875,6 +909,11 @@ class Rollout:
 
     # -- bookkeeping ----------------------------------------------------------------------------
     def check_budget(self) -> None:
+        # Once production has been touched the budget no longer applies: the way out of a spent
+        # budget IS the rollback, and refusing to run it would leave the bad release live. The
+        # unit's TimeoutStartSec stays as the backstop for a rollback that itself hangs.
+        if self.touched_production:
+            return
         if self.deadline is not None and time.monotonic() > self.deadline:
             raise Interrupted("the rollout's time budget is spent")
 
@@ -1324,6 +1363,46 @@ class Controller:
         return False
 
     # -- one tick -------------------------------------------------------------------------------
+    def decide(self, now: datetime) -> dict:
+        """What this tick should do, and why — without doing it.
+
+        One ladder, used by the tick and by `easy-rollout check`, so that the two cannot disagree
+        about what the next tick will do. Returns {"kind", "head", "current", "run", "reasons",
+        "override", "error"}; `kind` is the word the tick reports.
+        """
+        state = self.state
+        d = {"kind": "", "head": None, "current": self.host.current_sha(), "run": None,
+             "reasons": [], "override": False, "error": None}
+        reason = self.paused_reason()
+        if reason:
+            d.update(kind="paused", reasons=[reason])
+            return d
+        try:
+            d["head"] = head = self.gh.branch_head(self.cfg["branch"])
+        except GitHubUnavailable as e:
+            d.update(kind="github-unavailable", error=str(e))
+            return d
+        if head == d["current"]:
+            d["kind"] = "steady"
+            return d
+        if head in state.failed:
+            d.update(kind="failed-candidate",
+                     reasons=[f"failed on {state.failed[head]['at']}: {state.failed[head]['why'][:200]} — "
+                              f"`easy-rollout forget {head[:8]}` to allow a retry"])
+            return d
+        try:
+            d["run"] = run = self.gh.green_run_for(head)
+        except GitHubUnavailable as e:
+            d.update(kind="github-unavailable", error=str(e))
+            return d
+        if run is None:
+            d.update(kind="waiting-for-ci", reasons=["no green CI run yet"])
+            return d
+        d["override"] = self.override_for(head)
+        d["reasons"] = [] if d["override"] else self.gate_reasons(head, run, now)
+        d["kind"] = "gated" if d["reasons"] else "rollout"
+        return d
+
     def tick(self) -> str:
         now = self.clock()
         state = self.state
@@ -1335,56 +1414,33 @@ class Controller:
         except Exception as e:  # noqa: BLE001
             log(f"could not record dev sighting: {e}")
 
-        reason = self.paused_reason()
-        if reason:
+        d = self.decide(now)
+        kind, head = d["kind"], d["head"]
+        if kind == "paused":
             state.save()
-            return f"paused: {reason}"
-
-        try:
-            head = self.gh.branch_head(self.cfg["branch"])
-        except GitHubUnavailable as e:
-            return self.github_unavailable(str(e), now)
-        current = self.host.current_sha()
-        if head == current:
+            return f"paused: {d['reasons'][0]}"
+        if kind == "github-unavailable":
+            return self.github_unavailable(d["error"], now)
+        if kind == "steady":
             state.candidates.clear()
             for key in ("stuck", "github"):
                 state.clear_notice(key)
             state.save()
             return "steady"
 
-        cand = state.candidates.setdefault(head, {"first_seen": iso(now)})
-        if head in state.failed:
-            cand["reasons"] = [f"failed on {state.failed[head]['at']}: {state.failed[head]['why'][:200]} — "
-                               f"`easy-rollout forget {head[:8]}` to allow a retry"]
-            self.maybe_alarm_stuck(head, cand, now)
-            state.save()
-            return "failed-candidate"
-
-        try:
-            run = self.gh.green_run_for(head)
-        except GitHubUnavailable as e:
-            return self.github_unavailable(str(e), now)
         state.clear_notice("github")
-        if run is None:
-            cand["reasons"] = ["no green CI run yet"]
+        cand = state.candidates.setdefault(head, {"first_seen": iso(now)})
+        cand["reasons"] = d["reasons"]
+        if kind in ("failed-candidate", "waiting-for-ci", "gated"):
             self.maybe_alarm_stuck(head, cand, now)
             state.save()
-            return "waiting-for-ci"
+            return kind
 
-        override = self.override_for(head)
-        reasons = [] if override else self.gate_reasons(head, run, now)
-        if reasons:
-            cand["reasons"] = reasons
-            self.maybe_alarm_stuck(head, cand, now)
-            state.save()
-            return "gated"
-
-        cand["reasons"] = []
         state.save()
-        if override:
+        if d["override"]:
             log(f"deploy-now override for {short(head)} — scheduling gates skipped, checks are not")
             self.deploy_now_file.unlink(missing_ok=True)
-        return self.rollout(head, run)
+        return self.rollout(head, d["run"])
 
     def github_unavailable(self, why: str, now: datetime) -> str:
         """Not a crash, not a CRITICAL every five minutes: a WARN once a day while it lasts."""
@@ -1551,42 +1607,27 @@ def cmd_status(cfg: dict) -> int:
 
 
 def cmd_check(ctrl: Controller) -> int:
-    """What the next tick would decide, without doing it."""
-    now = ctrl.clock()
-    try:
-        head = ctrl.gh.branch_head(ctrl.cfg["branch"])
-    except GitHubUnavailable as e:
-        print(f"decision      cannot ask GitHub: {e}")
-        return 1
-    current = ctrl.host.current_sha()
-    print(f"branch head   {head}")
-    print(f"current-sha   {current or 'nothing'}")
-    if head == current:
-        print("decision      steady — nothing to do")
-        return 0
-    if ctrl.paused_reason():
-        print(f"decision      paused: {ctrl.paused_reason()}")
-        return 0
-    if head in ctrl.state.failed:
-        print(f"decision      {head[:8]} failed before and will not be retried automatically (`forget` to allow it)")
-        return 0
-    run = ctrl.gh.green_run_for(head)
-    if run is None:
-        print("decision      waiting for a green CI run")
-        return 0
-    print(f"ci run        {run['html_url']}")
+    """What the next tick would decide, without doing it — the tick's own ladder, printed."""
+    d = ctrl.decide(ctrl.clock())
+    print(f"branch head   {d['head'] or '?'}")
+    print(f"current-sha   {d['current'] or 'nothing'}")
+    if d["run"]:
+        print(f"ci run        {d['run']['html_url']}")
     pending = ctrl.deploy_now()
     if pending:
         print(f"deploy-now    {pending[0]} (written {iso(pending[1])})")
-    reasons = ctrl.gate_reasons(head, run, now)
-    if ctrl.override_for(head):
-        print("decision      deploy-now override present — would roll out on the next tick")
-    elif reasons:
-        print("decision      gated:")
-        for r in reasons:
+    kind = d["kind"]
+    if kind == "github-unavailable":
+        print(f"decision      cannot ask GitHub: {d['error']}")
+        return 1
+    if kind == "rollout":
+        print("decision      would roll out on the next tick" + (" (deploy-now override)" if d["override"] else ""))
+    elif d["reasons"]:
+        print(f"decision      {kind}:")
+        for r in d["reasons"]:
             print(f"                - {r}")
     else:
-        print("decision      would roll out on the next tick")
+        print(f"decision      {kind}")
     return 0
 
 

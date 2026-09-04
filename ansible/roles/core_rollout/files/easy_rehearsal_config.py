@@ -54,7 +54,8 @@ STALLED_MS = "9000000000000"
 DISCARD = "http://127.0.0.1:9/"
 NO_COURSE = "easy-rehearsal-no-such-course"
 DUMMY = "rehearsal-dummy"
-STORAGE_SUFFIX = "/rehearsal/files"
+# The helper passes `<helper dir>/work/files`; the guard only knows the tail, and the two must agree.
+STORAGE_SUFFIX = "/work/files"
 
 FIXED_DELAY_KEYS = (
     "easy.core.auto-assess.fixed-delay.ms",

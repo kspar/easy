@@ -4,8 +4,10 @@
 - name: Install what the rehearsal needs
   # PyYAML, to read production's application.yaml when deriving the rehearsal config. Everything
   # else here is the standard library.
+  # `acl` for setfacl, which the helper uses to let the rollout account read the rehearsal config
+  # without making it group-readable to anything else.
   ansible.builtin.apt:
-    name: python3-yaml
+    name: [python3-yaml, acl]
     state: present
   when: core_rollout_rehearsal_enabled | bool
 
@@ -45,15 +47,6 @@
     owner: root
     group: root
     mode: "0755"
-
-- name: Let the rehearsal account read the release tree
-  # It runs the jar from there. Read is what the tree's mode already gives everyone; this exists so
-  # that a future tightening of the tree's mode does not silently break the rehearsal.
-  ansible.builtin.user:
-    name: "{{ core_rollout_rehearsal_user }}"
-    groups: "{{ core_rollout_deploy_group }}"
-    append: true
-  when: not ansible_check_mode
 
 - name: Grant it exactly what a rollout needs
   # The same four grants a human deployer has (roles/core_service/templates/sudoers-deploy.j2),

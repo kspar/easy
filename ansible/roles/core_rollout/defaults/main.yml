@@ -67,7 +67,9 @@ core_rollout_lib_dir: /usr/local/lib/easy-rollout
 # directory the caller can rename.
 core_rollout_helper_dir: /var/lib/easy-rollout-db
 # The account the rehearsal JVM runs as: no sudo, no group memberships, one writable directory.
-# It is deliberately not the rollout account, which can restart core and call the helper.
+# It is deliberately not the rollout account, which can restart core and call the helper. It reads
+# the jar from the release tree the way core and nginx do — the tree is world-readable — and is
+# NOT in the deploy group, which is the group that may replace what core runs.
 core_rollout_rehearsal_user: easy-rehearsal
 
 # The unit's ceiling on one rollout: dump, scratch restore, rehearsal boot, deploy, health with a
@@ -205,11 +207,13 @@ core_rollout_restore_db: auto
 # --- who is told, and how -------------------------------------------------------------------------
 # Channels per severity. `mail` goes through the same relay core uses; `webhook` POSTs to a URL kept
 # on the host (ntfy, Slack, anything that takes JSON); `youtrack` files an issue. Every channel is
-# best-effort and no failure to notify ever fails a rollout.
+# best-effort and no failure to notify ever fails a rollout. `youtrack` is opt-in: add it to
+# `critical` on an environment that has set the visibility group below — the role refuses it
+# otherwise, and a default that fails the converge is not a default.
 core_rollout_notify_channels:
   info: [mail]
   warn: [mail]
-  critical: [mail, webhook, youtrack]
+  critical: [mail, webhook]
 
 core_rollout_notify_mail_to: "{{ [easy_core_mail_sys_to] if (easy_core_mail_sys_to | default('')) else [] }}"
 core_rollout_notify_mail_from: "{{ easy_core_mail_from | default('easy-rollout@localhost') }}"

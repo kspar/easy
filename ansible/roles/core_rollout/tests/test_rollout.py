@@ -94,7 +94,7 @@ HARMLESS = {
                       "mail": {"sys": {"enabled": False}, "user": {"enabled": False}},
                       "moodle-sync": {"users": {"url": "http://127.0.0.1:9/"}, "grades": {"url": "http://127.0.0.1:9/"},
                                       "course-allowlist": "easy-rehearsal-no-such-course"},
-                      "storage": {"backend": "local", "local": {"dir": "/x/rehearsal/files"}},
+                      "storage": {"backend": "local", "local": {"dir": "/var/lib/easy-rollout-db/work/files"}},
                       "stored-file-sweep": {"delete": False, "cron": "0 0 5 31 2 ?"},
                       "auto-assess": {"fixed-delay": {"ms": "9000000000000"},
                                       "fixed-delay-observer-clear": {"ms": "9000000000000"},
@@ -826,6 +826,43 @@ def test_real_materialise_unpacks_the_ci_layout_all_or_nothing(cfg, tmp_path):
     assert calls == []
 
 
+def test_real_materialise_leaves_the_release_readable_by_core_and_nginx(cfg, tmp_path, monkeypatch):
+    # The program runs under umask 027; core (easy-core) and nginx (www-data) are not in the deploy
+    # group, so the release must come out world-readable and group-writable regardless.
+    monkeypatch.setattr(os, "umask", lambda m: 0)
+    old = os.umask(0o027)
+    try:
+        host = ro.Host(cfg)
+        art = tmp_path / "art"
+        art.mkdir()
+        jar_zip, web_zip = art / "core.zip", art / "web.zip"
+        with zipfile.ZipFile(jar_zip, "w") as z:
+            z.writestr(f"core-{NEW}.jar", b"jar")
+        tgz = art / f"web-{NEW}.tar.gz"
+        site = art / "site"
+        (site / "assets").mkdir(parents=True)
+        (site / "index.html").write_text("<html>")
+        (site / "assets" / "a.js").write_text("x")
+        with tarfile.open(tgz, "w:gz") as t:
+            t.add(site, arcname=".")
+        with zipfile.ZipFile(web_zip, "w") as z:
+            z.write(tgz, arcname=f"web-{NEW}.tar.gz")
+
+        class GH:
+            def artifact_urls(self, run_id, sha):
+                return {f"core-{sha}": "core", f"web-{sha}": "web"}
+
+            def api(self, url, raw=False):
+                return (jar_zip if url == "core" else web_zip).read_bytes()
+        rel = host.materialise(GH(), {"id": 1}, NEW)
+        for p in [rel, rel / "web", rel / "web" / "assets"]:
+            assert p.stat().st_mode & 0o777 == 0o775, p
+        for p in [rel / "core.jar", rel / "web" / "index.html", rel / "web" / "assets" / "a.js"]:
+            assert p.stat().st_mode & 0o777 == 0o664, p
+    finally:
+        os.umask(old)
+
+
 def test_real_materialise_refuses_path_traversal_in_the_artifact(cfg, tmp_path):
     host = ro.Host(cfg)
     evil = tmp_path / "evil.zip"
@@ -855,6 +892,90 @@ def test_real_prune_keeps_the_newest_n_plus_the_named_ones(cfg):
     host.prune({shas[0]})
     left = sorted(p.name for p in (cfg["root"] / "releases").iterdir())
     assert left == sorted([shas[0], shas[3], shas[4]])
+
+
+def test_real_wait_healthy_gives_up_early_on_a_crash_looping_unit(cfg, monkeypatch):
+    host = ro.Host(cfg)
+    calls = {"n": 0}
+    monkeypatch.setattr(host, "http_status", lambda url, timeout=10: None)
+    monkeypatch.setattr(host, "core_unit", lambda: ("activating", 5))
+    monkeypatch.setattr(ro.time, "monotonic", lambda: calls.__setitem__("n", calls["n"] + 1) or calls["n"])
+    assert host.wait_healthy("https://x/v2/", 1800) is False
+    assert calls["n"] < 10, "did not wait out the timeout"
+    monkeypatch.setattr(host, "core_unit", lambda: ("activating", 0))
+    calls["n"] = 0
+    # Still starting honestly: waits (the fake clock advances one second per call, so this hits the deadline).
+    assert host.wait_healthy("https://x/v2/", 20) is False
+    assert calls["n"] >= 20
+
+
+def test_is_ancestor_of_reads_githubs_compare_status_the_right_way_round(cfg, monkeypatch):
+    gh = ro.GitHub("kspar/easy", "CI", "t")
+    seen = {}
+
+    def api(path, raw=False):
+        seen["path"] = path
+        return {"status": api.status}
+    monkeypatch.setattr(gh, "api", api)
+    # base=sha, head=master. master has moved on past sha → "ahead" → sha IS on master.
+    for status, want in (("ahead", True), ("identical", True), ("behind", False), ("diverged", False)):
+        api.status = status
+        assert gh.is_ancestor_of(NEW, "master") is want, status
+    assert seen["path"].endswith(f"/compare/{NEW}...master")
+
+
+def test_spent_budget_aborts_before_touching_but_never_refuses_a_rollback(cfg):
+    ctrl, host, notify = make(cfg, smoke=FakeSmoke(fail_for={NEW}))
+    ctrl.deadline = 0.0          # already spent
+    assert ctrl.tick() == "aborted"
+    assert not any(c[0] == "activate" for c in host.calls)
+    assert NEW not in ctrl.state.failed, "a spent budget is not the commit's fault"
+    # Now spend it only after activation: the rollback must still run.
+    (cfg["state_dir"] / "state.json").unlink()
+    ctrl2, host2, notify2 = make(cfg, smoke=FakeSmoke(fail_for={NEW}))
+    original = host2.activate
+
+    def activate(sha):
+        original(sha)
+        if sha == NEW:
+            r = [f for f in [ctrl2] if True]  # noqa: F841 — no-op, keeps the closure obvious
+            ctrl2.deadline = 0.0
+    host2.activate = activate
+    ctrl2.deadline = None
+    # Deadline is read by the Rollout at construction; emulate a budget that expires mid-flight
+    # by making the Rollout's check see a past deadline once production is touched.
+    orig_rollout_init = ro.Rollout.__init__
+
+    def init(self, *a, **kw):
+        orig_rollout_init(self, *a, **kw)
+        self.deadline = 0.0
+    import unittest.mock as um
+    with um.patch.object(ro.Rollout, "__init__", init):
+        outcome = ctrl2.tick()
+    assert outcome == "aborted", "before activation the budget stops it"
+
+
+def test_budget_spent_after_activation_still_rolls_back(cfg):
+    ctrl, host, notify = make(cfg, smoke=FakeSmoke(fail_for={NEW}))
+    orig_activate = ro.Rollout.activate
+
+    def activate(self):
+        out = orig_activate(self)
+        self.deadline = 0.0       # the clock runs out right after production was touched
+        return out
+    import unittest.mock as um
+    with um.patch.object(ro.Rollout, "activate", activate):
+        assert ctrl.tick() == "rolled-back"
+    assert activations(host) == [NEW, OLD]
+
+
+def test_check_and_tick_agree_when_paused_and_steady(cfg, capsys):
+    ctrl, host, _ = make(cfg, gh=FakeGitHub(head=OLD))
+    (cfg["state_dir"] / "pause").write_text("first install\n")
+    assert ctrl.tick().startswith("paused")
+    assert ro.cmd_check(ctrl) == 0
+    out = capsys.readouterr().out
+    assert "decision      paused" in out and "steady" not in out
 
 
 # ---------------------------------------------------------------------------------------------

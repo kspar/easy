@@ -79,18 +79,20 @@ check_dump() {
     DUMP="$real"
 }
 
-live_locale() {
-    # The real database's collation and ctype, so a database created from template0 matches it.
-    # roles/postgres creates the real one with an explicit locale for the same reason.
-    psql_super -d postgres -Atc "SELECT datcollate || '|' || datctype FROM pg_database WHERE datname = '$DB'"
-}
-
-create_db_like_live() {
-    local name="$1" owner="$2" loc collate ctype
-    loc=$(live_locale)
-    [ -n "$loc" ] || die "cannot read the locale of $DB"
-    collate=${loc%%|*}; ctype=${loc##*|}
-    psql_super -d postgres -c "CREATE DATABASE $name OWNER $owner TEMPLATE template0 ENCODING 'UTF8' LC_COLLATE '$collate' LC_CTYPE '$ctype'"
+create_db_like() {
+    # CREATE DATABASE $1 owned by $2 with the collation and ctype of database $3, so a database
+    # created from template0 sorts the way the one it replaces did. roles/postgres creates the real
+    # one with an explicit locale for the same reason. PG16 may also carry an ICU locale; copied too.
+    local name="$1" owner="$2" like="$3" row provider collate ctype icu extra
+    row=$(psql_super -d postgres -Atc "SELECT datlocprovider || '|' || datcollate || '|' || datctype || '|' || coalesce(daticulocale, '') FROM pg_database WHERE datname = '$like'")
+    [ -n "$row" ] || die "cannot read the locale of $like"
+    IFS='|' read -r provider collate ctype icu <<<"$row"
+    [ -n "$collate" ] && [ -n "$ctype" ] || die "database $like has no collation/ctype recorded"
+    extra=""
+    if [ "$provider" = i ] && [ -n "$icu" ]; then
+        extra="LOCALE_PROVIDER icu ICU_LOCALE '$icu'"
+    fi
+    psql_super -d postgres -c "CREATE DATABASE $name OWNER $owner TEMPLATE template0 ENCODING 'UTF8' LC_COLLATE '$collate' LC_CTYPE '$ctype' $extra"
 }
 
 stop_rehearsal_unit() {
@@ -143,7 +145,7 @@ DO \$body\$ BEGIN
 END \$body\$;
 SQL
         printf "ALTER ROLE %s WITH LOGIN PASSWORD '%s';\n" "$REHEARSAL_USER" "$pw" | psql_super -d postgres -f -
-        create_db_like_live "$REHEARSAL_DB" "$REHEARSAL_USER"
+        create_db_like "$REHEARSAL_DB" "$REHEARSAL_USER" "$DB"
         # --no-owner --no-privileges on the way out (easy-db-backup) and --role on the way in: every
         # object belongs to the rehearsal role, which is what lets the rehearsal core migrate them.
         sudo -u postgres pg_restore --dbname="$REHEARSAL_DB" --role="$REHEARSAL_USER" \
@@ -170,7 +172,10 @@ SQL
             --storage-dir "$WORK_DIR/files" --out "$tmp"
         mv -f "$tmp" "$out"
         # The rollout account re-reads and re-checks this before starting anything, so it must be
-        # able to: group-readable by the rehearsal account already, add the rollout account via ACL.
+        # able to: group-readable by the rehearsal account already, add the rollout account via ACL
+        # — on the file, and traverse-only on the directory that holds it (the directory is root's
+        # and also holds the password, which stays root-only).
+        setfacl -m "u:$ROLLOUT_USER:x" "$REHEARSAL_DIR"
         setfacl -m "u:$ROLLOUT_USER:r" "$out"
         echo "$out"
         ;;
@@ -242,13 +247,7 @@ SQL
         # rename is instant and a drop is forever.
         stamp=$(date +%Y%m%dT%H%M%S)
         psql_super -d postgres -c "ALTER DATABASE $DB RENAME TO ${DB}_pre_restore_$stamp"
-        create_db_like_live_from() {
-            local loc collate ctype
-            loc=$(psql_super -d postgres -Atc "SELECT datcollate || '|' || datctype FROM pg_database WHERE datname = '${DB}_pre_restore_$stamp'")
-            collate=${loc%%|*}; ctype=${loc##*|}
-            psql_super -d postgres -c "CREATE DATABASE $DB OWNER $DB_USER TEMPLATE template0 ENCODING 'UTF8' LC_COLLATE '$collate' LC_CTYPE '$ctype'"
-        }
-        create_db_like_live_from
+        create_db_like "$DB" "$DB_USER" "${DB}_pre_restore_$stamp"
         sudo -u postgres pg_restore --dbname="$DB" --role="$DB_USER" \
             --no-owner --no-privileges --jobs=2 --exit-on-error "$DUMP"
         trap - EXIT
