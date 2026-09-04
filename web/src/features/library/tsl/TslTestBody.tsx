@@ -53,6 +53,7 @@ import {
 } from './TslSections.tsx'
 import { TslGenericCheckLongSection, TslScopeSection } from './TslStaticSections.tsx'
 import { TslClassInstanceChecksSection } from './TslClassInstanceSections.tsx'
+import SafeText from '../../../components/SafeText.tsx'
 
 interface BodyProps {
   test: TslTest
@@ -270,8 +271,10 @@ function TslErrorMessagesSection({ test, editing, onChange }: BodyProps) {
     <Box mt={1}>
       <Button size="small" onClick={() => setOpen(!open)} endIcon={<ExpandMoreOutlined
         sx={{ transform: open ? 'rotate(180deg)' : 'none', transition: '.15s' }} />}>
-        {t('tsl.errorMessages')}
-        {overridden > 0 && ` (${overridden})`}
+        {/* Composed into one string rather than left as a label plus a conditional count: the
+            count disappears again when the teacher clears the last override, and React deleting
+            that second text node is the EZ-1888 crash. See SafeText. */}
+        <SafeText>{t('tsl.errorMessages') + (overridden > 0 ? ` (${overridden})` : '')}</SafeText>
       </Button>
       <Collapse in={open} unmountOnExit>
         <Box display="flex" flexDirection="column" gap={2} mt={1}>

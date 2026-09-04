@@ -49,6 +49,7 @@ import ActivityFeed from './ActivityFeed.tsx'
 import SubmissionSelector from './SubmissionSelector.tsx'
 import AnnotatedCodeEditor, { type NewCommentData } from './AnnotatedCodeEditor.tsx'
 import type { TeacherExerciseDetails, SubmissionRow } from '../../api/types.ts'
+import SafeText from '../../components/SafeText.tsx'
 
 export default function StudentGradingView({
   courseId,
@@ -506,8 +507,14 @@ export default function StudentGradingView({
                 ) : undefined
               }
             >
-              {t('submission.graderFailedTeacherView')}
-              {retryAutoassess.isError && ` ${t('submission.retryAutoassessFailed')}`}
+              {/* One string in one span, rather than a sentence plus a conditional second text
+                  node. Retrying resets the mutation, so `isError` goes true→false on a second
+                  attempt and React would delete that second text node out of a surviving div —
+                  the EZ-1888 crash exactly, on a page the teacher had translated. */}
+              <SafeText>
+                {t('submission.graderFailedTeacherView') +
+                  (retryAutoassess.isError ? ` ${t('submission.retryAutoassessFailed')}` : '')}
+              </SafeText>
             </Alert>
           )}
 

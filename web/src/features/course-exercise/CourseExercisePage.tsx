@@ -62,6 +62,7 @@ import { RobotIcon } from '../../components/icons.tsx'
 import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import AutogradeAnimation from './AutogradeAnimation.tsx'
 import SubmissionsList from './SubmissionsList.tsx'
+import useRerunAllTests from './useRerunAllTests.ts'
 import StudentGradingView from './StudentGradingView.tsx'
 import TeacherTestingTab from './TeacherTestingTab.tsx'
 import AutoAssessTab from '../library/AutoAssessTab.tsx'
@@ -1064,6 +1065,11 @@ function TeacherRightPane({
   // its open file and eval type from the draft's identity.
   const autoAssessDraft = useMemo(() => autoAssessDraftFrom(exercise), [exercise])
 
+  // Owned here rather than inside SubmissionsList, which is the point of it being here: selecting a
+  // student or changing tab unmounts that list, and a re-run of a whole course takes long enough
+  // that a teacher will do one of those while it runs. Held one level up, the run survives both.
+  const rerun = useRerunAllTests(courseId, courseExerciseId)
+
   // When student param is set, auto-switch to Students tab
   useEffect(() => {
     if (selectedStudentId) {
@@ -1120,6 +1126,8 @@ function TeacherRightPane({
           <SubmissionsList
             courseId={courseId}
             courseExerciseId={courseExerciseId}
+            graderType={exercise.grader_type}
+            rerun={rerun}
             onSelectStudent={handleSelectStudent}
           />
         )

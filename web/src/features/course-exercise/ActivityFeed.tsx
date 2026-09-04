@@ -53,6 +53,7 @@ import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.t
 import { useFileDropExtension } from '../../components/markdown/useFileDropExtension.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import SafeText from '../../components/SafeText.tsx'
 
 const NOTIFY_KEY = 'teacherNotifyStudent'
 const MERGE_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
@@ -584,7 +585,10 @@ export default function ActivityFeed({
               disabled={isSubmitting || !hasChanges}
               sx={{ textTransform: 'none' }}
             >
-              {isSubmitting ? <CircularProgress size={18} /> : t('general.save')}
+              {/* The label is wrapped for the same reason as the autograde status line: a bare
+                  text node swapping for a spinner is a `removeChild` on a node the browser's
+                  translator may have replaced. See SafeText. */}
+              {isSubmitting ? <CircularProgress size={18} /> : <SafeText>{t('general.save')}</SafeText>}
             </Button>
           </Box>
 

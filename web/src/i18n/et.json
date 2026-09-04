@@ -305,7 +305,20 @@
     "retryAutoassess": "Käivita testid uuesti",
     "retryAutoassessHint": "Käivitab selle esituse testid uuesti, esitust ennast muutmata. Kasulik siis, kui need ebaõnnestusid koodist sõltumatul põhjusel — käivitaja oli maas või test aegus.",
     "retryAutoassessDone": "Testimine on lõpetatud — allolev tulemus on värske.",
-    "retryAutoassessFailed": "Teste ei õnnestunud käivitada."
+    "retryAutoassessFailed": "Teste ei õnnestunud käivitada.",
+    "rerunAll": "Käivita kõik testid uuesti",
+    "rerunConfirm_one": "Käivitada testid uuesti {{count}} esitusel? Need käivitatakse ükshaaval ja hinded uuenevad iga esituse valmimisel. Muutunud automaatne hinne asendab vana.",
+    "rerunConfirm_other": "Käivitada testid uuesti kõigil {{count}} esitusel? Need käivitatakse ükshaaval ja hinded uuenevad iga esituse valmimisel. Muutunud automaatne hinne asendab vana.",
+    "rerunConfirmGroup_one": "Käivitada testid uuesti {{count}} esitusel rühmas {{group}}? Need käivitatakse ükshaaval ja hinded uuenevad iga esituse valmimisel. Muutunud automaatne hinne asendab vana.",
+    "rerunConfirmGroup_other": "Käivitada testid uuesti kõigil {{count}} esitusel rühmas {{group}}? Need käivitatakse ükshaaval ja hinded uuenevad iga esituse valmimisel. Muutunud automaatne hinne asendab vana.",
+    "rerunProgress": "Testide korduskäivitus — {{done}} / {{total}}",
+    "rerunStopping": "Peatan…",
+    "rerunDone_one": "Testid käivitati uuesti {{count}} esitusel.",
+    "rerunDone_other": "Testid käivitati uuesti {{count}} esitusel.",
+    "rerunCancelled": "Peatatud {{done}} esituse järel {{total}}-st. Ülejäänud jäid muutmata.",
+    "rerunFailed_one": "{{count}} esitust ei õnnestunud käivitada.",
+    "rerunFailed_other": "{{count}} esitust ei õnnestunud käivitada.",
+    "rerunGaveUp": "Peatatud pärast {{count}} järjestikust ebaõnnestumist — viga on testijas, mitte nendes esitustes. Ülejäänud jäid muutmata."
   },
   "articles": {
     "title": "Artiklid",

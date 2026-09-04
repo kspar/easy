@@ -8,6 +8,7 @@ import { alpha } from '@mui/material/styles'
 import { GREEN } from '../../theme/theme.ts'
 import { useTranslation } from 'react-i18next'
 import usePrefersReducedMotion from '../../hooks/usePrefersReducedMotion.ts'
+import SafeText from '../../components/SafeText.tsx'
 
 type Phase = 'compile' | 'test' | 'analyze'
 
@@ -501,9 +502,14 @@ export default function AutogradeAnimation({
             minHeight: '1.4em',
           }}
         >
-          {isCompleted ? t('submission.autogradeDone') : (
+          {/* Both branches keep their text inside a `SafeText` span, and that is load-bearing
+              rather than tidy: this is the line whose swap crashed the route for three students
+              reading the page through Chrome's translator (EZ-1884 and friends). A bare text node
+              here is one React has to delete out of a surviving `<p>` the moment grading finishes,
+              and under translation that node is no longer there to delete. See SafeText. */}
+          {isCompleted ? <SafeText>{t('submission.autogradeDone')}</SafeText> : (
             <>
-              {statusMessages[phase]}
+              <SafeText>{statusMessages[phase]}</SafeText>
               {/* The blinking caret is decoration; the phase label beside it is the actual signal,
                   and it keeps stepping either way — a progress indicator is the one thing that
                   should not go silent when motion is reduced. */}
