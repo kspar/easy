@@ -1,0 +1,70 @@
+---
+# The JavaScript adapter at the path the retired Thonny login flow asks for.
+#
+# Same shape as gate.yml's fetch — npm, by checksum, cached — and a different version on purpose:
+# the gate page imports an ES module, this one has to define a global for a `<script src>`, and
+# 25.0.6 is the last release that ships a UMD build. The reasoning for serving it at all is in
+# defaults/main.yml; the nginx side is in idp.conf.j2.
+#
+# Runs before nginx.yml, so the file is on disk before the vhost that serves it is written.
+
+- name: Create the directory this version of the legacy adapter is served from
+  # Version in the path, and the vhost's `alias` names the same one. `creates:` below can then be
+  # exact: keyed on the unversioned filename, a version bump would download and verify the new
+  # tarball and then skip unpacking it, leaving the host serving the old adapter with no sign that
+  # anything was ignored. gate.yml has that shape; this pin is the temporary one, so it is the one
+  # that will actually get moved.
+  ansible.builtin.file:
+    path: "{{ keycloak_legacy_adapter_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: keycloak_legacy_adapter_enabled | bool
+
+- name: Fetch the last UMD build of the JavaScript adapter
+  ansible.builtin.get_url:
+    url: "{{ keycloak_legacy_js_url }}"
+    dest: "/var/cache/keycloak-js-{{ keycloak_legacy_js_version }}.tgz"
+    checksum: "sha256:{{ keycloak_legacy_js_sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: keycloak_legacy_adapter_enabled | bool
+
+- name: Find out whether the directory is really there
+  # Same guard as gate.yml's: in a dry run the directory above was only simulated, and unarchive
+  # refuses a destination that does not exist.
+  ansible.builtin.stat:
+    path: "{{ keycloak_legacy_adapter_dir }}"
+  register: keycloak_legacy_adapter_root_stat
+  check_mode: false
+  when: keycloak_legacy_adapter_enabled | bool
+
+- name: Put the adapter where nginx can serve it
+  # dist/keycloak.js, not lib/keycloak.js: the former is the bundled UMD build that assigns
+  # global.Keycloak, which is the whole reason this version is here.
+  ansible.builtin.unarchive:
+    src: "/var/cache/keycloak-js-{{ keycloak_legacy_js_version }}.tgz"
+    dest: "{{ keycloak_legacy_adapter_dir }}"
+    remote_src: true
+    include:
+      - package/dist/keycloak.js
+    extra_opts:
+      - --strip-components=2
+    owner: root
+    group: root
+    mode: "0644"
+  args:
+    creates: "{{ keycloak_legacy_adapter_dir }}/keycloak.js"
+  when:
+    - keycloak_legacy_adapter_enabled | bool
+    - keycloak_legacy_adapter_root_stat.stat.exists | default(false)
+
+- name: Take it away where it is not wanted
+  # So turning the flag off removes the file as well as the nginx location, rather than leaving a
+  # retired adapter sitting on disk for the next person to wonder about.
+  ansible.builtin.file:
+    path: "{{ keycloak_legacy_adapter_root }}"
+    state: absent
+  when: not (keycloak_legacy_adapter_enabled | bool)

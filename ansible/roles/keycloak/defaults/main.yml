@@ -156,3 +156,52 @@ keycloak_gate_client_id: idp-admin-gate
 keycloak_js_version: 26.2.4
 keycloak_js_url: "https://registry.npmjs.org/keycloak-js/-/keycloak-js-{{ keycloak_js_version }}.tgz"
 keycloak_js_sha256: 1e52998fd8f44dc15293df6af88f0bae57248e503617930067cb802ebe9665c9
+
+# --- the retired Thonny login flow --------------------------------------------------------------
+# A stopgap for EZ-1803, here because that one cannot be fixed on the client at all: a
+# thonny-lahendus older than 10.0.0 carries an easy-py whose login page loads the adapter from
+# {{ keycloak_http_relative_path }}/js/keycloak.js, and Keycloak 26 does not serve that. Such an
+# install hangs on a blank page at http://127.0.0.1:<port>/login with no error and no update
+# prompt — EZ-1880, which is the client-side half and the real fix.
+#
+# Making one of those installs work again takes two things, and neither is any use alone:
+#
+#   1. The adapter, at the path the old page asks for, as a UMD build — that page is a
+#      `<script src>` expecting a global `Keycloak`, and 26.x ships ES modules only.
+#   2. An Origin exception on the token endpoint. That page exchanges the code in the browser,
+#      from http://127.0.0.1:<random port>, and Keycloak answers 403 {"error":"Invalid origin"}:
+#      the client's Web Origins is the site's own name, and Keycloak matches those exactly — a
+#      wildcard port is not a thing it accepts. So nginx drops the Origin for loopback callers and
+#      answers the CORS half itself.
+#
+# What (2) costs, stated plainly and not more narrowly than it is: nginx cannot see `client_id`,
+# which is in the POST body, so the exception is per *realm* endpoint and covers every client in
+# that realm — the SPA's included, not only the retired flow's. A page running on the user's own
+# machine can therefore read token-endpoint responses for any of them: refresh-token grants, and
+# direct-access-grant password grants anywhere they are enabled. What bounds it is that no
+# `Access-Control-Allow-Credentials` is sent, so the user's Keycloak session cookies are not in
+# play and a local page cannot silently mint anything — it still needs a code or a token of its
+# own, and PKCE plus the registered redirect URIs are what guard those. CORS was never
+# load-bearing for a flow that runs on 127.0.0.1.
+#
+# Scoping it to one URI and one origin shape is what avoids the alternative, which is Web Origins
+# `*` on a production client, since `*` is the only value that would cover a random port.
+#
+# Both halves are one flag, and **the flag is meant to go back off**: 25.0.6 is the last adapter
+# release with a UMD build, and pinning a retired major to serve a retired flow is not something
+# to carry. Turn it off once the old installs are gone; the tasks remove the file, and the vhost
+# stops shadowing a path that belongs to Keycloak.
+keycloak_legacy_adapter_enabled: true
+keycloak_legacy_adapter_root: /srv/idp-legacy-adapter
+# The version is in the path, and the vhost's `alias` points at this same directory. That is what
+# makes a version bump take effect rather than being skipped as already-installed — see the comment
+# on the first task in legacy_adapter.yml.
+keycloak_legacy_adapter_dir: "{{ keycloak_legacy_adapter_root }}/{{ keycloak_legacy_js_version }}"
+keycloak_legacy_js_version: 25.0.6
+keycloak_legacy_js_url: "https://registry.npmjs.org/keycloak-js/-/keycloak-js-{{ keycloak_legacy_js_version }}.tgz"
+keycloak_legacy_js_sha256: 776f53c9b15626f2e64dc91554387f246852ca8376ee4dc8f971657434add96e
+
+# The realm whose token endpoint gets the exception. One realm, spelled out rather than a prefix
+# match: the exception is for one retired client's flow, and every other realm and endpoint on this
+# host must keep Keycloak's own CORS answer.
+keycloak_legacy_token_realm: "{{ keycloak_realm | default('master') }}"
