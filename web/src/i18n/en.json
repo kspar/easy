@@ -305,7 +305,20 @@
     "retryAutoassess": "Re-run tests",
     "retryAutoassessHint": "Runs the tests on this submission again without changing it. Useful when they failed for a reason unrelated to the code — the executor was down, or a test timed out.",
     "retryAutoassessDone": "Tests finished — the result below is up to date.",
-    "retryAutoassessFailed": "Could not start the tests."
+    "retryAutoassessFailed": "Could not start the tests.",
+    "rerunAll": "Re-run all tests",
+    "rerunConfirm_one": "Re-run the tests on {{count}} submission? They run one at a time and the grades update as each one finishes. An automatic grade that changes replaces the old one.",
+    "rerunConfirm_other": "Re-run the tests on all {{count}} submissions? They run one at a time and the grades update as each one finishes. An automatic grade that changes replaces the old one.",
+    "rerunConfirmGroup_one": "Re-run the tests on {{count}} submission in {{group}}? They run one at a time and the grades update as each one finishes. An automatic grade that changes replaces the old one.",
+    "rerunConfirmGroup_other": "Re-run the tests on all {{count}} submissions in {{group}}? They run one at a time and the grades update as each one finishes. An automatic grade that changes replaces the old one.",
+    "rerunProgress": "Re-running tests — {{done}} of {{total}}",
+    "rerunStopping": "Stopping…",
+    "rerunDone_one": "Tests re-run on {{count}} submission.",
+    "rerunDone_other": "Tests re-run on {{count}} submissions.",
+    "rerunCancelled": "Stopped after {{done}} of {{total}}. The rest were left as they were.",
+    "rerunFailed_one": "{{count}} could not be run.",
+    "rerunFailed_other": "{{count}} could not be run.",
+    "rerunGaveUp": "Stopped after {{count}} failures in a row — something is wrong with the grader rather than with these submissions. The rest were left as they were."
   },
   "articles": {
     "title": "Articles",
