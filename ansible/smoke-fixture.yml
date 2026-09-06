@@ -15,7 +15,10 @@
     smoke_db: "{{ easy_core_db_name }}"
     smoke_course_title: "Smoke (automatic checks)"
     smoke_exercise_title: "Smoke: print Hello, smoke!"
-    smoke_image: tiivad
+    # The grading image, by the id core knows it under. Environments name them differently — dev has
+    # a bare `tiivad`, production `pygrader` and tagged `tiivad:*` — so this is a preference list and
+    # the first one the database has is used; the grader below needs only bash and python3.
+    smoke_images_preferred: [tiivad, pygrader, silmused]
     # Feedback, then a line of fifty #, then the grade — the shape the executor parses.
     smoke_grading_script: |
       #!/bin/bash
@@ -46,8 +49,16 @@
             IF (SELECT count(*) FROM account WHERE username IN ('easy-smoke-student', 'easy-smoke-teacher')) <> 2 THEN
               RAISE EXCEPTION 'the smoke accounts have not checked in yet';
             END IF;
+            IF NOT EXISTS (SELECT 1 FROM container_image WHERE id IN ('{{ smoke_images_preferred | join("', '") }}')) THEN
+              RAISE EXCEPTION 'none of the preferred grading images ({{ smoke_images_preferred | join(', ') }}) exists here — see container_image';
+            END IF;
           END $$;
-          WITH existing AS (
+          WITH image AS (
+              SELECT id FROM container_image
+              WHERE id IN ('{{ smoke_images_preferred | join("', '") }}')
+              ORDER BY array_position(ARRAY['{{ smoke_images_preferred | join("', '") }}']::text[], id)
+              LIMIT 1
+          ), existing AS (
               SELECT exercise_id AS id FROM exercise_version
               WHERE title = $t${{ smoke_exercise_title }}$t$ AND valid_to IS NULL LIMIT 1
           ), d AS (
@@ -56,7 +67,7 @@
               WHERE NOT EXISTS (SELECT 1 FROM existing) RETURNING id
           ), a AS (
               INSERT INTO automatic_exercise (grading_script, container_image_id, max_time_sec, max_mem_mb)
-              SELECT $script${{ smoke_grading_script }}$script$, $i${{ smoke_image }}$i$, 60, 256
+              SELECT $script${{ smoke_grading_script }}$script$, image.id, 60, 256 FROM image
               WHERE NOT EXISTS (SELECT 1 FROM existing) RETURNING id
           ), e AS (
               INSERT INTO exercise (created_at, owned_by_id, public, dir_id, anonymous_autoassess_enabled)
@@ -97,7 +108,9 @@
                      'Print exactly `Hello, smoke!`. This exercise exists for the automatic smoke suite; nothing else uses it.'
               FROM co, ex WHERE NOT EXISTS (SELECT 1 FROM existing_ce) RETURNING id
           )
-          SELECT (SELECT id FROM co), coalesce((SELECT id FROM existing_ce), (SELECT id FROM ce));
+          SELECT (SELECT id FROM co), coalesce((SELECT id FROM existing_ce), (SELECT id FROM ce)),
+                 (SELECT container_image_id FROM automatic_exercise
+                  WHERE id = (SELECT auto_exercise_id FROM exercise_version WHERE exercise_id = (SELECT id FROM ex) AND valid_to IS NULL));
           SQL
       become_user: postgres
       register: fixture
@@ -106,4 +119,4 @@
     - name: The ids for the inventory
       # The last line: psql prints the DO block's command tag before the query's row.
       ansible.builtin.debug:
-        msg: "core_rollout_smoke_course_id={{ fixture.stdout_lines[-1].split('|')[0] }} core_rollout_smoke_exercise_id={{ fixture.stdout_lines[-1].split('|')[1] }}"
+        msg: "core_rollout_smoke_course_id={{ fixture.stdout_lines[-1].split('|')[0] }} core_rollout_smoke_exercise_id={{ fixture.stdout_lines[-1].split('|')[1] }} (graded by image {{ fixture.stdout_lines[-1].split('|')[2] }})"
