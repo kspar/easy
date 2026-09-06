@@ -1,0 +1,42 @@
+# Apply roles/core_rollout alone — the guarded deployer — to an environment's core host, paused.
+#
+#   ./run.sh rollout.yml                                                   # dev
+#   EASY_ALLOW_PRODUCTION=yes EASY_BECOME_KEYCHAIN_SERVICE=easy-prod-become \
+#     EASY_INVENTORY=inventories/production ./run.sh rollout.yml --diff --limit <core host>
+#
+# site.yml applies it too, alongside everything else on the host; this exists for the day the role
+# changes and nothing else should. The config roles are listed with `when: false` so their defaults
+# (database name and paths, the deploy group, the dump directory) render into core_rollout's templates
+# without their tasks running — `include_vars` of a defaults file would outrank the inventory.
+#
+# A first install lands PAUSED: the pause file is created before the timer exists, so the first tick
+# cannot start a rollout before `easy-rollout status`, `check`, `smoke` and `notify-test` have been
+# looked at (doc/production-rollout.md §9). `easy-rollout resume` lifts it. An existing install is not
+# paused by this play — `force: false` leaves a missing file missing only on a host that has never had
+# the role, and never touches one a person removed.
+- name: The guarded rollout, and nothing else
+  hosts: core
+  become: true
+  pre_tasks:
+    - name: Has the rollout been installed here before?
+      ansible.builtin.stat:
+        path: "{{ core_rollout_config_file | default('/etc/easy/rollout.json') }}"
+      register: rollout_installed
+    - name: A first install starts paused
+      ansible.builtin.file:
+        path: "{{ core_rollout_state_dir | default('/srv/easy/rollout') }}"
+        state: directory
+        mode: "2775"
+      when: not rollout_installed.stat.exists
+    - name: The pause, before the timer exists
+      ansible.builtin.copy:
+        dest: "{{ core_rollout_state_dir | default('/srv/easy/rollout') }}/pause"
+        content: "first install — verify with status, check, smoke and notify-test, then `easy-rollout resume`\n"
+        mode: "0664"
+        force: false
+      when: not rollout_installed.stat.exists
+  roles:
+    - {role: core_config, when: false}
+    - {role: postgres, when: false}
+    - {role: core_service, when: false}
+    - core_rollout

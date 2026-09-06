@@ -1,17 +1,22 @@
-# Finish the `easy-smoke` client and its two accounts on an IdP the way doc/idp-setup.md §4.8
-# describes — the easy_role mapper (without which core rejects every token from this client), the
-# SPA client roles, the display names. The client and the users themselves are created in the
-# console first; realm contents stay a person's, this only completes what a person started.
+# The smoke suite's IdP half (roles/core_rollout, doc/production-rollout.md §9, doc/idp-setup.md §4.8):
+# the `easy-smoke` client, the two accounts, the easy_role mapper without which core rejects every
+# token from that client, the SPA client roles, the display names.
 #
 #   ./run.sh smoke-idp-setup.yml --limit <idp host>
 #
 # Idempotent: every step looks before it creates. Runs kcadm as root on the host with the admin
-# password read from /etc/keycloak/keycloak.env, as every command in that document does.
+# password read from /etc/keycloak/keycloak.env, as every command in that document does. The two
+# passwords are generated on the host and kept in /etc/keycloak/smoke-users.txt (0600 root), the same
+# arrangement as the test accounts' test-users.txt — from where smoke-secrets.yml carries them to the
+# core host without either ever being typed, printed or passing through a laptop.
+#
+# Realm contents are otherwise a person's (idp-setup.md §4): this creates exactly one client and two
+# accounts that exist for a machine, and touches nothing else.
 - hosts: idp
   become: true
   gather_facts: false
   tasks:
-    - name: Add the mapper and the roles
+    - name: Create or complete the smoke client and its accounts
       ansible.builtin.shell: |
         set -uo pipefail
         export JAVA_HOME=$(ls -d /usr/lib/jvm/java-21-openjdk-* | head -1)
@@ -19,10 +24,20 @@
         K=/opt/keycloak/bin/kcadm.sh
         $K config credentials --server http://127.0.0.1:8080/auth --realm master \
           --user "$(grep '^KC_BOOTSTRAP_ADMIN_USERNAME=' /etc/keycloak/keycloak.env | cut -d= -f2-)" \
-          --password "$(grep '^KC_BOOTSTRAP_ADMIN_PASSWORD=' /etc/keycloak/keycloak.env | cut -d= -f2-)" >/dev/null 2>&1 || { echo "login failed"; exit 1; }
+          --password "$(grep '^KC_BOOTSTRAP_ADMIN_PASSWORD=' /etc/keycloak/keycloak.env | cut -d= -f2-)" >/dev/null 2>&1 || { echo "kcadm login failed"; exit 1; }
+
+        # --- the client: confidential, password grant only ---------------------------------------
         ID=$($K get clients -r master -q clientId=easy-smoke --fields id --format csv --noquotes | head -1)
+        if [ -z "$ID" ]; then
+          $K create clients -r master -s clientId=easy-smoke -s enabled=true \
+            -s publicClient=false -s standardFlowEnabled=false -s implicitFlowEnabled=false \
+            -s directAccessGrantsEnabled=true -s serviceAccountsEnabled=false >/dev/null 2>&1 && echo "client easy-smoke: created"
+          ID=$($K get clients -r master -q clientId=easy-smoke --fields id --format csv --noquotes | head -1)
+        else
+          echo "client easy-smoke: present ($($K get clients/$ID -r master --fields publicClient,standardFlowEnabled,directAccessGrantsEnabled --format csv --noquotes))"
+        fi
         if $K get clients/$ID/protocol-mappers/models -r master --fields name --format csv --noquotes | grep -qx easy_role; then
-          echo "mapper easy_role: already present"
+          echo "mapper easy_role: present"
         else
           $K create clients/$ID/protocol-mappers/models -r master \
             -s name=easy_role -s protocol=openid-connect \
@@ -30,25 +45,44 @@
             -s 'config."usermodel.clientRoleMapping.clientId"=lahendus.ut.ee' \
             -s 'config."claim.name"=easy_role' -s 'config."jsonType.label"=String' \
             -s 'config."multivalued"=true' -s 'config."access.token.claim"=true' \
-            -s 'config."id.token.claim"=false' -s 'config."userinfo.token.claim"=true' 2>&1 && echo "mapper easy_role: created"
+            -s 'config."id.token.claim"=false' -s 'config."userinfo.token.claim"=true' >/dev/null 2>&1 && echo "mapper easy_role: created"
         fi
+
+        # --- the accounts ------------------------------------------------------------------------
+        PWFILE=/etc/keycloak/smoke-users.txt
+        [ -f "$PWFILE" ] || install -m 0600 -o root -g root /dev/null "$PWFILE"
         SPA=$($K get clients -r master -q clientId=lahendus.ut.ee --fields id --format csv --noquotes | head -1)
         for who in student teacher; do
-          U=$($K get users -r master -q username=easy-smoke-$who -q exact=true --fields id --format csv --noquotes | head -1)
+          user="easy-smoke-$who"
           Last=$(echo "$who" | sed 's/./\U&/')
-          $K update users/$U -r master -s firstName=Smoke -s lastName="$Last" 2>&1 && echo "easy-smoke-$who: names set"
-          if $K get users/$U/role-mappings/clients/$SPA -r master --fields name --format csv --noquotes | grep -qx "$who"; then
-            echo "easy-smoke-$who: role $who already assigned"
+          U=$($K get users -r master -q username=$user -q exact=true --fields id --format csv --noquotes | head -1)
+          if [ -z "$U" ]; then
+            $K create users -r master -s username=$user -s enabled=true -s emailVerified=true \
+              -s email=$user@example.invalid -s firstName=Smoke -s lastName="$Last" >/dev/null 2>&1 && echo "$user: created"
+            U=$($K get users -r master -q username=$user -q exact=true --fields id --format csv --noquotes | head -1)
           else
-            $K add-roles -r master --uusername easy-smoke-$who --cclientid lahendus.ut.ee --rolename "$who" 2>&1 && echo "easy-smoke-$who: role $who assigned"
+            $K update users/$U -r master -s firstName=Smoke -s lastName="$Last" -s enabled=true -s emailVerified=true >/dev/null 2>&1
+            echo "$user: present"
           fi
-          echo "easy-smoke-$who: spa roles now: $($K get users/$U/role-mappings/clients/$SPA -r master --fields name --format csv --noquotes | tr '\n' ' ')"
+          if ! grep -q "^$user:" "$PWFILE"; then
+            # A password this host generated and only this host holds. kcadm takes it as an
+            # argument (no stdin form exists), briefly visible in ps on this host to root and to the
+            # keycloak account only; the value appears nowhere else. No quote marks in comments here:
+            # the free-form shell module splits on them.
+            pw=$(head -c 30 /dev/urandom | base64 | tr -d '/+=')
+            $K set-password -r master --username $user --new-password "$pw" >/dev/null 2>&1 && echo "$user: password set and recorded in $PWFILE"
+            printf '%s:%s\n' "$user" "$pw" >> "$PWFILE"
+          fi
+          if $K get users/$U/role-mappings/clients/$SPA -r master --fields name --format csv --noquotes | grep -qx "$who"; then
+            echo "$user: role $who present"
+          else
+            $K add-roles -r master --uusername $user --cclientid lahendus.ut.ee --rolename "$who" >/dev/null 2>&1 && echo "$user: role $who assigned"
+          fi
         done
-        echo "mappers now: $($K get clients/$ID/protocol-mappers/models -r master --fields name,protocolMapper --format csv --noquotes | tr '\n' ' ')"
       args:
         executable: /bin/bash
-      register: fix
-      changed_when: "'created' in fix.stdout or 'assigned' in fix.stdout"
-    - name: Output
+      register: idp
+      changed_when: "'created' in idp.stdout or 'assigned' in idp.stdout or 'recorded' in idp.stdout"
+    - name: What was done
       ansible.builtin.debug:
-        var: fix.stdout_lines
+        var: idp.stdout_lines
