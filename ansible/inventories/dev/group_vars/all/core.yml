@@ -182,6 +182,9 @@ core_rollout_window: {always: true}
 core_rollout_require_seen_on_dev: false
 core_rollout_min_ci_age_hours: 0
 core_rollout_min_gap_hours: 0
+# Six minutes between attempts after a failure that was not the commit's fault (GitHub, disk, a
+# helper error): long enough not to re-dump the database every tick, short enough to notice.
+core_rollout_min_retry_gap_hours: 0.1
 # A dump before every deploy and a rehearsal against it, as on production — this is where the
 # rehearsal gets exercised before production trusts it.
 core_rollout_rehearsal_enabled: true

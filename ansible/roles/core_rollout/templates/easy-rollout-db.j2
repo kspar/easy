@@ -84,7 +84,10 @@ create_db_like() {
     # created from template0 sorts the way the one it replaces did. roles/postgres creates the real
     # one with an explicit locale for the same reason. PG16 may also carry an ICU locale; copied too.
     local name="$1" owner="$2" like="$3" row provider collate ctype icu extra
-    row=$(psql_super -d postgres -Atc "SELECT datlocprovider || '|' || datcollate || '|' || datctype || '|' || coalesce(daticulocale, '') FROM pg_database WHERE datname = '$like'")
+    # Every column cast to text: datlocprovider is a "char", which `||` refuses to guess about.
+    # The ICU locale column was daticulocale up to PG16 and datlocale from PG17; read it by name
+    # through jsonb so the same statement works on both.
+    row=$(psql_super -d postgres -Atc "SELECT d.datlocprovider::text || '|' || d.datcollate::text || '|' || d.datctype::text || '|' || coalesce(to_jsonb(d)->>'daticulocale', to_jsonb(d)->>'datlocale', '') FROM pg_database d WHERE d.datname = '$like'")
     [ -n "$row" ] || die "cannot read the locale of $like"
     IFS='|' read -r provider collate ctype icu <<<"$row"
     [ -n "$collate" ] && [ -n "$ctype" ] || die "database $like has no collation/ctype recorded"
