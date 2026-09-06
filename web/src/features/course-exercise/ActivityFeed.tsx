@@ -50,7 +50,7 @@ import ConfirmDialog from '../../components/ConfirmDialog.tsx'
 import ReadOnlyCodeSnippet from './ReadOnlyCodeSnippet.tsx'
 import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.ts'
-import { useFileDropExtension } from '../../components/markdown/useFileDropExtension.ts'
+import { useFileDropAndPasteExtension } from '../../components/editorFileDrop.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
 import SafeText from '../../components/SafeText.tsx'
@@ -663,7 +663,7 @@ function EditCommentEditor({
   }, [notify])
 
   const { uploadFiles, uploading, error: uploadError, clearError } = useMarkdownUpload()
-  const dropExtension = useFileDropExtension(
+  const dropExtension = useFileDropAndPasteExtension(
     useCallback((files: File[]) => {
       if (viewRef.current) void uploadFiles(viewRef.current, files)
     }, [uploadFiles]),

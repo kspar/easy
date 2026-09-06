@@ -20,6 +20,8 @@ import {
 import type { ExerciseDetails } from '../../api/types.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import { useFileDropExtension } from '../../components/editorFileDrop.ts'
+import { readSolutionFile, solutionFileErrorKey } from './solutionFile.ts'
 import { record } from '../bug-report/breadcrumbs.ts'
 
 export interface SolutionEditorHandle {
@@ -287,6 +289,38 @@ export default forwardRef<SolutionEditorHandle, {
     }
   }, [courseId, courseExerciseId, currentDoc, markSaved, writeDraftCache, cancelSaveTimer, flushDraftSave])
 
+  /**
+   * The one path a file takes into the editor, whether it was chosen from the menu or dragged in.
+   * Replaces the document rather than inserting at a position: the file *is* the solution, which
+   * is what the menu item has always meant by it, and CodeMirror's undo takes back a mistake.
+   *
+   * Declared above the editor effect because that effect lists the drop extension as a dependency.
+   */
+  const loadSolutionFile = useCallback((files: File[]) => {
+    const file = files[0]
+    if (!file) return
+    void readSolutionFile(file).then((result) => {
+      if (!result.ok) {
+        setSnackMsg(t(solutionFileErrorKey(result.reason)))
+        return
+      }
+      const view = viewRef.current
+      if (!view) return
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: result.text },
+      })
+      view.focus()
+      // The name and the length, never the content — same rule as the submit breadcrumb. "I
+      // submitted the wrong thing" is a real report, and a file having replaced the editor a
+      // moment earlier is the first thing worth knowing about it.
+      record('action', `loaded ${file.name} into the editor (${result.text.length} chars)`)
+    })
+  }, [t])
+
+  // A closed exercise takes no new solution, so dropping one on it should do what dropping a file
+  // on any other read-only thing does, which is nothing.
+  const dropExtension = useFileDropExtension(exercise.is_open ? loadSolutionFile : null)
+
   // Initialize CodeMirror (re-creates on theme or exercise change)
   useEffect(() => {
     if (!editorRef.current) return
@@ -316,6 +350,7 @@ export default forwardRef<SolutionEditorHandle, {
         EditorView.updateListener.of((update) => {
           if (update.docChanged) scheduleDraftSaveRef.current()
         }),
+        ...(dropExtension ?? []),
       ]
       if (theme.palette.mode === 'dark') {
         extensions.push(oneDark)
@@ -351,7 +386,7 @@ export default forwardRef<SolutionEditorHandle, {
     // later query refetch (the draft cache is written through on every autosave) must not
     // destroy and re-create the editor under the user's cursor.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme.palette.mode, courseExerciseId, exercise.solution_file_name])
+  }, [theme.palette.mode, courseExerciseId, exercise.solution_file_name, dropExtension])
 
   useImperativeHandle(ref, () => ({
     setSolution: (solution: string) => {
@@ -384,29 +419,10 @@ export default forwardRef<SolutionEditorHandle, {
     input.type = 'file'
     input.onchange = () => {
       const file = input.files?.[0]
-      if (!file) return
-      if (file.size > 300_000) {
-        setSnackMsg(t('submission.uploadErrorTooLarge'))
-        return
-      }
-      const reader = new FileReader()
-      reader.onload = () => {
-        try {
-          const text = new TextDecoder('utf-8', { fatal: true }).decode(reader.result as ArrayBuffer)
-          const view = viewRef.current
-          if (view) {
-            view.dispatch({
-              changes: { from: 0, to: view.state.doc.length, insert: text },
-            })
-          }
-        } catch {
-          setSnackMsg(t('submission.uploadErrorNotText'))
-        }
-      }
-      reader.readAsArrayBuffer(file)
+      if (file) loadSolutionFile([file])
     }
     input.click()
-  }, [t])
+  }, [loadSolutionFile])
 
   const refetchAfterSubmit = useCallback(() => {
     queryClient.refetchQueries({
