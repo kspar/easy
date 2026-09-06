@@ -12,12 +12,13 @@ The flow, on every timer tick:
 
     tick
       ├─ paused?                       → say so, do nothing
-      ├─ record what dev is running    (the soak gate needs a history)
+      ├─ record what dev is running    (shown in `status`; evidence for the optional soak gate)
       ├─ branch head == current-sha?   → steady state, silent
       ├─ head failed before?           → never retried automatically; remind daily
       ├─ green CI run for head?        → wait
-      ├─ gates: window, freeze, CI age, soak on dev, ancestry of master, gap since last rollout,
-      │         gap since a retryable failure
+      ├─ gates: on master; a person's `schedule` not yet due; a retryable failure less than the
+      │         retry gap ago — and, where an inventory turned them on, a window, freeze dates,
+      │         CI age, a soak on dev, a gap since the last rollout
       │      unmet → remember why (`easy-rollout status`), alarm if it has been stuck for days
       └─ ROLLOUT
            1. preflight    disk, database, core healthy NOW, previous release intact
@@ -212,16 +213,20 @@ DEFAULTS: dict = {
     "health_timeout_migrating_s": 1800,
     "dump_service": "easy-db-backup.service",
     "db_helper": "/usr/local/bin/easy-rollout-db",
-    "window": {"days": ["Tue", "Thu"], "start": "04:00", "end": "05:30", "tz": "Europe/Tallinn"},
+    # The person decides when: a push to the branch deploys at the next tick, `easy-rollout schedule`
+    # holds it until a time. The automatic gates below exist and are off; an inventory can turn any
+    # of them on later.
+    "timezone": "Europe/Tallinn",
+    "window": {"always": True},
     "freeze": [],
     "gates": {
-        "min_ci_age_hours": 6,
+        "min_ci_age_hours": 0,
         "soak_hours": 12,
         "dev_version_url": "",
-        "require_seen_on_dev": True,
+        "require_seen_on_dev": False,
         "require_on_master": True,
-        "min_gap_hours": 20,
-        "min_retry_gap_hours": 6,
+        "min_gap_hours": 0,
+        "min_retry_gap_hours": 0.5,
         "deploy_now_ttl_hours": 24,
         "stuck_after_hours": 96,
         "stuck_repeat_hours": 24,
@@ -1334,7 +1339,40 @@ class Controller:
         if attempt and hours_between(parse_iso(attempt), now) < g.get("min_retry_gap_hours", 0):
             reasons.append(f"last attempt failed {hours_between(parse_iso(attempt), now):.1f}h ago for a reason that may "
                            f"pass later; retrying after {g['min_retry_gap_hours']}h")
+        held = self.held_until(sha)
+        if held and now < held:
+            local = held.astimezone(ZoneInfo(self.tz()))
+            reasons.append(f"scheduled for {local:%Y-%m-%d %H:%M %Z} ({hours_between(now, held):.1f}h from now) — "
+                           f"`easy-rollout schedule --clear` to release it")
         return reasons
+
+    # -- the schedule: a person's "not before" -------------------------------------------------------
+    @property
+    def schedule_file(self) -> Path:
+        return self.cfg["state_dir"] / "schedule"
+
+    def tz(self) -> str:
+        return self.cfg.get("timezone") or self.cfg["window"].get("tz") or "UTC"
+
+    def held_until(self, sha: str | None = None) -> datetime | None:
+        """The time before which nothing (or only `sha`, if the schedule names one) may deploy."""
+        if not self.schedule_file.exists():
+            return None
+        try:
+            parts = self.schedule_file.read_text().split()
+        except OSError:
+            return None
+        if not parts:
+            return None
+        try:
+            at = parse_iso(parts[0])
+        except ValueError:
+            log(f"schedule file holds {parts[0]!r}, not a time; ignoring it")
+            return None
+        if len(parts) > 1 and sha and not sha.startswith(parts[1]):
+            log(f"schedule names {parts[1]} but the branch points at {short(sha)} — not holding it")
+            return None
+        return at
 
     def deploy_now(self) -> tuple[str, datetime] | None:
         """The pending override as (sha-or-'head', written-at), or None if absent or expired."""
@@ -1446,6 +1484,8 @@ class Controller:
         if d["override"]:
             log(f"deploy-now override for {short(head)} — scheduling gates skipped, checks are not")
             self.deploy_now_file.unlink(missing_ok=True)
+        # A schedule is for one rollout: whatever it held is going out now.
+        self.schedule_file.unlink(missing_ok=True)
         return self.rollout(head, d["run"])
 
     def github_unavailable(self, why: str, now: datetime) -> str:
@@ -1595,6 +1635,9 @@ def cmd_status(cfg: dict) -> int:
     dn = state_dir / "deploy-now"
     if dn.exists():
         print(f"deploy-now    {dn.read_text().strip()}")
+    sch = state_dir / "schedule"
+    if sch.exists():
+        print(f"scheduled     {describe_schedule(cfg, sch.read_text())}")
     print(f"last success  {s.get('last_success_at') or 'never'}")
     if s.get("dev_current"):
         print(f"dev runs      {s['dev_current'][:8]}")
@@ -1622,6 +1665,8 @@ def cmd_check(ctrl: Controller) -> int:
     pending = ctrl.deploy_now()
     if pending:
         print(f"deploy-now    {pending[0]} (written {iso(pending[1])})")
+    if ctrl.schedule_file.exists():
+        print(f"scheduled     {describe_schedule(ctrl.cfg, ctrl.schedule_file.read_text())}")
     kind = d["kind"]
     if kind == "github-unavailable":
         print(f"decision      cannot ask GitHub: {d['error']}")
@@ -1635,6 +1680,44 @@ def cmd_check(ctrl: Controller) -> int:
     else:
         print(f"decision      {kind}")
     return 0
+
+
+def describe_schedule(cfg: dict, text: str) -> str:
+    parts = text.split()
+    if not parts:
+        return "(empty schedule file)"
+    try:
+        at = parse_iso(parts[0])
+    except ValueError:
+        return f"{parts[0]!r} is not a time"
+    tz = cfg.get("timezone") or cfg["window"].get("tz") or "UTC"
+    local = at.astimezone(ZoneInfo(tz))
+    who = f" for {parts[1][:8]}" if len(parts) > 1 else " for whatever the branch points at"
+    delta = hours_between(now_utc(), at)
+    when = f"in {delta:.1f}h" if delta > 0 else f"{-delta:.1f}h ago (due)"
+    return f"{local:%Y-%m-%d %H:%M %Z} ({when}){who}"
+
+
+def parse_when(text: str, tz_name: str) -> datetime:
+    """A person's time — `2026-09-08 04:00`, `2026-09-08T04:00`, `04:00` (next occurrence), `+2h`,
+    `+30m` — in the environment's timezone unless it carries its own offset."""
+    tz = ZoneInfo(tz_name)
+    now = now_utc().astimezone(tz)
+    text = text.strip()
+    m = re.fullmatch(r"\+(\d+)([hm])", text)
+    if m:
+        n, unit = int(m.group(1)), m.group(2)
+        return now_utc() + (timedelta(hours=n) if unit == "h" else timedelta(minutes=n))
+    if re.fullmatch(r"\d{1,2}:\d{2}", text):
+        h, mi = map(int, text.split(":"))
+        at = now.replace(hour=h, minute=mi, second=0, microsecond=0)
+        if at <= now:
+            at += timedelta(days=1)
+        return at.astimezone(timezone.utc)
+    dt = datetime.fromisoformat(text.replace(" ", "T"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=tz)
+    return dt.astimezone(timezone.utc)
 
 
 def install_signal_handlers() -> None:
@@ -1657,6 +1740,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("resume", help="allow automatic rollouts again")
     sp = sub.add_parser("deploy-now", help="skip the scheduling gates for one commit (never the checks)")
     sp.add_argument("sha", help="a commit id prefix (7+ chars) that the branch points at, or `head`")
+    sp = sub.add_parser("schedule", help="hold the next rollout until a time: `2026-09-08 04:00`, `04:00`, `+2h`; --clear releases it")
+    sp.add_argument("when", nargs="?", help="local time in the environment's timezone, or +Nh / +Nm")
+    sp.add_argument("--sha", default=None, help="hold only this commit (prefix); any other push deploys at once")
+    sp.add_argument("--clear", action="store_true", help="remove the hold")
     sp = sub.add_parser("forget", help="allow a failed commit to be attempted again")
     sp.add_argument("sha")
     sp = sub.add_parser("smoke", help="run the end-to-end suite now, against whatever is live")
@@ -1692,6 +1779,32 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if cmd == "status":
         return cmd_status(cfg)
+    if cmd == "schedule":
+        sch = state_dir / "schedule"
+        if args.clear:
+            sch.unlink(missing_ok=True)
+            print("schedule cleared — a push to the branch deploys at the next tick")
+            return 0
+        if not args.when:
+            print(f"scheduled     {describe_schedule(cfg, sch.read_text())}" if sch.exists() else "nothing scheduled")
+            return 0
+        tz = cfg.get("timezone") or cfg["window"].get("tz") or "UTC"
+        try:
+            at = parse_when(args.when, tz)
+        except ValueError:
+            print(f"cannot read {args.when!r} as a time; try `2026-09-08 04:00`, `04:00` or `+2h`", file=sys.stderr)
+            return 2
+        if at <= now_utc():
+            print(f"{args.when!r} is in the past", file=sys.stderr)
+            return 2
+        if args.sha and not re.fullmatch(r"[0-9a-f]{7,40}", args.sha):
+            print("--sha needs at least 7 hex characters", file=sys.stderr)
+            return 2
+        state_dir.mkdir(parents=True, exist_ok=True)
+        write_atomic(sch, f"{iso(at)}{' ' + args.sha if args.sha else ''}\n", 0o664)
+        print(f"held until {describe_schedule(cfg, sch.read_text())}; push the commit to {cfg['branch']} whenever — "
+              f"it deploys at the first tick after that time, if CI is green and every check passes")
+        return 0
     if cmd == "deploy-now":
         want = args.sha
         if want != "head" and not re.fullmatch(r"[0-9a-f]{7,40}", want):

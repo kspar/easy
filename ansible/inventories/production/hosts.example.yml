@@ -94,8 +94,8 @@ executor:
 #                                   core_rollout_smoke_web_url / _api_url / _idp_url
 #                                   core_rollout_smoke_course_id / _exercise_id
 #                                   core_rollout_smoke_executor_version_url
-#                                 and whatever of the window, freeze and notification values differ
-#                                 from the role's defaults. doc/production-rollout.md walks through it.
+#                                 and whatever notification values (and, if wanted, optional gates)
+#                                 differ from the role's defaults. doc/production-rollout.md walks through it.
 #   group_vars/<group>.yml        per-group overrides, e.g. the executor's own firewall rule
 #
 # Two values worth deciding rather than inheriting, whenever a production inventory is written:

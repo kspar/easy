@@ -294,15 +294,55 @@ def test_waits_for_a_green_run(cfg):
     assert host.calls == []
 
 
+WINDOW = {"days": ["Tue", "Thu"], "start": "04:00", "end": "05:30", "tz": "Europe/Tallinn"}
+
+
+def test_by_default_a_green_push_deploys_at_any_hour(cfg):
+    # Wednesday noon, never seen on dev, CI a minute old, a rollout an hour ago: none of it gates.
+    cfg["gates"]["require_seen_on_dev"] = ro.DEFAULTS["gates"]["require_seen_on_dev"]
+    ctrl, host, _ = make(cfg, gh=FakeGitHub(run_age_hours=0.02), now=datetime(2026, 9, 9, 9, 0, tzinfo=timezone.utc), seen_on_dev=False)
+    ctrl.state.data["last_success_at"] = ro.iso(datetime(2026, 9, 9, 8, 0, tzinfo=timezone.utc))
+    assert ctrl.tick() == "deployed"
+
+
 @pytest.mark.parametrize("when,word", [
     (datetime(2026, 9, 9, 1, 30, tzinfo=timezone.utc), "not a rollout day"),          # Wednesday
     (datetime(2026, 9, 8, 12, 0, tzinfo=timezone.utc), "outside 04:00"),              # Tuesday noon
 ])
-def test_outside_the_window_nothing_happens(cfg, when, word):
+def test_outside_a_configured_window_nothing_happens(cfg, when, word):
+    cfg["window"] = WINDOW
     ctrl, host, _ = make(cfg, now=when)
     assert ctrl.tick() == "gated"
     assert any(word in r for r in ctrl.state.candidates[NEW]["reasons"])
     assert host.calls == []
+
+
+def test_schedule_holds_until_the_time_then_deploys_and_is_consumed(cfg):
+    ctrl, host, notify = make(cfg)
+    (cfg["state_dir"] / "schedule").write_text(ro.iso(T0 + timedelta(hours=3)) + "\n")
+    assert ctrl.tick() == "gated"
+    assert any("scheduled for" in r and "3.0h from now" in r for r in ctrl.state.candidates[NEW]["reasons"])
+    assert host.calls == []
+    ctrl.clock = lambda: T0 + timedelta(hours=3, minutes=1)
+    assert ctrl.tick() == "deployed"
+    assert not (cfg["state_dir"] / "schedule").exists()
+
+
+def test_schedule_naming_another_sha_does_not_hold_this_one(cfg):
+    ctrl, host, _ = make(cfg)
+    (cfg["state_dir"] / "schedule").write_text(f"{ro.iso(T0 + timedelta(hours=3))} {'c' * 40}\n")
+    assert ctrl.tick() == "deployed"
+
+
+def test_parse_when_reads_local_times_relative_times_and_next_occurrence(monkeypatch):
+    fixed = datetime(2026, 9, 8, 10, 0, tzinfo=timezone.utc)      # 13:00 Tallinn
+    monkeypatch.setattr(ro, "now_utc", lambda: fixed)
+    assert ro.parse_when("2026-09-09 04:00", "Europe/Tallinn") == datetime(2026, 9, 9, 1, 0, tzinfo=timezone.utc)
+    assert ro.parse_when("+2h", "Europe/Tallinn") == fixed + timedelta(hours=2)
+    assert ro.parse_when("+30m", "Europe/Tallinn") == fixed + timedelta(minutes=30)
+    assert ro.parse_when("04:00", "Europe/Tallinn") == datetime(2026, 9, 9, 1, 0, tzinfo=timezone.utc)   # tomorrow
+    assert ro.parse_when("14:00", "Europe/Tallinn") == datetime(2026, 9, 8, 11, 0, tzinfo=timezone.utc)   # today
+    assert ro.parse_when("2026-09-09T04:00+00:00", "Europe/Tallinn") == datetime(2026, 9, 9, 4, 0, tzinfo=timezone.utc)
 
 
 def test_freeze_period_blocks_even_inside_the_window(cfg):
@@ -320,7 +360,8 @@ def test_freeze_boundaries_are_local_dates_inclusive():
     assert ro.in_freeze(freeze, datetime(2026, 9, 9, 21, 30, tzinfo=timezone.utc), tz)       # 00:30 local on the first day
 
 
-def test_young_ci_run_must_age(cfg):
+def test_young_ci_run_must_age_when_the_gate_is_on(cfg):
+    cfg["gates"]["min_ci_age_hours"] = 6
     ctrl, host, _ = make(cfg, gh=FakeGitHub(run_age_hours=1))
     assert ctrl.tick() == "gated"
     assert any("needs 6h" in r for r in ctrl.state.candidates[NEW]["reasons"])
@@ -354,7 +395,8 @@ def test_commit_not_on_master_does_not_deploy(cfg):
     assert any("not on master" in r for r in ctrl.state.candidates[NEW]["reasons"])
 
 
-def test_minimum_gap_since_last_rollout(cfg):
+def test_minimum_gap_since_last_rollout_when_the_gate_is_on(cfg):
+    cfg["gates"]["min_gap_hours"] = 20
     ctrl, host, _ = make(cfg)
     ctrl.state.data["last_success_at"] = ro.iso(T0 - timedelta(hours=3))
     assert ctrl.tick() == "gated"
@@ -1012,7 +1054,7 @@ def test_deep_merge_does_not_lose_defaults():
 def test_load_config_refuses_a_misspelled_policy_and_a_bad_window(tmp_path):
     p = tmp_path / "c.json"
     p.write_text(json.dumps({"health_url": "https://x/v2/", "rollback": {"restore_db": "automatic"},
-                             "window": {"start": "4:00", "end": "05:30", "tz": "Mars/Olympus"},
+                             "window": {"always": False, "start": "4:00", "end": "05:30", "tz": "Mars/Olympus"},
                              "notify": {"channels": {"critical": ["pager"]}}}))
     with pytest.raises(ro.RolloutError) as e:
         ro.load_config(p)

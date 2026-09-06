@@ -36,7 +36,7 @@ one deploys nothing until it is fixed or the branch is moved back, and `easy-rol
 host says so.)
 
 **Since 2026-09-03 the timer is `easy-rollout`, not `easy-autodeploy`** — the same guarded deployer
-production runs, with dev's settings: no window, no soak, but still a database dump before every
+production runs, with dev's settings: a shorter retry gap, but still a database dump before every
 deploy, a rehearsal of the new jar against a copy of that dump, and — once dev's smoke course exists
 — the end-to-end smoke suite, with an automatic rollback when any of it fails. A push therefore
 lands a few minutes later than it used to, and a push that breaks something is put back rather than
@@ -180,9 +180,9 @@ Same script and the same seven steps. Three differences, all in `prod/prod.env`:
   migration, and production had no backups at all before 2026-08.
 
 **Production deploys itself too, since 2026-09-03** — from `prod-releases`, through `roles/core_rollout`
-(`doc/production-rollout.md`), inside a maintenance window and only after the commit has soaked on
-dev, with a dump, a rehearsal, the smoke suite and an automatic rollback around the restart. This
-script is production's *manual* path. Two rules when using it there:
+(`doc/production-rollout.md`): a push to that branch deploys at the next tick once CI is green, or at
+a time set with `easy-rollout schedule`, with a dump, a rehearsal, the smoke suite and an automatic
+rollback around the restart. This script is production's *manual* path. Two rules when using it there:
 
 - **Pause the rollout first**: `ssh <prod> easy-rollout pause "manual deploy of <sha>"`. Otherwise
   the next tick sees `current-sha` disagree with the branch tip and — if the gates allow — puts the

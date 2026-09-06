@@ -79,48 +79,47 @@ core_rollout_rehearsal_user: easy-rehearsal
 # timeout is the backstop rather than the mechanism.
 core_rollout_unit_timeout_s: 14400
 
-# --- scheduling -----------------------------------------------------------------------------------
-# When a rollout may START. Everything before the window — waiting for CI, the soak — happens
-# whenever; the window is for the part that restarts core. Tuesday and Thursday before six in the
-# morning, Estonian time: nobody is submitting, and a rollout that turns out badly is found by a
-# person on a working day rather than discovered on Monday.
+# --- when a rollout may start ----------------------------------------------------------------------
+# The person decides. Pushing a commit to the branch deploys it at the next tick once CI is green;
+# `easy-rollout schedule "2026-09-08 04:00"` (or `04:00`, or `+2h`) holds the next rollout until
+# then; `easy-rollout schedule --clear` releases it. Times are read in this zone.
+core_rollout_timezone: Europe/Tallinn
+
+# The automatic gates below all exist and are all OFF. Each is one inventory line to turn on when
+# the release cadence wants it; until then they are documentation of what is possible, not policy.
+
+# A maintenance window: rollouts may START only inside it. `always: true` means no window.
 #
-# `always: true` disables the window (dev).
+#   core_rollout_window: {days: [Tue, Thu], start: "04:00", end: "05:30", tz: Europe/Tallinn}
 core_rollout_window:
-  days: [Tue, Thu]
-  start: "04:00"
-  end: "05:30"
-  tz: Europe/Tallinn
+  always: true
 
 # Dates during which nothing rolls out whatever the window says — exam sessions, the first week of
-# term. Local dates in the window's timezone, inclusive.
+# term. Local dates in the timezone above, inclusive.
 #
 #   core_rollout_freeze:
 #     - {from: "2027-01-04", to: "2027-01-24", reason: "exam session"}
 core_rollout_freeze: []
 
-# --- gates: what has to be true of a commit before it may roll out ---------------------------------
-# A CI run has to be at least this old. It gives a bad commit time to be noticed and reverted on
-# master before it reaches production, and it makes "push and it deploys within the hour" impossible
-# by accident.
-core_rollout_min_ci_age_hours: 6
+# A CI run has to be at least this old. Gives a bad commit time to be noticed and reverted on master
+# before it reaches production. 0 = off.
+core_rollout_min_ci_age_hours: 0
 
-# The soak: the commit must have been observed running on another environment — dev — for this many
-# hours. The observation is made by fetching `core_rollout_dev_version_url` every tick and recording
-# when each commit was first and last seen, so it needs dev to publish what it runs (see
-# `easy_nginx_publish_release_sha` in roles/nginx). Off where there is no upstream environment.
-core_rollout_require_seen_on_dev: true
+# The soak: the commit must be running on another environment — dev — and have been for this many
+# unbroken hours. Needs dev to publish what it runs (`easy_nginx_publish_release_sha` in roles/nginx)
+# and `core_rollout_dev_version_url` to point at it; the sighting is recorded every tick regardless,
+# so `status` shows what dev runs even while the gate is off.
+core_rollout_require_seen_on_dev: false
 core_rollout_soak_hours: 12
 core_rollout_dev_version_url: ""
 
-# The commit must be on master. A commit pushed straight at the release branch is a hotfix nobody
-# reviewed; it can still be deployed, with `easy-rollout deploy-now`, which is a decision rather than
-# an accident.
+# The one gate that is on: the commit must be on master. A commit pushed straight at the release
+# branch is a hotfix nobody reviewed; it can still be deployed, with `easy-rollout deploy-now`, which
+# is a decision rather than an accident.
 core_rollout_require_on_master: true
 
-# At most one rollout per this many hours, so two pushes in one window do not restart production
-# twice, and so the effect of one release is observable before the next.
-core_rollout_min_gap_hours: 20
+# At most one rollout per this many hours. 0 = off.
+core_rollout_min_gap_hours: 0
 
 # When the branch has pointed at an undeployed commit for this long, say so (WARN), and repeat no
 # more often than this. Nothing is wrong with production when this fires; something is wrong with
@@ -130,10 +129,10 @@ core_rollout_stuck_repeat_hours: 24
 
 # A rollout that failed before production was touched for a reason that is not a property of the
 # commit — GitHub unreachable, the dump unit busy, the disk full — is retried, but not on the very
-# next tick: this many hours later at the earliest, so a window is not spent re-dumping the
-# database ten times. Failures that ARE the commit's (a migration that dies in rehearsal, a config
-# key it needs) park the commit until a person looks.
-core_rollout_min_retry_gap_hours: 6
+# next tick: this many hours later at the earliest, so the database is not re-dumped every minute.
+# Failures that ARE the commit's (a migration that dies in rehearsal, a config key it needs) park
+# the commit until a person looks.
+core_rollout_min_retry_gap_hours: 0.5
 
 # `easy-rollout deploy-now` expires after this long, so an override left behind for a commit that
 # then failed CI cannot fire weeks later on whatever the branch points at by then.

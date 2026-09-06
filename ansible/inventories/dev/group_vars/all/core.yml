@@ -177,11 +177,6 @@ core_rollout_health_url: https://dev.ems.lahendus.ut.ee/v2/
 # Every thirty seconds: a push should be live within a few minutes, and most of those minutes are
 # the dump and the rehearsal rather than the wait for a tick.
 core_rollout_interval: "*:*:00,30"
-# No window, no soak, no gap: dev IS the soak, and a promotion should land when it is green.
-core_rollout_window: {always: true}
-core_rollout_require_seen_on_dev: false
-core_rollout_min_ci_age_hours: 0
-core_rollout_min_gap_hours: 0
 # Six minutes between attempts after a failure that was not the commit's fault (GitHub, disk, a
 # helper error): long enough not to re-dump the database every tick, short enough to notice.
 core_rollout_min_retry_gap_hours: 0.1

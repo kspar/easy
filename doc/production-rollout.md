@@ -33,7 +33,8 @@ every tick (1 min prod, 30 s dev)
                                              reminded daily after `stuck_after_hours`
   GitHub unreachable? ──────────────── log; WARN once a day while it lasts; never a crash
   green CI run for head? ───────────── no  → wait; WARN once a day after `stuck_after_hours`
-  gates (§3) ───────────────────────── unmet → remember why; `easy-rollout status` shows it
+  on master? scheduled for later? ──── no / yes → remember why; `easy-rollout status` shows it
+  (and any optional gate an inventory turned on, §3)
   ROLLOUT
     1 preflight        disk, postgres, core healthy NOW, previous release intact on disk
     2 baseline smoke   the whole suite against what is live, two attempts — if production already
@@ -57,7 +58,7 @@ every tick (1 min prod, 30 s dev)
   failure at 1–5 → production untouched, and it depends on why:
                    the commit's fault (rehearsal died, config key missing, baseline smoke fails
                      against a working production) → mark sha failed, WARN; not paused — a fixed
-                     commit deploys on its own at the next window
+                     commit pushed to the branch deploys on its own
                    not the commit's fault (GitHub, disk, the backup unit, smoke unconfigured)
                      → retry after `min_retry_gap_hours`, WARN once a day while it recurs
   SIGTERM, or the unit's time budget nearly spent → treated as a failure of the current step:
@@ -67,27 +68,50 @@ every tick (1 min prod, 30 s dev)
 One record per rollout under `/srv/easy/rollout/rollouts/<time>-<sha>.json` plus a `.log`, every
 step with its duration and outcome. The notification carries the same table.
 
-## 3. The gates
+## 3. When production deploys
 
-All in `roles/core_rollout/defaults/main.yml`, all overridable per environment.
+A person decides, in one of two ways:
 
-| Gate | Production default | Dev | Why |
-| --- | --- | --- | --- |
-| Window | Tue, Thu 04:00–05:30 Europe/Tallinn | always | nobody is submitting; a bad outcome is found on a working day |
-| Freeze periods | none — add exam sessions | none | dates when nothing rolls out whatever the window says |
-| CI age | ≥ 6 h | 0 | time for a bad commit to be noticed and reverted on master |
-| Soak on dev | live on dev ≥ 12 h **in one stretch, and still there** | off | dev is the proving ground; the evidence is dev's own `current-sha`, published at `/.well-known/easy-release`, sampled every tick. A commit dev rolled back from has not soaked, whatever the calendar says |
-| On master | required | required | a commit pushed straight at the branch is a hotfix nobody reviewed |
-| Gap since last rollout | ≥ 20 h | 0 | two pushes in one window do not restart production twice |
-| Gap since a retryable failure | ≥ 6 h | 0 | a window is not spent re-dumping the database ten times |
-| Stuck alarm | after 96 h, daily | same | the branch moved and nothing happened — a pipeline problem, not a production one |
+- **Now.** Push the commit to `prod-releases`. It deploys at the next tick (within a minute) once CI
+  is green for it — every check in §2 still runs, and a failure still rolls back.
 
-**`easy-rollout deploy-now <sha|head>` skips the scheduling gates and never the checks.** CI must be
-green; the baseline smoke, the dump, the rehearsal, the health check and the post-deploy smoke all
-still run. It is for the hotfix at noon that cannot wait for Thursday. `head` is resolved to a
-commit id when the command is typed, the override names that commit only, applies only while the
-branch points at it, and expires after 24 hours — so one left behind cannot fire on whatever gets
-pushed next week. A commit marked failed is not overridden either; `forget` it first.
+  ```sh
+  git push origin <sha>:prod-releases
+  ```
+
+- **At a time.** Hold the next rollout until then, then push whenever convenient:
+
+  ```sh
+  ssh <prod> easy-rollout schedule "2026-09-08 04:00"     # or "04:00" (next occurrence), or "+2h"
+  git push origin <sha>:prod-releases
+  ssh <prod> easy-rollout schedule                         # shows the hold; --clear releases it
+  ```
+
+  Times are read in the environment's timezone (`core_rollout_timezone`, Europe/Tallinn). The hold
+  applies to whatever the branch points at when the time comes, or to one commit only with
+  `--sha <prefix>`; it is consumed by the rollout it held. Set it **before** the push: a push with
+  no hold in place deploys at the next tick.
+
+What is required of the commit regardless: a green CI run for that exact sha, being on master
+(pushing straight at the branch without master is a hotfix nobody reviewed — `deploy-now` is the
+deliberate way past it), and not having failed a rollout before (`forget` clears that). `status`
+and `check` say which of these, if any, is holding a commit.
+
+**Optional gates, all off, all one inventory line** (`roles/core_rollout/defaults/main.yml`) for when
+the release cadence wants automation instead of a person: a maintenance window
+(`core_rollout_window`), freeze dates (`core_rollout_freeze`), a minimum CI age, a soak on dev
+(`require_seen_on_dev`: the commit must be running on dev, and have been for `soak_hours` unbroken —
+dev's `current-sha` is published at `/.well-known/easy-release` and sampled every tick, so `status`
+shows what dev runs even now), and a minimum gap between rollouts. Two small ones stay on because
+they protect the machine rather than schedule it: a retryable failure is not retried for half an hour
+(six minutes on dev), and a branch that has pointed at an undeployed commit for four days is
+reported once a day.
+
+**`easy-rollout deploy-now <sha|head>` skips every scheduling gate and the on-master check, never the
+checks.** CI must be green; the baseline smoke, the dump, the rehearsal, the health check and the
+post-deploy smoke all still run. `head` is resolved to a commit id when the command is typed, the
+override names that commit only, applies only while the branch points at it, and expires after 24
+hours. A commit marked failed is not overridden either; `forget` it first.
 
 ## 4. The smoke suite
 
@@ -212,6 +236,8 @@ easy-rollout status              what is live, what is waiting and why, recent h
 easy-rollout pause "reason"      stop automatic rollouts (also what a failed rollout does to itself)
 easy-rollout resume              allow them again
 easy-rollout forget <sha>        allow a commit that failed to be attempted again
+easy-rollout schedule <when>     hold the next rollout until then ("2026-09-08 04:00", "04:00", "+2h");
+                                 no argument shows it, --clear releases it, --sha holds one commit only
 easy-rollout deploy-now <sha>    skip the scheduling gates for one commit; never the checks
 easy-rollout notify-test         one message per severity; which channels delivered
 
@@ -232,8 +258,8 @@ so. The better manual deploy is `git push origin <sha>:prod-releases` — it goe
 check — and the better manual rollback is `easy-rollout rollback`, which pauses and records itself.
 
 **After a CRITICAL:** read the record named in the message, `easy-rollout status`, look at core's
-log. Decide whether the commit is wrong (fix on master, push, the fix deploys at the next window
-after `resume`) or the machinery is (fix, then `forget` and `resume`). Do not `resume` without
+log. Decide whether the commit is wrong (fix on master, push to the branch, the fix deploys after
+`resume`) or the machinery is (fix, then `forget` and `resume`). Do not `resume` without
 understanding why it paused; it will happily roll out the next commit.
 
 ## 9. Setup, once per environment
