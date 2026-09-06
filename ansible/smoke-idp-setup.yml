@@ -33,6 +33,7 @@
             -s publicClient=false -s standardFlowEnabled=false -s implicitFlowEnabled=false \
             -s directAccessGrantsEnabled=true -s serviceAccountsEnabled=false >/dev/null 2>&1 && echo "client easy-smoke: created"
           ID=$($K get clients -r master -q clientId=easy-smoke --fields id --format csv --noquotes | head -1)
+          [ -n "$ID" ] || { echo "client easy-smoke: could not be created"; exit 1; }
         else
           echo "client easy-smoke: present ($($K get clients/$ID -r master --fields publicClient,standardFlowEnabled,directAccessGrantsEnabled --format csv --noquotes))"
         fi
@@ -52,6 +53,7 @@
         PWFILE=/etc/keycloak/smoke-users.txt
         [ -f "$PWFILE" ] || install -m 0600 -o root -g root /dev/null "$PWFILE"
         SPA=$($K get clients -r master -q clientId=lahendus.ut.ee --fields id --format csv --noquotes | head -1)
+        [ -n "$SPA" ] || { echo "the SPA client lahendus.ut.ee does not exist in this realm"; exit 1; }
         for who in student teacher; do
           user="easy-smoke-$who"
           Last=$(echo "$who" | sed 's/./\U&/')
@@ -60,6 +62,7 @@
             $K create users -r master -s username=$user -s enabled=true -s emailVerified=true \
               -s email=$user@example.invalid -s firstName=Smoke -s lastName="$Last" >/dev/null 2>&1 && echo "$user: created"
             U=$($K get users -r master -q username=$user -q exact=true --fields id --format csv --noquotes | head -1)
+            [ -n "$U" ] || { echo "$user: could not be created"; exit 1; }
           else
             $K update users/$U -r master -s firstName=Smoke -s lastName="$Last" -s enabled=true -s emailVerified=true >/dev/null 2>&1
             echo "$user: present"
@@ -70,8 +73,14 @@
             # keycloak account only; the value appears nowhere else. No quote marks in comments here:
             # the free-form shell module splits on them.
             pw=$(head -c 30 /dev/urandom | base64 | tr -d '/+=')
-            $K set-password -r master --username $user --new-password "$pw" >/dev/null 2>&1 && echo "$user: password set and recorded in $PWFILE"
-            printf '%s:%s\n' "$user" "$pw" >> "$PWFILE"
+            # Recorded only if the IdP took it: a line for a password the IdP never had would make
+            # every later run skip this, and the suite fail at login with a file that looks complete.
+            if $K set-password -r master --username $user --new-password "$pw" >/dev/null 2>&1; then
+              printf '%s:%s\n' "$user" "$pw" >> "$PWFILE"
+              echo "$user: password set and recorded in $PWFILE"
+            else
+              echo "$user: set-password FAILED"; exit 1
+            fi
           fi
           if $K get users/$U/role-mappings/clients/$SPA -r master --fields name --format csv --noquotes | grep -qx "$who"; then
             echo "$user: role $who present"

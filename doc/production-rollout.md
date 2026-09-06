@@ -56,11 +56,12 @@ every tick (1 min prod, 30 s dev)
                      release migrated or that is unknown → restore the step-4 dump (§6)
                    → mark sha failed, PAUSE, CRITICAL notification
   failure at 1–5 → production untouched, and it depends on why:
-                   the commit's fault (rehearsal died, config key missing, baseline smoke fails
-                     against a working production) → mark sha failed, WARN; not paused — a fixed
-                     commit pushed to the branch deploys on its own
-                   not the commit's fault (GitHub, disk, the backup unit, smoke unconfigured)
-                     → retry after `min_retry_gap_hours`, WARN once a day while it recurs
+                   the commit's fault (rehearsal died, config key missing) → mark sha failed,
+                     WARN; not paused — a fixed commit pushed to the branch deploys on its own
+                   not the commit's fault (GitHub, disk, the backup unit, the CURRENT release
+                     failing its own smoke suite, smoke not yet configured) → retry after
+                     `min_retry_gap_hours` reusing a dump under an hour old, WARN once a day
+                     while it recurs, and after `max_attempts` park the commit with a CRITICAL
   SIGTERM, or the unit's time budget nearly spent → treated as a failure of the current step:
                    rollback if production was touched, record, pause, notify — then exit
 ```

@@ -191,6 +191,13 @@ def test_reports_are_readable():
     assert "smoke: PASS" in text and "executor: good solution" in text
 
 
+def test_not_configured_when_urls_or_course_are_missing():
+    r = sm.run({**CFG, "course_id": ""}, log=lambda m: None, http=FakeEnv(), secrets=SECRETS)
+    assert r.not_configured and "course_id" in r.reason
+    r = sm.run({**CFG, "api_url": ""}, log=lambda m: None, http=FakeEnv(), secrets=SECRETS)
+    assert r.not_configured and "api_url" in r.reason
+
+
 def test_not_configured_when_secrets_are_placeholders_or_broken(tmp_path):
     p = tmp_path / "s.json"
     for content, word in [('{"client_id": "x", "student": {"username": "u", "password": "CHANGEME"}, "teacher": {}}', "placeholder"),

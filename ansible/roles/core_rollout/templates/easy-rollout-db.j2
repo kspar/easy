@@ -207,6 +207,7 @@ SQL
             -p ReadWritePaths="$WORK_DIR" \
             -p StandardOutput="append:$WORK_DIR/core.log" -p StandardError=inherit \
             -p TimeoutStopSec=60 \
+            -p RuntimeMaxSec={{ (core_rollout_rehearsal_timeout_s | int) + 600 }} -p MemoryMax=2G \
             "$JAVA" $JAVA_OPTS -jar "$jar" "--spring.config.location=file:$REHEARSAL_DIR/application.yaml"
         chmod 0640 "$WORK_DIR/core.log" 2>/dev/null || true
         chgrp "$ROLLOUT_USER" "$WORK_DIR/core.log" 2>/dev/null || true

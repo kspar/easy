@@ -133,6 +133,10 @@ core_rollout_stuck_repeat_hours: 24
 # Failures that ARE the commit's (a migration that dies in rehearsal, a config key it needs) park
 # the commit until a person looks.
 core_rollout_min_retry_gap_hours: 0.5
+# … and not forever: after this many such attempts the commit is parked as if the failure were its
+# own, with a CRITICAL, because a reason that was expected to pass and has not is a reason to look.
+# Each attempt costs a baseline smoke run and (unless the last dump is under an hour old) a dump.
+core_rollout_max_attempts: 6
 
 # `easy-rollout deploy-now` expires after this long, so an override left behind for a commit that
 # then failed CI cannot fire weeks later on whatever the branch points at by then.

@@ -91,7 +91,7 @@ executor:
 #                                   core_rollout_branch: prod-releases
 #                                   core_rollout_config_src: "{{ playbook_dir }}/../deploy/prod/config.json"
 #                                   core_rollout_health_url, core_rollout_dev_version_url
-#                                   core_rollout_smoke_web_url / _api_url / _idp_url
+#                                   core_rollout_smoke_api_url (web and idp URLs are derived)
 #                                   core_rollout_smoke_course_id / _exercise_id
 #                                   core_rollout_smoke_executor_version_url
 #                                 and whatever notification values (and, if wanted, optional gates)

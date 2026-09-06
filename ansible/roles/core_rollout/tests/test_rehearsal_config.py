@@ -123,6 +123,14 @@ def test_idp_is_pointed_at_nowhere_so_no_token_is_ever_accepted():
     assert cfg["easy"]["core"]["keycloak"]["base-url"] == "http://127.0.0.1:9"
 
 
+def test_pool_is_small_under_both_spellings():
+    cfg = rehearsal()
+    assert cfg["spring"]["datasource"]["hikari"]["maximum-pool-size"] == 4
+    assert cfg["spring"]["datasource"]["maximum-pool-size"] == 4
+    cfg["spring"]["datasource"]["hikari"]["maximum-pool-size"] = 90
+    assert any("pool" in p for p in rc.problems(cfg, 8091))
+
+
 def test_mail_link_base_is_the_key_core_reads():
     cfg = rehearsal()
     assert cfg["easy"]["web"]["base-url"] == rc.DISCARD

@@ -46,8 +46,9 @@
     fail_msg: >-
       core_rollout_smoke_required is true but the suite is not configured: it needs the web, API and
       IdP URLs and the ids of the smoke course and exercise (core_rollout_smoke_*). See
-      doc/production-rollout.md §setup. Set core_rollout_smoke_required: false to deploy without it,
-      which is a decision worth writing down.
+      doc/production-rollout.md §setup. Set core_rollout_smoke_required: false to deploy while it
+      is not yet set up — the rollout then skips the suite and says so in its record; a suite that
+      IS set up still runs, and still rolls back on failure, whatever this flag says.
     quiet: true
   when:
     - core_rollout_enabled | bool

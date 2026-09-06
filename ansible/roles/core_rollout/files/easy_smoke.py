@@ -570,6 +570,13 @@ def load_secrets(path: str | Path) -> tuple[dict | None, str]:
 
 def run(cfg: dict, expect_sha: str | None = None, log=print, http=urllib_http, tls_days=tls_days_left,
         sleep=time.sleep, secrets: dict | None = None, nonce: str | None = None) -> Report:
+    # No URLs or no course means the suite has not been set up for this environment, which is the
+    # same thing as no credentials: not configured, rather than a run in which every check fails.
+    missing = [k for k in ("web_url", "api_url", "idp_url", "course_id", "exercise_id") if not str(cfg.get(k) or "").strip()]
+    if missing:
+        r = Report(not_configured=True, reason=f"smoke config lacks {', '.join(missing)}")
+        log(r.text())
+        return r
     if secrets is None:
         secrets, why = load_secrets(cfg.get("secrets_file", "/etc/easy/smoke-secrets.json"))
         if secrets is None:

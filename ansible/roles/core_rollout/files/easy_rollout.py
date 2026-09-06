@@ -227,6 +227,7 @@ DEFAULTS: dict = {
         "require_on_master": True,
         "min_gap_hours": 0,
         "min_retry_gap_hours": 0.5,
+        "max_attempts": 6,
         "deploy_now_ttl_hours": 24,
         "stuck_after_hours": 96,
         "stuck_repeat_hours": 24,
@@ -298,11 +299,29 @@ def validate_config(cfg: dict) -> list[str]:
                 datetime.fromisoformat(str(f.get(key)))
             except ValueError:
                 bad.append(f"freeze entry {f!r}: {key} is not a date")
+    try:
+        ZoneInfo(cfg.get("timezone") or "UTC")
+    except Exception:  # noqa: BLE001
+        bad.append(f"timezone {cfg.get('timezone')!r} is not a known timezone")
+    g = cfg["gates"]
+    if g.get("require_seen_on_dev") and not g.get("dev_version_url"):
+        bad.append("gates.require_seen_on_dev is on but gates.dev_version_url is empty — nothing could ever soak")
     return bad
 
 
+def tz_of(cfg: dict) -> str:
+    """The one timezone: schedule times, freeze dates and the window are all read in it."""
+    return cfg.get("timezone") or cfg["window"].get("tz") or "UTC"
+
+
 def load_config(path: Path) -> dict:
-    cfg = deep_merge(DEFAULTS, json.loads(path.read_text()))
+    raw = json.loads(path.read_text())
+    cfg = deep_merge(DEFAULTS, raw)
+    # The window is a variant, not a struct to merge: an inventory that sets days/start/end is
+    # asking for a window, and must not inherit the default's `always: true` underneath it.
+    if isinstance(raw.get("window"), dict):
+        cfg["window"] = dict(raw["window"])
+    cfg["window"].setdefault("tz", cfg.get("timezone") or "UTC")
     cfg["root"] = Path(cfg["root"])
     cfg["state_dir"] = Path(cfg.get("state_dir") or (cfg["root"] / "rollout"))
     bad = validate_config(cfg)
@@ -374,7 +393,7 @@ class State:
             disk = json.loads(self.path.read_text()).get("failed", {})
         except (ValueError, OSError):
             return
-        for sha in [s for s in self.data["failed"] if s not in disk and s != self.data.get("_this_run")]:
+        for sha in [s for s in self.data["failed"] if s not in disk]:
             del self.data["failed"][sha]
 
     # -- convenience --------------------------------------------------------------------------
@@ -675,9 +694,21 @@ class Host:
                       check=False)
         return cp.stdout[-4000:]
 
-    def dump_database(self) -> str:
-        """Take a restore point through the nightly backup unit; returns the dump's path."""
+    def dump_database(self, reuse_younger_than_h: float = 0.0) -> str:
+        """Take a restore point through the nightly backup unit; returns the dump's path.
+
+        A retry of an attempt that already dumped may reuse that dump: the restore point only has
+        to predate the restart, and re-dumping the database every half hour would fill the disk
+        (the backup's retention keeps every dump younger than a few days).
+        """
         before = self.db("newest-dump")
+        if before and reuse_younger_than_h > 0:
+            m = re.search(r"-(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})\.dump$", before)
+            if m:
+                stamp = datetime.fromisoformat(f"{m.group(1)}T{m.group(2)}:{m.group(3)}:00").astimezone()
+                if hours_between(stamp.astimezone(timezone.utc), now_utc()) < reuse_younger_than_h:
+                    log(f"  reusing {before}, younger than {reuse_younger_than_h}h")
+                    return before
         try:
             self.sudo(["/usr/bin/systemctl", "start", self.cfg["dump_service"]], timeout=3600)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
@@ -778,7 +809,7 @@ class Notifier:
         # smtplib adds neither; a message without them is what receiving systems drop or fold
         # into spam first, and Gmail in particular.
         msg["Date"] = email.utils.formatdate(localtime=True)
-        msg["Message-ID"] = email.utils.make_msgid(domain=(m.get("from") or "").split("@")[-1].rstrip(">") or None)
+        msg["Message-ID"] = email.utils.make_msgid(domain=email.utils.parseaddr(m.get("from") or "")[1].rpartition("@")[2] or None)
         msg["Auto-Submitted"] = "auto-generated"
         msg.set_content(body)
         with smtplib.SMTP(m["host"], int(m.get("port", 25)), timeout=30) as s:
@@ -898,12 +929,13 @@ class Rollout:
     """One attempt to move production from `previous` to `sha`, recorded step by step."""
 
     def __init__(self, cfg: dict, host: Host, gh: GitHub, notify: Notifier, smoke, sha: str, run: dict,
-                 deadline: float | None = None):
+                 deadline: float | None = None, attempt: int = 1):
         self.cfg, self.host, self.gh, self.notify, self.smoke = cfg, host, gh, notify, smoke
         self.sha, self.run = sha, run
         self.previous = host.current_sha()
         self.started = now_utc()
         self.deadline = deadline          # time.monotonic() value; None means no budget
+        self.attempt = attempt            # 1 on the first try of this sha, higher on a retry
         self.steps: list[dict] = []
         self.dump: str | None = None
         self.migrates: bool | None = None
@@ -1014,7 +1046,7 @@ class Rollout:
         return "core.jar and web/ in place"
 
     def take_dump(self) -> str:
-        self.dump = self.host.dump_database()
+        self.dump = self.host.dump_database(reuse_younger_than_h=1.0 if self.attempt > 1 else 0.0)
         return self.dump
 
     def changelog_count(self, *args: str) -> int | None:
@@ -1033,8 +1065,15 @@ class Rollout:
             return "disabled by configuration"
         if not self.dump:
             raise RolloutError("no dump to rehearse against")
+        # A rehearsal JVM an earlier run left behind (the process was killed before its `finally`)
+        # is ours to stop, and must be stopped BEFORE the port is judged, or it holds the port and
+        # every later rollout fails here forever.
+        try:
+            host.db("rehearsal-stop")
+        except RolloutError as e:
+            log(f"  warning: {e}")
         if not host.port_free(int(r["port"])):
-            raise RolloutError(f"port {r['port']} is in use — a previous rehearsal may still be running", retryable=True)
+            raise RolloutError(f"port {r['port']} is in use by something other than a rehearsal", retryable=True)
         before = self.changelog_count()
         try:
             host.db("rehearsal-create", self.dump, timeout=3600)
@@ -1049,14 +1088,16 @@ class Rollout:
                 deadline = time.monotonic() + int(r["timeout_s"])
                 while time.monotonic() < deadline:
                     self.check_budget()
+                    # The cheap probe first; the unit's state — a root helper call — only when the
+                    # port does not answer, and a JVM takes tens of seconds to boot at best.
+                    if host.http_status(f"http://127.0.0.1:{r['port']}/v2/") in (401, 403, 200):
+                        break
                     status = host.db("rehearsal-status")
                     if status.startswith("failed") or status == "inactive":
                         raise RolloutError(f"the new release exited ({status}) during the rehearsal — "
                                            f"migration or configuration failure. Last log lines:\n"
                                            + tail_of(log_path))
-                    if host.http_status(f"http://127.0.0.1:{r['port']}/v2/") in (401, 403, 200):
-                        break
-                    sleep(3)
+                    sleep(10)
                 else:
                     raise RolloutError(f"the new release did not answer within {r['timeout_s']}s in the rehearsal:\n"
                                        + tail_of(log_path))
@@ -1316,7 +1357,7 @@ class Controller:
         ok, why = in_window(cfg["window"], now)
         if not ok:
             reasons.append(why)
-        frozen = in_freeze(cfg["freeze"], now, cfg["window"].get("tz", "UTC"))
+        frozen = in_freeze(cfg["freeze"], now, tz_of(cfg))
         if frozen:
             reasons.append(frozen)
         age = hours_between(parse_iso(run["run_started_at"]), now)
@@ -1352,7 +1393,7 @@ class Controller:
         return self.cfg["state_dir"] / "schedule"
 
     def tz(self) -> str:
-        return self.cfg.get("timezone") or self.cfg["window"].get("tz") or "UTC"
+        return tz_of(self.cfg)
 
     def held_until(self, sha: str | None = None) -> datetime | None:
         """The time before which nothing (or only `sha`, if the schedule names one) may deploy."""
@@ -1370,8 +1411,7 @@ class Controller:
             log(f"schedule file holds {parts[0]!r}, not a time; ignoring it")
             return None
         if len(parts) > 1 and sha and not sha.startswith(parts[1]):
-            log(f"schedule names {parts[1]} but the branch points at {short(sha)} — not holding it")
-            return None
+            return None     # names another commit; `status` shows the hold, the tick stays quiet
         return at
 
     def deploy_now(self) -> tuple[str, datetime] | None:
@@ -1484,8 +1524,10 @@ class Controller:
         if d["override"]:
             log(f"deploy-now override for {short(head)} — scheduling gates skipped, checks are not")
             self.deploy_now_file.unlink(missing_ok=True)
-        # A schedule is for one rollout: whatever it held is going out now.
-        self.schedule_file.unlink(missing_ok=True)
+        # A schedule is for one rollout: consumed by the rollout it held and by no other — not by a
+        # hotfix that went past it with deploy-now, and not by a commit it never named.
+        elif self.held_until(head) is not None:
+            self.schedule_file.unlink(missing_ok=True)
         return self.rollout(head, d["run"])
 
     def github_unavailable(self, why: str, now: datetime) -> str:
@@ -1524,8 +1566,9 @@ class Controller:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except OSError:
                 return "another rollout holds the lock"
-            self.state.data["_this_run"] = sha
-            r = Rollout(cfg, self.host, self.gh, self.notify, self.smoke, sha, run, deadline=self.deadline)
+            attempt = int(self.state.candidates.get(sha, {}).get("attempts", 0)) + 1
+            r = Rollout(cfg, self.host, self.gh, self.notify, self.smoke, sha, run, deadline=self.deadline,
+                        attempt=attempt)
             summary = r.execute()
         now = self.clock()
         self.state.reload_failed_from_disk()
@@ -1538,17 +1581,25 @@ class Controller:
             commits = self.gh.commits_between(summary["previous"], sha) if summary["previous"] else []
             self.notify(INFO, f"deployed {short(sha)}",
                         r.report() + "\n\nCommits:\n  " + "\n  ".join(commits or ["(none listed)"]))
-        elif outcome == "aborted" and summary.get("retryable"):
+        elif outcome == "aborted" and summary.get("retryable") and attempt < int(self.cfg["gates"].get("max_attempts", 6)):
             # Production was never touched and the reason is not the commit's: GitHub, the disk,
             # the backup unit, a smoke suite that could not run. Try again after a gap, and say
             # so — once, not on every attempt.
             cand["last_attempt"] = iso(now)
-            cand["reasons"] = [f"attempt at {iso(now)} aborted (will retry): {summary['detail'][:200]}"]
+            cand["attempts"] = attempt
+            cand["reasons"] = [f"attempt {attempt} at {iso(now)} aborted (will retry): {summary['detail'][:200]}"]
             if self.state.notice_due(f"retry-{sha[:8]}", self.cfg["gates"]["stuck_repeat_hours"], now):
                 self.notify(WARN, f"rollout of {short(sha)} aborted before touching production; will retry",
-                            r.report() + f"\n\nRetried no sooner than {self.cfg['gates']['min_retry_gap_hours']}h from now, "
-                            f"at the next window. If this keeps happening, look at the reason above.")
+                            r.report() + f"\n\nRetried no sooner than {self.cfg['gates']['min_retry_gap_hours']}h from now; "
+                            f"given up after {self.cfg['gates'].get('max_attempts', 6)} attempts. If this keeps happening, "
+                            f"look at the reason above.")
                 self.state.noticed(f"retry-{sha[:8]}", now)
+        elif outcome == "aborted" and summary.get("retryable"):
+            # Retryable, but it has been retried enough: the reason is not going away by itself.
+            self.state.failed[sha] = {"at": iso(now), "why": f"gave up after {attempt} attempts: {summary['detail']}"}
+            self.notify(CRITICAL, f"rollout of {short(sha)} gave up after {attempt} attempts",
+                        r.report() + f"\n\nEvery attempt failed before touching production for a reason that was "
+                        f"expected to pass. It did not. `easy-rollout forget {sha[:8]}` once it is fixed.")
         elif outcome == "aborted":
             # Production was never touched and the failure is the commit's. It will not fix itself,
             # so the sha is parked until a person looks — but nothing is paused, because a NEW
@@ -1565,7 +1616,6 @@ class Controller:
             self.notify(CRITICAL, f"{outcome.upper()}: {short(sha)} failed after deploy", r.report() +
                         "\n\nAutomatic rollouts are PAUSED. `easy-rollout status` on the host; "
                         "`easy-rollout resume` when the cause is understood.")
-        self.state.data.pop("_this_run", None)
         self.state.save()
         return outcome
 
@@ -1690,11 +1740,11 @@ def describe_schedule(cfg: dict, text: str) -> str:
         at = parse_iso(parts[0])
     except ValueError:
         return f"{parts[0]!r} is not a time"
-    tz = cfg.get("timezone") or cfg["window"].get("tz") or "UTC"
+    tz = tz_of(cfg)
     local = at.astimezone(ZoneInfo(tz))
     who = f" for {parts[1][:8]}" if len(parts) > 1 else " for whatever the branch points at"
     delta = hours_between(now_utc(), at)
-    when = f"in {delta:.1f}h" if delta > 0 else f"{-delta:.1f}h ago (due)"
+    when = f"in {delta:.1f}h" if delta > 0 else f"{-delta:.1f}h ago — due; deploys as soon as something is pushed"
     return f"{local:%Y-%m-%d %H:%M %Z} ({when}){who}"
 
 
@@ -1786,12 +1836,15 @@ def main(argv: list[str] | None = None) -> int:
             print("schedule cleared — a push to the branch deploys at the next tick")
             return 0
         if not args.when:
+            if args.sha:
+                print("--sha needs a time as well", file=sys.stderr)
+                return 2
             print(f"scheduled     {describe_schedule(cfg, sch.read_text())}" if sch.exists() else "nothing scheduled")
             return 0
-        tz = cfg.get("timezone") or cfg["window"].get("tz") or "UTC"
+        tz = tz_of(cfg)
         try:
             at = parse_when(args.when, tz)
-        except ValueError:
+        except (ValueError, KeyError):
             print(f"cannot read {args.when!r} as a time; try `2026-09-08 04:00`, `04:00` or `+2h`", file=sys.stderr)
             return 2
         if at <= now_utc():

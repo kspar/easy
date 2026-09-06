@@ -86,7 +86,8 @@ class FakeSmoke:
 HARMLESS = {
     "server": {"address": "127.0.0.1", "port": 8091},
     "spring": {"datasource": {"jdbc-url": "jdbc:postgresql://127.0.0.1:5432/easyems_rehearsal",
-                              "username": "easyems_rehearsal"},
+                              "username": "easyems_rehearsal", "maximum-pool-size": 4, "minimum-idle": 1,
+                              "hikari": {"maximum-pool-size": 4, "minimum-idle": 1}},
                "mail": {"host": "127.0.0.1", "port": 9, "properties": {"mail": {"smtp": {"auth": False}}}},
                "security": {"oauth2": {"resourceserver": {"jwt": {
                    "jwk-set-uri": "http://127.0.0.1:9/rehearsal", "issuer-uri": "http://127.0.0.1:9/rehearsal"}}}}},
@@ -197,7 +198,8 @@ class FakeHost(ro.Host):
     def sudo(self, argv, timeout=600):
         self.calls.append(("sudo", *argv))
         if argv[1:3] == ["start", self.cfg["dump_service"]] and self.dump_appends:
-            self.dumps.append(f"/srv/easy/db-dumps/easyems-2026-09-08T0{len(self.dumps)}30.dump")
+            # Stamped with the wall clock, as the real backup unit does, so dump reuse can be tested.
+            self.dumps.append(f"/srv/easy/db-dumps/easyems-{ro.now_utc().astimezone().strftime('%Y-%m-%dT%H%M')}.dump")
 
     # -- HTTP -------------------------------------------------------------------------------
     def http_status(self, url, timeout=10):
@@ -328,10 +330,78 @@ def test_schedule_holds_until_the_time_then_deploys_and_is_consumed(cfg):
     assert not (cfg["state_dir"] / "schedule").exists()
 
 
-def test_schedule_naming_another_sha_does_not_hold_this_one(cfg):
+def test_schedule_naming_another_sha_does_not_hold_this_one_and_survives_it(cfg):
     ctrl, host, _ = make(cfg)
     (cfg["state_dir"] / "schedule").write_text(f"{ro.iso(T0 + timedelta(hours=3))} {'c' * 40}\n")
     assert ctrl.tick() == "deployed"
+    assert (cfg["state_dir"] / "schedule").exists(), "the hold on the other commit is still there"
+
+
+def test_deploy_now_past_a_schedule_does_not_consume_it(cfg):
+    ctrl, host, _ = make(cfg)
+    (cfg["state_dir"] / "schedule").write_text(ro.iso(T0 + timedelta(hours=3)) + "\n")
+    (cfg["state_dir"] / "deploy-now").write_text(f"{NEW} {ro.iso(T0)}\n")
+    assert ctrl.tick() == "deployed"
+    assert (cfg["state_dir"] / "schedule").exists(), "the hotfix went past the hold; the hold stays for the next push"
+
+
+def test_a_configured_window_from_the_inventory_is_enforced(tmp_path):
+    # The documented one-liner: a window without `always: false`. It must not inherit the default's
+    # `always: true` from underneath and become no window at all.
+    p = tmp_path / "c.json"
+    p.write_text(json.dumps({"health_url": "https://x/v2/", "timezone": "Europe/Tallinn",
+                             "window": {"days": ["Tue", "Thu"], "start": "04:00", "end": "05:30"}}))
+    cfg = ro.load_config(p)
+    assert cfg["window"].get("always") is None
+    assert cfg["window"]["tz"] == "Europe/Tallinn", "the window's zone defaults to the environment's"
+    assert ro.in_window(cfg["window"], datetime(2026, 9, 12, 9, 0, tzinfo=timezone.utc))[0] is False   # Saturday
+    assert ro.in_window(cfg["window"], datetime(2026, 9, 8, 1, 30, tzinfo=timezone.utc))[0] is True    # Tuesday 04:30
+    p.write_text(json.dumps({"health_url": "https://x/v2/", "window": {"days": ["Tue"], "start": "bad", "end": "05:30"}}))
+    with pytest.raises(ro.RolloutError, match="window.start"):
+        ro.load_config(p)
+
+
+def test_freeze_is_read_in_the_environments_timezone_not_utc(cfg):
+    cfg["timezone"] = "Europe/Tallinn"
+    cfg["freeze"] = [{"from": "2026-09-08", "to": "2026-09-08", "reason": "x"}]
+    # 23:30 UTC on the 7th is 02:30 on the 8th in Tallinn: frozen.
+    ctrl, host, _ = make(cfg, now=datetime(2026, 9, 7, 23, 30, tzinfo=timezone.utc))
+    assert ctrl.tick() == "gated"
+    assert any("frozen" in r for r in ctrl.state.candidates[NEW]["reasons"])
+
+
+def test_soak_gate_without_a_dev_url_is_refused_at_load(tmp_path):
+    p = tmp_path / "c.json"
+    p.write_text(json.dumps({"health_url": "https://x/v2/", "gates": {"require_seen_on_dev": True}}))
+    with pytest.raises(ro.RolloutError, match="dev_version_url"):
+        ro.load_config(p)
+
+
+def test_retryable_aborts_are_capped_and_reuse_a_fresh_dump(cfg):
+    cfg["gates"]["min_retry_gap_hours"] = 0
+    cfg["gates"]["max_attempts"] = 3
+    host = FakeHost(cfg, rehearsal_exit=None)
+    host.port_free = lambda port: False          # something else holds the port: retryable, every time
+    ctrl, host, notify = make(cfg, host=host)
+    dumps_before = len(host.dumps)
+    for i in range(1, 3):
+        assert ctrl.tick() == "aborted", i
+        assert NEW not in ctrl.state.failed
+        assert ctrl.state.candidates[NEW]["attempts"] == i
+    assert ctrl.tick() == "aborted"
+    assert NEW in ctrl.state.failed, "parked after max_attempts"
+    assert "gave up after 3 attempts" in ctrl.state.failed[NEW]["why"]
+    assert notify.severities()[-1] == ro.CRITICAL
+    # Attempts after the first reused the dump the first one took (the fake stamps dumps "now").
+    assert len(host.dumps) - dumps_before == 1
+
+
+def test_leaked_rehearsal_is_stopped_before_the_port_is_judged(cfg):
+    ctrl, host, _ = make(cfg)
+    ctrl.tick()
+    kinds = [c[:2] for c in host.calls if c[0] == "db"]
+    assert ("db", "rehearsal-stop") in kinds
+    assert kinds.index(("db", "rehearsal-stop")) < kinds.index(("db", "rehearsal-create"))
 
 
 def test_parse_when_reads_local_times_relative_times_and_next_occurrence(monkeypatch):
@@ -510,8 +580,10 @@ def test_a_good_release_deploys_in_order(cfg):
     assert host.current_sha() == NEW
     kinds = [c[0] if c[0] != "db" else f"db:{c[1]}" for c in host.calls]
     # dump before rehearsal, rehearsal before activate, activate before restart; nothing rolled back
-    assert kinds.index("sudo") < kinds.index("db:rehearsal-create") < kinds.index("db:rehearsal-run") \
-        < kinds.index("db:rehearsal-stop") < kinds.index("db:rehearsal-drop") < kinds.index("activate") < kinds.index("restart")
+    run_at = kinds.index("db:rehearsal-run")
+    stop_after_run = run_at + kinds[run_at:].index("db:rehearsal-stop")
+    assert kinds.index("sudo") < kinds.index("db:rehearsal-create") < run_at \
+        < stop_after_run < kinds.index("db:rehearsal-drop") < kinds.index("activate") < kinds.index("restart")
     assert "db:restore" not in kinds
     assert notify.severities() == [ro.INFO]
     assert "EZ-1 the change" in notify.sent[0][2]
@@ -654,6 +726,13 @@ def test_old_jar_unit_down_after_migrating_release_restores_the_dump(cfg):
     assert host.restored_from == host.dumps[-1], "restored from the dump taken in THIS rollout"
     assert notify.severities() == [ro.CRITICAL]
     assert (cfg["state_dir"] / "pause").exists()
+
+
+def test_first_attempt_never_reuses_an_old_dump(cfg):
+    ctrl, host, _ = make(cfg)
+    host.dumps = ["/srv/easy/db-dumps/easyems-" + ro.now_utc().astimezone().strftime("%Y-%m-%dT%H%M") + ".dump"]
+    ctrl.tick()
+    assert len(host.dumps) == 2, "a fresh dump on the first attempt, however recent the last one"
 
 
 def test_old_jar_unit_down_with_unknown_schema_change_restores_under_auto(cfg):

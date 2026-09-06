@@ -67,6 +67,8 @@ JWT_KEYS = (
     "spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
     "spring.security.oauth2.resourceserver.jwt.issuer-uri",
 )
+POOL_SIZES = {"maximum-pool-size": 4, "minimum-idle": 1}
+POOL_KEYS = tuple(f"spring.datasource.{p}{k}" for p in ("", "hikari.") for k in POOL_SIZES)
 
 
 def _get(d: dict, path: str, default=None):
@@ -110,6 +112,12 @@ def transform(prod: dict, port: int, db_password: str, secret_key_paths: list[st
     _set(cfg, "spring.datasource.jdbc-url", f"jdbc:postgresql://{db_host}:{db_port}/{REHEARSAL_DB}")
     _set(cfg, "spring.datasource.username", REHEARSAL_DB_USER)
     _set(cfg, "spring.datasource.password", db_password)
+    # A small pool: the rehearsal shares the cluster with the live core, whose own pool may be large,
+    # and the cluster's connection limit is finite. Both spellings, because core binds
+    # `spring.datasource.*` straight onto the Hikari datasource (DatabaseConf.kt) and the nested
+    # `hikari.` block production's template writes may or may not take effect.
+    for key in POOL_KEYS:
+        _set(cfg, key, POOL_SIZES[key.rsplit(".", 1)[-1]])
 
     # Every other secret exists by name and is worthless by value.
     for path in secret_key_paths:
@@ -209,6 +217,8 @@ def problems(cfg: dict, port: int) -> list[str]:
     if not str(_get(cfg, "easy.core.keycloak.base-url", "")).startswith("http://127.0.0.1:9"):
         out.append(f"IdP: easy.core.keycloak.base-url is {_get(cfg, 'easy.core.keycloak.base-url')!r}")
     want("easy.core.youtrack.enabled", False, "YouTrack")
+    for key in POOL_KEYS:
+        want(key, POOL_SIZES[key.rsplit(".", 1)[-1]], "connection pool")
     want("easy.web.base-url", DISCARD, "mail link base")
     if _get(cfg, "easy.core.auth-enabled") is not True:
         out.append("auth-enabled must stay true")

@@ -45,18 +45,27 @@
       ansible.builtin.shell:
         cmd: |
           psql -d {{ smoke_db }} -v ON_ERROR_STOP=1 -tA <<'SQL'
+          -- Core's JVM is pinned to UTC and writes wall-clock UTC into timestamp columns; this
+          -- session must agree, or every now() below is hours off from core's point of view.
+          SET TIME ZONE 'UTC';
           DO $$ BEGIN
             IF (SELECT count(*) FROM account WHERE username IN ('easy-smoke-student', 'easy-smoke-teacher')) <> 2 THEN
               RAISE EXCEPTION 'the smoke accounts have not checked in yet';
             END IF;
-            IF NOT EXISTS (SELECT 1 FROM container_image WHERE id IN ('{{ smoke_images_preferred | join("', '") }}')) THEN
-              RAISE EXCEPTION 'none of the preferred grading images ({{ smoke_images_preferred | join(', ') }}) exists here — see container_image';
+            IF NOT EXISTS (SELECT 1 FROM container_image ci WHERE ci.id IN ('{{ smoke_images_preferred | join("', '") }}')
+                           AND EXISTS (SELECT 1 FROM executor_container_image x JOIN executor e ON e.id = x.executor_id
+                                       WHERE x.container_image_id = ci.id AND NOT e.drain)) THEN
+              RAISE EXCEPTION 'no undrained executor advertises any of the preferred grading images ({{ smoke_images_preferred | join(', ') }})';
             END IF;
           END $$;
           WITH image AS (
-              SELECT id FROM container_image
-              WHERE id IN ('{{ smoke_images_preferred | join("', '") }}')
-              ORDER BY array_position(ARRAY['{{ smoke_images_preferred | join("', '") }}']::text[], id)
+              -- One some executor actually advertises and is not draining: a container_image row can
+              -- outlive the image on every executor, and that would be an exercise nothing grades.
+              SELECT ci.id FROM container_image ci
+              WHERE ci.id IN ('{{ smoke_images_preferred | join("', '") }}')
+                AND EXISTS (SELECT 1 FROM executor_container_image x JOIN executor e ON e.id = x.executor_id
+                            WHERE x.container_image_id = ci.id AND NOT e.drain)
+              ORDER BY array_position(ARRAY['{{ smoke_images_preferred | join("', '") }}']::text[], ci.id)
               LIMIT 1
           ), existing AS (
               SELECT exercise_id AS id FROM exercise_version

@@ -109,7 +109,9 @@ if [ "$DRY_RUN" = false ]; then
     # A host that deploys itself (roles/core_rollout) re-asserts its branch tip on the next tick, so
     # a hand deploy there — a rollback, above all — is undone within minutes unless the rollout is
     # paused first. Refuse rather than let that happen at night; the pause is one command.
-    if ssh "$SSH_TARGET" "systemctl is-active --quiet easy-rollout.timer 2>/dev/null && ! test -e '$REMOTE_ROOT/rollout/pause'"; then
+    # Asked of the program, not inferred from a path: `status` is state-only and runs as anyone in
+    # the deploy group, and it is the one place that knows where the pause file lives.
+    if ssh "$SSH_TARGET" "systemctl is-active --quiet easy-rollout.timer 2>/dev/null && easy-rollout status 2>/dev/null | grep -q '^paused *no'"; then
         die "easy-rollout.timer is active on $SSH_TARGET and not paused: the next tick would put the branch tip back.
   Pause it first:   ssh $SSH_TARGET easy-rollout pause 'manual deploy of $REF'
   Or roll back through it, which pauses and records the failure itself:
