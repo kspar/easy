@@ -21,10 +21,16 @@ name: Pins auto-merge
 #    ref takes the head SHA of the run that triggered it — that is, the pull request's code — into a
 #    job holding a write token. Naming `master` is what keeps `bin/pins.py` and
 #    `.github/pins-bumpers.yml` the versions a contributor cannot edit.
-# 2. **The pull request is looked up by head SHA, not read out of the event.**
+# 2. **The pull request is found by matching the head SHA against this repository's open pull
+#    requests.** There are two ways to get this wrong and the first two attempts took both.
 #    `workflow_run.pull_requests` is empty for pull requests from forks — documented behaviour that
 #    reads like a bug and would silently make this job do nothing on exactly the pull requests it
-#    exists for.
+#    exists for. So was `/commits/<sha>/pulls`, which replaced it: that endpoint answers for commits
+#    in *this* repository, and a fork's head commit is not one. Every bump this workflow exists for
+#    comes from a fork, so for its whole life it looked up nothing, found nothing, and merged
+#    nothing, saying `nothing to do` each time. Listing open pull requests and comparing head SHAs
+#    is the version that works, because a fork pull request is on this repository's own list even
+#    though its commits are not. Whatever replaces it must be checked against a fork.
 # 3. **Every required check is verified here.** Not "the run that triggered me was green": that is
 #    one workflow of several, and a check with the right name going green proves nothing when the
 #    pull request supplied the workflow that produced it.
@@ -66,11 +72,18 @@ jobs:
           REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          # See note 2. A fork pull request is not in workflow_run.pull_requests.
-          gh api "/repos/$REPO/commits/$HEAD_SHA/pulls" > pulls.json
+          # See note 2. Neither workflow_run.pull_requests nor /commits/<sha>/pulls can see a fork
+          # pull request, and a fork pull request is the only kind this job was built for. This list
+          # can: the pull request belongs to this repository even when its commits do not.
+          #
+          # --limit caps the listing rather than paginating forever. Past it a pull request would
+          # not be found and this job would decline to merge, which is the direction to fail in.
+          gh pr list --repo "$REPO" --state open --limit 200 --json number,headRefOid > pulls.json
           # Exactly one open pull request, or nothing. A commit that somehow belongs to two open
           # pull requests is not a situation to guess about.
-          number="$(jq -r '[.[] | select(.state == "open")] | if length == 1 then .[0].number else "" end' pulls.json)"
+          #
+          # The SHA is passed to jq as a named argument, not interpolated into the program text.
+          number="$(jq -r --arg sha "$HEAD_SHA" '[.[] | select(.headRefOid == $sha)] | if length == 1 then .[0].number else "" end' pulls.json)"
           if [ -z "$number" ]; then
             echo "no single open pull request for $HEAD_SHA; nothing to do"
             echo "found=false" >> "$GITHUB_OUTPUT"
