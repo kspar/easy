@@ -47,7 +47,7 @@ import ConfirmDialog from '../../components/ConfirmDialog.tsx'
 import MarkdownToolbar from '../../components/markdown/MarkdownToolbar.tsx'
 import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.ts'
-import { useFileDropExtension } from '../../components/markdown/useFileDropExtension.ts'
+import { useFileDropAndPasteExtension } from '../../components/editorFileDrop.ts'
 import { COMPACT_TOOLS } from '../../components/markdown/markdownTools.ts'
 import { applyFormat } from '../../components/markdown/markdownActions.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
@@ -716,7 +716,7 @@ function CommentEditor({
   const [toolbarView, setToolbarView] = useState<EditorView | null>(null)
 
   const { uploadFiles, uploading, error: uploadError, clearError } = useMarkdownUpload()
-  const dropExtension = useFileDropExtension(
+  const dropExtension = useFileDropAndPasteExtension(
     useCallback((files: File[]) => {
       if (innerViewRef.current) void uploadFiles(innerViewRef.current, files)
     }, [uploadFiles]),

@@ -136,14 +136,26 @@ def test_digest_is_stable_and_short():
 
 
 def test_digest_changes_when_a_pin_changes():
+    """The changed value is derived from the loaded one, never written out as a literal.
+
+    This test used to move silmused to a hardcoded "1.7.12", which was fine for exactly as long as
+    nobody bumped silmused to 1.7.12. When Martti did, `base` already said 1.7.12, `moved` was the
+    same dict, and the test failed on the one pull request it was least entitled to block — a
+    correct one-line bump by the person the allowlist exists to let through. A sentinel that a real
+    pin can collide with is not a sentinel, so the mutation below is relative to whatever is on
+    disk and cannot coincide with it.
+    """
     base = pins.load("dev")
-    moved = dict(base, **{"silmused.SILMUSED_VERSION": "1.7.12"})
+    key = "silmused.SILMUSED_VERSION"
+    moved = dict(base, **{key: base[key] + ".1"})
     assert pins.digest("dev", "silmused", base) != pins.digest("dev", "silmused", moved)
 
 
 def test_digest_changes_when_the_rebuild_serial_changes():
+    # Derived rather than hardcoded, for the reason above: bumping the serial to the literal this
+    # once used would have broken this test the same way.
     base = pins.load("dev")
-    moved = dict(base, **{"rebuild.SERIAL": "999"})
+    moved = dict(base, **{"rebuild.SERIAL": str(int(base["rebuild.SERIAL"]) + 1)})
     assert pins.digest("dev", "silmused", base) != pins.digest("dev", "silmused", moved)
 
 

@@ -7,7 +7,7 @@ import MarkdownToolbar from './MarkdownToolbar.tsx'
 import { FULL_TOOLS, type MarkdownTool } from './markdownTools.ts'
 import { applyFormat, insertCodeBlock, insertLink } from './markdownActions.ts'
 import { useMarkdownUpload } from './useMarkdownUpload.ts'
-import { useFileDropExtension } from './useFileDropExtension.ts'
+import { useFileDropAndPasteExtension } from '../editorFileDrop.ts'
 
 /**
  * A Markdown source editor with a formatting toolbar and the usual keyboard shortcuts.
@@ -72,7 +72,7 @@ export default function MarkdownEditor({
     },
     [view, uploadFiles],
   )
-  const dropExtension = useFileDropExtension(uploadEnabled ? onFiles : null)
+  const dropExtension = useFileDropAndPasteExtension(uploadEnabled ? onFiles : null)
 
   useEffect(() => {
     if (markdownExtension) return

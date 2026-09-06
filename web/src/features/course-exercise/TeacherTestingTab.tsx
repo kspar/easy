@@ -8,6 +8,7 @@ import {
   Divider,
   List,
   ListItemButton,
+  Snackbar,
   Typography,
 } from '@mui/material'
 import {
@@ -34,6 +35,8 @@ import type {
 } from '../../api/types.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import { useFileDropExtension } from '../../components/editorFileDrop.ts'
+import { readSolutionFile, solutionFileErrorKey } from './solutionFile.ts'
 
 export default function TeacherTestingTab({
   exerciseId,
@@ -64,6 +67,7 @@ export default function TeacherTestingTab({
 
   const [result, setResult] = useState<TeacherAutoassessResp | null>(null)
   const [prevSubsOpen, setPrevSubsOpen] = useState(false)
+  const [snackMsg, setSnackMsg] = useState<string | null>(null)
 
   // Newest first, and only this teacher's, so [0] is the last thing *you* tested. See
   // ReadLatestTeacherSubmissions.
@@ -87,6 +91,35 @@ export default function TeacherTestingTab({
     contentRef.current = null
   }, [exerciseId])
 
+  /**
+   * A dropped file is the solution to test, same as in the student's editor — the two are the same
+   * box to a teacher checking their own exercise, and one of them accepting a drag while the other
+   * throws the page away is not a distinction anyone would predict.
+   *
+   * Declared above the editor effect because that effect lists the drop extension as a dependency.
+   */
+  const loadSolutionFile = useCallback((files: File[]) => {
+    const file = files[0]
+    if (!file) return
+    void readSolutionFile(file).then((result) => {
+      if (!result.ok) {
+        setSnackMsg(t(solutionFileErrorKey(result.reason)))
+        return
+      }
+      const view = viewRef.current
+      if (!view) return
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: result.text },
+      })
+      view.focus()
+      // So a rebuild — a theme toggle, a newly arrived previous attempt — keeps the dropped file
+      // rather than reverting to what the server last had.
+      contentRef.current = result.text
+    })
+  }, [t])
+
+  const dropExtension = useFileDropExtension(loadSolutionFile)
+
   // Initialize editor
   useEffect(() => {
     if (!editorContainerRef.current) return
@@ -104,6 +137,7 @@ export default function TeacherTestingTab({
         cmPlaceholder(t('submission.editorPlaceholder')),
         wrapExtension(),
         EditorView.theme({ '.cm-content': { paddingTop: '4px' } }),
+        ...(dropExtension ?? []),
       ]
       if (theme.palette.mode === 'dark') {
         extensions.push(oneDark)
@@ -133,7 +167,7 @@ export default function TeacherTestingTab({
     }
     // `wrapExtension` is stable; listed to satisfy the rule, not to trigger rebuilds — the setting
     // is applied to the live view through the compartment instead.
-  }, [theme.palette.mode, solutionFileName, t, latestSolution, wrapExtension])
+  }, [theme.palette.mode, solutionFileName, t, latestSolution, wrapExtension, dropExtension])
 
   const handleRunTests = useCallback(() => {
     const solution = viewRef.current?.state.doc.toString() ?? ''
@@ -302,6 +336,13 @@ export default function TeacherTestingTab({
           </Typography>
         </>
       )}
+
+      <Snackbar
+        open={snackMsg !== null}
+        autoHideDuration={3000}
+        onClose={() => setSnackMsg(null)}
+        message={snackMsg}
+      />
     </Box>
   )
 }
