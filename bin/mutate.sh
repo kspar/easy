@@ -181,8 +181,8 @@ mutate "recompile/writes-to-superseded-row" \
 
 mutate "recompile/ignores-duplicate-rows" \
   core/src/main/kotlin/core/ems/service/exercise/AdminRecompileTsl.kt \
-  's/val touched = \(differing \+ stale \+ duplicated\)/val touched = (differing + stale)/' \
-  'val touched = (differing + stale)' \
+  's/val touched = \(differing \+ stale \+ duplicated \+ specRewrite\.keys\)/val touched = (differing + stale + specRewrite.keys)/' \
+  'val touched = (differing + stale + specRewrite.keys)' \
   'run_core' \
   'AdminRecompileTslTest.*duplicate is repaired'
 
