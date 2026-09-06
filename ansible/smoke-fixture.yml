@@ -75,7 +75,7 @@
           ), v AS (
               INSERT INTO exercise_version (exercise_id, author_id, valid_from, grader_type, title,
                                             solution_file_name, solution_file_type, auto_exercise_id)
-              SELECT e.id, 'easy-smoke-teacher', now(), 'AUTO', $t${{ smoke_exercise_title }}$t$, 'solution.py', 0, a.id
+              SELECT e.id, 'easy-smoke-teacher', now() - interval '1 day', 'AUTO', $t${{ smoke_exercise_title }}$t$, 'solution.py', 0, a.id
               FROM e, a RETURNING exercise_id
           ), ex AS (
               SELECT coalesce((SELECT id FROM existing), (SELECT exercise_id FROM v)) AS id
@@ -101,10 +101,20 @@
               WHERE NOT EXISTS (SELECT 1 FROM student_course_access WHERE student_id = 'easy-smoke-student' AND course_id = (SELECT id FROM co))
           ), existing_ce AS (
               SELECT id FROM course_exercise WHERE course_id = (SELECT id FROM co) AND exercise_id = (SELECT id FROM ex) LIMIT 1
+          ), backdate AS (
+              -- A row an earlier run made visible "from now" is moved back too.
+              UPDATE course_exercise SET student_visible_from = now() - interval '1 day'
+              WHERE id = (SELECT id FROM existing_ce) AND student_visible_from > now() - interval '1 day'
+          ), backdate_version AS (
+              UPDATE exercise_version SET valid_from = now() - interval '1 day'
+              WHERE exercise_id = (SELECT id FROM ex) AND valid_to IS NULL AND valid_from > now() - interval '1 day'
           ), ce AS (
               INSERT INTO course_exercise (course_id, exercise_id, created_at, modified_at, grade_threshold,
                                            student_visible_from, ordering_index, assessments_student_visible, instructions_md)
-              SELECT co.id, ex.id, now(), now(), 100, now(), 0, true,
+              -- Visible since yesterday, not since now(): core compares the column with the JVM's clock
+              -- in its own zone, and on a host whose database session zone differs, "now" can sit hours
+              -- in the future. A day covers any zone.
+              SELECT co.id, ex.id, now(), now(), 100, now() - interval '1 day', 0, true,
                      'Print exactly `Hello, smoke!`. This exercise exists for the automatic smoke suite; nothing else uses it.'
               FROM co, ex WHERE NOT EXISTS (SELECT 1 FROM existing_ce) RETURNING id
           )
