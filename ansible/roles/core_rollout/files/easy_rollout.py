@@ -66,6 +66,7 @@ one record per rollout under `rollouts/`), all of it plain text a person can rea
 from __future__ import annotations
 
 import argparse
+import email.utils
 import fcntl
 import filecmp
 import json
@@ -769,6 +770,11 @@ class Notifier:
         msg["Subject"] = subject
         msg["From"] = m.get("from") or f"easy-rollout@{socket.getfqdn()}"
         msg["To"] = ", ".join(m["to"])
+        # smtplib adds neither; a message without them is what receiving systems drop or fold
+        # into spam first, and Gmail in particular.
+        msg["Date"] = email.utils.formatdate(localtime=True)
+        msg["Message-ID"] = email.utils.make_msgid(domain=(m.get("from") or "").split("@")[-1].rstrip(">") or None)
+        msg["Auto-Submitted"] = "auto-generated"
         msg.set_content(body)
         with smtplib.SMTP(m["host"], int(m.get("port", 25)), timeout=30) as s:
             if m.get("starttls"):
