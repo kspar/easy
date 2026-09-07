@@ -35,8 +35,20 @@ export default function ReorderExerciseDialog({
   const { t } = useTranslation()
   const reorder = useReorderCourseExercise(courseId)
 
-  // Mounted fresh each time a target is picked, so the initial value is enough
-  const oldIndex = exercise.ordering_idx
+  const orderedAll = [...allExercises].sort((a, b) => a.ordering_idx - b.ordering_idx)
+
+  /**
+   * Where the exercise sits today, as a **position counted from zero** — which is what a slot
+   * below is, and what the endpoint takes. It is not `ordering_idx`: the backend spaces those by
+   * 2^20, so reading one here made the initial `target` a number no slot could ever equal
+   * (EZ-1894). The dialog then opened with the moved exercise drawn nowhere, the list not
+   * scrolled to it, and Move enabled on a position that had not been chosen.
+   *
+   * Mounted fresh each time a target is picked, so the initial value is enough.
+   */
+  const oldIndex = orderedAll.findIndex(
+    (ex) => ex.course_exercise_id === exercise.course_exercise_id,
+  )
   const [target, setTarget] = useState(oldIndex)
 
   const listRef = useRef<HTMLDivElement>(null)
@@ -61,9 +73,9 @@ export default function ReorderExerciseDialog({
 
   // The other exercises, in order — the moved one slots into gap `i`, meaning
   // "after others[i - 1] and before others[i]".
-  const others = allExercises
-    .filter((ex) => ex.course_exercise_id !== exercise.course_exercise_id)
-    .sort((a, b) => a.ordering_idx - b.ordering_idx)
+  const others = orderedAll.filter(
+    (ex) => ex.course_exercise_id !== exercise.course_exercise_id,
+  )
 
   function handleMove() {
     if (target === oldIndex) {

@@ -10,6 +10,18 @@ const COURSE_ID = '9006'
 const hoursFromNow = (h) =>
   new Date(Date.now() + h * 3600_000).toISOString().replace(/\.\d+Z$/, 'Z')
 
+/**
+ * `ordering_idx` the way core actually writes it: spaced by 2^20 (`IDX_STEP` in `ce_idx_norm.kt`),
+ * so that inserting between two neighbours has room without renumbering the course.
+ *
+ * The spacing is the point, and it is why this helper exists rather than a literal. While these
+ * fixtures numbered exercises 0, 1, 2, 3, an `ordering_idx` and a position in the list were the
+ * same number — so EZ-1894, the UI sending one where the reorder endpoint takes the other, was
+ * invisible to every assertion here while every teacher on production hit it on the first move.
+ * A fixture that cannot tell the two apart cannot test the difference between them.
+ */
+const idx = (position) => (position + 1) * 1048576
+
 // completed/started/ungraded/unstarted sum to 12 students on every exercise
 function ex(overrides) {
   return {
@@ -24,7 +36,7 @@ function ex(overrides) {
     soft_deadline: null,
     hard_deadline: null,
     grader_type: 'AUTO',
-    ordering_idx: 0,
+    ordering_idx: idx(0),
     unstarted_count: 4,
     ungraded_count: 0,
     started_count: 2,
@@ -37,25 +49,25 @@ function ex(overrides) {
 // Mutable so the stub can model what the real backend would do
 let exercises = [
   ex({
-    course_exercise_id: '1', exercise_id: 'e1', ordering_idx: 0,
+    course_exercise_id: '1', exercise_id: 'e1', ordering_idx: idx(0),
     library_title: 'Loops and conditions', effective_title: 'Loops and conditions',
     soft_deadline: hoursFromNow(-48), completed_count: 9, started_count: 1, unstarted_count: 2,
   }),
   ex({
-    course_exercise_id: '2', exercise_id: 'e2', ordering_idx: 1,
+    course_exercise_id: '2', exercise_id: 'e2', ordering_idx: idx(1),
     library_title: 'Recursion', effective_title: 'Recursion',
     soft_deadline: hoursFromNow(72), ungraded_count: 3, completed_count: 4,
     started_count: 1, unstarted_count: 4, grader_type: 'TEACHER',
   }),
   ex({
-    course_exercise_id: '3', exercise_id: 'e3', ordering_idx: 2,
+    course_exercise_id: '3', exercise_id: 'e3', ordering_idx: idx(2),
     library_title: 'Lists and dictionaries', effective_title: 'Lists (renamed)',
     title_alias: 'Lists (renamed)',
     student_visible: false, student_visible_from: null,
     completed_count: 0, started_count: 0, ungraded_count: 0, unstarted_count: 12,
   }),
   ex({
-    course_exercise_id: '4', exercise_id: 'e4', ordering_idx: 3,
+    course_exercise_id: '4', exercise_id: 'e4', ordering_idx: idx(3),
     library_title: 'File handling', effective_title: 'File handling',
     student_visible: false, student_visible_from: hoursFromNow(48),
     completed_count: 0, started_count: 0, ungraded_count: 0, unstarted_count: 12,
@@ -135,7 +147,7 @@ test('course-exercises', async ({ launch, check }) => {
       const moving = exercises.find((e) => e.course_exercise_id === id)
       const rest = exercises.filter((e) => e.course_exercise_id !== id)
       rest.splice(body.new_index, 0, moving)
-      exercises = rest.map((e, i) => ({ ...e, ordering_idx: i }))
+      exercises = rest.map((e, i) => ({ ...e, ordering_idx: idx(i) }))
       return {}
     }],
     // PATCH visibility / DELETE from course
@@ -156,7 +168,7 @@ test('course-exercises', async ({ launch, check }) => {
         deletes.push(id)
         exercises = exercises
           .filter((e) => e.course_exercise_id !== id)
-          .map((e, i) => ({ ...e, ordering_idx: i }))
+          .map((e, i) => ({ ...e, ordering_idx: idx(i) }))
         return {}
       }
       return {}
@@ -169,7 +181,7 @@ test('course-exercises', async ({ launch, check }) => {
         exercises = [...exercises, ex({
           course_exercise_id: nid, exercise_id: body.exercise_id,
           library_title: 'Added exercise', effective_title: 'Added exercise',
-          ordering_idx: exercises.length, student_visible: false, student_visible_from: null,
+          ordering_idx: idx(exercises.length), student_visible: false, student_visible_from: null,
           completed_count: 0, started_count: 0, ungraded_count: 0, unstarted_count: 12,
         })]
         return json(route, { id: nid })
@@ -489,6 +501,14 @@ test('course-exercises', async ({ launch, check }) => {
   check('reorder dialog open', await page.locator('text=Move exercise').isVisible())
   const moveBtn = page.getByRole('button', { name: 'Move', exact: true })
   check('Move disabled at current position', await moveBtn.isDisabled())
+  // The dialog's whole premise is showing the course as it will look, so the exercise being
+  // moved has to be drawn *somewhere* in that list. It was not, on production data: the selected
+  // slot was seeded from `ordering_idx` and no slot index could ever match it, so the teacher
+  // picked a destination for an exercise the dialog never showed them (EZ-1894).
+  const dialogRows = await page.locator('[role="dialog"] .MuiBox-root').allInnerTexts()
+  check('the exercise being moved is drawn in the list',
+    dialogRows.join('|').includes('Loops and conditions'),
+    dialogRows.join(' | ').replace(/\n/g, ' ').slice(0, 160))
   await shot('06-reorder-dialog')
   // Pick the last slot
   const slots = page.locator('[aria-label="Move here"]')
@@ -554,7 +574,7 @@ test('course-exercises', async ({ launch, check }) => {
   // ---- 6b. Move up / move down by one ----
   console.log('\n6b. Move up / down')
   exercises = Array.from({ length: 5 }, (_, i) => ex({
-    course_exercise_id: String(300 + i), exercise_id: `e${300 + i}`, ordering_idx: i,
+    course_exercise_id: String(300 + i), exercise_id: `e${300 + i}`, ordering_idx: idx(i),
     library_title: `Item ${i + 1}`, effective_title: `Item ${i + 1}`,
     // Items 2 and 4 hidden, so a Visibility filter leaves a non-contiguous list
     student_visible: i !== 1 && i !== 3,
@@ -608,7 +628,7 @@ test('course-exercises', async ({ launch, check }) => {
     (await titles()).join(','))
 
   // Under a filter, moving must step past the neighbour the teacher can SEE.
-  // Visible-only list is Item 1, Item 3, Item 5 (ordering_idx 0, 2, 4).
+  // Visible-only list is Item 1, Item 3, Item 5 — course positions 0, 2 and 4.
   await page.locator('.MuiChip-root', { hasText: 'Visibility' }).click()
   await page.getByRole('menuitem', { name: 'Visible' }).click()
   await page.waitForTimeout(500)
@@ -653,7 +673,7 @@ test('course-exercises', async ({ launch, check }) => {
   // Reset the course to exactly one exercise that also exists in the library root
   // (e1 / "Loops and conditions"), so select-all has a real duplicate to skip.
   exercises = [ex({
-    course_exercise_id: '400', exercise_id: 'e1', ordering_idx: 0,
+    course_exercise_id: '400', exercise_id: 'e1', ordering_idx: idx(0),
     library_title: 'Loops and conditions', effective_title: 'Loops and conditions',
   })]
   await freshLoad()
@@ -767,7 +787,7 @@ test('course-exercises', async ({ launch, check }) => {
   // ---- 10b. Reorder on a long course scrolls the moved exercise into view ----
   console.log('\n10b. Reorder scroll position')
   exercises = Array.from({ length: 24 }, (_, i) => ex({
-    course_exercise_id: String(200 + i), exercise_id: `e${200 + i}`, ordering_idx: i,
+    course_exercise_id: String(200 + i), exercise_id: `e${200 + i}`, ordering_idx: idx(i),
     library_title: `Exercise ${i + 1}`, effective_title: `Exercise ${i + 1}`,
   }))
   await freshLoad()
@@ -816,7 +836,7 @@ test('course-exercises', async ({ launch, check }) => {
   // ---- 10c. A course with no students shows no progress bar at all ----
   console.log('\n10c. No students')
   exercises = [ex({
-    course_exercise_id: '500', exercise_id: 'e500', ordering_idx: 0,
+    course_exercise_id: '500', exercise_id: 'e500', ordering_idx: idx(0),
     library_title: 'Nobody enrolled', effective_title: 'Nobody enrolled',
     completed_count: 0, started_count: 0, ungraded_count: 0, unstarted_count: 0,
   })]
@@ -833,7 +853,7 @@ test('course-exercises', async ({ launch, check }) => {
 
   // Restore a populated fixture — the dark/mobile sections below assert on bars
   exercises = Array.from({ length: 10 }, (_, i) => ex({
-    course_exercise_id: String(600 + i), exercise_id: `e${600 + i}`, ordering_idx: i,
+    course_exercise_id: String(600 + i), exercise_id: `e${600 + i}`, ordering_idx: idx(i),
     library_title: `Exercise ${i + 1}`, effective_title: `Exercise ${i + 1}`,
   }))
 

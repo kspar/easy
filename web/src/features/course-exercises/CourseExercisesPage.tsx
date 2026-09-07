@@ -305,23 +305,36 @@ function TeacherExercises() {
   }
 
   /**
-   * Step one place up or down. Positions are taken from the *visible* list, not
-   * the full course, so under an active filter the exercise moves past the
-   * neighbour the teacher can actually see rather than appearing not to move at
-   * all. Landing on the neighbour's ordering_idx puts it directly before (up) or
-   * after (down) that neighbour either way.
+   * Step one place up or down.
+   *
+   * *Which* neighbour comes from the **visible** list, so under an active filter the exercise
+   * moves past the neighbour the teacher can actually see rather than appearing not to move at
+   * all. *What is sent* is that neighbour's place in the **full ordered course** — the endpoint
+   * takes a position, counted from zero, not an `ordering_idx` (EZ-1894). The two are the same
+   * number only in a fixture: the real backend spaces `ordering_idx` by 2^20, and every such
+   * value is far past the end of the list, where the endpoint clamps it to the last slot. Both
+   * directions therefore sent every exercise to the bottom, or nowhere at all once it was
+   * already there.
+   *
+   * The neighbour's own position is the right answer in both directions. Removing the moved
+   * exercise shifts everything below it up by one, so inserting at the neighbour's index lands
+   * directly before it going up, and directly after it going down.
    */
   function moveByOne(ex: TeacherCourseExercise, direction: -1 | 1) {
     const neighbour = visible[indexInVisible(ex) + direction]
     if (!neighbour) return
     reorder.mutate(
-      { courseExerciseId: ex.course_exercise_id, newIndex: neighbour.ordering_idx },
+      { courseExerciseId: ex.course_exercise_id, newIndex: positionInCourse(neighbour) },
       { onSuccess: () => setSnackMsg(t('general.moved')) },
     )
   }
 
   function indexInVisible(ex: TeacherCourseExercise) {
     return visible.findIndex((e) => e.course_exercise_id === ex.course_exercise_id)
+  }
+
+  function positionInCourse(ex: TeacherCourseExercise) {
+    return ordered.findIndex((e) => e.course_exercise_id === ex.course_exercise_id)
   }
 
   function openRowMenu(e: MouseEvent<HTMLElement>, ex: TeacherCourseExercise) {
