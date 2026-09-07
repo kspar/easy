@@ -63,6 +63,18 @@ def isolated_grading_image_cache(tmp_path, monkeypatch):
 
     monkeypatch.setattr(containers, "_image_cache", {"at": 0.0, "images": []})
     monkeypatch.setattr(containers, "IMAGE_CACHE_FILE", str(tmp_path / "grading-images.json"))
+    # Two more pieces of global state, added with the marker and the memo (EZ-1899).
+    #
+    # The marker is pointed at a path inside tmp_path that does not exist, so tests see "no change
+    # reported" rather than whatever a real host has at the default location — a developer running
+    # this suite on the grading host itself would otherwise get a different answer from CI.
+    #
+    # The memo is keyed by image id, and the fakes reuse ids across tests by construction, so a
+    # result from one test would otherwise be returned to the next without pip ever being asked.
+    # That would silently pass the tests that count container creations, which are the ones that
+    # exist to catch this.
+    monkeypatch.setattr(containers, "IMAGE_CHANGED_MARKER", str(tmp_path / "changed"))
+    monkeypatch.setattr(containers, "_pip_memo", {})
     containers._refresh_running.clear()
     yield
     containers._refresh_running.clear()

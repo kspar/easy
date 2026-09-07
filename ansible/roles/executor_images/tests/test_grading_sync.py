@@ -375,3 +375,88 @@ def test_a_corrupt_state_file_does_not_stop_a_reconcile(tmp_path):
     path = tmp_path / "state.json"
     path.write_text("{ this is not json")
     assert sync.load_state(str(path)) == {}
+
+
+# ------------------------------------------------------------------------------------------------
+# Telling aae that what is live changed (EZ-1899)
+#
+# aae stats one path per request to decide whether its cached answer predates the last retag. That
+# is the whole protocol, so what these check is that the mtime moves exactly when the bare tag does.
+
+
+def marker(tmp_path):
+    return tmp_path / "changed"
+
+
+def test_making_an_image_live_reports_the_change(tmp_path, logs):
+    docker = FakeDocker({"aaa": {"declared": "tiivad==0.0.34", "installed": "tiivad==0.0.34"}})
+    docker.publish_channel("tiivad", "dev", "aaa")
+    assert not marker(tmp_path).exists()
+
+    run(config(tmp_path), docker, {}, logs)
+
+    assert marker(tmp_path).exists(), "the tag moved and nothing told aae about it"
+
+
+def test_a_revert_reports_the_change_too(tmp_path, logs):
+    # The more important of the two. A revert means the image that just went live grades wrongly,
+    # and the version endpoint must stop naming it — leaving that to the TTL would advertise a known
+    # bad image for as long as the cache lasts.
+    docker = FakeDocker({
+        "old": {"declared": "tiivad==0.0.33", "installed": "tiivad==0.0.33"},
+        "new": {"declared": "tiivad==0.0.34", "installed": "tiivad==0.0.34"},
+    })
+    docker.publish_channel("tiivad", "dev", "new")
+    old_ref = f"{REGISTRY}/tiivad:iold"
+    docker.tags[old_ref] = "sha256:old"
+    docker.tags["tiivad"] = "sha256:old"
+
+    # Counted, not merely existence-checked. The promotion touches the marker before the grade gate
+    # runs, so the file is already there by the time the revert happens — asserting `exists()` here
+    # would pass with the revert's own report deleted, which is the one thing this test is for.
+    touched = []
+    real_touch = sync.touch_changed
+    sync.touch_changed = lambda cfg, log: (touched.append(1), real_touch(cfg, log))[1]
+    try:
+        run(config(tmp_path), docker, {"tiivad": {"inputs": "old", "ref": old_ref}}, logs,
+            grade=graded_wrong)
+    finally:
+        sync.touch_changed = real_touch
+
+    assert docker.tags["tiivad"] == "sha256:old"
+    assert marker(tmp_path).exists()
+    assert len(touched) == 2, "the revert moved the bare tag back without telling aae"
+
+
+def test_steady_state_reports_nothing(tmp_path, logs):
+    # No retag, no report. Touching this every five minutes regardless would make aae refresh on
+    # every pass and turn its cache back into a decoration.
+    docker = FakeDocker({"aaa": {"declared": "tiivad==0.0.34", "installed": "tiivad==0.0.34"}})
+    docker.publish_channel("tiivad", "dev", "aaa")
+    docker.make_live("tiivad", "aaa", ["tiivad:tsl-compose"])
+
+    run(config(tmp_path), docker, {"tiivad": {"inputs": "aaa", "ref": f"{REGISTRY}/tiivad:iaaa"}},
+        logs)
+
+    assert not marker(tmp_path).exists()
+
+
+def test_a_marker_that_cannot_be_written_is_logged_and_not_fatal(tmp_path, logs):
+    # aae falls back to its own TTL, which is the behaviour that existed before any of this — so a
+    # read-only state directory must not stop an image going live.
+    cfg = dict(config(tmp_path), changed_marker="/definitely/not/writable/changed")
+    docker = FakeDocker({"aaa": {"declared": "tiivad==0.0.34", "installed": "tiivad==0.0.34"}})
+    docker.publish_channel("tiivad", "dev", "aaa")
+
+    run(cfg, docker, {}, logs)
+
+    assert docker.tags["tiivad"] == "sha256:aaa"
+    assert any("could not touch" in m for m in logs)
+
+
+def test_the_marker_defaults_beside_the_state_file(tmp_path):
+    # It cannot go near aae's own cache file: that lives under the service's PrivateTmp, which
+    # nothing outside the unit can write to. The state directory is the one path both can name.
+    cfg = config(tmp_path)
+    assert sync.changed_marker_path(cfg) == str(tmp_path / "changed")
+    assert sync.changed_marker_path(dict(cfg, changed_marker="/elsewhere/x")) == "/elsewhere/x"

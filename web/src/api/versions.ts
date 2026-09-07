@@ -75,9 +75,15 @@ export function useVersions(enabled: boolean) {
     // Not asked for at all unless the viewer may have it, so a student loading the About page does
     // not spend a request earning a 403. Same shape as `useOperatingInfo`.
     enabled,
-    // A deployed version changes only when someone deploys, and core caches the executor half for
-    // five minutes anyway — re-asking on every focus would be pure noise.
-    staleTime: 5 * 60 * 1000,
+    // No staleTime, deliberately. The five minutes that used to be here cited core's own cache as
+    // the reason, and that cache was itself justified by the endpoint being public — which it has
+    // not been since EZ-1782. One obsolete premise, inherited twice.
+    //
+    // Asking again on focus is what makes this page trustworthy: coming back to a tab is exactly
+    // when somebody is checking whether a deploy landed, and it is the moment the old value is most
+    // likely to be wrong and most likely to be believed. Core answers from a thirty-second cache,
+    // so the cost of asking is one cheap request (EZ-1899).
+    staleTime: 0,
     retry: false,
   })
 }

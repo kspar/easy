@@ -19,6 +19,7 @@
   "registry": {{ executor_grading_registry | to_json }},
   "channel": {{ executor_grading_channel | to_json }},
   "state_path": {{ executor_grading_state | to_json }},
+  "changed_marker": {{ executor_grading_changed_marker | to_json }},
   "keep": {{ executor_grading_keep | int }},
   "min_free_gb": {{ executor_grading_min_free_gb | int }},
   "executor_url": {{ executor_grading_executor_url | to_json }},

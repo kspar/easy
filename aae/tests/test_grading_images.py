@@ -11,6 +11,7 @@ code.
 import json
 import os
 import sys
+from time import sleep
 
 import pytest
 
@@ -401,3 +402,147 @@ def test_an_unwritable_cache_file_degrades_to_memory_only(monkeypatch):
     containers._write_cache_file(
         "/definitely/not/writable/cache.json", {"at": containers.time(), "images": []}
     )  # must not raise
+
+
+# ------------------------------------------------------------------------------------------------
+# Asking pip at most once per image (EZ-1899)
+
+
+def unlabelled(name, image_id=None):
+    """An image with no installed label — production's shape, and the only one pip is asked about."""
+    return FakeImage(image_id or ("sha256:" + name * 8), [f"{name}:latest"], {})
+
+
+def test_pip_is_asked_once_per_image_however_often_the_list_is_rebuilt(monkeypatch):
+    image = unlabelled("silmused")
+    fake = FakeDocker([image], pip_payload=[{"name": "silmused", "version": "1.7.4"}])
+    monkeypatch.setattr(containers.docker, "from_env", lambda: fake)
+
+    first = containers._refresh_grading_images(FakeLogger())
+    second = containers._refresh_grading_images(FakeLogger())
+
+    # The point of the memo. An image id names one immutable set of layers, so the second rebuild
+    # has nothing new to learn and must not start a container on a host that grades student code.
+    assert len(fake.containers.created) == 1
+    assert first == second
+    assert first[0]["libraries"][0]["installed"] == "1.7.4"
+
+
+def test_a_different_image_id_is_asked_separately(monkeypatch):
+    # Same name, new build. The bare tag moves and the id changes, which is precisely the case the
+    # memo must not swallow — answering for the old image would be worse than not caching at all.
+    old = unlabelled("silmused", image_id="sha256:" + "a" * 12)
+    fake = FakeDocker([old], pip_payload=[{"name": "silmused", "version": "1.7.4"}])
+    monkeypatch.setattr(containers.docker, "from_env", lambda: fake)
+    containers._refresh_grading_images(FakeLogger())
+
+    new = unlabelled("silmused", image_id="sha256:" + "b" * 12)
+    fresh = FakeDocker([new], pip_payload=[{"name": "silmused", "version": "1.0.0"}])
+    monkeypatch.setattr(containers.docker, "from_env", lambda: fresh)
+    images = containers._refresh_grading_images(FakeLogger())
+
+    assert len(fresh.containers.created) == 1
+    assert images[0]["libraries"][0]["installed"] == "1.0.0"
+
+
+def test_a_failed_inspection_is_retried_rather_than_remembered(monkeypatch):
+    # A daemon that was busy, or a container that hit the timeout, is a moment rather than a fact.
+    # Memoising the empty answer would turn one bad second into a permanently blank row.
+    image = unlabelled("silmused")
+    failing = FakeDocker([image], pip_payload=[], fail=True)
+    monkeypatch.setattr(containers.docker, "from_env", lambda: failing)
+    assert containers._refresh_grading_images(FakeLogger())[0]["source"] == "unknown"
+
+    working = FakeDocker([image], pip_payload=[{"name": "silmused", "version": "1.7.4"}])
+    monkeypatch.setattr(containers.docker, "from_env", lambda: working)
+    images = containers._refresh_grading_images(FakeLogger())
+    assert images[0]["libraries"][0]["installed"] == "1.7.4"
+
+
+# ------------------------------------------------------------------------------------------------
+# The change marker, which is what makes this current rather than merely recent (EZ-1899)
+
+
+def test_a_touched_marker_invalidates_a_warm_cache(monkeypatch, tmp_path):
+    marker = tmp_path / "changed"
+    monkeypatch.setattr(containers, "IMAGE_CHANGED_MARKER", str(marker))
+    monkeypatch.setattr(
+        containers, "_image_cache", {"at": containers.time() - 1, "images": [{"name": "before"}]}
+    )
+    marker.write_text("")  # the reconciler, having just moved a bare tag
+
+    monkeypatch.setattr(containers, "_refresh_grading_images", lambda logger: [{"name": "after"}])
+    # The first read after a change still answers from the old list — the refresh is deliberately off
+    # the request path — but it starts the refresh rather than waiting out the TTL.
+    containers.grading_images(FakeLogger())
+    _wait_for_refresh()
+    assert containers.grading_images(FakeLogger()) == [{"name": "after"}]
+
+
+def test_an_absent_marker_leaves_a_warm_cache_alone(monkeypatch, tmp_path):
+    # A host with no reconciler, or one where it has not run yet. Absent has to mean "nothing has
+    # been reported": read as "changed", every request would refresh and the cache would be a
+    # decoration.
+    monkeypatch.setattr(containers, "IMAGE_CHANGED_MARKER", str(tmp_path / "never-written"))
+    monkeypatch.setattr(
+        containers, "_image_cache", {"at": containers.time(), "images": [{"name": "tiivad"}]}
+    )
+
+    def boom(logger):
+        raise AssertionError("refreshed with nothing having reported a change")
+
+    monkeypatch.setattr(containers, "_refresh_grading_images", boom)
+    assert containers.grading_images(FakeLogger()) == [{"name": "tiivad"}]
+
+
+def test_a_cache_file_written_before_the_change_is_not_adopted(monkeypatch, tmp_path):
+    # The file is shared between gunicorn workers, so without this check one worker would keep
+    # handing every other worker an answer from before the retag — the staleness the marker exists
+    # to end, reintroduced through the side door.
+    marker = tmp_path / "changed"
+    marker.write_text("")
+    monkeypatch.setattr(containers, "IMAGE_CHANGED_MARKER", str(marker))
+
+    path = tmp_path / "cache.json"
+    path.write_text(
+        json.dumps({"at": os.path.getmtime(marker) - 1, "images": [{"name": "from-before"}]})
+    )
+    monkeypatch.setattr(containers, "IMAGE_CACHE_FILE", str(path))
+
+    monkeypatch.setattr(containers, "_refresh_grading_images", lambda logger: [{"name": "after"}])
+    containers.grading_images(FakeLogger())
+    _wait_for_refresh()
+    assert containers.grading_images(FakeLogger()) == [{"name": "after"}]
+
+
+def test_a_retag_during_a_refresh_is_not_stamped_as_already_included(monkeypatch, tmp_path):
+    """The refresh is stamped with when it started, not when it finished.
+
+    A refresh takes real time — an unlabelled image costs a container and up to PIP_TIMEOUT_SEC — and
+    the reconciler fires on its own timer. Stamped on completion, a retag landing in that window sits
+    *before* the stamp, so the list looks current and the change stays invisible for a whole TTL.
+    """
+    marker = tmp_path / "changed"
+    monkeypatch.setattr(containers, "IMAGE_CHANGED_MARKER", str(marker))
+
+    def slow_refresh(logger):
+        # The reconciler, retagging while we are still reading the daemon.
+        marker.write_text("")
+        return [{"name": "read-before-the-retag"}]
+
+    monkeypatch.setattr(containers, "_refresh_grading_images", slow_refresh)
+    containers.grading_images(FakeLogger())
+    _wait_for_refresh()
+
+    # The list now in the cache was read before that retag, so the next read must not accept it.
+    monkeypatch.setattr(containers, "_refresh_grading_images", lambda logger: [{"name": "after"}])
+    containers.grading_images(FakeLogger())
+    _wait_for_refresh()
+    assert containers.grading_images(FakeLogger()) == [{"name": "after"}]
+
+
+def _wait_for_refresh(timeout=2.0):
+    """The refresh runs on a background thread by design, so the assertion has to wait for it."""
+    deadline = containers.time() + timeout
+    while containers._refresh_running.is_set() and containers.time() < deadline:
+        sleep(0.01)

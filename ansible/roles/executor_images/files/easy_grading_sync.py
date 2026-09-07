@@ -175,6 +175,37 @@ def load_state(path):
         return {}
 
 
+def changed_marker_path(cfg):
+    """Where this reports that what is live has changed. Beside the state file unless told otherwise.
+
+    Deliberately not next to aae's own cache file: the executor unit sets `PrivateTmp=true`, so its
+    tempdir is a namespace of its own that nothing here could write into. The state directory is the
+    one place both this and aae can name.
+    """
+    configured = cfg.get("changed_marker")
+    if configured:
+        return configured
+    return os.path.join(os.path.dirname(os.path.abspath(cfg["state_path"])), "changed")
+
+
+def touch_changed(cfg, log):
+    """Report a change to aae, which stats this path on every request to `/v1/version`.
+
+    An mtime is the whole protocol. There is nothing to parse, nothing to keep in step, and no
+    endpoint to authenticate — and if this fails, aae falls back to its own TTL and catches up on a
+    timer, which is exactly the behaviour that existed before this file touched anything.
+    """
+    path = changed_marker_path(cfg)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        # Created if absent, and its mtime moved either way — appending nothing does not move it.
+        with open(path, "a", encoding="utf-8"):
+            pass
+        os.utime(path, None)
+    except OSError as e:
+        log(f"could not touch {path} ({e}); the version endpoint will catch up on its own timer")
+
+
 def save_state(path, state):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = f"{path}.new"
@@ -302,6 +333,7 @@ def _reconcile_one(cfg, docker, state, log, grade, image):
     previous = entry.get("ref")
     for target in [name, *extra_tags]:
         docker.tag(pinned, target)
+    touch_changed(cfg, log)
     log(f"{name}: i{want} is live ({declared})")
 
     # `tiivad:tsl-compose` and friends move with the bare name, because TSL exercises ask for
@@ -311,6 +343,10 @@ def _reconcile_one(cfg, docker, state, log, grade, image):
         if previous:
             for target in [name, *extra_tags]:
                 docker.tag(previous, target)
+            # A revert changes what is live just as much as the promotion did, and it is the more
+            # important of the two to report: the version endpoint must not keep advertising the
+            # image that just failed its grade.
+            touch_changed(cfg, log)
             log(f"{name}: i{want} graded wrong ({detail}) — reverted to {previous}")
         else:
             log(

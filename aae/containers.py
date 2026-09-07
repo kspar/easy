@@ -38,18 +38,39 @@ POLL_INTERVAL_SEC = 0.5
 # unlabelled image is inspected the only way Docker allows: `pip list` inside a throwaway container.
 #
 # That is bounded hard, because this is the machine that runs student code: no network, capped memory,
-# killed after a timeout, removed in a `finally`, at most a few images, once an hour — and created
-# **by image id, never by name**, so this can never become a way to make a grading host fetch
-# something. It retires itself: every image the pipeline builds hits the label path instead.
+# killed after a timeout, removed in a `finally`, at most a few images — and created **by image id,
+# never by name**, so this can never become a way to make a grading host fetch something. It retires
+# itself: every image the pipeline builds hits the label path instead.
+#
+# It also runs at most once per image, ever, because what it answers is a pure function of the image
+# id and an image id is immutable. That is why there is no clock on it: a memo keyed by something
+# that cannot change cannot go stale. Until EZ-1899 this was instead guarded by an hour-long TTL on
+# the whole list, which is the wrong key — it made every answer an hour old to avoid repeating a
+# question whose answer never changes.
 
 LABEL_PREFIX = "easy.grading."
 LABEL_DECLARED = LABEL_PREFIX + "declared"
 LABEL_INSTALLED = LABEL_PREFIX + "installed"
 LABEL_INPUTS = LABEL_PREFIX + "inputs"
 
-# An hour. Nothing here changes except when a deploy changes it, and the About page showing an
-# hour-old answer is not a problem worth paying for on every request.
-IMAGE_CACHE_TTL_SEC = 60 * 60
+# A backstop, not the mechanism. What actually keeps this current is [IMAGE_CHANGED_MARKER]: the
+# reconciler touches it the instant a bare tag moves, and that is the only event that changes any of
+# this. The TTL is here for the cases with no event behind them — somebody running `docker tag` by
+# hand, an image pruned from underneath us — so it can be short now that a refresh costs one
+# `images.list()` and a dictionary lookup per image.
+IMAGE_CACHE_TTL_SEC = 5 * 60
+
+# Touched by easy_grading_sync.py after it retags, and stat'ed on every request — one stat, against
+# a path both can see. It cannot live beside [IMAGE_CACHE_FILE]: the unit sets PrivateTmp=true, so
+# aae's /tmp is its own and the reconciler could not reach a file there if it tried. The state
+# directory is root-owned and world-readable, which is exactly the pair of permissions wanted.
+#
+# An absent marker means "no event has been reported", never "invalidate" — a host without the
+# reconciler, or one where it has not run yet, falls back to the TTL rather than refreshing on
+# every single request.
+IMAGE_CHANGED_MARKER = os.environ.get(
+    "EASY_GRADING_CHANGED_MARKER", "/srv/easy/aae/images/changed"
+)
 # Enough for the four grading images and a little room; a host with hundreds of images is not this
 # script's problem to enumerate.
 IMAGE_INSPECT_LIMIT = 20
@@ -68,6 +89,13 @@ DEFAULT_GRADING_IMAGE_NAMES = ("tiivad", "silmused", "pygrader", "imgrec")
 _image_cache = {"at": 0.0, "images": []}
 _image_cache_lock = threading.Lock()
 _refresh_running = threading.Event()
+
+# image id -> what pip said. Never invalidated, because an image id names one immutable set of
+# layers: the same id cannot come back with different packages in it. Bounded only so a host that
+# churns through images cannot grow it without limit; the entries are a handful of short strings.
+_pip_memo = {}
+_pip_memo_lock = threading.Lock()
+PIP_MEMO_LIMIT = 64
 
 DOCKERFILE_TEMPLATE = '''FROM {}
 COPY student-submission /student-submission
@@ -258,15 +286,30 @@ def _merge(declared, installed):
 
 
 def _installed_from_pip(docker_client, image, packages, logger):
-    """Ask an unlabelled image what it has, by running pip inside it.
+    """Ask an unlabelled image what it has, by running pip inside it. Once per image, ever.
 
     Created **by image id, never by name**: `containers.run("silmused")` would pull a missing image,
     and no read-only endpoint should be able to make a grading host fetch anything. Everything else
     about this call is a bound, because this is the machine that runs student code — no network,
     capped memory, killed on timeout, removed in a finally.
+
+    The memo is keyed by the image id and the packages asked about, and is never invalidated. An id
+    names one immutable set of layers, so the answer for a given id is a constant — which is what
+    lets the list above be refreshed on a five-minute clock instead of an hourly one without this
+    container ever running twice for the same image.
+
+    A failure is deliberately **not** memoised. A daemon that was busy, or a container that hit the
+    timeout, is a transient thing to retry, and remembering `[]` forever would turn one bad moment
+    into a permanently blank row.
     """
     if not packages:
         return []
+
+    key = (image.id, tuple(packages))
+    with _pip_memo_lock:
+        if key in _pip_memo:
+            return list(_pip_memo[key])
+
     container = None
     try:
         container = docker_client.containers.create(
@@ -280,7 +323,15 @@ def _installed_from_pip(docker_client, image, packages, logger):
         # stdout only: pip writes warnings to stderr, and mixing them in would corrupt the JSON.
         raw = container.logs(stdout=True, stderr=False).decode("utf-8", "replace")
         listed = {entry["name"].lower(): entry["version"] for entry in json.loads(raw)}
-        return [{"name": name, "version": listed[name]} for name in packages if name in listed]
+        found = [{"name": name, "version": listed[name]} for name in packages if name in listed]
+        with _pip_memo_lock:
+            # Cleared wholesale rather than evicted one by one: this holds at most a handful of
+            # entries on any real host, so reaching the limit means something unusual is happening
+            # and starting over costs one container per live image.
+            if len(_pip_memo) >= PIP_MEMO_LIMIT:
+                _pip_memo.clear()
+            _pip_memo[key] = list(found)
+        return found
     except Exception as e:
         logger.info("could not read installed versions from {}: {}".format(image.id[:19], e))
         return []
@@ -371,6 +422,18 @@ def _refresh_grading_images(logger):
     return sorted(images, key=lambda i: i["name"])
 
 
+def _changed_marker_at():
+    """When the reconciler last reported that a grading image changed, or 0 if it never has.
+
+    One `stat` per request, against a path outside this service's PrivateTmp. Absent is 0 rather
+    than "now": a host with no reconciler must fall back to the TTL, not refresh on every request.
+    """
+    try:
+        return os.path.getmtime(IMAGE_CHANGED_MARKER)
+    except OSError:
+        return 0.0
+
+
 def _read_cache_file():
     try:
         with open(IMAGE_CACHE_FILE, encoding="utf-8") as f:
@@ -413,15 +476,22 @@ def grading_images(logger):
     """
     global _image_cache
 
+    changed_at = _changed_marker_at()
     with _image_cache_lock:
-        fresh = time() - _image_cache["at"] < IMAGE_CACHE_TTL_SEC
+        cached_at = _image_cache["at"]
         current = list(_image_cache["images"])
+
+    # Two ways to be stale, and the marker is the one that matters. The clock only catches changes
+    # nothing announced.
+    fresh = time() - cached_at < IMAGE_CACHE_TTL_SEC and changed_at <= cached_at
 
     if fresh:
         return current
 
+    # The same two questions of the shared file. Adopting a file written before the last retag would
+    # reintroduce exactly the staleness the marker exists to end, one worker at a time.
     from_file = _read_cache_file()
-    if from_file is not None:
+    if from_file is not None and from_file["at"] >= changed_at:
         with _image_cache_lock:
             _image_cache = {"at": from_file["at"], "images": from_file["images"]}
         return list(from_file["images"])
@@ -435,8 +505,18 @@ def grading_images(logger):
         def run():
             global _image_cache
             try:
+                # Stamped with when the daemon was *asked*, not when it answered. A refresh is not
+                # instant — four images, and an unlabelled one costs a container and up to
+                # PIP_TIMEOUT_SEC — so a retag landing while it runs would otherwise be stamped as
+                # already included. The marker's mtime would sit before the stamp, the list would
+                # look current, and the change would be invisible for a whole TTL: exactly the
+                # staleness the marker exists to end, reintroduced by reading the clock too late.
+                # Worse through the shared file, which hands the wrong stamp to every other worker.
+                #
+                # Erring the other way costs one extra refresh and is self-correcting.
+                started = time()
                 images = _refresh_grading_images(logger)
-                payload = {"at": time(), "images": images}
+                payload = {"at": started, "images": images}
                 with _image_cache_lock:
                     _image_cache = payload
                 _write_cache_file(cache_path, payload)

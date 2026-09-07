@@ -132,12 +132,18 @@ class VersionsService(buildPropertiesProvider: ObjectProvider<BuildProperties>) 
     )
 
     /**
-     * Executor versions, cached.
+     * Executor versions, cached briefly.
      *
-     * Cached because this endpoint is public and unauthenticated, so without it a page refresh in a
-     * loop turns into HTTP traffic against every executor. [CACHE_TTL] is short enough that a
-     * redeployed executor shows its new version within minutes, and long enough that this is never
-     * the reason an executor is busy.
+     * The original reason written here was that the endpoint is public and unauthenticated. That
+     * stopped being true in EZ-1782, which moved it behind teacher and admin — so what survives is
+     * only the smaller claim: somebody holding down refresh should not turn into HTTP traffic
+     * against every executor, once per keystroke.
+     *
+     * That wants seconds, not minutes. [CACHE_TTL] was five minutes on the strength of the reason
+     * that no longer applies, and it compounded badly: aae hands back its stale list while it
+     * refreshes in the background, so a five-minute cache here could pin one stale answer for five
+     * more minutes on top of aae's own. Long enough to absorb a refresh loop, short enough that
+     * nobody wonders whether the page is lying (EZ-1899).
      */
     @Synchronized
     fun executors(): List<VersionsController.ExecutorResp> {
@@ -175,7 +181,18 @@ class VersionsService(buildPropertiesProvider: ObjectProvider<BuildProperties>) 
                 .map { it[Executor.name] to it[Executor.baseUrl] }
         }
 
-        return executors.map { (name, baseUrl) ->
+        // In parallel, because the cost that matters here is the one that only appears when
+        // something is already wrong. A reachable executor answers in milliseconds; an unreachable
+        // one costs the full timeout, and asked one after another that is the timeout times the
+        // number of executors — all of it inside a `@Synchronized` method, so every other caller
+        // waits behind it. Asked at once, a whole set of dead executors costs one timeout.
+        //
+        // This mattered less at a five-minute TTL. At thirty seconds (EZ-1899) the same window
+        // recurs ten times as often, so bounding it stopped being optional.
+        //
+        // The common pool is the right size for a handful of blocking calls that happen at most
+        // twice a minute; the alternative is a pool of our own for one diagnostic endpoint.
+        return executors.parallelStream().map { (name, baseUrl) ->
             // Timeouts in seconds, not the hour-long one grading uses: this is a page render, and
             // an executor that is down must cost a couple of seconds rather than hanging the
             // request until someone gives up.
@@ -207,7 +224,9 @@ class VersionsService(buildPropertiesProvider: ObjectProvider<BuildProperties>) 
                     )
                 },
             )
-        }
+        // `toList` on a parallel stream keeps encounter order, so the rows stay sorted by name and
+        // the page does not reshuffle itself between reads.
+        }.toList()
     }
 
     data class ExecutorVersionResponse(
@@ -230,7 +249,7 @@ class VersionsService(buildPropertiesProvider: ObjectProvider<BuildProperties>) 
     companion object {
         private const val EXECUTOR_VERSION_URL = "/v1/version"
         private val REQUEST_TIMEOUT = Duration.ofSeconds(2)
-        private val CACHE_TTL = Duration.ofMinutes(5)
+        private val CACHE_TTL = Duration.ofSeconds(30)
         private const val DEV_VERSION = "dev"
         private const val UNKNOWN = "unknown"
     }

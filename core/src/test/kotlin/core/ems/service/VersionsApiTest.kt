@@ -63,9 +63,11 @@ class VersionsApiTest(
             """.trimIndent(),
         )
 
-        // VersionsService caches for five minutes in a plain field that survives both the database
-        // truncation and the Spring cache invalidation the reset extension does. Without this the
-        // first test to ask decides what every later one sees.
+        // VersionsService caches in a plain field that survives both the database truncation and the
+        // Spring cache invalidation the reset extension does. Without this the first test to ask
+        // decides what every later one sees — and thirty seconds is still far longer than a suite
+        // takes to get from one of these tests to the next, so shortening the TTL did not make this
+        // unnecessary.
         versions.clearCache()
 
         transaction {

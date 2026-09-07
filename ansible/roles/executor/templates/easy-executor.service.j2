@@ -28,6 +28,12 @@ WorkingDirectory={{ executor_root }}
 # somebody later removes the quotes.
 Environment="EASY_GRADING_IMAGE_NAMES={{ executor_images | map(attribute='name') | join(',') }}"
 
+# The path easy-grading-sync touches when it moves a bare tag, stat'ed on each /v1/version so the
+# answer stops being cached from before the change (EZ-1899). Both ends read it from the one
+# variable; passing it explicitly rather than letting each default to the same literal is what keeps
+# them from drifting apart later.
+Environment="EASY_GRADING_CHANGED_MARKER={{ executor_grading_changed_marker }}"
+
 ExecStart={{ executor_venv }}/bin/gunicorn -c {{ executor_root }}/gunicorn-conf.py server:app
 
 Restart=on-failure

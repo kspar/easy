@@ -34,6 +34,18 @@ executor_venv: "{{ executor_root }}/venv"
 executor_src: "{{ playbook_dir }}/../aae"
 executor_stamp_dir: "{{ executor_root | dirname }}"
 
+# How easy-grading-sync tells aae that what is live has changed: it touches this, aae stats it, and
+# the version endpoint stops serving a cached answer from before the retag (EZ-1899).
+#
+# Declared here rather than in executor_images, even though that role is the one doing the touching,
+# because this role writes the unit that puts the path into aae's environment and its defaults are
+# what executor_images already reads. Two roles agreeing on a path is exactly the kind of thing that
+# drifts once it is written down twice.
+#
+# Not under the service's tempdir, and it cannot be: the unit sets PrivateTmp=true, so aae's /tmp is
+# its own namespace and nothing outside the service could write there.
+executor_grading_changed_marker: "{{ executor_root }}/images/changed"
+
 # The sample config says 30, which is sized for production. A dev VM with two cores and one tester
 # does not need 30 gunicorn workers each able to start a container; it needs enough to prove
 # concurrency works. Raise it per environment rather than here.
