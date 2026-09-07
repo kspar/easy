@@ -15,7 +15,7 @@ name: Pins auto-merge
 #   * `workflow_run` — runs master's definitions, with a write token, *after* a run has completed.
 #     This one.
 #
-# ## Four things here are easy to get wrong, and all four are load-bearing
+# ## Five things here are easy to get wrong, and all five are load-bearing
 #
 # 1. **`actions/checkout` is given an explicit `ref`.** In a `workflow_run` event, checkout with no
 #    ref takes the head SHA of the run that triggered it — that is, the pull request's code — into a
@@ -37,6 +37,17 @@ name: Pins auto-merge
 # 4. **The merge is conditional on the head SHA.** Otherwise: validate, author pushes another
 #    commit, this merges something nobody checked. Passing `sha` makes the API refuse with a 409
 #    instead.
+# 5. **The build after the merge is asked for by name, and the decision reads the repository rather
+#    than the merge call's exit code.** GitHub does not start workflows for events that
+#    `GITHUB_TOKEN` creates, which is a loop guard and not a bug. The merge below is such an event,
+#    so `Grading images` does not see the push to master, and without the step that asks for it the
+#    pins file would describe a version nobody ever built while dev went on running the old one.
+#    `workflow_dispatch` is one of two documented exceptions to that rule, which is why this needs
+#    no personal access token in a public repository. The exit code is not enough to decide on,
+#    because a merge can succeed and still report failure, and because a later run of this same job
+#    finds the pull request already merged; both look like "did not merge" and both leave master
+#    unbuilt. Asking whether the merge commit has any runs answers it in one measurement and is
+#    idempotent. Merging is not the last step here.
 #
 # Nothing untrusted is ever interpolated into a shell line. Values arrive in the environment; the
 # patch arrives as a file and is parsed by Python.
@@ -54,6 +65,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      # For the dispatch in the last step, and for nothing else. See note 5.
+      actions: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -187,3 +200,61 @@ jobs:
             status=$?
             echo "did not merge #$NUMBER (exit $status) — most likely the branch moved, or it was already merged"
           fi
+
+      # See note 5. Merging is not enough: a push from GITHUB_TOKEN starts nothing, so `Grading
+      # images` never sees it and the version now on master exists only as a line in a file.
+      #
+      # This asks the repository what actually happened rather than trusting the exit code above.
+      # The merge call can fail while the merge succeeded — a timed-out response, a 5xx after the
+      # commit landed, a cancelled step — and it can 405 because an earlier run of this same job
+      # already merged it. Both of those are states where master is merged and unbuilt, and the exit
+      # code cannot tell them apart from a merge that genuinely did not happen.
+      - name: Does the merge commit still need a build?
+        id: build
+        if: steps.checks.outputs.green == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          gh api "/repos/$REPO/pulls/$NUMBER" > merged.json
+          # Both values come from GitHub, not from the pull request's author, and the SHA is
+          # interpolated exactly as $HEAD already is in the step above.
+          sha="$(jq -r 'if .merged then (.merge_commit_sha // "") else "" end' merged.json)"
+          by="$(jq -r '.merged_by.login // ""' merged.json)"
+          if [ -z "$sha" ]; then
+            echo "#$NUMBER is not merged; nothing to build"
+            exit 0
+          fi
+          if [ "$by" != "github-actions[bot]" ]; then
+            # A person's merge is an ordinary push, which GitHub does start workflows for.
+            echo "#$NUMBER was merged by $by, whose push starts the build by itself"
+            exit 0
+          fi
+          # Zero runs on the merge commit is the same measurement that found this bug, and it is
+          # also the idempotency test: this workflow fires once per completed triggering run, so
+          # several runs reach here for one merge, and only the first should ask for a build. Two
+          # arriving at once would dispatch twice, which costs a queued build that publishes nothing
+          # — the digest is already published and the rebuild is not forced.
+          runs="$(gh api "/repos/$REPO/actions/runs?head_sha=$sha" --jq '.total_count')"
+          if [ "$runs" != "0" ]; then
+            echo "$sha already has $runs run(s); a build has been asked for"
+            exit 0
+          fi
+          echo "$sha is merged and unbuilt"
+          echo "dispatch=true" >> "$GITHUB_OUTPUT"
+
+      - name: Build the image the merge described
+        if: steps.build.outputs.dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # `master`, never the pull request's ref: the merge commit is the thing to build, and it is
+          # also the only ref anything in this job is allowed to act on. Nothing untrusted is named
+          # here at all.
+          #
+          # No `|| true`. If the dispatch fails, this job should go red — a merge whose build was
+          # never requested is exactly the silent half-done state this step exists to prevent.
+          gh workflow run grading-images.yml --repo "$REPO" --ref master
+          echo "asked Grading images to build master"

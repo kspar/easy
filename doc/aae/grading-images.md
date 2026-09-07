@@ -254,7 +254,7 @@ Onboarding production properly is an inventory entry plus `easy_environment: pro
 could replace that file with `exit 0`.
 
 `pins-automerge.yml` decides, on `workflow_run`, which runs master's definitions with a write token
-after the checks have finished. Four things in it are load-bearing:
+after the checks have finished. Five things in it are load-bearing:
 
 1. `actions/checkout` is given `ref: master` explicitly. With no ref, a `workflow_run` checkout takes
    the *pull request's* code into a job holding a write token.
@@ -263,6 +263,12 @@ after the checks have finished. Four things in it are load-bearing:
 3. Every required check is verified by name. A green check proves nothing when the pull request
    supplied the workflow that produced it, and "nothing failed" is true of an empty list.
 4. The merge passes `sha`, so it 409s rather than merging a commit pushed after validation.
+5. After merging it dispatches `Grading images` on master by name. GitHub starts no workflow for a
+   push made with `GITHUB_TOKEN`, so without this the pins file would name a version that was never
+   built, and dev would keep grading with the old image while the file said otherwise. Do not remove
+   this step or the `actions: write` it needs. It decides by asking whether the merge commit has any
+   runs, not by reading the merge call's exit code, because a merge can succeed and still report
+   failure and because later runs find the pull request already merged.
 
 The allowlist is per `(environment, image)`. This repository is public, so without it anyone could
 move dev's grading library to any published version — and CI being green does not make that not
