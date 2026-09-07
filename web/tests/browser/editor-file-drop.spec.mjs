@@ -35,6 +35,10 @@ const exercise = {
   solution_file_type: 'TEXT_EDITOR',
 }
 
+// The same exercise past its deadline. Nothing makes the editor read-only when this is false — only
+// the upload menu item and the submit button go away — so there is still a solution in it to lose.
+const closedExercise = { ...exercise, is_open: false }
+
 const submissions = {
   submissions: [
     {
@@ -226,4 +230,46 @@ test('editor-file-drop', async ({ launch, check }) => {
       (await teacher.page.locator('.cm-content').first().innerText()).includes('dropped from the file manager')),
   )
   await teacher.close()
+
+  // --- a closed exercise ------------------------------------------------------------------------
+
+  // The handler used to be registered only while the exercise was open, reasoning that a closed one
+  // should ignore a drop the way a read-only editor does. It is not read-only, and an unclaimed
+  // dragover is not "ignore": it is the browser deciding this is a navigation, opening the file and
+  // taking the page — and the student's solution — with it. Precisely the bug the rest of this file
+  // is about, still reachable on any exercise past its deadline. So a closed exercise claims the
+  // drag as well, and declines the file afterwards, where declining costs nothing.
+  const closed = await launch({ role: 'student', shotPrefix: 'file-drop-closed-' })
+  await fakeApi(closed.page, [
+    ['/account/checkin', () => ({})],
+    [/\/statistics(\?|$)/, () => ({ in_auto_assessing: 0, total_submissions: 1, total_users: 1 })],
+    [/\/statistics\/common(\?|$)/, () => ({ in_auto_assessing: 0, total_submissions: 1, total_users: 1 })],
+    [/\/messages(\?|$)/, () => ({ messages: [] })],
+    [`/student/courses/${COURSE}/exercises/${CE}/submissions/all`, () => submissions],
+    [`/student/courses/${COURSE}/exercises/${CE}/draft`, ({ route }) => route.fulfill({ status: 204, body: '' })],
+    [`/student/courses/${COURSE}/exercises/${CE}/activities`, () => ({ teacher_activities: [] })],
+    [`/student/courses/${COURSE}/exercises/${CE}/inline-comments`, () => ({ inline_comments: [] })],
+    [new RegExp(`/student/courses/${COURSE}/exercises/${CE}(\\?|$)`), () => closedExercise],
+    [new RegExp(`/student/courses/${COURSE}/exercises(\\?|$)`), () => ({ exercises: [] })],
+  ], { log: false })
+
+  await closed.page.goto(`${BASE_URL}/courses/${COURSE}/exercises/${CE}`)
+  await waitUntil(() => closed.page.locator('.cm-content').first().isVisible())
+
+  check(
+    'a closed exercise accepts the drag too, which is what keeps the browser from navigating',
+    await dragFile(closed.page, '.cm-content', 'dragover'),
+  )
+  await dropFile(closed.page, '.cm-content', 'lahendus.py', utf8(DROPPED))
+  // Scoped to the snackbar: a closed exercise already carries the same sentence in a chip near the
+  // title, so an unscoped match would pass on the chip alone and prove nothing about the drop.
+  check('and says why it will not take the file', await waitUntil(() =>
+    closed.page.getByRole('alert')
+      .getByText('This exercise is closed. No new submissions are accepted.').isVisible()))
+  check(
+    'leaving the existing solution exactly as it was',
+    (await closed.page.locator('.cm-content').first().innerText()).includes('what I had before'),
+  )
+  await closed.shot('01-closed-refused')
+  await closed.close()
 })

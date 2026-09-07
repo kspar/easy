@@ -297,6 +297,16 @@ export default forwardRef<SolutionEditorHandle, {
    * Declared above the editor effect because that effect lists the drop extension as a dependency.
    */
   const loadSolutionFile = useCallback((files: File[]) => {
+    // A closed exercise takes no new solution, but it still has to claim the drop. Handing the hook
+    // a null callback registers no listener at all, so nothing calls preventDefault on dragover,
+    // the browser treats it as a file dropped on a page, and it navigates to the file — taking the
+    // page and whatever the student had typed with it. That is the bug the drop handler exists to
+    // fix, and a closed exercise is not exempt from it: nothing here makes the editor read-only
+    // when is_open is false, so there is real work in it to lose.
+    if (!exercise.is_open) {
+      setSnackMsg(t('submission.exerciseClosed'))
+      return
+    }
     const file = files[0]
     if (!file) return
     void readSolutionFile(file).then((result) => {
@@ -315,11 +325,11 @@ export default forwardRef<SolutionEditorHandle, {
       // moment earlier is the first thing worth knowing about it.
       record('action', `loaded ${file.name} into the editor (${result.text.length} chars)`)
     })
-  }, [t])
+  }, [t, exercise.is_open])
 
-  // A closed exercise takes no new solution, so dropping one on it should do what dropping a file
-  // on any other read-only thing does, which is nothing.
-  const dropExtension = useFileDropExtension(exercise.is_open ? loadSolutionFile : null)
+  // Always registered, open or closed. The hook keeps the extension itself stable and reads the
+  // callback from a ref, so a changing `is_open` costs nothing and does not rebuild the editor.
+  const dropExtension = useFileDropExtension(loadSolutionFile)
 
   // Initialize CodeMirror (re-creates on theme or exercise change)
   useEffect(() => {
