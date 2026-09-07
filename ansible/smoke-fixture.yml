@@ -127,9 +127,18 @@
                      'Print exactly `Hello, smoke!`. This exercise exists for the automatic smoke suite; nothing else uses it.'
               FROM co, ex WHERE NOT EXISTS (SELECT 1 FROM existing_ce) RETURNING id
           )
+          -- The third column is the image this exercise is graded by. It has to be read two ways,
+          -- because every clause above shares one snapshot taken before the statement: the rows `a`
+          -- and `v` insert are invisible here, so reading the tables alone returned nothing on the
+          -- run that creates the fixture and the right answer only on later re-runs — an empty
+          -- image printed on exactly the run whose choice was worth seeing. The tables answer for a
+          -- fixture an earlier run committed; the `image` clause, a plain select and so visible,
+          -- answers for the one this run just built, and is the image `a` used.
           SELECT (SELECT id FROM co), coalesce((SELECT id FROM existing_ce), (SELECT id FROM ce)),
-                 (SELECT container_image_id FROM automatic_exercise
-                  WHERE id = (SELECT auto_exercise_id FROM exercise_version WHERE exercise_id = (SELECT id FROM ex) AND valid_to IS NULL));
+                 coalesce((SELECT ae.container_image_id FROM automatic_exercise ae
+                           JOIN exercise_version ev ON ev.auto_exercise_id = ae.id
+                           WHERE ev.exercise_id = (SELECT id FROM ex) AND ev.valid_to IS NULL),
+                          (SELECT id FROM image));
           SQL
       become_user: postgres
       register: fixture
