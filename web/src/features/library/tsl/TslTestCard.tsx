@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import {
   Accordion,
   AccordionDetails,
@@ -82,6 +82,26 @@ export default function TslTestCard({
   // accessible name at all.
   const typeLabelId = useId()
 
+  /**
+   * Focus for the rename field, claimed once the menu that opened it is out of the way.
+   *
+   * `autoFocus` alone loses this race (EZ-1895). Rename is chosen from the menu below, and MUI
+   * hands focus back to the button that opened that menu when it closes — which happens *after*
+   * this field has mounted and auto-focused. The teacher then sees the field appear, types, and
+   * watches the characters go nowhere, because the caret is on the three-dot button.
+   *
+   * Deferred rather than fought: `disableRestoreFocus` on the menu would win the race but would
+   * also drop focus on the floor for Duplicate, Move and Delete, which is the behaviour keyboard
+   * users need kept. The wait outlasts the menu's close transition; if the field is gone by then
+   * the ref is null and nothing happens.
+   */
+  const renameRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (!renaming) return
+    const timer = setTimeout(() => renameRef.current?.focus(), 250)
+    return () => clearTimeout(timer)
+  }, [renaming])
+
   // Instance-aware, not type-aware: a collapsed test's name depends on its scope and target, so
   // every `contains_test` would otherwise read as the same generic label in the list.
   const title = test.name?.trim() ? test.name : testDefaultName(test, t)
@@ -162,7 +182,7 @@ export default function TslTestCard({
                 if (e.key === 'Enter' || e.key === 'Escape') setRenaming(false)
               }}
               onBlur={() => setRenaming(false)}
-              autoFocus
+              inputRef={renameRef}
               size="small"
               placeholder={testDefaultName(test, t)}
               slotProps={{ htmlInput: { maxLength: 100 } }}

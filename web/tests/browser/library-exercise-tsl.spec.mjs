@@ -106,6 +106,52 @@ test('library-exercise-tsl', async ({ launch, check }) => {
   )
   await shot('01-tsl-tests-tab')
 
+  // --- renaming a test from the card menu (EZ-1895) ----------------------------------------------
+  //
+  // A teacher reported that a test's title could not be changed. The field opened and looked
+  // ready; the characters went nowhere. MUI returns focus to the button that opened a menu once
+  // the menu closes, which happened *after* the field had mounted and claimed focus with
+  // `autoFocus`, so the caret sat on the three-dot button and the teacher typed into nothing.
+  //
+  // Typed with the keyboard rather than filled: `fill()` sets the value directly and passes
+  // whether or not anything is focused, which is exactly the failure being guarded against.
+  // Anchored on the card's own chevron rather than on its title: renaming replaces the title
+  // with the field, and a `hasText` locator would stop matching the moment the rename begins.
+  const testCard = page
+    .locator('.MuiPaper-outlined')
+    .filter({ has: page.getByRole('button', { name: /^(Expand|Collapse) test$/ }) })
+    .last()
+  await testCard.getByRole('button', { name: 'More options' }).click()
+  await page.getByRole('menuitem', { name: 'Rename test' }).click()
+  const renameBox = testCard.getByRole('textbox')
+  check('the rename field opens', await renameBox.isVisible())
+  check(
+    'focus lands in the rename field once the menu is out of the way',
+    await waitUntil(() => renameBox.evaluate((el) => el === document.activeElement)),
+  )
+  await page.keyboard.press('ControlOrMeta+a')
+  await page.keyboard.type('Renamed from the card')
+  check('typing reaches the field', (await renameBox.inputValue()) === 'Renamed from the card',
+    await renameBox.inputValue())
+  await page.keyboard.press('Enter')
+  check(
+    'the new title is what the card shows',
+    await waitUntil(() => page.getByText('Renamed from the card', { exact: true }).isVisible()),
+  )
+  await shot('01b-renamed-from-card')
+
+  // Put the name back, so the assertions below still describe the spec they were written for
+  await testCard.getByRole('button', { name: 'More options' }).click()
+  await page.getByRole('menuitem', { name: 'Rename test' }).click()
+  await waitUntil(() => renameBox.evaluate((el) => el === document.activeElement))
+  await page.keyboard.press('ControlOrMeta+a')
+  await page.keyboard.type('Adds two numbers')
+  await page.keyboard.press('Enter')
+  check(
+    'restored for the sync assertions below',
+    await waitUntil(() => page.getByText('Adds two numbers', { exact: true }).isVisible()),
+  )
+
   // --- direction 1: visual edit -> JSON spec ----------------------------------------------------
   await page.getByText('Adds two numbers', { exact: true }).click()
   await page.getByRole('button', { name: /Output check/i }).click()
