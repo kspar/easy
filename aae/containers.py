@@ -479,21 +479,33 @@ def grading_images(logger):
     changed_at = _changed_marker_at()
     with _image_cache_lock:
         cached_at = _image_cache["at"]
+        # Absent in a cache written before EZ-1899, and in the tests that build one by hand. Zero is
+        # also what an absent marker reads as, so the pair agrees and such a cache stays usable.
+        cached_marker_at = _image_cache.get("marker_at", 0.0)
         current = list(_image_cache["images"])
 
     # Two ways to be stale, and the marker is the one that matters. The clock only catches changes
     # nothing announced.
-    fresh = time() - cached_at < IMAGE_CACHE_TTL_SEC and changed_at <= cached_at
+    #
+    # The marker is compared for *equality* against the value seen when this list was read, never
+    # ordered against `at`. Those are two different clocks — `at` comes from `time()`, the marker's
+    # from the filesystem — and a file written a moment after a timestamp can report an mtime just
+    # before it, depending on the granularity the filesystem stores. Ordered, that reads as "the
+    # retag happened before the read" and the change is dropped for a whole TTL. This is not
+    # hypothetical: the test for it passed on macOS and failed on CI, which is the direction that
+    # would have shipped. Equality asks the only question that matters — is the marker still the one
+    # this list was read against — and asks it of one clock.
+    fresh = time() - cached_at < IMAGE_CACHE_TTL_SEC and changed_at == cached_marker_at
 
     if fresh:
         return current
 
-    # The same two questions of the shared file. Adopting a file written before the last retag would
-    # reintroduce exactly the staleness the marker exists to end, one worker at a time.
+    # The same two questions of the shared file. Adopting a file read against a different marker
+    # would reintroduce exactly the staleness the marker exists to end, one worker at a time.
     from_file = _read_cache_file()
-    if from_file is not None and from_file["at"] >= changed_at:
+    if from_file is not None and from_file.get("marker_at", 0.0) == changed_at:
         with _image_cache_lock:
-            _image_cache = {"at": from_file["at"], "images": from_file["images"]}
+            _image_cache = from_file
         return list(from_file["images"])
 
     # One refresh at a time, and the request does not wait for it.
@@ -505,18 +517,20 @@ def grading_images(logger):
         def run():
             global _image_cache
             try:
-                # Stamped with when the daemon was *asked*, not when it answered. A refresh is not
-                # instant — four images, and an unlabelled one costs a container and up to
-                # PIP_TIMEOUT_SEC — so a retag landing while it runs would otherwise be stamped as
-                # already included. The marker's mtime would sit before the stamp, the list would
-                # look current, and the change would be invisible for a whole TTL: exactly the
-                # staleness the marker exists to end, reintroduced by reading the clock too late.
-                # Worse through the shared file, which hands the wrong stamp to every other worker.
+                # The marker is read *before* the daemon, and the list is stamped with what it said
+                # then. A refresh is not instant — four images, and an unlabelled one costs a
+                # container and up to PIP_TIMEOUT_SEC — so a retag can land while this runs. Read
+                # afterwards, that retag would be recorded as already included and stay invisible
+                # for a whole TTL, which is the one race this whole mechanism exists to close. Read
+                # first, the marker no longer matches on the next request and the list is rebuilt.
                 #
-                # Erring the other way costs one extra refresh and is self-correcting.
+                # Erring this way costs one extra refresh and is self-correcting. The shared file
+                # carries the same pair, so every other worker inherits the same judgement rather
+                # than a stamp that claims more than was read.
                 started = time()
+                marker_at = _changed_marker_at()
                 images = _refresh_grading_images(logger)
-                payload = {"at": started, "images": images}
+                payload = {"at": started, "marker_at": marker_at, "images": images}
                 with _image_cache_lock:
                     _image_cache = payload
                 _write_cache_file(cache_path, payload)
