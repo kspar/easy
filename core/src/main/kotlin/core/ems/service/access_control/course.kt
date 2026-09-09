@@ -35,7 +35,7 @@ fun AccessChecksBuilder.userOnCourse(courseId: Long) = add { caller: EasyUser ->
         caller.isTeacher() && canTeacherAccessCourse(caller.id, courseId) -> {}
         caller.isStudent() && canStudentAccessCourse(caller.id, courseId) -> {}
         else -> throw ForbiddenException(
-            "User ${caller.id} does not have access to course $courseId", ReqError.NO_COURSE_ACCESS
+            "User ${caller.id} does not have access to course $courseId", ReqError.NO_COURSE_ACCESS, notify = false
         )
     }
 }
@@ -148,7 +148,7 @@ fun canStudentAccessCourse(studentId: String, courseId: Long): Boolean = transac
 private fun assertTeacherCanAccessCourse(teacherId: String, courseId: Long) {
     if (!canTeacherAccessCourse(teacherId, courseId)) {
         throw ForbiddenException(
-            "Teacher $teacherId does not have access to course $courseId", ReqError.NO_COURSE_ACCESS
+            "Teacher $teacherId does not have access to course $courseId", ReqError.NO_COURSE_ACCESS, notify = false
         )
     }
 }
@@ -179,7 +179,7 @@ private fun assertExerciseIsOnCourse(exerciseId: Long, courseId: Long) {
 private fun assertStudentHasAccessToCourse(studentId: String, courseId: Long) {
     if (!canStudentAccessCourse(studentId, courseId)) {
         throw ForbiddenException(
-            "Student $studentId does not have access to course $courseId", ReqError.NO_COURSE_ACCESS
+            "Student $studentId does not have access to course $courseId", ReqError.NO_COURSE_ACCESS, notify = false
         )
     }
 }

@@ -11,7 +11,9 @@ import core.exception.ReqError
  */
 fun AccessChecksBuilder.libraryDir(dirId: Long, level: DirAccessLevel) = add { caller: EasyUser ->
     if (!hasAccountDirAccess(caller, dirId, level)) {
-        throw ForbiddenException("User ${caller.id} does not have $level access to dir $dirId", ReqError.NO_DIR_ACCESS)
+        throw ForbiddenException(
+            "User ${caller.id} does not have $level access to dir $dirId", ReqError.NO_DIR_ACCESS, notify = false
+        )
     }
 }
 

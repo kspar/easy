@@ -33,7 +33,8 @@ fun AccessChecksBuilder.libraryExercise(exerciseId: Long, accessLevel: DirAccess
     if (dirId == null || !hasAccountDirAccess(caller, dirId, accessLevel)) {
         throw ForbiddenException(
             "User ${caller.id} does not have $accessLevel access to exercise $exerciseId",
-            ReqError.NO_EXERCISE_ACCESS
+            ReqError.NO_EXERCISE_ACCESS,
+            notify = false
         )
     }
 }
@@ -48,7 +49,9 @@ fun assertUnauthAccessToExercise(exerciseId: Long) {
     }
 
     if (unauthEnabled != true) {
-        throw ForbiddenException("No unauthenticated access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS)
+        throw ForbiddenException(
+            "No unauthenticated access to exercise $exerciseId", ReqError.NO_EXERCISE_ACCESS, notify = false
+        )
     }
 }
 

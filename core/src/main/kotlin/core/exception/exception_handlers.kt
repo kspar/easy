@@ -39,10 +39,12 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     fun handleForbiddenException(ex: ForbiddenException, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
 
-        log.warn { "Forbidden error: ${ex.message}" }
+        log.warn { "Forbidden error: ${ex.message}, id: $id" }
         log.warn { "Request info: ${request.getDescription(true)}" }
 
-        mailService.sendSystemNotification(ex.stackTraceString, id)
+        if (ex.notify) {
+            mailService.sendSystemNotification(ex.stackTraceString, id)
+        }
 
         val resp = RequestErrorResponse(id, ex.code.errorCodeStr, mapOf(*ex.attributes), ex.message)
         return ResponseEntity(resp, HttpStatus.FORBIDDEN)
