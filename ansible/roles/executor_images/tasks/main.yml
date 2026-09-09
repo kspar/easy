@@ -41,6 +41,19 @@
     group: root
     mode: "0755"
 
+# `/etc/easy` by default, and on dev it already exists because core lives on the same host and
+# `core_config` made it. On a host where the executor stands alone — which is production — nothing
+# had ever created it, so the template below failed with "Destination directory /etc/easy does not
+# exist" the first time this role ran there. The role has to stand on its own: whether core happens
+# to be a neighbour is not something it should depend on.
+- name: Make somewhere for the reconciler's configuration to live
+  ansible.builtin.file:
+    path: "{{ executor_grading_config | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Write the reconciler's configuration
   ansible.builtin.template:
     src: grading-sync.json.j2
