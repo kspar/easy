@@ -248,6 +248,39 @@ export default function StudentGradingView({
 
         <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
 
+        {/*
+          Prev/next before the name, not after it (EZ-1900). Everything to the left of these two is
+          fixed width, so they land in the same place for every student. Behind the name they were
+          positioned by however long that name happened to be, and clicking next moved the button
+          out from under the pointer — which is the one gesture this pair exists for.
+        */}
+        <Tooltip title={prevStudent ? `${prevStudent.given_name} ${prevStudent.family_name}` : ''}>
+          <span>
+            <IconButton
+              size="small"
+              disabled={!prevStudent}
+              // The tooltip names *who* is next; the label has to say what the button does — and
+              // every sibling icon button in this view already carries one (audit X-030).
+              aria-label={t('submission.previousStudent')}
+              onClick={() => prevStudent && onSelectStudent(prevStudent.student_id)}
+            >
+              <ChevronLeftOutlined fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title={nextStudent ? `${nextStudent.given_name} ${nextStudent.family_name}` : ''}>
+          <span>
+            <IconButton
+              size="small"
+              disabled={!nextStudent}
+              aria-label={t('submission.nextStudent')}
+              onClick={() => nextStudent && onSelectStudent(nextStudent.student_id)}
+            >
+              <ChevronRightOutlined fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+
         {/* Clickable student name — opens picker */}
         <ButtonBase
           onClick={(e) => { setPickerAnchor(e.currentTarget); setPickerSearch('') }}
@@ -375,34 +408,6 @@ export default function StudentGradingView({
             </Typography>
           </Box>
         </Popover>
-
-        {/* Prev/next arrows */}
-        <Tooltip title={prevStudent ? `${prevStudent.given_name} ${prevStudent.family_name}` : ''}>
-          <span>
-            <IconButton
-              size="small"
-              disabled={!prevStudent}
-              // The tooltip names *who* is next; the label has to say what the button does — and
-              // every sibling icon button in this view already carries one (audit X-030).
-              aria-label={t('submission.previousStudent')}
-              onClick={() => prevStudent && onSelectStudent(prevStudent.student_id)}
-            >
-              <ChevronLeftOutlined fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title={nextStudent ? `${nextStudent.given_name} ${nextStudent.family_name}` : ''}>
-          <span>
-            <IconButton
-              size="small"
-              disabled={!nextStudent}
-              aria-label={t('submission.nextStudent')}
-              onClick={() => nextStudent && onSelectStudent(nextStudent.student_id)}
-            >
-              <ChevronRightOutlined fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
 
         <Box sx={{ flex: 1 }} />
 

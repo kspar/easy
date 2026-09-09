@@ -18,24 +18,16 @@ export default function SubmissionSelector({
   const [anchor, setAnchor] = useState<Element | null>(null)
 
   const current = submissions.find((s) => s.id === selectedId)
-  const latest = submissions[0]
-  const isLatest = current?.id === latest?.id
 
   if (!current) return null
 
   return (
     <>
       <Chip
-        label={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <span>{t('submission.viewingSubmission', { nr: current.submission_number })}</span>
-            {isLatest && (
-              <Typography component="span" variant="caption" sx={{ opacity: 0.7 }}>
-                ({t('submission.latestSubmission')})
-              </Typography>
-            )}
-          </Box>
-        }
+        // No "(latest)" suffix (EZ-1900): it rode along on nearly every submission a teacher ever
+        // opens, so it read as chrome rather than as a fact. The one case where it carried
+        // information — an older submission — already gets a warning banner right below this row.
+        label={t('submission.viewingSubmission', { nr: current.submission_number })}
         deleteIcon={<ArrowDropDownOutlined />}
         onDelete={(e: React.MouseEvent<HTMLElement>) => setAnchor(e.currentTarget.closest('div'))}
         onClick={(e) => setAnchor(e.currentTarget)}
