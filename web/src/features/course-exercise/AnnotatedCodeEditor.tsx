@@ -13,10 +13,23 @@ import {
   CircularProgress,
   FormControlLabel,
   IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Snackbar,
   Tooltip,
   Typography,
 } from '@mui/material'
-import { DeleteOutlineOutlined, EditOutlined } from '@mui/icons-material'
+import {
+  CheckOutlined,
+  ContentCopyOutlined,
+  DeleteOutlineOutlined,
+  EditOutlined,
+  FileDownloadOutlined,
+  MoreVertOutlined,
+  WrapTextOutlined,
+} from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import {
   EditorView,
@@ -78,6 +91,12 @@ interface DraftComment {
 interface Props {
   solution: string
   fileName: string
+  /**
+   * What "Save as file" names the download. Defaults to `fileName`, which is the same name for
+   * every student in the course — a teacher working down a group would collect
+   * `lahendus (3).py`. The grading view passes something that says whose solution it is.
+   */
+  downloadName?: string
   comments: InlineCommentResp[]
   currentTeacherId?: string
   onCreateComment?: (data: NewCommentData) => Promise<void>
@@ -248,6 +267,7 @@ function lineHoverPlugin() {
 export default function AnnotatedCodeEditor({
   solution,
   fileName,
+  downloadName,
   comments,
   currentTeacherId,
   onCreateComment,
@@ -260,12 +280,36 @@ export default function AnnotatedCodeEditor({
   const viewRef = useRef<EditorView | null>(null)
   // The submission being read is code, so it follows the code setting — the comment composer
   // further down this file is prose and stays wrapped whatever that setting says.
-  const { wrapExtension } = useSoftWrap('code', viewRef)
+  const { wrap, wrapExtension, toggleWrap } = useSoftWrap('code', viewRef)
 
   const [draft, setDraft] = useState<DraftComment | null>(null)
   const [saving, setSaving] = useState(false)
   const [portalVersion, setPortalVersion] = useState(0)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
+  const [snackMsg, setSnackMsg] = useState<string | null>(null)
+
+  // `solution` is the prop rather than the editor's current document on purpose: the document
+  // carries the inline-comment widgets, and what a teacher wants on their clipboard or on disk is
+  // the code the student submitted.
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(solution)
+      setSnackMsg(t('general.copied'))
+    } catch {
+      setSnackMsg(t('general.copyFailed'))
+    }
+  }, [solution, t])
+
+  const handleDownload = useCallback(() => {
+    const blob = new Blob([solution], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = downloadName ?? fileName
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [solution, downloadName, fileName])
 
   const commentsRef = useRef(comments)
   commentsRef.current = comments
@@ -574,9 +618,50 @@ export default function AnnotatedCodeEditor({
         <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
           {fileName}
         </Typography>
+
+        <Box sx={{ flex: 1 }} />
+
+        {/*
+          The same menu the student's own editor carries, with the items a teacher can use
+          (EZ-1903). Asked for as a copy button; it is a menu because the download and the wrap
+          setting were already built and a teacher had no way to reach either of them.
+        */}
+        <Tooltip title={t('general.moreOptions')}>
+          <IconButton size="small" onClick={e => setMenuAnchor(e.currentTarget)}>
+            <MoreVertOutlined fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
+          <MenuItem onClick={() => { setMenuAnchor(null); handleCopy() }}>
+            <ListItemIcon><ContentCopyOutlined fontSize="small" /></ListItemIcon>
+            <ListItemText>{t('submission.copyCode')}</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={() => { setMenuAnchor(null); handleDownload() }}>
+            <ListItemIcon><FileDownloadOutlined fontSize="small" /></ListItemIcon>
+            <ListItemText>{t('submission.saveAsFile')}</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={() => { setMenuAnchor(null); toggleWrap() }}>
+            <ListItemIcon>
+              <WrapTextOutlined fontSize="small" color={wrap ? 'primary' : 'inherit'} />
+            </ListItemIcon>
+            <ListItemText>{t('general.wrapLines')}</ListItemText>
+            {wrap && <CheckOutlined fontSize="small" sx={{ ml: 2, color: 'text.secondary' }} />}
+          </MenuItem>
+        </Menu>
       </Box>
 
-      {/* CodeMirror editor */}
+      {/*
+        Capped, the way the student's editor and the testing tab already are (EZ-1835, and this
+        panel is the one that was missed — EZ-1903). Uncapped it grew to the solution, so a long
+        one set the page's height and pushed the grade box and the feedback field off the bottom;
+        a teacher then scrolled past the whole file to reach the field they were there to fill in.
+        `.cm-scroller` has to be told to scroll as well: CodeMirror hands the overflow to the
+        scroller only once the editor's own height is bounded, and without it the file would clip.
+
+        The maximum only, not the `minHeight: 200` those two also carry. Theirs is room to type
+        into; this panel is read-only, so a floor would just hold empty space open under the
+        three-line solutions an intro course is mostly made of.
+      */}
       <Box
         ref={editorContainerRef}
         sx={{
@@ -584,13 +669,21 @@ export default function AnnotatedCodeEditor({
           borderColor: 'divider',
           borderRadius: '0 0 4px 4px',
           overflow: 'hidden',
-          '& .cm-editor': { cursor: 'default' },
+          '& .cm-editor': { maxHeight: 'min(65vh, 800px)', cursor: 'default' },
+          '& .cm-scroller': { overflow: 'auto' },
           '& .cm-focused': { outline: 'none' },
         }}
       />
 
       {/* React portals rendered into CodeMirror widget containers */}
       {portals}
+
+      <Snackbar
+        open={snackMsg !== null}
+        autoHideDuration={3000}
+        onClose={() => setSnackMsg(null)}
+        message={snackMsg}
+      />
 
       <ConfirmDialog
         open={!!confirmDeleteId}

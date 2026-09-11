@@ -218,6 +218,44 @@ test('course-exercise-grading', async ({ launch, check }) => {
   )
   await shot('01-student-opened')
 
+  // --- the code panel's action menu (EZ-1903) ----------------------------------------------------
+  // Asked for as a copy button. It is a menu because the download and the soft-wrap setting were
+  // already built and a teacher could reach neither: the only control for the code-side wrap
+  // setting lived in the *student's* editor, which a teacher never opens.
+  const panelMenu = page.getByRole('button', { name: /More options/i }).first()
+  check('the code panel carries an action menu', await panelMenu.isVisible())
+
+  await panelMenu.click()
+  check(
+    'which offers copy, save-as-file and the wrap setting',
+    (await page.getByRole('menuitem', { name: /Copy code/i }).count()) === 1 &&
+      (await page.getByRole('menuitem', { name: /Save as file/i }).count()) === 1 &&
+      (await page.getByRole('menuitem', { name: /Wrap long lines/i }).count()) === 1,
+  )
+
+  // Not asserted through the clipboard: reading it back needs a permission grant this harness does
+  // not make, and a test that silently falls back to "the button exists" would be worse than this.
+  // The wrap item is the one whose effect is visible on the page, so it carries the menu's wiring.
+  await page.getByRole('menuitem', { name: /Wrap long lines/i }).click()
+  check(
+    'and the wrap item reaches the code editor, which had no control of its own before',
+    await waitUntil(async () =>
+      page.locator('.cm-content').first().evaluate((el) => el.classList.contains('cm-lineWrapping')),
+    ),
+  )
+
+  await panelMenu.click()
+  await page.getByRole('menuitem', { name: /Wrap long lines/i }).click()
+  check(
+    'and turns it back off, rather than being a one-way switch',
+    await waitUntil(async () =>
+      page
+        .locator('.cm-content')
+        .first()
+        .evaluate((el) => !el.classList.contains('cm-lineWrapping')),
+    ),
+  )
+
   // The feedback composer builds its own toolbar rather than using MarkdownToolbar, so the wrap
   // switch every other markdown surface inherits has to be repeated in it — which makes this the
   // one place it can quietly go missing (EZ-1841).

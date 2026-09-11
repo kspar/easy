@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react'
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Snackbar, Tooltip, Typography } from '@mui/material'
-import { SendOutlined, FileUploadOutlined, FileDownloadOutlined, MoreVertOutlined, WrapTextOutlined, CheckOutlined } from '@mui/icons-material'
+import { SendOutlined, FileUploadOutlined, FileDownloadOutlined, ContentCopyOutlined, MoreVertOutlined, WrapTextOutlined, CheckOutlined } from '@mui/icons-material'
 import { useBlocker } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { EditorView, placeholder as cmPlaceholder } from '@codemirror/view'
@@ -426,6 +426,17 @@ export default forwardRef<SolutionEditorHandle, {
     URL.revokeObjectURL(url)
   }, [getSolution, courseExerciseId, exercise.solution_file_name])
 
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(getSolution())
+      setSnackMsg(t('general.copied'))
+    } catch {
+      // Denied permission, or an insecure origin in some development setup. Saying nothing would
+      // look identical to a copy that worked, and the next paste would be the old clipboard.
+      setSnackMsg(t('general.copyFailed'))
+    }
+  }, [getSolution, t])
+
   const handleUpload = useCallback(() => {
     const input = document.createElement('input')
     input.type = 'file'
@@ -567,14 +578,19 @@ export default forwardRef<SolutionEditorHandle, {
                 <ListItemText>{t('submission.uploadFile')}</ListItemText>
               </MenuItem>
             )}
+            <MenuItem onClick={() => { setMenuAnchor(null); handleCopy() }}>
+              <ListItemIcon><ContentCopyOutlined fontSize="small" /></ListItemIcon>
+              <ListItemText>{t('submission.copyCode')}</ListItemText>
+            </MenuItem>
             <MenuItem onClick={() => { setMenuAnchor(null); handleDownload() }}>
               <ListItemIcon><FileDownloadOutlined fontSize="small" /></ListItemIcon>
               <ListItemText>{t('submission.saveAsFile')}</ListItemText>
             </MenuItem>
             {/*
-              The one place the code-side wrap setting can be reached, and it governs every code
-              editor in the app rather than this one alone — a per-editor switch would have to be
-              found and flipped again in each of them.
+              The code-side wrap setting governs every code editor in the app rather than this one
+              alone — a per-editor switch would have to be found and flipped again in each of them.
+              Reachable from here and from the grading panel's menu, which is the other place
+              somebody sits reading code wide enough to want it (EZ-1903).
             */}
             <MenuItem onClick={() => { setMenuAnchor(null); toggleWrap() }}>
               <ListItemIcon>

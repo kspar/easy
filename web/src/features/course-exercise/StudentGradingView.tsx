@@ -475,6 +475,10 @@ export default function StudentGradingView({
               key={subDetail.id}
               solution={subDetail.solution}
               fileName={exercise.solution_file_name}
+              // Whose solution, and which submission of theirs — a teacher saving several in a row
+              // is working down a list, and every file in the course is otherwise called the same
+              // thing.
+              downloadName={`${studentId}_${activeSubSummary?.submission_number ?? 1}_${exercise.solution_file_name}`}
               comments={currentSubComments}
               currentTeacherId={username}
               onCreateComment={isViewingLatest ? handleCreateComment : undefined}
