@@ -48,12 +48,34 @@ dev.imgrec: ""
 
 # --- production --------------------------------------------------------------------------------
 #
-# All empty, and not as a placeholder: there is no production reconciler, so a merged change to
-# doc/aae/pins/prod.yml deploys nothing. Leaving these empty means such a change needs a core dev,
-# who will know that. Filling them in before production has a reconciler would let somebody merge a
-# prod bump and reasonably believe production had been updated.
+# These were all empty, and the reason was written here: production had no reconciler, so a merged
+# prod bump deployed nothing, and filling these in would have let somebody merge one and reasonably
+# believe production had been updated. That stopped being true on 2026-09-11 (EZ-1899), when the
+# reconciler was enabled on the production executor and verified against a real change. A merged
+# prod pin now reaches that host within about five minutes.
+#
+# silmused mirrors dev: it is the same judgement — is this version fit to grade with — made by the
+# same person, and splitting it would mean a maintainer trusted to decide that for students on dev is
+# not trusted to decide it for the same students on production.
+#
+# **tiivad deliberately does not mirror dev, and this asymmetry is the point rather than an
+# oversight.** Its bumps stay with a core dev on production. It is the widest thing here by a long
+# way: on 2026-09-11 production had 722 current exercise versions grading through `tiivad:tsl-compose`
+# against 84 on silmused, so a tiivad version that grades wrongly is most of the platform rather than
+# one course's worth. Both its maintainers keep dev, where that judgement is made and where a bad
+# version is found.
+#
+# What stands between a bump and production is not this file. It is the same two gates dev has, and
+# they are stronger than an allowlist: the image's own smoke check runs before the bare tag moves, so
+# a broken image never grades a submission, and a synthetic submission is graded end to end
+# afterwards, with the previous image retagged back if it scores wrong. A bad version is refused by
+# the machine, not by the list of who may ask. The list decides who may ask without waiting.
+#
+# pygrader and imgrec stay empty here for the same reasons they are empty for dev, not for any
+# production-specific one: pygrader is pinned to a commit in an unreviewed upstream tree rather than
+# a release, and nothing in imgrec has ever been bumped.
 
-prod.silmused: ""
+prod.silmused: "nuubis"
 prod.tiivad: ""
 prod.pygrader: ""
 prod.imgrec: ""

@@ -336,16 +336,28 @@ def test_refuses_an_image_absent_from_the_allowlist():
         _validate(patch=bump("imgrec.PILLOW_VERSION", "12.3.0", "12.4.0"), author="nuubis")
 
 
-def test_the_real_allowlist_parses_and_grants_nothing_on_production():
+def test_the_real_allowlist_grants_silmused_on_production_and_tiivad_only_on_dev():
+    """The asymmetry is the interesting part, so it is asserted rather than described.
+
+    Production was empty everywhere until EZ-1899, because it had no reconciler and a merged prod
+    bump deployed nothing. It has one now. silmused was opened up to match dev; tiivad deliberately
+    was not, because it is what most of the platform grades through, so its production bumps still
+    want a core dev. A future edit that quietly mirrors the two fails here.
+    """
     allow = pins.load_allowlist()
+
     assert allow["dev.silmused"] == ["nuubis"]
-    # More than one login on a line has to keep working — tiivad has two maintainers.
+    assert allow["prod.silmused"] == ["nuubis"]
+
+    # More than one login on a line has to keep working — tiivad has two maintainers on dev.
     assert allow["dev.tiivad"] == ["emuuli", "KarmoSaviauk"]
-    # Production stays empty until it has a reconciler, so that merging a prod pin change cannot be
-    # mistaken for having deployed it.
-    assert all(not v for k, v in allow.items() if k.startswith("prod."))
-    # pygrader is a commit in an unreviewed upstream tree, not a released package.
-    assert allow["dev.pygrader"] == []
+    assert allow["prod.tiivad"] == []
+
+    # pygrader is a commit in an unreviewed upstream tree, not a released package. imgrec has never
+    # been bumped. Both empty in both environments, and not as an oversight.
+    for image in ("pygrader", "imgrec"):
+        assert allow[f"dev.{image}"] == [], image
+        assert allow[f"prod.{image}"] == [], image
 
 
 # ------------------------------------------------------------------------------------------------
