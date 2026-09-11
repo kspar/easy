@@ -36,6 +36,7 @@ import type {
 import { errorMessage } from '../../api/errorMessage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
 import { useFileDropExtension } from '../../components/editorFileDrop.ts'
+import { indentation } from '../../components/editorIndent.ts'
 import { readSolutionFile, solutionFileErrorKey } from './solutionFile.ts'
 
 export default function TeacherTestingTab({
@@ -132,6 +133,7 @@ export default function TeacherTestingTab({
       if (cancelled || !editorContainerRef.current) return
 
       const extensions = [
+        indentation,
         basicSetup,
         lang,
         cmPlaceholder(t('submission.editorPlaceholder')),

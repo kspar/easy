@@ -6,6 +6,7 @@ import { EditorState, type Extension } from '@codemirror/state'
 import { basicSetup } from 'codemirror'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { useSoftWrap, type WrapScope } from './editorWrap.ts'
+import { indentation } from './editorIndent.ts'
 
 /**
  * Thin CodeMirror 6 wrapper for the places that need a plain text/code box: the exercise
@@ -93,6 +94,8 @@ export default function CodeEditor({
     if (!containerRef.current) return
 
     const extensions: Extension[] = [
+      // Before basicSetup: keymaps listed earlier are consulted first, and this one binds Tab.
+      indentation,
       basicSetup,
       wrapExtension(),
       EditorView.updateListener.of((u) => {
@@ -112,7 +115,8 @@ export default function CodeEditor({
     if (language) extensions.push(language)
     if (placeholder) extensions.push(cmPlaceholder(placeholder))
     if (theme.palette.mode === 'dark') extensions.push(oneDark)
-    // Last, so a caller's keymap is consulted before basicSetup's defaults.
+    // Keymaps are consulted in extension order, earliest first, so a caller's binding here only
+    // wins where basicSetup binds nothing — true of every key the callers use today.
     if (extra) extensions.push(...extra)
 
     const view = new EditorView({

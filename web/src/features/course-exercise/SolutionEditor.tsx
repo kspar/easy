@@ -21,6 +21,7 @@ import type { ExerciseDetails } from '../../api/types.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
 import { useFileDropExtension } from '../../components/editorFileDrop.ts'
+import { indentation } from '../../components/editorIndent.ts'
 import { readSolutionFile, solutionFileErrorKey } from './solutionFile.ts'
 import { record } from '../bug-report/breadcrumbs.ts'
 
@@ -348,6 +349,7 @@ export default forwardRef<SolutionEditorHandle, {
       if (cancelled || !editorRef.current) return
 
       const extensions = [
+        indentation,
         basicSetup,
         lang,
         cmPlaceholder(t('submission.editorPlaceholder')),

@@ -51,6 +51,7 @@ import { useFileDropAndPasteExtension } from '../../components/editorFileDrop.ts
 import { COMPACT_TOOLS } from '../../components/markdown/markdownTools.ts'
 import { applyFormat } from '../../components/markdown/markdownActions.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import { indentation } from '../../components/editorIndent.ts'
 import SafeText from '../../components/SafeText.tsx'
 
 /* ───────── Types ───────── */
@@ -746,6 +747,7 @@ function CommentEditor({
     if (!containerRef.current) return
 
     const extensions = [
+      indentation,
       minimalSetup,
       markdown(),
       wrapExtension(),

@@ -21,6 +21,7 @@
   "courses-page.spec.mjs": 27,
   "editor-file-drop.spec.mjs": 15,
   "editor-soft-wrap.spec.mjs": 10,
+  "editor-tab-indent.spec.mjs": 7,
   "embed-exercise.spec.mjs": 41,
   "environment-badge.spec.mjs": 24,
   "grade-table.spec.mjs": 29,

@@ -53,6 +53,7 @@ import { useMarkdownUpload } from '../../components/markdown/useMarkdownUpload.t
 import { useFileDropAndPasteExtension } from '../../components/editorFileDrop.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import { indentation } from '../../components/editorIndent.ts'
 import SafeText from '../../components/SafeText.tsx'
 
 const NOTIFY_KEY = 'teacherNotifyStudent'
@@ -271,6 +272,7 @@ export default function ActivityFeed({
     viewRef.current = null
 
     const extensions = [
+      indentation,
       minimalSetup,
       markdown(),
       wrapExtension(),
@@ -673,6 +675,7 @@ function EditCommentEditor({
     if (!containerRef.current) return
 
     const extensions = [
+      indentation,
       minimalSetup,
       markdown(),
       wrapExtension(),
