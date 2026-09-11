@@ -1,44 +1,60 @@
 # What production's grading images should be built from.
 #
-# ## These values are a belief, not a measurement
+# ## Changing this file deploys. Read that sentence again if you knew the old one.
 #
-# Nothing in this repository has ever been run against production, and production's executor host
-# does not appear in it: there is no inventory entry, no group_vars, and `ansible/run.sh` refuses any
-# production-shaped inventory outright. doc/dev-environment.md still carries the open question
-# "which container images does prod actually have?" — and it is still open.
+# **Everything above this line used to say the opposite, and it was true when it was written.** This
+# file carried a long warning that production had no inventory entry, no reconciler, and that a
+# merged change here was inert — which is exactly the belief that makes somebody merge a version bump
+# on a quiet afternoon without thinking too hard about it.
 #
-# So the values below are what the Dockerfiles have historically been *understood* to describe. They
-# have not been compared against 193.40.22.68. Before anything reconciles this file, somebody has to
-# go and look:
+# That stopped being true on 2026-09-11 (EZ-1899). Production's executor is in the inventory, the
+# reconciler runs on it every five minutes, and it follows the `:prod` channel that CI moves when this
+# file changes. So a merged change here reaches the host that grades real submissions in about five
+# minutes, unattended.
 #
-#   ssh easyexecprod 'sudo docker images --format "{{.Repository}}:{{.Tag}} {{.ID}} {{.CreatedAt}}"'
-#   ssh easyexecprod 'sudo docker run --rm --entrypoint pip3 silmused show silmused'
+# What catches a bad version is no longer a person reading this warning. It is the pair of gates on
+# the host: the image's own smoke check runs before the bare tag moves, so a broken image never
+# grades a submission, and a synthetic submission is graded end to end afterwards, with the previous
+# image retagged back if it scores wrong. Those are real and they have been exercised. They do not
+# check that a version is the one you *meant*, only that it works.
 #
-# and correct this file to match, or deliberately decide to move production to these versions.
+# ## The values were measured, and they match
 #
-# ## Nothing reconciles this yet
+# These were once a belief rather than a measurement, and the file said so. They have since been
+# compared against the host, and on 2026-09-11 they agreed exactly — not merely matching version
+# numbers, but each live image's `easy.grading.inputs` label equalling the digest `bin/pins.py`
+# computes for prod, and the registry's `prod` channel pointing at those same digests. Production is
+# running what this file describes.
 #
-# There is no production reconciler, so changing this file deploys nothing. That is why every entry
-# in .github/pins-bumpers.yml under `prod:` is empty: a change here needs a core dev, who will know
-# it is inert. When production is onboarded — an inventory entry plus `easy_environment: prod` — the
-# same CI and the same role apply, and the allowlist is the only thing that has to be filled in.
+# Re-checking that is two commands and no guesswork:
 #
-# ## Why a separate file at all, given that
+#   python bin/pins.py digest prod <image>
+#   curl -s http://<executor>/v1/version        # compare each image's `inputs`
+#
+# ## Who may change it
+#
+# `.github/pins-bumpers.yml` is no longer empty under `prod.`. silmused matches dev, because it is
+# the same judgement about the same students; tiivad deliberately does not, because it is what most
+# of the platform grades through. That file carries the reasoning.
+#
+# ## Why a separate file at all
 #
 # Because the unit of permission is the file. Somebody trusted to move silmused on dev is not thereby
 # trusted to move it on production, and no pull request should be able to do both at once. Building
-# that in now costs one file; retrofitting it later would mean redoing the guard, the allowlist and
+# that in early cost one file; retrofitting it would have meant redoing the guard, the allowlist and
 # the channel naming.
-
-## It has now been measured, and the result is not in this repository
-##
-## The commands above were run. Several of the values below were wrong, all describing something
-## newer than what is deployed, and one entry names an image that does not exist under that name at
-## all. The findings are deliberately not recorded here: they are the state of a live host, and this
-## repository is public.
-##
-## They are in the local-only production runbook. Ask kspar. Correcting this file to match, or moving
-## production to the versions in it, remain two different decisions — the measurement does not pick one.
+#
+# ## A note on an earlier warning, now withdrawn
+#
+# This file used to carry a block saying the values had been measured and several were wrong, one of
+# them naming an image that did not exist under that name. That was written before production was
+# onboarded, and it no longer describes the host: on 2026-09-11 every value here was compared against
+# it by digest and all four agreed. It is recorded rather than deleted because "the pins are wrong"
+# is a frightening thing to half-remember, and somebody who read the old block deserves to find out
+# here that it was resolved rather than quietly removed.
+#
+# Specific findings about a live host still do not belong in a public repository. Anything measured
+# stays in the local-only production runbook; ask kspar.
 
 schema: "1"
 environment: "prod"

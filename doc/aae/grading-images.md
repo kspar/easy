@@ -219,29 +219,44 @@ Stop the timer first, or the next tick puts the channel's version back — the s
 
 ## Production
 
-Not automated. Production is not managed by this repository at all: no inventory entry, no
-`group_vars`, and `ansible/run.sh` refuses any production-shaped inventory. What exists is the same
-artefacts and a manual promotion:
+**Automated since 2026-09-11 (EZ-1899).** This section used to open "not automated" and describe a
+manual promotion by hand; that is no longer how production works, and following it now would fight
+the reconciler rather than help it.
+
+Production runs the same mechanism as dev, from the same role, with two differences that are about
+its disk rather than its importance:
+
+| | dev | production |
+| --- | --- | --- |
+| follows | `:dev` channel | `:prod` channel |
+| retained versions | 3 | 1 |
+| refuses to pull below | 12 GB free | 6 GB free |
+
+Its executor is its own host in `ansible/inventories/production/hosts.yml`, which is gitignored
+because this repository is public. `ansible/run.sh` does run against production, behind a deliberate
+three-part opt-in — `EASY_ALLOW_PRODUCTION=yes`, an inventory that names production, and a keychain
+item that is not dev's — so that none of the three can be set by habit.
+
+So promoting a version to production is now the same act as promoting one to dev: change
+`doc/aae/pins/prod.yml`, get it merged, and the host picks it up within about five minutes, smoke
+checks it before the bare tag moves, then grades a synthetic submission end to end and retags the
+previous image back if that fails. Who may merge such a change without a core dev is
+`.github/pins-bumpers.yml`, and it is not the same list for both environments.
+
+The manual promotion above is kept only as the break-glass path, for when the reconciler itself is
+what is broken. Stop the timer first, or the next tick undoes you:
 
 ```sh
-# 1. What has dev proved?
-ssh easycoredev 'sudo cat /srv/easy/aae/images/state.json'
-# 2. Pull that exact image. Nothing is live yet.
-ssh easyexecprod 'sudo docker pull ghcr.io/kspar/easy/silmused:i<digest>'
-# 3. Prove it in place, still not live.
-ssh easyexecprod 'sudo docker run --rm --network none --memory 768m \
-  ghcr.io/kspar/easy/silmused:i<digest> /easy-smoke.sh'
-# 4. Make it live — one metadata operation. For tiivad, BOTH names.
-ssh easyexecprod 'sudo docker tag ghcr.io/kspar/easy/silmused:i<digest> silmused'
-# Rollback, instant and offline:
+ssh easyexecprod 'sudo systemctl stop easy-grading-sync.timer'
 ssh easyexecprod 'sudo docker tag ghcr.io/kspar/easy/silmused:i<previous> silmused'
 ```
 
-Promote the **artefact**, not the version number: pulling the digest dev has been grading with runs the
-same bytes, where re-pinning the version and rebuilding might not.
+Promote the **artefact**, not the version number: retagging the digest that has already been graded
+against runs the same bytes, where re-pinning a version and rebuilding might not.
 
-Onboarding production properly is an inventory entry plus `easy_environment: prod`, then populating
-`prod:` in the allowlist. The pins file, channel tag and allowlist entries already exist.
+One retained version means the local rollback goes back exactly one step. Further back is a pull
+rather than an impossibility, because every version the reconciler installs is also a published
+`:i<digest>` tag.
 
 > **Never `docker system prune -a` on an executor host.** It always broke grading, because
 > `aae/containers.py` builds `FROM <name>` and never pulls — and now it also deletes every rollback

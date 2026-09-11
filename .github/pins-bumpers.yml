@@ -59,11 +59,14 @@ dev.imgrec: ""
 # not trusted to decide it for the same students on production.
 #
 # **tiivad deliberately does not mirror dev, and this asymmetry is the point rather than an
-# oversight.** Its bumps stay with a core dev on production. It is the widest thing here by a long
-# way: on 2026-09-11 production had 722 current exercise versions grading through `tiivad:tsl-compose`
-# against 84 on silmused, so a tiivad version that grades wrongly is most of the platform rather than
-# one course's worth. Both its maintainers keep dev, where that judgement is made and where a bad
-# version is found.
+# oversight.** Its bumps stay with a core dev on production. It is the widest of these by a long way
+# — most auto-assessed exercises grade through it, far more than through any other image here — so a
+# tiivad version that grades wrongly is most of the platform rather than one course's worth. Both its
+# maintainers keep dev, which is where that judgement is made and where a bad version is found.
+#
+# The counts behind "by a long way" were measured on production and are deliberately not written
+# here, for the same reason doc/aae/pins/prod.yml keeps its own measurements out: this repository is
+# public. They are in the local-only runbook; ask kspar.
 #
 # What stands between a bump and production is not this file. It is the same two gates dev has, and
 # they are stronger than an allowlist: the image's own smoke check runs before the bare tag moves, so
