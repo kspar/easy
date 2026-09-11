@@ -33,7 +33,7 @@ tiivad.NUMPY_SPEC: "1.23.4"
 
 # silmused — the SQL grader. Bumped by Martti, twenty-odd times so far, every one a fork pull
 # request that a core dev had to merge by hand. That is the thing this file exists to end.
-silmused.SILMUSED_VERSION: "1.4.5"
+silmused.SILMUSED_VERSION: "0.0.47"
 silmused.PSYCOPG2_VERSION: "2.9.9"
 
 # pygrader — the Python grader, whose source is a separate repository.
