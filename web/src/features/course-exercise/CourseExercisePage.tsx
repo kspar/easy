@@ -168,11 +168,11 @@ function spaceBelow(el: HTMLElement): number {
  * The height this page may occupy, measured from where it actually starts rather than assumed.
  *
  * `calc(100vh - 48px)` was the old guess, and it was wrong by the height of everything between the
- * app bar and the panes — the title row, the deadline chips, the exceptions summary — so the
- * statement pane ran past the bottom of the window. Measuring also survives what moves this page's
- * top edge at runtime: a system message or update banner appearing above the app bar, and the chip
- * row wrapping onto a second line when the window narrows. The first changes the page's height,
- * which is why `document.body` is watched; the second does not, which is why the header is too.
+ * app bar and the panes — the title row — so the statement pane ran past the bottom of the window.
+ * Measuring also survives what moves this page's top edge at runtime: a system message or update
+ * banner appearing above the app bar, and a long title wrapping onto a second line when the window
+ * narrows. The first changes the page's height, which is why `document.body` is watched; the
+ * second does not, which is why the header is too.
  *
  * `frameSx` is `undefined` while disabled (mobile), which leaves the page in ordinary document flow.
  */
@@ -750,8 +750,35 @@ function StudentExerciseView() {
       (new Date(draft.created_at) > new Date(latestSubmission.submission_time) &&
         draft.solution !== latestSubmission.solution))
 
+  const deadlinePassed = exercise.deadline != null && isPast(new Date(exercise.deadline))
+
   const leftPane = (
     <>
+      {/* The chips sit at the top of the statement and scroll away with it: only the title row
+          above the frame stays on screen while the student works. */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* First in the row, because after a submission it is the thing the student came back for. */}
+        <GradeChip submissions={submissions} threshold={exercise.threshold} />
+        {exercise.deadline && (
+          // A date on its own makes the student do the arithmetic (audit X-029): the page knew the
+          // deadline had gone and said only when it was. The label says which it is; the colour
+          // agrees but does not carry the meaning alone.
+          <Chip
+            label={`${deadlinePassed ? t('exercises.deadlinePassed') : t('exercises.deadline')}: ${formatDateTime(new Date(exercise.deadline), dateFnsLocale)}`}
+            size="small"
+            variant="outlined"
+            color={deadlinePassed && exercise.is_open ? 'warning' : 'default'}
+          />
+        )}
+        {!exercise.is_open && (
+          <Chip
+            label={t('submission.exerciseClosed')}
+            size="small"
+            color="error"
+            variant="outlined"
+          />
+        )}
+      </Box>
       {exercise.text_html && (
         <RenderedMarkdown html={exercise.text_html} />
       )}
@@ -852,14 +879,12 @@ function StudentExerciseView() {
     </>
   )
 
-  const deadlinePassed = exercise.deadline != null && isPast(new Date(exercise.deadline))
-
   return (
     <>
-      {/* The header is measured, not assumed: the chip row wraps onto a second line when the
+      {/* The header is measured, not assumed: a long title wraps onto a second line when the
           window narrows, and the frame below has to lose exactly that much height. */}
       <Box ref={headerRef}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
           <IconButton
             component={RouterLink}
             to={`/courses/${courseId}/exercises`}
@@ -875,31 +900,6 @@ function StudentExerciseView() {
               : <FaceOutlined sx={{ fontSize: 22, color: 'text.secondary', ml: 0.5 }} />
             }
           </Tooltip>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* First in the row, because after a submission it is the thing the student came back
-              for — and this row is above the frame, so it stays on screen while they work. */}
-          <GradeChip submissions={submissions} threshold={exercise.threshold} />
-          {exercise.deadline && (
-            // A date on its own makes the student do the arithmetic (audit X-029): the page knew the
-            // deadline had gone and said only when it was. The label says which it is; the colour
-            // agrees but does not carry the meaning alone.
-            <Chip
-              label={`${deadlinePassed ? t('exercises.deadlinePassed') : t('exercises.deadline')}: ${formatDateTime(new Date(exercise.deadline), dateFnsLocale)}`}
-              size="small"
-              variant="outlined"
-              color={deadlinePassed && exercise.is_open ? 'warning' : 'default'}
-            />
-          )}
-          {!exercise.is_open && (
-            <Chip
-              label={t('submission.exerciseClosed')}
-              size="small"
-              color="error"
-              variant="outlined"
-            />
-          )}
         </Box>
       </Box>
 
@@ -1217,6 +1217,48 @@ function TeacherExerciseView() {
 
   const leftPane = (
     <>
+      {/* The chips and the exceptions sit at the top of the statement and scroll away with it:
+          only the title row above the frame stays on screen. */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+        {!exercise.student_visible && !isScheduled && (
+          <Chip
+            label={t('exercises.hidden')}
+            size="small"
+            color="default"
+          />
+        )}
+        {isScheduled && (
+          <Chip
+            label={`${t('exercises.visibleFrom')}: ${formatDateTime(visibleFromDate, dateFnsLocale)}`}
+            size="small"
+            variant="outlined"
+          />
+        )}
+        {exercise.soft_deadline && (
+          <Chip
+            label={`${t('exercises.deadline')}: ${formatDateTime(new Date(exercise.soft_deadline), dateFnsLocale)}`}
+            size="small"
+            variant="outlined"
+          />
+        )}
+        {exercise.hard_deadline && (
+          <Chip
+            label={`${t('exercises.closingTime')}: ${formatDateTime(new Date(exercise.hard_deadline), dateFnsLocale)}`}
+            size="small"
+            variant="outlined"
+          />
+        )}
+      </Box>
+
+      <ExceptionsSummary
+        exceptionStudents={exercise.exception_students ?? []}
+        exceptionGroups={exercise.exception_groups ?? []}
+        students={students}
+        groups={groups}
+        t={t}
+        dateFnsLocale={dateFnsLocale}
+      />
+
       {exercise.text_html && (
         <RenderedMarkdown html={exercise.text_html} />
       )}
@@ -1238,7 +1280,7 @@ function TeacherExerciseView() {
   return (
     <>
       <Box ref={headerRef}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
         <IconButton
           component={RouterLink}
           to={`/courses/${courseId}/exercises`}
@@ -1304,46 +1346,6 @@ function TeacherExerciseView() {
           onClose={() => setSettingsOpen(false)}
         />
       </Box>
-
-      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-        {!exercise.student_visible && !isScheduled && (
-          <Chip
-            label={t('exercises.hidden')}
-            size="small"
-            color="default"
-          />
-        )}
-        {isScheduled && (
-          <Chip
-            label={`${t('exercises.visibleFrom')}: ${formatDateTime(visibleFromDate, dateFnsLocale)}`}
-            size="small"
-            variant="outlined"
-          />
-        )}
-        {exercise.soft_deadline && (
-          <Chip
-            label={`${t('exercises.deadline')}: ${formatDateTime(new Date(exercise.soft_deadline), dateFnsLocale)}`}
-            size="small"
-            variant="outlined"
-          />
-        )}
-        {exercise.hard_deadline && (
-          <Chip
-            label={`${t('exercises.closingTime')}: ${formatDateTime(new Date(exercise.hard_deadline), dateFnsLocale)}`}
-            size="small"
-            variant="outlined"
-          />
-        )}
-      </Box>
-
-      <ExceptionsSummary
-        exceptionStudents={exercise.exception_students ?? []}
-        exceptionGroups={exercise.exception_groups ?? []}
-        students={students}
-        groups={groups}
-        t={t}
-        dateFnsLocale={dateFnsLocale}
-      />
       </Box>
 
       <Box ref={frameRef} sx={frameSx}>
