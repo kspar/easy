@@ -256,6 +256,24 @@ fun selectAllCourseExercisesLatestSubmissions(
         // keeps it out of the way of the DISTINCT ON below.
         val callerHasSeen = TeacherSubmissionSeen.submission.isNotNull()
 
+        /**
+         * Which (course exercise, student) pairs carry a flag on any attempt.
+         *
+         * Read that way rather than off the latest submission because a flag is a note about the
+         * student's work, and this list only ever shows their newest attempt: a flag set on attempt
+         * 2 would vanish when they submit attempt 3, with no way left to see or clear it. The write
+         * side sets every attempt of the student to match (SetSubmissionFlagged).
+         */
+        val flaggedWork: Set<Pair<Long, String>> = Submission
+            .select(Submission.courseExercise, Submission.student)
+            .where {
+                Submission.flagged eq true and (Submission.student inList courseStudents.keys) and
+                        (Submission.courseExercise inSubQuery
+                                CourseExercise.select(CourseExercise.id).where { CourseExercise.course eq courseId })
+            }
+            .map { it[Submission.courseExercise].value to it[Submission.student].value }
+            .toSet()
+
         val studentsWithSubmissions = (ExerciseVer innerJoin Exercise innerJoin CourseExercise leftJoin Submission)
             .join(TeacherSubmissionSeen, JoinType.LEFT, Submission.id, TeacherSubmissionSeen.submission) {
                 TeacherSubmissionSeen.teacher eq callerId
@@ -269,7 +287,6 @@ fun selectAllCourseExercisesLatestSubmissions(
                 Submission.number,
                 Submission.createdAt,
                 callerHasSeen,
-                Submission.flagged,
                 Submission.grade,
                 Submission.isAutoGrade,
                 Submission.isGradedDirectly
@@ -319,7 +336,7 @@ fun selectAllCourseExercisesLatestSubmissions(
                         it[Submission.createdAt],
                         grade,
                         it[callerHasSeen],
-                        it[Submission.flagged],
+                        flaggedWork.contains(it[CourseExercise.id].value to studentId),
                     )
 
                     val submissionStatus =

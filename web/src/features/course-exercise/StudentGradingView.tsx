@@ -475,7 +475,10 @@ export default function StudentGradingView({
                       worked through, and a flag missing from it means doubling back to find one. */}
                   {sub?.flagged && (
                     <Tooltip title={t('submission.flaggedForReview')}>
-                      <FlagRounded sx={{ fontSize: 16, color: 'warning.main', flexShrink: 0 }} />
+                      <FlagRounded
+                        titleAccess={t('submission.flaggedForReview')}
+                        sx={{ fontSize: 16, color: 'warning.main', flexShrink: 0 }}
+                      />
                     </Tooltip>
                   )}
                   {sub?.grade && (

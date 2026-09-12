@@ -753,10 +753,25 @@ export function useMarkSubmissionsSeen(
         `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/seen`,
         { method: 'POST', body },
       ),
-    onSuccess: () => {
+    // Mutations do not retry by default, and this one is not a button press: it fires by itself when
+    // a submission opens, and the view will not send it again for the same submission while it
+    // stays mounted. One dropped request would otherwise leave a dot the teacher believes they
+    // cleared. Two attempts, then it gives up — the ring stays blue on the next refetch, which is
+    // the honest answer rather than a lie in the other direction.
+    retry: 2,
+    onSuccess: (_data, body) => {
+      // Narrow on purpose. The whole-course-exercise prefix also covers the student's submission
+      // list, the activity feed and the inline comments, none of which a seen mark changes — and
+      // since the mark now fires on every submission opened, that was a handful of needless
+      // refetches per student for a teacher paging through a course.
       queryClient.invalidateQueries({
-        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId, 'submissions', 'latest'],
       })
+      for (const { id } of body.submissions) {
+        queryClient.invalidateQueries({
+          queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId, 'submissions', id],
+        })
+      }
     },
   })
 }
@@ -779,6 +794,9 @@ export function useMarkSubmissionsFlagged(
         `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/flagged`,
         { method: 'POST', body },
       ),
+    // Broad, unlike the seen mark above, and deliberately: core writes the flag to every attempt the
+    // student has made at this exercise, so any submission detail already loaded is now stale. This
+    // one is a button press a few times an hour, not an automatic write on every page open.
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],

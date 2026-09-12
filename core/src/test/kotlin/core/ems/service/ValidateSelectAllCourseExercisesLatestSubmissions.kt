@@ -261,4 +261,40 @@ class ValidateSelectAllCourseExercisesLatestSubmissions {
                     "Moodle grade and their grade in this application are now different numbers."
         }
     }
+
+    /**
+     * A flag set on an attempt the student has since replaced still reaches the teacher.
+     *
+     * The flag is a note about a student's work — "a suspected copy, ask the lecturer" — and this
+     * query only ever returns their newest attempt. Read off that row alone, the note would vanish
+     * the moment the student submitted again, silently, with no way left to see or clear it. The
+     * one case worth a test, because it is invisible in every other one.
+     */
+    @Test
+    fun `a flag on a replaced attempt still shows on the student's latest`() {
+        transaction {
+            Fixtures.submission(ce1Id, student2Id, number = 1, grade = 10, flagged = true)
+            Fixtures.submission(ce1Id, student2Id, number = 2, grade = 20)
+        }
+
+        val row = selectAllCourseExercisesLatestSubmissions(teacherId, courseId, ce1Id)
+            .single().latestSubmissions.single { it.accountId == student2Id }
+
+        assertEquals(20, row.latestSubmission!!.grade!!.grade) { "the latest attempt is the one returned" }
+        assertTrue(row.latestSubmission.flagged) { "and it carries the flag left on the earlier one" }
+    }
+
+    /** The other half: nobody else's work is flagged by it. */
+    @Test
+    fun `a flag stays on the student it was set on`() {
+        transaction {
+            Fixtures.submission(ce1Id, student2Id, number = 1, grade = 10, flagged = true)
+        }
+
+        val rows = selectAllCourseExercisesLatestSubmissions(teacherId, courseId, ce1Id)
+            .single().latestSubmissions
+
+        assertTrue(rows.single { it.accountId == student2Id }.latestSubmission!!.flagged)
+        assertFalse(rows.single { it.accountId == student1Id }.latestSubmission!!.flagged)
+    }
 }

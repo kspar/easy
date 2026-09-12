@@ -65,6 +65,20 @@ class ReadSubmissionDetails {
         return selectSubmissionDetails(submissionId, courseExId, caller.id)
     }
 
+    /**
+     * Whether any of this student's attempts at this exercise carries the flag.
+     *
+     * Not the attempt on screen: the flag marks the student's work, the button that sets it only
+     * appears on the newest attempt, and the two lists that show it read the newest too. Asking the
+     * submission alone would have this page disagree with the list it was opened from as soon as
+     * the student submitted again.
+     */
+    private fun isWorkFlagged(courseExId: Long, studentId: String): Boolean =
+        Submission.select(Submission.id).where {
+            Submission.courseExercise eq courseExId and (Submission.student eq studentId) and
+                    (Submission.flagged eq true)
+        }.limit(1).any()
+
     private fun selectSubmissionDetails(submissionId: Long, courseExId: Long, callerId: String): Resp = transaction {
         // Left-joined and filtered to the caller: seen is a row per teacher, and a colleague's row
         // is not an answer to whether this teacher has read it.
@@ -82,7 +96,7 @@ class ReadSubmissionDetails {
                 Submission.createdAt,
                 Submission.autoGradeStatus,
                 callerHasSeen,
-                Submission.flagged,
+                Submission.student,
                 Submission.number,
                 Submission.isGradedDirectly
             )
@@ -93,7 +107,7 @@ class ReadSubmissionDetails {
                     it[Submission.number],
                     it[Submission.solution],
                     it[callerHasSeen],
-                    it[Submission.flagged],
+                    isWorkFlagged(courseExId, it[Submission.student].value),
                     it[Submission.createdAt],
                     it[Submission.autoGradeStatus],
                     toGradeRespOrNull(

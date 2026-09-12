@@ -6,7 +6,10 @@ import core.db.Submission
 import core.ems.service.assertAssessmentControllerChecks
 import jakarta.validation.Valid
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.security.access.annotation.Secured
@@ -59,9 +62,28 @@ class SetSubmissionFlagged {
         setSubmissionFlagged(submissions, req.flagged)
     }
 
+    /**
+     * The mark lands on the student's work on this exercise, not on the one attempt that was open.
+     *
+     * Both places a flag is read — the students list and the student picker — show the *latest*
+     * submission, and the button only appears on the latest. So a flag left behind on attempt 2
+     * disappears the moment the student submits attempt 3: invisible to the colleague it was left
+     * for, and unreachable by the teacher who set it. Writing every attempt of that student keeps
+     * the mark where the reader is looking, and clearing it clears the lot.
+     */
     private fun setSubmissionFlagged(submissionIds: List<Long>, flagged: Boolean) = transaction {
-        Submission.update({ Submission.id inList submissionIds }) {
-            it[Submission.flagged] = flagged
+        val work = Submission
+            .select(Submission.courseExercise, Submission.student)
+            .where { Submission.id inList submissionIds }
+            .map { it[Submission.courseExercise] to it[Submission.student] }
+            .distinct()
+
+        work.forEach { (courseExercise, student) ->
+            Submission.update({
+                (Submission.courseExercise eq courseExercise) and (Submission.student eq student)
+            }) {
+                it[Submission.flagged] = flagged
+            }
         }
     }
 }

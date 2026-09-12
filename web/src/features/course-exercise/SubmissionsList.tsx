@@ -424,7 +424,10 @@ export default function SubmissionsList({
                     it can be found again, and the list is where anyone would look for it. */}
                 {sub?.flagged && (
                   <Tooltip title={t('submission.flaggedForReview')}>
-                    <FlagRounded sx={{ fontSize: 16, color: 'warning.main', flexShrink: 0 }} />
+                    <FlagRounded
+                      titleAccess={t('submission.flaggedForReview')}
+                      sx={{ fontSize: 16, color: 'warning.main', flexShrink: 0 }}
+                    />
                   </Tooltip>
                 )}
 

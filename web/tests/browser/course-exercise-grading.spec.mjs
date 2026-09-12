@@ -356,8 +356,8 @@ test('course-exercise-grading', async ({ launch, check }) => {
   await page.getByText('Mari Maasikas').first().click()
   check(
     'the student picker shows the flag as well',
-    await waitUntil(async () => (await page.locator('[aria-label="Flagged for review"]').count()) === 1),
-    `${await page.locator('[aria-label="Flagged for review"]').count()} flag(s) in the picker`,
+    await waitUntil(async () => (await page.getByRole('img', { name: 'Flagged for review' }).count()) === 1),
+    `${await page.getByRole('img', { name: 'Flagged for review' }).count()} flag(s) in the picker`,
   )
   await page.keyboard.press('Escape')
 
@@ -584,8 +584,10 @@ test('course-exercise-grading', async ({ launch, check }) => {
   // as importantly, not on Jaan's.
   check(
     'the flag set earlier is visible on that student in the list',
-    await waitUntil(async () => (await page.locator('[aria-label="Flagged for review"]').count()) === 1),
-    `${await page.locator('[aria-label="Flagged for review"]').count()} flag(s) shown`,
+    // By role, not by `[aria-label=...]`: MUI hides an icon from the accessibility tree unless it is
+    // given `titleAccess`, so a CSS attribute match would pass over a flag no screen reader can find.
+    await waitUntil(async () => (await page.getByRole('img', { name: 'Flagged for review' }).count()) === 1),
+    `${await page.getByRole('img', { name: 'Flagged for review' }).count()} flag(s) shown`,
   )
   await shot('04-back-to-list')
 
