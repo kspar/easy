@@ -93,25 +93,60 @@ Something that removes backups should be possible to interrogate before it is be
 
 ## The file archive
 
-`easy-files-backup.sh`, written by `roles/core_service`, run nightly at 05:00 by
+`easy-files-backup.sh`, written by `roles/core_service`, run nightly at 03:10 by
 `easy-files-backup.timer`. It produces `files-<YYYY-MM-DD>T<HHMM>.tar.gz` in
 `easy_files_backup_dir`, holding the upload directory with bare storage keys as filenames — so a
 restore is `tar -xzf <archive> -C /srv/easy/files` and nothing else has to change.
 
 It follows the rules above rather than inventing its own: written to `.partial` and renamed only
 after `tar -t` reads it back, pruned only after a successful archive, aged by the timestamp in the
-file name rather than mtime, and interrogable with `sudo easy-files-backup --dry-run`.
+file name rather than mtime, kept in the same grandfather-father-son buckets, and interrogable with
+`sudo easy-files-backup --dry-run`.
 
-Three things specific to it:
+**The two jobs are two halves of one backup, and the schedule says so.** A restore needs the rows
+from a dump and the bytes from an archive, *from the same night*. Three things run overnight and the
+order is deliberate:
 
-- **Retention is a plain window, `easy_files_backup_keep_days`, default 14.** The grandfather-
-  father-son scheme next door exists because deploys take extra dumps, so a count of days was an
-  unbounded count of files. Nothing takes an extra file archive, so a window already has a ceiling.
-- **05:00, deliberately clear of 04:00.** That is when `easy_core_stored_file_sweep_cron` fires, and
-  the sweep is the one job on the host that *deletes from the directory being archived*.
+| | |
+| --- | --- |
+| 03:10 | the file archive |
+| 03:30, +20 min splay | the database dump |
+| 04:00 | `easy_core_stored_file_sweep_cron`, the only thing that deletes uploaded files |
+
+**Files first, then the database.** `TeacherUploadFile` already settled which way round this belongs:
+it writes the object before the row, because a row with no object is a broken image while an object
+with no row is invisible junk the sweep collects. A file uploaded between the two jobs lands on the
+harmless side of that. Dump first and the same upload restores as a broken image.
+
+**Both before the sweep**, which is the part that is easy to get wrong. An earlier revision put the
+archive at 05:00 to keep `tar` clear of the sweep unlinking files underneath it. That bought a
+smaller problem and sold a bigger one: it put the one deleting job *between* the halves, so a restore
+paired a database still listing a file with an archive taken after it was collected. The `tar` race
+is handled in the script instead — an upload can land at any hour, so scheduling never avoided it.
+
+**Retention matches the dumps bucket for bucket** (`easy_files_backup_keep_all_days`, `_keep_daily`,
+`_keep_weekly`, `_keep_monthly`) so that every dump still on disk has an archive from the same night
+to pair with. It began as a plain 14-day window, which quietly broke that: the dumps' monthly buckets
+reach months back, and pairing one of those with the oldest archive available would restore an old
+database against a newer file set, with every image added since simply missing. Matching buckets also
+keeps *fewer* files while reaching further back.
+
+`keep_all_days` is the one bucket that does not fully carry over. On the database side it exists for
+the extra dump `deploy.sh` takes before a release; nothing takes an extra file archive, so a
+pre-deploy dump pairs with the most recent nightly archive rather than one of its own. Anything
+uploaded that day is therefore missing from that pairing — acceptable, because it is the harmless
+direction, and worth knowing before a mid-day restore.
+
+Two more properties specific to this job:
+
 - **`tar` exiting 1 is tolerated; exiting 2 is not.** This directory is live — an upload can land
   mid-walk, and GNU tar reports "file removed before we read it" as a warning. Treating that as
   fatal would mean an ordinary upload could cost a night's backup, silently.
+- **An archive whose name carries no usable date is skipped, never deleted.** Both prune loops pass
+  over such a name, so without an explicit guard it would fall through to `rm` for the sole reason
+  that no bucket claimed it — deleting a backup *because* its age is unknown. `--dry-run` reports it
+  as `skip`. **`easy-db-backup` does not have this guard**, so a hand-renamed dump there is removed
+  on the next prune; worth fixing when someone is next in that file.
 
 **Why archives and not a mirror.** Keys are immutable, so a mirror would be cheaper — and would
 faithfully reproduce a sweep that deleted a file it should not have, which is the failure this is

@@ -8,11 +8,25 @@
 # database and nothing else, so a lost disk took every uploaded image while the rows describing them
 # restored perfectly — an article full of broken images and a database that looks healthy.
 #
+# **The database dump and this archive are two halves of one backup.** `stored_file` holds the
+# metadata and this directory holds the bytes, so a restore is only as good as the pairing. Two
+# consequences are built into the schedule and the retention rather than left to whoever restores:
+#
+#   1. This runs BEFORE the dump, and both run before the stored-file sweep at 04:00. Order matters
+#      and the codebase already settled which way round: uploads write the object first and the row
+#      second, because "a row with no object is a broken image; an object with no row is invisible
+#      junk that the sweep collects". Archiving files first puts anything uploaded in between on the
+#      harmless side of that. Dumping first would put it on the broken-image side, and running after
+#      the sweep would put a deletion between the halves, which is worse than either.
+#   2. Retention matches the dump's, bucket for bucket, so every dump still on disk has a file
+#      archive from the same night. A plain 14-day window did not: the dump's monthly buckets reach
+#      months back, and pairing one of those with the oldest archive available would mean restoring
+#      an old database against a newer file set — every image added since, missing.
+#
 # Why a tar rather than a mirror. Keys are immutable: a file is written once, never rewritten, and
 # only ever deleted by StoredFileSweep. A mirror would therefore be cheaper and would also faithfully
 # reproduce a sweep that deleted something it should not have, which is the failure this is actually
 # insuring against — the sweep ships with `delete: false` precisely because nobody trusts it yet.
-# Dated archives mean a wrong deletion is recoverable for {{ easy_files_backup_keep_days }} days.
 #
 # Root, not the core user: files land at 0600 owned by {{ easy_core_user }}, in a 0750 directory, so
 # nothing else on the host can read them. That is the right mode for them and it leaves root as the
@@ -22,55 +36,92 @@ set -euo pipefail
 
 SRC={{ easy_core_storage_local_dir | quote }}
 DIR={{ easy_files_backup_dir | quote }}
-KEEP_DAYS={{ easy_files_backup_keep_days }}
+KEEP_ALL_DAYS={{ easy_files_backup_keep_all_days }}
+KEEP_DAILY={{ easy_files_backup_keep_daily }}
+KEEP_WEEKLY={{ easy_files_backup_keep_weekly }}
+KEEP_MONTHLY={{ easy_files_backup_keep_monthly }}
 
+# `--dry-run` prints what would be kept and removed, and touches nothing. A script that deletes
+# backups should be inspectable before it is trusted, and this is how you inspect it on the host.
 DRY_RUN=false
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=true
 
-# Age from the timestamp in the file name, never from mtime. doc/backups.md states the rule for the
-# database dumps and it is the same rule here: a file copied off-host and back, or restored with
-# `cp -p`, gets an mtime that has nothing to do with when its contents were taken — so mtime pruning
-# either keeps a stale archive forever or deletes today's.
+# Grandfather-father-son, the same shape and the same reasoning as easy-db-backup. Ages come from the
+# timestamp in the file name, never from mtime: a file copied off-host and back, or restored with
+# `cp -p`, gets an mtime that has nothing to do with when its contents were taken.
 #
-# `>` and not `>=`: KEEP_DAYS=14 keeps fourteen days of archives, and the fifteenth is the one that
-# goes. An off-by-one here is a day of history, quietly.
+# An archive can satisfy several buckets at once — today's is also this week's and this month's — so
+# the keep set is a union and the real file count sits well below the sum.
 prune() {
-    local now today_epoch kept=0 removed=0
-    now=$(date +%Y-%m-%d)
-    today_epoch=$(date -d "$now" +%s)
+    local kept=0 removed=0
+    declare -A newest_of_day newest_of_week newest_of_month
 
+    # Sorted by name, which for this stamp format is chronological, so later assignments overwrite
+    # earlier ones and each bucket ends holding its newest member.
+    local f base stamp day week month
     while IFS= read -r f; do
-        local base stamp day age age_epoch
         base=$(basename "$f")
         stamp=${base#files-}; stamp=${stamp%.tar.gz}
         day=${stamp%%T*}
-        # A name this cannot parse is not one of ours. Leave it alone and say so, rather than
-        # guessing at its age — the first version of the sweep next door aborted forever on one
-        # unparseable name, and deleting one is the worse half of that lesson.
-        if ! age_epoch=$(date -d "$day" +%s 2>/dev/null); then
-            echo "  skip   $base (unparseable date; not deleting)"
-            continue
-        fi
-        age=$(( (today_epoch - age_epoch) / 86400 ))
-        if [ "$age" -gt "$KEEP_DAYS" ]; then
-            if $DRY_RUN; then
-                echo "  remove $base (${age}d old, keeping ${KEEP_DAYS}d)"
-            else
-                rm -f -- "$f"
-            fi
-            removed=$((removed + 1))
-        else
-            $DRY_RUN && echo "  keep   $base (${age}d old)"
-            kept=$((kept + 1))
+        # A name this cannot parse is not one of ours. Skipped rather than guessed at, and never
+        # deleted — the sweep next door learned that lesson by aborting forever on one bad name.
+        [[ $day =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || continue
+        week=$(date -d "$day" +%G-%V 2>/dev/null) || continue
+        month=${day%-*}
+        newest_of_day[$day]=$f
+        newest_of_week[$week]=$f
+        newest_of_month[$month]=$f
+    done < <(find "$DIR" -maxdepth 1 -name 'files-*.tar.gz' -type f | sort)
+
+    declare -A keep
+    local k cutoff
+
+    # Recent archives first, before any bucket has a say.
+    cutoff=$(date -d "$KEEP_ALL_DAYS days ago" +%Y-%m-%d)
+    while IFS= read -r f; do
+        base=$(basename "$f"); stamp=${base#files-}; stamp=${stamp%.tar.gz}; day=${stamp%%T*}
+        [[ $day =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || continue
+        if [[ "$day" > "$cutoff" || "$day" == "$cutoff" ]]; then
+            keep[$f]="recent"
         fi
     done < <(find "$DIR" -maxdepth 1 -name 'files-*.tar.gz' -type f | sort)
 
-    echo "retention: kept $kept, removed $removed (older than ${KEEP_DAYS}d, by the date in the name)"
+    # Roles accumulate rather than overwrite, so a report says every reason an archive is kept.
+    for k in $(printf '%s\n' "${!newest_of_day[@]}"   | sort | tail -n "$KEEP_DAILY");   do f=${newest_of_day[$k]};   keep[$f]="${keep[$f]:+${keep[$f]}+}daily";   done
+    for k in $(printf '%s\n' "${!newest_of_week[@]}"  | sort | tail -n "$KEEP_WEEKLY");  do f=${newest_of_week[$k]};  keep[$f]="${keep[$f]:+${keep[$f]}+}weekly";  done
+    for k in $(printf '%s\n' "${!newest_of_month[@]}" | sort | tail -n "$KEEP_MONTHLY"); do f=${newest_of_month[$k]}; keep[$f]="${keep[$f]:+${keep[$f]}+}monthly"; done
+
+    local skipped=0
+    while IFS= read -r f; do
+        base=$(basename "$f"); stamp=${base#files-}; stamp=${stamp%.tar.gz}; day=${stamp%%T*}
+        # An archive whose name carries no usable date is left where it is, and this is the one place
+        # the two prune loops must agree with each other. The loops above `continue` past such a name
+        # so it joins no bucket — which, without this, drops it straight through to `rm` for the sole
+        # reason that nothing claimed it. That is deleting a backup *because* we could not tell how
+        # old it is, which is exactly backwards: a stray file costs disk, and the file we cannot date
+        # might be the only copy of something. Caught by the scenario suite, which planted one.
+        if ! [[ $day =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            skipped=$((skipped + 1))
+            echo "  skip   $base (no date in the name; not deleting)"
+            continue
+        fi
+        if [ -n "${keep[$f]:-}" ]; then
+            kept=$((kept + 1))
+            [ "$DRY_RUN" = true ] && echo "  keep   $base  (${keep[$f]})"
+        else
+            removed=$((removed + 1))
+            if [ "$DRY_RUN" = true ]; then
+                echo "  remove $base"
+            else
+                rm -f "$f"
+            fi
+        fi
+    done < <(find "$DIR" -maxdepth 1 -name 'files-*.tar.gz' -type f | sort)
+
+    echo "retention: kept $kept, removed $removed${skipped:+, skipped $skipped} (all <${KEEP_ALL_DAYS}d, then daily $KEEP_DAILY, weekly $KEEP_WEEKLY, monthly $KEEP_MONTHLY)"
 }
 
 if $DRY_RUN; then
-    # Deletes nothing and takes no archive. Something that removes backups should be possible to
-    # interrogate before it is believed — doc/backups.md.
     prune
     exit 0
 fi
@@ -91,9 +142,9 @@ partial="$final.partial"
 cleanup() { rm -f "$partial"; }
 trap cleanup EXIT
 
-# `|| [ $? -eq 1 ]` is not laziness about errors. This directory is live: StoredFileSweep unlinks
-# collected files, and every upload creates an `upload-*.part` and renames it away. GNU tar exits 1
-# for "file removed before we read it" — a warning about a file that was never ours to archive — and
+# `|| [ $? -eq 1 ]` is not laziness about errors. This directory is live: every upload creates an
+# `upload-*.part` and renames it away, and the sweep unlinks collected files. GNU tar exits 1 for
+# "file removed before we read it" — a warning about a file that was never ours to archive — and
 # exits 2 for anything genuinely wrong. Without this, `set -e` turns an ordinary upload landing
 # mid-walk into a night with no backup and nothing saying so. Exit 2 still aborts, and the
 # verification below is what actually decides the archive is good.
@@ -111,8 +162,4 @@ echo "wrote $final ($(du -h "$final" | cut -f1), $count files)"
 
 # Only after a successful archive, for the same reason the database script prunes last: pruning
 # unconditionally means a fortnight of failures quietly eating the history it was protecting.
-#
-# Plain age, not the database script's grandfather-father-son. That scheme exists because deploys
-# take extra dumps and "14 days" was therefore an unbounded number of files. Nothing here is
-# triggered by a deploy, so one archive a night for $KEEP_DAYS nights has a ceiling already.
 prune

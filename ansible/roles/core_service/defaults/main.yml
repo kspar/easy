@@ -86,28 +86,52 @@ easy_files_backup_enabled: true
 # shared directory would mean one of the two jobs writing somewhere it cannot read back.
 easy_files_backup_dir: /srv/easy/file-backups
 
-# 14 days, matching the database dumps. The thing this protects against — a sweep that collected a
-# file still in use — is noticed on the timescale of somebody opening an old article, which is slow.
+# The SAME buckets as the database dumps, deliberately, and this is the load-bearing part of the
+# whole job rather than a tidiness preference.
 #
-# There is no grandfather-father-son here and no size ceiling implied by the number. Archives are
-# proportional to everything ever uploaded and are taken nightly, so fourteen of them is fourteen
-# copies of the whole directory. That is nothing today and is the thing to revisit first if this
-# directory ever becomes large — most likely by switching to hardlinked snapshots, since keys are
-# immutable and every archive after the first is almost entirely a copy of the last.
-easy_files_backup_keep_days: 14
+# A restore needs both halves from the same night: `stored_file` rows from the dump, bytes from the
+# archive. The first version of this kept a plain 14-day window while the dumps keep grandfather-
+# father-son reaching months back — so every dump older than a fortnight had no archive to pair
+# with, and restoring one would have meant an old database against the newest file set, with every
+# image added since simply missing. Matching the buckets means "there is a dump" and "there is an
+# archive" answer the same question.
+#
+# It also keeps FEWER files than the window did — roughly nine against fourteen — while reaching
+# further back, which matters on a host whose disk is the one it is protecting.
+#
+# The one bucket that does not fully carry over is `keep_all_days`. On the database side it exists
+# for the extra dump `deploy.sh` takes before a release; nothing takes an extra file archive, so
+# here it only ever covers the last few nightlies. Kept at the same value anyway, because a
+# pre-deploy dump still has to pair with *something*, and the newest archive within those days is
+# the closest thing to it. See doc/backups.md for what that pairing does and does not cover.
+easy_files_backup_keep_all_days: 3
+easy_files_backup_keep_daily: 5
+easy_files_backup_keep_weekly: 2
+easy_files_backup_keep_monthly: 2
 
-# 05:00 UTC, and the gap is the point rather than tidiness. Two other things touch these hosts
-# overnight and this has to sit clear of both:
+# 03:10 UTC, twenty minutes AHEAD of the database dump, and the ordering is the point.
 #
+# Three things touch this host overnight and the sequence has to be right:
+#
+#   03:10               this archive
 #   03:30 +20min splay  the database dump (roles/postgres)
 #   04:00               easy_core_stored_file_sweep_cron — which DELETES FROM THIS DIRECTORY
 #
-# The sweep is the one that matters. An archive running while it unlinks files is tar walking a
-# directory that is changing underneath it, and an archive taken mid-sweep is a copy of a state that
-# never existed. The script tolerates the race because it cannot be eliminated — an ordinary upload
-# can land at any hour — but overlapping the one job guaranteed to be deleting would be choosing it.
-easy_files_backup_on_calendar: "*-*-* 05:00:00"
-easy_files_backup_splay: 10min
+# **Files first, then the database.** `TeacherUploadFile` already settled which way round this
+# belongs: it writes the object before the row, because "a row with no object is a broken image; an
+# object with no row is invisible junk that the sweep collects". A file uploaded between these two
+# jobs lands on the harmless side of that — bytes in the archive, no row in the dump. Dump first and
+# the same upload becomes a broken image on restore.
+#
+# **Both before the sweep.** An earlier revision put this at 05:00 to keep tar clear of the sweep
+# unlinking files underneath it. That bought a smaller problem and sold a bigger one: it put the one
+# job that DELETES between the two halves, so a restore paired a database still listing a file with
+# an archive taken after it was collected. The tar race is handled in the script instead, where it
+# belongs — an upload can land at any hour, so it was never avoidable by scheduling anyway.
+#
+# No splay. It exists to keep many hosts from starting at once; there is one host per environment,
+# and here a deterministic gap in front of the dump is worth more than jitter.
+easy_files_backup_on_calendar: "*-*-* 03:10:00"
 
 # Take one immediately when the role runs, so the first archive is watched rather than unattended.
 easy_files_backup_run_now: true
