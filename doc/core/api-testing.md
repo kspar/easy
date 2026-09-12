@@ -49,9 +49,9 @@ where to look if the header names ever drift.
 These headers are a **local-dev mechanism only**. Deployed environments set
 `easy.core.auth-enabled: true`, and core then verifies the Keycloak access token itself against
 the realm's JWKS (`core/conf/security/EasyUserJwtConverter.kt`), ignoring these headers entirely.
-Apache in front of core is a plain reverse proxy. Core used to trust `oidc_claim_*` headers set by
-mod_auth_openidc in production too, which is why this file previously described them as the
-production mechanism — see EZ-1724.
+nginx in front of core is a plain reverse proxy. Core used to trust `oidc_claim_*` headers set by
+Apache's mod_auth_openidc on deployed environments too, which is why this file previously described
+them as the production mechanism — see EZ-1724.
 
 Test accounts from the test data: `dev-student` (student), `dev-teacher` (teacher), `kspar`
 (all three roles).

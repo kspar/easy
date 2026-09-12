@@ -189,7 +189,7 @@ server {
     # is answered with index.html. Kept as its own location rather than handled by a `map`, so that the
     # exemption is visible next to the thing it exempts.
     location /embed/ {
-        add_header Cache-Control "no-cache" always;
+        add_header Cache-Control "no-store" always;
         # Repeated, not inherited — see the note at the top of this file.
         add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Content-Type-Options "nosniff" always;
@@ -200,8 +200,23 @@ server {
 
     # A single-page app: every route that is not a real file is index.html, and index.html itself
     # must never be cached or a deploy does not reach anyone still holding the old one.
+    #
+    # `no-store` rather than `no-cache`, which is the stronger of the two and is needed (EZ-1908).
+    # `no-cache` still permits a browser to *store* the document and reuse it on a history-style
+    # navigation — which is what restoring a discarded tab is. The stale index.html then asks for a
+    # hashed chunk the deploy removed, /assets/ answers =404, and the tab comes back to a blank
+    # page. `no-store` means there is nothing to reuse, so a restored tab re-fetches and gets the
+    # asset names that exist.
+    #
+    # Two costs, both looked at before choosing this. Everything else served from this location —
+    # the favicons, the webmanifest, the embed resizer under /static/ — is re-fetched rather than
+    # revalidated; they are small and an SPA loads its document once a session. And Chrome and
+    # Firefox both refuse the back/forward cache to a `no-store` main resource, so a page restored
+    # by Back reloads from scratch and loses unsaved editor work. Nothing in the app relies on that
+    # today: every external link opens in a new tab, and the IdP round trip is a fresh navigation
+    # with no editor on screen. Adding a same-tab link out of the app would change that answer.
     location / {
-        add_header Cache-Control "no-cache" always;
+        add_header Cache-Control "no-store" always;
         # Repeated, not inherited — see the note at the top of this file.
         add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Content-Type-Options "nosniff" always;

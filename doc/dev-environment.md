@@ -359,11 +359,10 @@ testers have built since the first one.
 proxy authenticates nothing and what is left is TLS termination, a static directory and one
 `proxy_pass`. nginx is the simpler of the two to write and read for that job.
 
-The trade, stated so nobody is surprised by it: **production runs Apache/2.4.52**, so until the same
-role reaches production, dev and production differ in the component terminating TLS. That is a
-narrow class of difference now that the proxy does nothing clever, but it is not zero — and dev is
-supposed to be the release gate. The intent is that the nginx role replaces prod's hand-built Apache
-when these playbooks get there, rather than the two diverging permanently.
+**The same role serves every environment now**, so there is no longer a difference in the component
+terminating TLS. The gap mattered while it lasted: dev is supposed to be the release gate, and an
+authenticating proxy answers an unauthenticated path differently from one that only forwards.
+Closing it is why this role exists rather than a second hand-built vhost.
 
 Built by `ansible/roles/nginx`. Certificates come from Let's Encrypt over HTTP-01 with
 `certbot certonly --webroot` — deliberately not the nginx plugin, which would rewrite the site config
@@ -389,11 +388,20 @@ location = /config.json {
 }
 
 location / {
+    add_header Cache-Control "no-store" always;
     try_files $uri $uri/ /index.html =404;
 }
 ```
 
-Two things about that last line, both learned by getting them wrong:
+`no-store` rather than `no-cache` on the document (EZ-1908). `no-cache` still lets a browser store
+`index.html` and reuse it on a history-style navigation — which is what restoring a discarded tab
+is — so a tab left open across a deploy came back asking for a hashed chunk that no longer exists
+and rendered nothing at all. The cost is the back/forward cache, which Chrome and Firefox both
+refuse to a `no-store` main resource; nothing in the app relies on it today because every external
+link opens in a new tab. `web/public/boot-guard.js` is the other half of that fix and needs no
+cooperation from the server.
+
+Two things about the `try_files` line, both learned by getting them wrong:
 
 - **The trailing `=404` matters.** Without it, a request that falls through to `/index.html` when
   that file does not exist — the state of the host until the first deploy — re-enters the same
