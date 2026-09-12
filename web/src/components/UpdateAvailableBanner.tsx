@@ -17,6 +17,19 @@ import { updateReportContext } from '../features/bug-report/reportContext.ts'
  *
  * For the same reason it is `info` rather than `warning`, and dismissible: an old bundle is a
  * papercut, not an outage, and interrupting a grading session over one earns nothing.
+ *
+ * ### The exception: a file that is actually gone (EZ-1908)
+ *
+ * Once a deploy has replaced the dist, a lazily imported chunk this tab has not fetched yet — a
+ * CodeMirror mode, KaTeX, the highlighter — 404s. Every one of those imports is behind a `catch`,
+ * so the symptom is a feature quietly not happening: no syntax colouring, a formula left as
+ * `$x^2$`. `public/boot-guard.js` sees the failure and raises `easy:asset-missing`.
+ *
+ * That case is not a papercut and is not a guess, so the banner changes character: `warning`
+ * rather than `info`, a message about what just failed rather than about a version, and **no
+ * dismiss button** — the page is already not doing what was asked of it, and hiding the one
+ * explanation available would leave nothing behind. It still does not reload by itself. The
+ * teacher-side editors do not autosave, so that decision is unchanged by anything here.
  */
 
 /**
@@ -43,6 +56,24 @@ export default function UpdateAvailableBanner({ enabled = true }: { enabled?: bo
   const { t } = useTranslation()
   const { available, deployed } = useWebUpdate(enabled)
   const [dismissed, setDismissed] = useState<string | null>(readDismissed)
+
+  /**
+   * One of this bundle's own files is gone (EZ-1908), as reported by `public/boot-guard.js`.
+   *
+   * Latched rather than cleared: nothing that happens in this tab can put the file back, so there
+   * is no state to return to. Deliberately independent of the version poll — `version.json` can be
+   * unreachable, or the deployed commit unreadable, and a chunk that 404s is proof on its own.
+   */
+  const [assetMissing, setAssetMissing] = useState(false)
+  useEffect(() => {
+    const onMissing = (event: Event) => {
+      const url = (event as CustomEvent<{ url?: string }>).detail?.url
+      record('error', `an app asset is missing, so this tab's bundle is stale: ${url ?? 'unknown'}`)
+      setAssetMissing(true)
+    }
+    window.addEventListener('easy:asset-missing', onMissing)
+    return () => window.removeEventListener('easy:asset-missing', onMissing)
+  }, [])
 
   /**
    * Tell the bug reporter that this tab is behind (EZ-1786).
@@ -89,12 +120,15 @@ export default function UpdateAvailableBanner({ enabled = true }: { enabled?: bo
     window.location.reload()
   }, [])
 
-  const show = available && deployed?.commit !== dismissed
+  // A missing file outranks both the poll and any dismissal: this tab has already failed to do
+  // something it was asked to do, and a dismissal given for "there is a newer build" was not
+  // consent to hide that.
+  const show = assetMissing || (available && deployed?.commit !== dismissed)
 
   return (
     <Collapse in={show} unmountOnExit>
       <Alert
-        severity="info"
+        severity={assetMissing ? 'warning' : 'info'}
         icon={<RefreshOutlined />}
         sx={{ borderRadius: 0, alignItems: 'center' }}
         // Both affordances live here rather than one of them in `onClose`: MUI renders the close
@@ -105,18 +139,20 @@ export default function UpdateAvailableBanner({ enabled = true }: { enabled?: bo
             <Button size="small" color="inherit" onClick={reload} sx={{ whiteSpace: 'nowrap' }}>
               {t('update.reload')}
             </Button>
-            <IconButton
-              size="small"
-              color="inherit"
-              onClick={dismiss}
-              aria-label={t('update.dismiss')}
-            >
-              <CloseOutlined fontSize="small" />
-            </IconButton>
+            {!assetMissing && (
+              <IconButton
+                size="small"
+                color="inherit"
+                onClick={dismiss}
+                aria-label={t('update.dismiss')}
+              >
+                <CloseOutlined fontSize="small" />
+              </IconButton>
+            )}
           </Box>
         }
       >
-        {t('update.available')}
+        {t(assetMissing ? 'update.missing' : 'update.available')}
       </Alert>
     </Collapse>
   )

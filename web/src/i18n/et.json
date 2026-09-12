@@ -132,6 +132,7 @@
   },
   "update": {
     "available": "Rakendust on uuendatud, palun salvesta muudatused ja värskenda lehte.",
+    "missing": "Osa lehest jäi laadimata, sest rakendust uuendati selle kaardi lahtioleku ajal. Värskendamine parandab selle — palun salvesta enne muudatused.",
     "reload": "Värskenda",
     "dismiss": "Mitte praegu"
   },

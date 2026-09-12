@@ -62,6 +62,47 @@ Dismissal is stored per commit in `localStorage`, so waving away today's release
 next week's. Covered by `tests/unit/web-version.test.mjs` (the comparison rules) and
 `tests/browser/web-update-banner.spec.mjs` (the wiring and the buttons).
 
+### When the tab comes back to a bundle that is gone
+
+The banner above assumes the tab is still running. A tab the browser put to sleep is not: it
+discards the page to reclaim memory and re-navigates when the person returns, and that navigation
+may reuse the *stored* document rather than re-fetching it. A stale `index.html` then asks for a
+hashed entry chunk the deploy removed, `/assets/` answers 404, and the tab comes back blank — with
+the banner nowhere to be seen, since its code is in the chunk that never loaded (EZ-1908).
+
+Two halves, because neither covers the other:
+
+- **`Cache-Control: no-store` on the SPA document**, in `ansible/roles/nginx`. `no-cache` is not
+  enough: it permits storing the document and reusing it on a history-style navigation, which is
+  what restoring a discarded tab is. Note that this also costs the back/forward cache, which Chrome
+  and Firefox both refuse to a `no-store` main resource — harmless today because every external
+  link in the app opens in a new tab, and a same-tab link out of the app would make it matter.
+- **`public/boot-guard.js`**, loaded ahead of the module in `index.html`. It reloads the page once
+  when one of our own `/assets/` files fails to load, which needs no cooperation from whatever is
+  serving the dist. It is in `public/` so that its own name never carries a content hash, and a
+  file rather than an inline script because the site's policy is `script-src 'self'`.
+
+The guard reloads **only before the app has rendered** — `main.tsx` calls `window.__easyBootGuard
+.booted()` after `createRoot().render()`, and from there on a missing chunk is logged and left
+alone. That is the same rule as the banner's, for the same reason: a blank page has nothing to
+lose, a live tab has an editor in it. One reload per tab, remembered in `sessionStorage` and
+cleared on a successful boot, so a broken deploy cannot turn into a reload loop.
+
+A live tab that meets a missing chunk later — a CodeMirror mode, KaTeX, highlight.js — is told
+instead of reloaded. The guard raises `easy:asset-missing`, and `UpdateAvailableBanner` switches to
+`warning`, says that part of the page could not load, and drops its dismiss button: the page is
+already failing to do what was asked of it, and a dismissal given for "there is a newer build" was
+not consent to hide that. It still offers the reload rather than taking it. That matters because
+every one of those imports sits behind a `catch`, so the untreated symptom is a feature quietly not
+happening — no syntax colouring, a formula left as `$x^2$` — which reads as never having been
+built.
+
+Fixing it so that nothing fails at all means keeping the previous release's `/assets/` reachable
+after the deploy flips its symlink, which is a deploy change rather than a frontend one.
+
+Covered by `tests/unit/boot-guard.test.mjs` (every branch of the decision) and
+`tests/browser/boot-guard.spec.mjs` (the wiring, a real `error` event, and a real reload).
+
 ## Runtime configuration
 
 Environment-specific settings are fetched from **`/config.json` at boot**, not baked in at build

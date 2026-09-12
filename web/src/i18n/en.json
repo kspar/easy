@@ -132,6 +132,7 @@
   },
   "update": {
     "available": "A new version of Lahendus is available. Reload the page to start using it — unsaved work in the editor will be lost, so finish what you are doing first.",
+    "missing": "Part of this page could not be loaded, because Lahendus was updated while this tab was open. Reloading will fix it — unsaved work in the editor will be lost, so save what you can first.",
     "reload": "Reload",
     "dismiss": "Not now"
   },

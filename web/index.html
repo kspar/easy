@@ -8,6 +8,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- First, and blocking, because it exists to catch the failure of everything below it
+         (EZ-1908). A tab restored from a stale document asks for a hashed chunk the deploy
+         removed; this reloads the page once instead of leaving it blank. It is a file rather than
+         an inline script because the site's policy is `script-src 'self'`, and it is in `public/`
+         rather than `src/` so that its own name never gets a content hash — a boot guard that can
+         itself 404 would be worth nothing. -->
+    <script src="/boot-guard.js"></script>
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />

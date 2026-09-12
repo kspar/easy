@@ -59,3 +59,9 @@ createRoot(root).render(
     <App />
   </StrictMode>,
 )
+
+// The boot guard can stand down (EZ-1908). Everything it exists to catch has already happened by
+// now: the entry chunk loaded and the app module evaluated. A missing asset from here on belongs
+// to a live session — someone with a half-written solution in the editor — and reloading that out
+// from under them is the one thing this app has always refused to do.
+window.__easyBootGuard?.booted()
