@@ -121,8 +121,22 @@ test('course-exercise-grading', async ({ launch, check }) => {
   // what lands in these.
   const grades = []
   const feedbacks = []
+  const exports = []
 
   await fakeApi(page, [
+    // First: this path ends in "/submissions" and every other submission handler below would
+    // match it. Fulfilled by hand rather than as JSON, because the whole point of the endpoint is
+    // that it answers with a file and the name in a Content-disposition header.
+    [/\/export\/courses\/[^/]+\/exercises\/[^/]+\/submissions$/, ({ route, method, body, url }) => {
+      if (method === 'POST') exports.push({ body, path: new URL(url).pathname })
+      route.fulfill({
+        status: 200,
+        contentType: 'application/octet-stream',
+        headers: { 'Content-disposition': `attachment; filename=${CE}_Maasikas_Mari_77_lahendus.py` },
+        body: 'a = int(input())\n',
+      })
+      return undefined
+    }],
     ['/account/checkin', () => ({})],
     [`/courses/${COURSE}/basic`, () => ({
       title: 'Programming 101', alias: null, archived: false, color: '#1976d2', course_code: null,
@@ -242,6 +256,31 @@ test('course-exercise-grading', async ({ launch, check }) => {
     await waitUntil(async () =>
       page.locator('.cm-content').first().evaluate((el) => el.classList.contains('cm-lineWrapping')),
     ),
+  )
+
+  // Save as file goes through core, because core is the side that knows the student's real name and
+  // the submission id. The browser has a username and a submission number, which is what an earlier
+  // version of this menu item assembled by hand.
+  await panelMenu.click()
+  const download = page.waitForEvent('download').catch(() => null)
+  await page.getByRole('menuitem', { name: /Save as file/i }).click()
+  await waitUntil(async () => exports.length > 0)
+  check(
+    'saving a file asks core to export it, rather than naming it in the browser',
+    exports.length === 1,
+    JSON.stringify(exports[0] ?? null),
+  )
+  check(
+    'with the submission on screen, under this course exercise',
+    exports[0]?.path === `/v2/export/courses/${COURSE}/exercises/${CE}/submissions` &&
+      JSON.stringify(exports[0]?.body) === JSON.stringify({ submissions: [{ id: SUBMISSION }] }),
+    exports[0]?.path,
+  )
+  const saved = await download
+  check(
+    "and the file keeps the name core gave it, not one the browser invented",
+    saved?.suggestedFilename() === `${CE}_Maasikas_Mari_77_lahendus.py`,
+    saved?.suggestedFilename() ?? 'no download event',
   )
 
   await panelMenu.click()

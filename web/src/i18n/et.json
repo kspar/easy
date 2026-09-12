@@ -254,6 +254,7 @@
     "submissionNr": "esitus #{{nr}}",
     "uploadFile": "Vali fail arvutist",
     "copyCode": "Kopeeri kood",
+    "downloadFellBack": "Salvestasin ekraanil oleva koodi — serverist allalaadimine ebaõnnestus",
     "saveAsFile": "Salvesta failina",
     "uploadErrorTooLarge": "Valitud fail on liiga suur",
     "uploadErrorNotText": "Valitud fail pole tekstifail",

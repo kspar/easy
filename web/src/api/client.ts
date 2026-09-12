@@ -162,9 +162,20 @@ export async function apiFetch<T>(
      * discards a resolved promise it no longer wants.
      */
     signal?: AbortSignal
+    /**
+     * Hand back the `Response` rather than a parsed body.
+     *
+     * For the one thing core sends that is not JSON: a submission export, which is the file itself
+     * with its name in a `Content-Disposition` header. Everything above this line — the token, the
+     * error envelope, the 401 handling, the breadcrumb — is wanted for that call too, and a second
+     * transport written beside this one would have drifted from all four.
+     *
+     * Call it as `apiFetch<Response>(path, { raw: true, … })`.
+     */
+    raw?: boolean
   } = {},
 ): Promise<T> {
-  const { method = 'GET', body, headers = {}, noAuth = false, signal } = options
+  const { method = 'GET', body, headers = {}, noAuth = false, signal, raw = false } = options
 
   const isFormData = body instanceof FormData
 
@@ -263,6 +274,11 @@ export async function apiFetch<T>(
     record('api', `${method} ${path} -> ${response.status} in ${tookMs}ms`)
   } else if (tookMs >= SLOW_REQUEST_MS) {
     record('api', `${method} ${path} -> ${response.status} in ${tookMs}ms (slow)`)
+  }
+
+  // Before the 204 and the body read, both of which consume the stream the caller wants.
+  if (raw) {
+    return response as T
   }
 
   if (response.status === 204) {

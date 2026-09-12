@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import {
+  exportSubmission,
   useCreateInlineComment,
   useDeleteInlineComment,
   useMarkSubmissionsSeen,
@@ -50,6 +51,7 @@ import SubmissionSelector from './SubmissionSelector.tsx'
 import AnnotatedCodeEditor, { type NewCommentData } from './AnnotatedCodeEditor.tsx'
 import type { TeacherExerciseDetails, SubmissionRow } from '../../api/types.ts'
 import SafeText from '../../components/SafeText.tsx'
+import { saveResponseAsFile } from '../../components/downloadTextFile.ts'
 
 export default function StudentGradingView({
   courseId,
@@ -181,6 +183,20 @@ export default function StudentGradingView({
     if (!subDetail) return
     await deleteComment.mutateAsync({ submissionId: subDetail.id, commentId })
   }, [subDetail, deleteComment])
+
+  /**
+   * Core names the exported file, not the browser.
+   *
+   * It has the student's family and given name and the submission id; this view has a username and
+   * a submission number. The old interface's teacher-side save went through the same endpoint for
+   * the same reason. The endpoint also takes a list and answers with a zip, which is where a "save
+   * all of these" belongs when somebody asks for it.
+   */
+  const handleDownloadSubmission = useCallback(async () => {
+    if (!activeSubSummary) return
+    const response = await exportSubmission(courseId, courseExerciseId, activeSubSummary.id)
+    await saveResponseAsFile(response, exercise.solution_file_name)
+  }, [courseId, courseExerciseId, activeSubSummary, exercise.solution_file_name])
 
   // Select submission by number (from activity feed clicks)
   const handleSelectSubmissionNumber = useCallback((nr: number) => {
@@ -475,10 +491,7 @@ export default function StudentGradingView({
               key={subDetail.id}
               solution={subDetail.solution}
               fileName={exercise.solution_file_name}
-              // Whose solution, and which submission of theirs — a teacher saving several in a row
-              // is working down a list, and every file in the course is otherwise called the same
-              // thing.
-              downloadName={`${studentId}_${activeSubSummary?.submission_number ?? 1}_${exercise.solution_file_name}`}
+              onDownload={handleDownloadSubmission}
               comments={currentSubComments}
               currentTeacherId={username}
               onCreateComment={isViewingLatest ? handleCreateComment : undefined}

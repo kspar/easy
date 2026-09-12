@@ -22,7 +22,7 @@ import { errorMessage } from '../../api/errorMessage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
 import { useFileDropExtension } from '../../components/editorFileDrop.ts'
 import { indentation } from '../../components/editorIndent.ts'
-import { downloadTextFile } from '../../components/downloadTextFile.ts'
+import { downloadTextFile, fileTimestamp } from '../../components/downloadTextFile.ts'
 import { readSolutionFile, solutionFileErrorKey } from './solutionFile.ts'
 import { record } from '../bug-report/breadcrumbs.ts'
 
@@ -426,9 +426,11 @@ export default forwardRef<SolutionEditorHandle, {
   }, [])
 
   const handleDownload = useCallback(() => {
+    // A readable timestamp, as the old interface had. `Date.now()` sorted the same and told the
+    // person holding the file nothing about when they saved it.
     downloadTextFile(
       getSolution(),
-      `${courseExerciseId}_${Date.now()}_${exercise.solution_file_name}`,
+      `${courseExerciseId}_${fileTimestamp()}_${exercise.solution_file_name}`,
     )
   }, [getSolution, courseExerciseId, exercise.solution_file_name])
 

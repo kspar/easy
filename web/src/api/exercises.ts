@@ -152,6 +152,26 @@ export function saveDraftKeepalive(
   )
 }
 
+/**
+ * Export one submission as a file, named by core.
+ *
+ * Core builds the name from the course exercise, the student's family and given name, the
+ * submission id and the solution file name — which is what the old interface's teacher-side save
+ * used, and is strictly better than anything the browser can assemble, since the browser has a
+ * username where core has a person. The same endpoint takes several ids and answers with a zip,
+ * which is where a "save all of these" would go.
+ */
+export function exportSubmission(
+  courseId: string,
+  courseExerciseId: string,
+  submissionId: string,
+): Promise<Response> {
+  return apiFetch<Response>(
+    `/export/courses/${courseId}/exercises/${courseExerciseId}/submissions`,
+    { method: 'POST', body: { submissions: [{ id: submissionId }] }, raw: true },
+  )
+}
+
 export function useTeacherActivities(
   courseId: string,
   courseExerciseId: string,

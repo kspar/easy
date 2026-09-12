@@ -12,7 +12,7 @@
   "course-exercise-assessment.spec.mjs": 18,
   "course-exercise-embed.spec.mjs": 16,
   "course-exercise-feedback-shapes.spec.mjs": 7,
-  "course-exercise-grading.spec.mjs": 25,
+  "course-exercise-grading.spec.mjs": 28,
   "course-exercise-layout.spec.mjs": 11,
   "course-exercise-rerun-all.spec.mjs": 27,
   "course-exercise-retry-autoassess.spec.mjs": 6,

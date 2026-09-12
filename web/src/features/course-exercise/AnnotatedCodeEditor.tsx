@@ -93,11 +93,16 @@ interface Props {
   solution: string
   fileName: string
   /**
-   * What "Save as file" names the download. Defaults to `fileName`, which is the same name for
-   * every student in the course — a teacher working down a group would collect
-   * `lahendus (3).py`. The grading view passes something that says whose solution it is.
+   * What "Save as file" does, for a caller that can do better than this component can.
+   *
+   * The grading view asks core to export the submission, because core names the file from the
+   * student's real name and the submission id and the browser cannot. Without this the menu item
+   * falls back to saving the text on screen under `fileName`, which is the same name for every
+   * student in the course — a teacher working down a group would collect `lahendus (3).py`.
+   *
+   * Rejecting is allowed and is reported to the user; the caller does not need to catch.
    */
-  downloadName?: string
+  onDownload?: () => Promise<void>
   comments: InlineCommentResp[]
   currentTeacherId?: string
   onCreateComment?: (data: NewCommentData) => Promise<void>
@@ -268,7 +273,7 @@ function lineHoverPlugin() {
 export default function AnnotatedCodeEditor({
   solution,
   fileName,
-  downloadName,
+  onDownload,
   comments,
   currentTeacherId,
   onCreateComment,
@@ -309,9 +314,21 @@ export default function AnnotatedCodeEditor({
     }
   }, [solution, t, setSnackMsg])
 
-  const handleDownload = useCallback(() => {
-    downloadTextFile(solution, downloadName ?? fileName)
-  }, [solution, downloadName, fileName])
+  const handleDownload = useCallback(async () => {
+    // The caller's version knows things this component does not — which student, which submission —
+    // so it wins when it is there. Its failure is a network failure, and falling back to the text
+    // already on screen beats telling a teacher to try again: they get the file, under a duller
+    // name, and a line saying so.
+    if (onDownload) {
+      try {
+        await onDownload()
+        return
+      } catch {
+        setSnackMsg(t('submission.downloadFellBack'))
+      }
+    }
+    downloadTextFile(solution, fileName)
+  }, [onDownload, solution, fileName, t, setSnackMsg])
 
   const commentsRef = useRef(comments)
   commentsRef.current = comments
