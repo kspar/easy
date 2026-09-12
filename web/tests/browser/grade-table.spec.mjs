@@ -40,6 +40,7 @@ const sub = (n, grade, isAutograde) => ({
   time: '2026-08-01T10:00:00.000Z',
   grade: grade === null ? null : { grade, is_autograde: isAutograde, is_graded_directly: true },
   seen: true,
+  flagged: false,
 })
 
 const exercise = (ceId, title, idx, rows) => ({

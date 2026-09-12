@@ -18,12 +18,12 @@ const GROUP = 'g1'
 const requests = []
 
 const rowsAll = [
-  { student_id: 's1', given_name: 'Mari', family_name: 'Maasikas', status: 'COMPLETED', groups: [{ id: GROUP, name: 'Rühm A' }], submission: { id: '101', submission_number: 1, time: '2026-08-01T10:00:00.000Z', grade: null, seen: true } },
-  { student_id: 's2', given_name: 'Jaan', family_name: 'Tamm', status: 'COMPLETED', groups: [{ id: GROUP, name: 'Rühm A' }], submission: { id: '102', submission_number: 1, time: '2026-08-01T11:00:00.000Z', grade: null, seen: true } },
+  { student_id: 's1', given_name: 'Mari', family_name: 'Maasikas', status: 'COMPLETED', groups: [{ id: GROUP, name: 'Rühm A' }], submission: { id: '101', submission_number: 1, time: '2026-08-01T10:00:00.000Z', grade: null, seen: true, flagged: false } },
+  { student_id: 's2', given_name: 'Jaan', family_name: 'Tamm', status: 'COMPLETED', groups: [{ id: GROUP, name: 'Rühm A' }], submission: { id: '102', submission_number: 1, time: '2026-08-01T11:00:00.000Z', grade: null, seen: true, flagged: false } },
   // No submission, so it must not end up in the request — the page compares solutions, and a student
   // who has not submitted has none.
   { student_id: 's3', given_name: 'Kati', family_name: 'Kask', status: 'UNSTARTED', groups: [], submission: null },
-  { student_id: 's4', given_name: 'Peeter', family_name: 'Puu', status: 'COMPLETED', groups: [], submission: { id: '104', submission_number: 1, time: '2026-08-01T12:00:00.000Z', grade: null, seen: true } },
+  { student_id: 's4', given_name: 'Peeter', family_name: 'Puu', status: 'COMPLETED', groups: [], submission: { id: '104', submission_number: 1, time: '2026-08-01T12:00:00.000Z', grade: null, seen: true, flagged: false } },
 ]
 
 test('similarity-page', async ({ launch, check }) => {

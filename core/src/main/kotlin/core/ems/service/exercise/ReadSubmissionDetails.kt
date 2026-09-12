@@ -5,11 +5,14 @@ import tools.jackson.databind.annotation.JsonSerialize
 import core.conf.security.EasyUser
 import core.db.AutoGradeStatus
 import core.db.Submission
+import core.db.TeacherSubmissionSeen
 import core.ems.service.*
 import core.util.DateTimeSerializer
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
@@ -29,7 +32,9 @@ class ReadSubmissionDetails {
         @get:JsonProperty("id") val id: String,
         @get:JsonProperty("submission_number") val submissionNumber: Int,
         @get:JsonProperty("solution") val solution: String,
+        /** Whether the *caller* has opened this submission — not whether anybody has. */
         @get:JsonProperty("seen") val seen: Boolean,
+        @get:JsonProperty("flagged") val flagged: Boolean,
         @get:JsonSerialize(using = DateTimeSerializer::class)
         @get:JsonProperty("created_at") val createdAt: DateTime,
         @get:JsonProperty("autograde_status") val autoGradeStatus: AutoGradeStatus,
@@ -57,28 +62,38 @@ class ReadSubmissionDetails {
             courseIdString,
         )
 
-        return selectSubmissionDetails(submissionId, courseExId)
+        return selectSubmissionDetails(submissionId, courseExId, caller.id)
     }
 
-    private fun selectSubmissionDetails(submissionId: Long, courseExId: Long): Resp = transaction {
-        Submission.select(
-            Submission.id,
-            Submission.grade,
-            Submission.isAutoGrade,
-            Submission.solution,
-            Submission.createdAt,
-            Submission.autoGradeStatus,
-            Submission.seen,
-            Submission.number,
-            Submission.isGradedDirectly
-        )
+    private fun selectSubmissionDetails(submissionId: Long, courseExId: Long, callerId: String): Resp = transaction {
+        // Left-joined and filtered to the caller: seen is a row per teacher, and a colleague's row
+        // is not an answer to whether this teacher has read it.
+        val callerHasSeen = TeacherSubmissionSeen.submission.isNotNull()
+
+        Submission
+            .join(TeacherSubmissionSeen, JoinType.LEFT, Submission.id, TeacherSubmissionSeen.submission) {
+                TeacherSubmissionSeen.teacher eq callerId
+            }
+            .select(
+                Submission.id,
+                Submission.grade,
+                Submission.isAutoGrade,
+                Submission.solution,
+                Submission.createdAt,
+                Submission.autoGradeStatus,
+                callerHasSeen,
+                Submission.flagged,
+                Submission.number,
+                Submission.isGradedDirectly
+            )
             .where { Submission.id eq submissionId and (Submission.courseExercise eq courseExId) }
             .map {
                 Resp(
                     it[Submission.id].value.toString(),
                     it[Submission.number],
                     it[Submission.solution],
-                    it[Submission.seen],
+                    it[callerHasSeen],
+                    it[Submission.flagged],
                     it[Submission.createdAt],
                     it[Submission.autoGradeStatus],
                     toGradeRespOrNull(

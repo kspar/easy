@@ -735,6 +735,13 @@ export function useDeleteInlineComment(
   })
 }
 
+/**
+ * "I have read this" — recorded per teacher, so it answers for the caller alone.
+ *
+ * The page sends it on opening a submission. Core stores a row per (teacher, submission) rather than
+ * a bit on the submission, which is what stops one teacher's browsing from clearing the dot for
+ * every colleague on the course.
+ */
 export function useMarkSubmissionsSeen(
   courseId: string,
   courseExerciseId: string,
@@ -744,6 +751,32 @@ export function useMarkSubmissionsSeen(
     mutationFn: (body: { submissions: { id: string }[]; seen: boolean }) =>
       apiFetch(
         `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/seen`,
+        { method: 'POST', body },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId],
+      })
+    },
+  })
+}
+
+/**
+ * "Come back to this" — one mark on the submission, shared by the whole teaching team.
+ *
+ * The opposite choice to `seen` above, and deliberately: a flag is a note to whoever grades next,
+ * which is often somebody else. It used to be a `localStorage` key, so it was per browser, invisible
+ * to colleagues, and lost with the cache.
+ */
+export function useMarkSubmissionsFlagged(
+  courseId: string,
+  courseExerciseId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { submissions: { id: string }[]; flagged: boolean }) =>
+      apiFetch(
+        `/teacher/courses/${courseId}/exercises/${courseExerciseId}/submissions/flagged`,
         { method: 'POST', body },
       ),
     onSuccess: () => {

@@ -86,10 +86,10 @@ class GradingBehaviourTest {
     // --- the same rule, through the query a teacher's page uses -----------------------------
 
     private fun statuses(): Map<String, StudentExerciseStatus> =
-        selectAllCourseExercisesLatestSubmissions(courseId, ceId)
+        selectAllCourseExercisesLatestSubmissions(teacher, courseId, ceId)
             .single().latestSubmissions.associate { it.accountId to it.status }
 
-    private fun counts(): List<Int> = selectAllCourseExercisesLatestSubmissions(courseId, ceId).single()
+    private fun counts(): List<Int> = selectAllCourseExercisesLatestSubmissions(teacher, courseId, ceId).single()
         .let { listOf(it.completedCount, it.startedCount, it.unstartedCount, it.ungradedCount) }
 
     @Test

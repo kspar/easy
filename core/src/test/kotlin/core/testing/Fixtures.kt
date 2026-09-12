@@ -485,7 +485,7 @@ object Fixtures {
         solution: String = "print('hello')",
         isAutoGrade: Boolean = false,
         isGradedDirectly: Boolean = true,
-        seen: Boolean = false,
+        flagged: Boolean = false,
         autoGradeStatus: AutoGradeStatus = AutoGradeStatus.NONE,
     ): Long = Submission.insertAndGetId {
         it[courseExercise] = EntityID(courseExerciseId, CourseExercise)
@@ -496,7 +496,7 @@ object Fixtures {
         it[Submission.grade] = grade
         it[Submission.isAutoGrade] = if (grade == null) null else isAutoGrade
         it[Submission.isGradedDirectly] = if (grade == null) null else isGradedDirectly
-        it[Submission.seen] = seen
+        it[Submission.flagged] = flagged
         it[Submission.number] = number
     }.value
 }

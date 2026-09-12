@@ -233,9 +233,30 @@ object Submission : LongIdTable("submission") {
     val grade = integer("grade").nullable()
     val isAutoGrade = bool("is_auto_grade").nullable()
     val autoGradeStatus = enumerationByName("auto_grade_status", 20, AutoGradeStatus::class)
-    val seen = bool("seen")
+
+    /**
+     * Marked for the teaching team's attention, by any of them, for any of them. Shared on purpose —
+     * unlike [TeacherSubmissionSeen], which is the same submission seen through one person's eyes.
+     */
+    val flagged = bool("flagged")
     val number = integer("number")
     val isGradedDirectly = bool("is_graded_directly").nullable()
+}
+
+/**
+ * Which teacher has opened which submission. A row is "seen"; no row is "unseen".
+ *
+ * Per teacher rather than per submission because it answers "have *I* read this", and a course can
+ * have several teachers looking at the same students. The row is written by the act of reading, so
+ * it has to be idempotent — the primary key is (submission, teacher), and marking seen twice is one
+ * row either way.
+ */
+object TeacherSubmissionSeen : Table("teacher_submission_seen") {
+    val submission = reference("submission_id", Submission)
+    val teacher = reference("teacher_id", Account)
+    val seenAt = datetime("seen_at")
+
+    override val primaryKey = PrimaryKey(submission, teacher)
 }
 
 object StatsSubmission : Table("stats_submission") {

@@ -115,6 +115,7 @@ const row = (s) => ({
           time: '2026-08-01T10:00:00.000Z',
           grade: { grade: grades[s.sub], is_autograde: true, is_graded_directly: true },
           seen: true,
+          flagged: false,
         },
 })
 
@@ -235,6 +236,7 @@ test('course-exercise-rerun-all', async ({ launch, check }) => {
       solution: 'print(a + b)',
       created_at: '2026-08-01T10:00:00.000Z',
       seen: true,
+      flagged: false,
       autograde_status: 'COMPLETED',
       grade: { grade: grades[url.includes(MARI.sub) ? MARI.sub : JAAN.sub], is_autograde: true, is_graded_directly: true },
       auto_assessment: { grade: 100, feedback: 'ok' },

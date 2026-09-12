@@ -50,6 +50,7 @@ const submissionDetail = () => ({
   created_at: '2026-08-01T10:00:00.000Z',
   grade: retried ? { grade: 100, is_autograde: true, is_graded_directly: true } : null,
   seen: true,
+  flagged: false,
   auto_assessment: {
     grade: retried ? 100 : 0,
     feedback: retried ? 'All tests passed on the retry' : 'Executor unavailable',

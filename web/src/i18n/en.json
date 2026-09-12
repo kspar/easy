@@ -304,6 +304,7 @@
     "markUnseen": "Mark as unseen",
     "flagForReview": "Flag for review",
     "unflag": "Remove flag",
+    "flaggedForReview": "Flagged for review",
     "commentDeleted": "Comment deleted",
     "confirmDeleteComment": "Delete this comment?",
     "retryAutoassess": "Re-run tests",

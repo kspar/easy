@@ -322,9 +322,9 @@
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, flagged, number)
             VALUES (9001, 9001, 'kspar', now() - interval '5 days',
-                    'print("Hello, World!")', 'COMPLETED', 100, true, true, true, 1);
+                    'print("Hello, World!")', 'COMPLETED', 100, true, true, false, 1);
 
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
             VALUES (9001, 9001, 'kspar', 9001, now() - interval '5 days', 100,
@@ -338,12 +338,15 @@
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, flagged, number)
             VALUES (9002, 9002, 'kspar', now() - interval '3 days',
-                    E'a = int(input())\nb = int(input())\nprint(a + b)', 'COMPLETED', 45, false, true, true, 1);
+                    E'a = int(input())\nb = int(input())\nprint(a + b)', 'COMPLETED', 45, false, true, false, 1);
 
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, flagged, number)
+            <!-- The one flagged submission in the fixtures. A feature nobody can see in seeded data
+                 is a feature nobody checks by hand: every submission here used to arrive `seen`,
+                 which is exactly why the unseen dot went unnoticed for so long. -->
             VALUES (9003, 9002, 'kspar', now() - interval '1 day',
                     E'a = int(input())\nb = int(input())\nprint(a + b + 1)', 'COMPLETED', 65, false, true, true, 2);
 
@@ -362,10 +365,10 @@
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, flagged, number)
             VALUES (9004, 9003, 'kspar', now() - interval '4 days',
                     E'Merge sort is my favorite sorting algorithm because of its elegant divide-and-conquer approach.\n\nIt works by splitting an array in half recursively until each piece has one element,\nthen merging them back together in sorted order. The time complexity is O(n log n)\nin all cases — best, average, and worst — which makes it very predictable.\n\nI find it interesting because it demonstrates how breaking a problem into smaller\nsubproblems can lead to efficient solutions. It is also a stable sort, which means\nequal elements keep their original order.',
-                    'NONE', 4, false, true, true, 1);
+                    'NONE', 4, false, true, false, 1);
 
             <!--
                 =============================================
@@ -374,10 +377,10 @@
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, flagged, number)
             VALUES (9005, 9005, 'kspar', now() - interval '2 hours',
                     E'def factorial(n):\n    result = 1\n    for i in range(1, n + 1):\n        result *= i\n    return result',
-                    'COMPLETED', 50, true, true, true, 1);
+                    'COMPLETED', 50, true, true, false, 1);
 
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
             VALUES (9004, 9005, 'kspar', 9005, now() - interval '2 hours', 50,
@@ -390,10 +393,10 @@
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, flagged, number)
             VALUES (9006, 9006, 'kspar', now() - interval '10 days',
                     E'import sys\n\n\ndef fizzbuzz(n):\n    """Print FizzBuzz for numbers 1 to n."""\n    for i in range(1, n + 1):\n        if i % 15 == 0:\n            output = "FizzBuzz"\n        elif i % 3 == 0:\n            output = "Fizz"\n        elif i % 5 == 0:\n            output = "Buzz"\n        else:\n            output = str(i)\n        print(output)\n\n\ndef main():\n    n = 100\n    fizzbuzz(n)\n\n\nif __name__ == "__main__":\n    main()',
-                    'COMPLETED', 33, true, true, true, 1);
+                    'COMPLETED', 33, true, true, false, 1);
 
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
             VALUES (9005, 9006, 'kspar', 9006, now() - interval '10 days', 33,
@@ -406,10 +409,10 @@
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, flagged, number)
             VALUES (9007, 9009, 'kspar', now() - interval '5 days',
                     E'def factorial(n):\n    result = 1\n    for i in range(n\n        result *= i\n    return result',
-                    'COMPLETED', 0, true, true, true, 1);
+                    'COMPLETED', 0, true, true, false, 1);
 
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
             VALUES (9006, 9009, 'kspar', 9007, now() - interval '5 days', 0,
@@ -422,10 +425,10 @@
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, flagged, number)
             VALUES (9008, 9010, 'kspar', now() - interval '3 days',
                     E'def is_palindrome(s):\n    return s == s[::-1]',
-                    'COMPLETED', 50, true, true, true, 1);
+                    'COMPLETED', 50, true, true, false, 1);
 
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
             VALUES (9007, 9010, 'kspar', 9008, now() - interval '3 days', 50,
@@ -438,10 +441,10 @@
                 =============================================
             -->
             INSERT INTO submission (id, course_exercise_id, student_id, created_at, solution,
-                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, seen, number)
+                                    auto_grade_status, grade, is_auto_grade, is_graded_directly, flagged, number)
             VALUES (9009, 9011, 'kspar', now() - interval '9 days',
                     E'def binary_search(arr, target):\n    lo, hi = 0, len(arr) - 1\n    while lo &lt;= hi:\n        mid = (lo + hi) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] &lt; target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1',
-                    'COMPLETED', 75, true, true, true, 1);
+                    'COMPLETED', 75, true, true, false, 1);
 
             INSERT INTO autograde_activity (id, course_exercise_id, student_id, submission_id, created_at, grade, feedback)
             VALUES (9008, 9011, 'kspar', 9009, now() - interval '9 days', 75,

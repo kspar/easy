@@ -144,7 +144,9 @@ export interface LatestSubmissionResp {
   submission_number: number
   time: string
   grade: GradeResp | null
+  /** Whether *this* teacher has opened it. Core answers per caller; see `flagged` for the shared mark. */
   seen: boolean
+  flagged: boolean
 }
 
 /** @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/latest/students -> latest_submissions[] */
@@ -306,7 +308,9 @@ export interface TeacherSubmissionDetailResp {
   submission_number: number
   solution: string
   created_at: string
+  /** Whether *this* teacher has opened it. Core answers per caller; see `flagged` for the shared mark. */
   seen: boolean
+  flagged: boolean
   autograde_status: AutoGradeStatus
   grade: GradeResp | null
   auto_assessment: AutomaticAssessmentResp | null

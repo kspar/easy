@@ -21,6 +21,7 @@ import {
   ArrowDropDownOutlined,
   CircleOutlined,
   FileDownloadOutlined,
+  FlagRounded,
   MoreVertOutlined,
   RefreshOutlined,
   SortOutlined,
@@ -418,6 +419,14 @@ export default function SubmissionsList({
                 <Typography variant="body2" sx={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {row.family_name}, {row.given_name}
                 </Typography>
+
+                {/* Flagged for review, by anyone on the course. The mark is only worth setting if
+                    it can be found again, and the list is where anyone would look for it. */}
+                {sub?.flagged && (
+                  <Tooltip title={t('submission.flaggedForReview')}>
+                    <FlagRounded sx={{ fontSize: 16, color: 'warning.main', flexShrink: 0 }} />
+                  </Tooltip>
+                )}
 
                 {/* Submission time */}
                 {sub && (

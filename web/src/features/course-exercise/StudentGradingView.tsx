@@ -15,6 +15,7 @@ import {
   TextField,
   Tooltip,
   Typography,
+  keyframes,
 } from '@mui/material'
 import {
   ArrowBackOutlined,
@@ -31,6 +32,7 @@ import {
   exportSubmissions,
   useCreateInlineComment,
   useDeleteInlineComment,
+  useMarkSubmissionsFlagged,
   useMarkSubmissionsSeen,
   useRetryAutoassess,
   useTeacherStudentInlineComments,
@@ -51,6 +53,46 @@ import type { TeacherExerciseDetails, SubmissionRow } from '../../api/types.ts'
 import SafeText from '../../components/SafeText.tsx'
 import { saveResponseAsFile } from '../../components/downloadTextFile.ts'
 import UnseenIndicator, { SeenIndicator } from './UnseenIndicator.tsx'
+
+/**
+ * The two marks in the grading header move when they change, because both of them can change
+ * without being pressed: `seen` marks itself the moment the submission opens, and `flagged` is
+ * shared, so a colleague's flag arrives on the next refetch. A state that appears fully formed
+ * looks like it was always that way.
+ *
+ * Small on purpose — under a fifth of a second, no bounce past the resting size on the quiet one.
+ * These sit next to a grade field a teacher uses a hundred times an hour.
+ */
+const settle = keyframes`
+  from { opacity: 0; transform: scale(0.72) }
+  to { opacity: 1; transform: none }
+`
+
+/**
+ * The flag lights up rather than jumping: a bloom in its own colour that swells and fades out.
+ *
+ * `currentColor` keeps the glow the icon's warning colour in both themes without naming a hex here,
+ * and a drop-shadow follows the flag's outline instead of boxing it, which a `box-shadow` on the
+ * wrapper would not. Nothing moves — the row of controls beside the grade field stays where the
+ * teacher's eye left it.
+ */
+const glow = keyframes`
+  0% { opacity: 0.55; filter: drop-shadow(0 0 0 currentColor) }
+  45% { opacity: 1; filter: drop-shadow(0 0 5px currentColor) }
+  100% { opacity: 1; filter: drop-shadow(0 0 0 currentColor) }
+`
+
+const markTransition = {
+  display: 'flex',
+  animation: `${settle} 160ms cubic-bezier(0.2, 0.7, 0.3, 1)`,
+  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+}
+
+const flagRaise = {
+  display: 'flex',
+  '& > svg': { animation: `${glow} 450ms ease-out` },
+  '@media (prefers-reduced-motion: reduce)': { '& > svg': { animation: 'none' } },
+}
 
 export default function StudentGradingView({
   courseId,
@@ -117,7 +159,16 @@ export default function StudentGradingView({
   const activeSubSummary = selectedSubId
     ? submissions?.find((s) => s.id === selectedSubId) ?? latestSub
     : latestSub
-  const isViewingLatest = activeSubSummary?.id === latestSub?.id
+  /**
+   * On the newest of this student's submissions — and there has to be one.
+   *
+   * Without the null check this was `undefined === undefined` for a student who has submitted
+   * nothing, which is how the seen and flag buttons came to sit in the header of a page with no
+   * submission on it. Both toggles bail on a missing id, so they were two controls that did
+   * nothing at all. The other two readers of this are inside `subDetail &&` blocks and cannot
+   * reach the empty case.
+   */
+  const isViewingLatest = latestSub != null && activeSubSummary?.id === latestSub.id
 
   // Fetch full detail (with solution) for the selected submission
   const { data: subDetail, isLoading: detailLoading } = useTeacherSubmissionDetails(
@@ -245,23 +296,23 @@ export default function StudentGradingView({
     markSeenMutation.mutate({ submissions: [{ id: subDetail.id }], seen: true })
   }, [isViewingLatest, subDetail, markSeenMutation])
 
-  // Flag for review (stored in localStorage until backend support is added)
-  const flagKey = `flagged:${courseExerciseId}:${studentId}`
-  const [isFlagged, setIsFlagged] = useState(() => localStorage.getItem(flagKey) === '1')
-
-  useEffect(() => {
-    const key = `flagged:${courseExerciseId}:${studentId}`
-    setIsFlagged(localStorage.getItem(key) === '1')
-  }, [courseExerciseId, studentId])
+  /**
+   * Flag for review, on the submission and shared with the rest of the teaching team.
+   *
+   * It lived in `localStorage` keyed by course exercise and student — per browser, so a colleague
+   * never saw it, the teacher lost it on their other machine, and clearing the cache cleared the
+   * pile. The flag is a note to whoever grades next, which is the case for storing it where they
+   * can read it; `seen` beside it goes the other way, per teacher, because that one is about the
+   * reader rather than the submission.
+   */
+  const markFlaggedMutation = useMarkSubmissionsFlagged(courseId, courseExerciseId)
+  const isFlagged = subDetail?.flagged ?? currentRow?.submission?.flagged ?? false
 
   const toggleFlag = useCallback(() => {
-    setIsFlagged((prev) => {
-      const next = !prev
-      if (next) localStorage.setItem(flagKey, '1')
-      else localStorage.removeItem(flagKey)
-      return next
-    })
-  }, [flagKey])
+    const subId = subDetail?.id ?? currentRow?.submission?.id
+    if (!subId) return
+    markFlaggedMutation.mutate({ submissions: [{ id: subId }], flagged: !isFlagged })
+  }, [subDetail?.id, currentRow?.submission?.id, isFlagged, markFlaggedMutation])
 
   // Student picker popover
   const [pickerAnchor, setPickerAnchor] = useState<Element | null>(null)
@@ -419,6 +470,14 @@ export default function StudentGradingView({
                   >
                     {name}
                   </Typography>
+                  {/* The same mark the students list carries. This picker is how a teacher moves
+                      between students without going back, so it is the other place the pile is
+                      worked through, and a flag missing from it means doubling back to find one. */}
+                  {sub?.flagged && (
+                    <Tooltip title={t('submission.flaggedForReview')}>
+                      <FlagRounded sx={{ fontSize: 16, color: 'warning.main', flexShrink: 0 }} />
+                    </Tooltip>
+                  )}
                   {sub?.grade && (
                     <Chip
                       label={sub.grade.grade}
@@ -452,20 +511,28 @@ export default function StudentGradingView({
 
         <Box sx={{ flex: 1 }} />
 
-        {/* Seen + Flag buttons — only on latest submission */}
+        {/* Seen + Flag buttons — only on a latest submission that exists */}
         {isViewingLatest && (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Tooltip title={isSeen ? t('submission.markUnseen') : t('submission.markSeen')}>
               <IconButton size="small" onClick={toggleSeen}>
-                {isSeen ? <SeenIndicator size={16} /> : <UnseenIndicator size={16} />}
+                {/* Keyed on the state so the mark replays its animation on every change, including
+                    the one nobody asked for: opening a submission marks it seen by itself, and the
+                    ring settling to grey is how a teacher sees that happen rather than finding it
+                    already done. */}
+                <Box key={isSeen ? 'seen' : 'unseen'} sx={markTransition}>
+                  {isSeen ? <SeenIndicator size={16} /> : <UnseenIndicator size={16} />}
+                </Box>
               </IconButton>
             </Tooltip>
             <Tooltip title={isFlagged ? t('submission.unflag') : t('submission.flagForReview')}>
               <IconButton size="small" onClick={toggleFlag}>
-                {isFlagged
-                  ? <FlagRounded fontSize="small" color="warning" />
-                  : <FlagOutlined fontSize="small" />
-                }
+                <Box key={isFlagged ? 'flagged' : 'unflagged'} sx={isFlagged ? flagRaise : markTransition}>
+                  {isFlagged
+                    ? <FlagRounded fontSize="small" color="warning" />
+                    : <FlagOutlined fontSize="small" />
+                  }
+                </Box>
               </IconButton>
             </Tooltip>
           </Box>

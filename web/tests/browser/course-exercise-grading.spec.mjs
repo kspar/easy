@@ -21,6 +21,8 @@ const CE = '4147'
 const EX = '9001'
 const STUDENT = 's-mari'
 const OTHER = 's-jaan'
+/** Enrolled, never submitted. The state the seen and flag buttons had no business appearing in. */
+const NOBODY = 's-liis'
 const SUBMISSION = 'sub-77'
 
 const exercise = {
@@ -55,7 +57,7 @@ const exercise = {
   exception_groups: null,
 }
 
-const row = (id, given, family, grade, status) => ({
+const row = (id, given, family, grade, status, flagged = false) => ({
   student_id: id,
   given_name: given,
   family_name: family,
@@ -63,14 +65,32 @@ const row = (id, given, family, grade, status) => ({
   status,
   submission:
     grade === null
-      ? { id: `${id}-sub`, submission_number: 1, time: '2026-08-01T10:00:00.000Z', grade: null, seen: false }
+      ? {
+          id: `${id}-sub`,
+          submission_number: 1,
+          time: '2026-08-01T10:00:00.000Z',
+          grade: null,
+          seen: false,
+          flagged,
+        }
       : {
           id: `${id}-sub`,
           submission_number: 1,
           time: '2026-08-01T10:00:00.000Z',
           grade: { grade, is_autograde: false, is_graded_directly: true },
           seen: true,
+          flagged,
         },
+})
+
+/** A student on the course with nothing to grade: `submission` is null, and core says UNSTARTED. */
+const emptyRow = (id, given, family) => ({
+  student_id: id,
+  given_name: given,
+  family_name: family,
+  groups: [],
+  status: 'UNSTARTED',
+  submission: null,
 })
 
 /**
@@ -93,13 +113,14 @@ const latestStudents = {
   hard_deadline: null,
   grader_type: 'TEACHER',
   ordering_idx: 0,
-  unstarted_count: 0,
+  unstarted_count: 1,
   ungraded_count: 1,
   started_count: 0,
   completed_count: 1,
   latest_submissions: [
     row(STUDENT, 'Mari', 'Maasikas', null, 'UNGRADED'),
     row(OTHER, 'Jaan', 'Tamm', 80, 'COMPLETED'),
+    emptyRow(NOBODY, 'Liis', 'Lepik'),
   ],
 }
 
@@ -124,6 +145,16 @@ let savedGrade = null
  */
 let seenMarked = false
 
+/**
+ * Whether Mari's submission carries the review flag.
+ *
+ * The counterpart to `seenMarked` and the point of the pair: `seen` is per teacher and `flagged` is
+ * one mark on the submission that the whole course shares. Both are held here because the page has
+ * to read back what it wrote — the flag used to live in `localStorage`, where no fixture could see
+ * it and no colleague could either.
+ */
+let flaggedMark = false
+
 test('course-exercise-grading', async ({ launch, check }) => {
   const { page, shot, close } = await launch({ role: 'teacher,admin', shotPrefix: 'ce-grading-' })
 
@@ -133,6 +164,7 @@ test('course-exercise-grading', async ({ launch, check }) => {
   const feedbacks = []
   const exports = []
   const seenPosts = []
+  const flagPosts = []
 
   await fakeApi(page, [
     // First: this path ends in "/submissions" and every other submission handler below would
@@ -184,21 +216,29 @@ test('course-exercise-grading', async ({ launch, check }) => {
       }
       return {}
     }],
+    [/\/submissions\/flagged$/, ({ method, body, url }) => {
+      if (method === 'POST') {
+        flagPosts.push({ body, path: new URL(url).pathname })
+        flaggedMark = body.flagged
+      }
+      return {}
+    }],
     [/\/submissions\/latest\/students(\?|$)/, () => ({
       ...latestStudents,
       // Mari's row reflects what has been saved. Leaving this frozen is the same trap the detail
       // endpoint fell into below, on the endpoint that drives both the list and the student picker.
       latest_submissions: [
         savedGrade === null
-          ? row(STUDENT, 'Mari', 'Maasikas', null, 'UNGRADED')
-          : row(STUDENT, 'Mari', 'Maasikas', savedGrade, 'COMPLETED'),
+          ? row(STUDENT, 'Mari', 'Maasikas', null, 'UNGRADED', flaggedMark)
+          : row(STUDENT, 'Mari', 'Maasikas', savedGrade, 'COMPLETED', flaggedMark),
         row(OTHER, 'Jaan', 'Tamm', 80, 'COMPLETED'),
+        emptyRow(NOBODY, 'Liis', 'Lepik'),
       ],
     })],
     // Keyed on the student in the path. Returning Mari's submission for Jaan would hand the
     // grading view someone else's solution the moment anyone uses the student picker, and the
     // failure would read as a product bug.
-    [/\/submissions\/all\/students\//, ({ url }) => ({
+    [/\/submissions\/all\/students\//, ({ url }) => (url.includes(NOBODY) ? { submissions: [] } : {
       submissions: [{
         id: url.includes(OTHER) ? `${OTHER}-sub` : SUBMISSION,
         submission_number: 1,
@@ -222,6 +262,7 @@ test('course-exercise-grading', async ({ launch, check }) => {
         ? null
         : { grade: savedGrade, is_autograde: false, is_graded_directly: true },
       seen: seenMarked,
+      flagged: flaggedMark,
       // A teacher-graded exercise never ran an autograder, so NONE with no assessment is the
       // honest answer — but core sends both fields regardless, and a stub that omits them is
       // describing a response that cannot happen.
@@ -253,9 +294,10 @@ test('course-exercise-grading', async ({ launch, check }) => {
   await shot('01-student-opened')
 
   // --- reading a submission is what marks it seen ------------------------------------------------
-  // The blue ring in the students list means "nobody has opened this yet". Before this it only
-  // cleared when a teacher also pressed the button beside the submission, so a teacher who graded
-  // a hundred submissions left a hundred rings behind them and the mark stopped meaning anything.
+  // The blue ring in the students list means "I have not opened this yet" — per teacher, since core
+  // stores a row per reader. Before this it only cleared when a teacher also pressed the button
+  // beside the submission, so a teacher who graded a hundred submissions left a hundred rings
+  // behind them and the mark stopped meaning anything.
   check(
     'opening a submission marks it seen without being asked to',
     await waitUntil(() => seenPosts.length > 0),
@@ -285,6 +327,39 @@ test('course-exercise-grading', async ({ launch, check }) => {
     seenPosts.length === 2,
     `${seenPosts.length} request(s): ${JSON.stringify(seenPosts.map((p) => p.body.seen))}`,
   )
+
+  // --- the flag goes the other way: one mark, shared by the course --------------------------------
+  // It was a localStorage key, so a colleague never saw it, the teacher's other machine never saw
+  // it, and clearing the cache emptied the pile. Asserted on the request rather than the icon,
+  // because a flag that only lights up locally is exactly the bug being fixed.
+  await page.getByRole('button', { name: /Flag for review/i }).click()
+  check(
+    'flagging a submission tells core rather than this browser',
+    await waitUntil(() => flagPosts.length === 1),
+    `${flagPosts.length} request(s)`,
+  )
+  check(
+    'against the submission on screen, under this course exercise',
+    flagPosts[0]?.path === `/v2/teacher/courses/${COURSE}/exercises/${CE}/submissions/flagged` &&
+      JSON.stringify(flagPosts[0]?.body) ===
+        JSON.stringify({ submissions: [{ id: SUBMISSION }], flagged: true }),
+    JSON.stringify(flagPosts[0] ?? null),
+  )
+  check(
+    'and the button reads the answer back from core, not from its own click',
+    await waitUntil(async () => (await page.getByRole('button', { name: /Remove flag/i }).count()) > 0),
+  )
+
+  // The picker is the other way through the pile — a teacher moves student to student without
+  // returning to the list — so the flag has to be legible there too, on the flagged student and
+  // nobody else.
+  await page.getByText('Mari Maasikas').first().click()
+  check(
+    'the student picker shows the flag as well',
+    await waitUntil(async () => (await page.locator('[aria-label="Flagged for review"]').count()) === 1),
+    `${await page.locator('[aria-label="Flagged for review"]').count()} flag(s) in the picker`,
+  )
+  await page.keyboard.press('Escape')
 
   // --- the code panel's action menu (EZ-1903) ----------------------------------------------------
   // Asked for as a copy button. It is a menu because the download and the soft-wrap setting were
@@ -504,7 +579,33 @@ test('course-exercise-grading', async ({ launch, check }) => {
     // the grading view's form here would have failed against a perfectly correct list.
     await waitUntil(async () => (await page.getByText('Tamm, Jaan').count()) > 0),
   )
+  // A flag nobody can find again is a flag nobody sets twice. The list is the only place the pile
+  // is actually worked through, so that is where the mark has to show up — on Mari's row and, just
+  // as importantly, not on Jaan's.
+  check(
+    'the flag set earlier is visible on that student in the list',
+    await waitUntil(async () => (await page.locator('[aria-label="Flagged for review"]').count()) === 1),
+    `${await page.locator('[aria-label="Flagged for review"]').count()} flag(s) shown`,
+  )
   await shot('04-back-to-list')
+
+  // --- a student who has submitted nothing gets neither button ------------------------------------
+  // `isViewingLatest` was `activeSubSummary?.id === latestSub?.id`, and with no submissions at all
+  // that is `undefined === undefined`. So both buttons appeared over an empty page, and both
+  // toggles bailed on the missing id — two controls that did nothing whatever you pressed.
+  await page.goto(`${BASE_URL}/courses/${COURSE}/exercises/${CE}?student=${NOBODY}`)
+  check(
+    'a student with no submission still opens',
+    await waitUntil(async () => (await page.getByText('Liis Lepik').count()) > 0),
+  )
+  check(
+    'and carries neither the seen toggle nor the flag, having nothing to mark',
+    (await page.getByRole('button', { name: /Mark as (un)?seen/i }).count()) === 0 &&
+      (await page.getByRole('button', { name: /Flag for review|Remove flag/i }).count()) === 0,
+    `${await page.getByRole('button', { name: /Mark as (un)?seen/i }).count()} seen, ` +
+      `${await page.getByRole('button', { name: /Flag for review|Remove flag/i }).count()} flag`,
+  )
+  await shot('05-student-without-submission')
 
   await close()
 })

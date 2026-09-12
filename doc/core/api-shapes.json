@@ -105,6 +105,7 @@
     "POST /v2/teacher/courses/{courseId}/access": {  },
     "POST /v2/teacher/courses/{courseId}/exercises": { "request": "core.ems.service.exercise.AddExerciseToCourseCont.Req", "response": "core.ems.service.exercise.AddExerciseToCourseCont.Resp" },
     "POST /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions": { "request": "core.ems.service.exercise.TeacherSubmitBehalfStudent.Req" },
+    "POST /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/flagged": { "request": "core.ems.service.exercise.SetSubmissionFlagged.Req" },
     "POST /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/seen": { "request": "core.ems.service.exercise.SetSubmissionSeen.Req" },
     "POST /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/feedback": { "request": "core.ems.service.exercise.TeacherPostFeedbackController.Req" },
     "POST /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/grade": { "request": "core.ems.service.exercise.TeacherGradeController.Req" },
@@ -213,6 +214,7 @@
       "text_md": { "kind": "string" }
     },
     "core.ems.service.LatestSubmissionResp": {
+      "flagged": { "kind": "boolean" },
       "grade": { "kind": "object", "nullable": true, "type": "core.ems.service.GradeResp" },
       "id": { "kind": "string" },
       "seen": { "kind": "boolean" },
@@ -753,11 +755,19 @@
       "auto_assessment": { "kind": "object", "nullable": true, "type": "core.ems.service.AutomaticAssessmentResp" },
       "autograde_status": { "kind": "enum", "values": ["COMPLETED", "FAILED", "IN_PROGRESS", "NONE"] },
       "created_at": { "kind": "datetime" },
+      "flagged": { "kind": "boolean" },
       "grade": { "kind": "object", "nullable": true, "type": "core.ems.service.GradeResp" },
       "id": { "kind": "string" },
       "seen": { "kind": "boolean" },
       "solution": { "kind": "string" },
       "submission_number": { "kind": "number" }
+    },
+    "core.ems.service.exercise.SetSubmissionFlagged.Req": {
+      "flagged": { "kind": "boolean" },
+      "submissions": { "kind": "array", "type": "core.ems.service.exercise.SetSubmissionFlagged.SubmissionReq" }
+    },
+    "core.ems.service.exercise.SetSubmissionFlagged.SubmissionReq": {
+      "id": { "kind": "string" }
     },
     "core.ems.service.exercise.SetSubmissionSeen.Req": {
       "seen": { "kind": "boolean" },

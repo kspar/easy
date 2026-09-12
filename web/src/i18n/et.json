@@ -304,6 +304,7 @@
     "markUnseen": "Märgi mittevaadatuks",
     "flagForReview": "Märgi ülevaatamiseks",
     "unflag": "Eemalda märge",
+    "flaggedForReview": "Märgitud ülevaatamiseks",
     "commentDeleted": "Kommentaar kustutatud",
     "confirmDeleteComment": "Kustutada see kommentaar?",
     "retryAutoassess": "Käivita testid uuesti",

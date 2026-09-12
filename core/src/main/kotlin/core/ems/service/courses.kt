@@ -35,7 +35,9 @@ data class LatestSubmissionResp(
     @get:JsonProperty("submission_number") val submissionNumber: Int,
     @get:JsonSerialize(using = DateTimeSerializer::class) @get:JsonProperty("time") val time: DateTime,
     @get:JsonProperty("grade") val grade: GradeResp?,
+    /** Whether the *caller* has opened this submission — not whether anybody has. */
     @get:JsonProperty("seen") val seen: Boolean,
+    @get:JsonProperty("flagged") val flagged: Boolean,
 )
 
 data class GroupResp(
@@ -185,6 +187,7 @@ data class ExercisesResp(
  * All students with or without submission on a single course for all exercises.
  */
 fun selectAllCourseExercisesLatestSubmissions(
+    callerId: String,
     courseId: Long,
     courseExId: Long? = null,
     groupId: Long? = null
@@ -247,7 +250,16 @@ fun selectAllCourseExercisesLatestSubmissions(
                 )
             }
 
+        // Seen is one row per teacher per submission, so it is a left join filtered to the caller
+        // and read as "is there a row": another teacher having opened this says nothing about
+        // whether the caller has. The primary key makes the join at most one row, which is what
+        // keeps it out of the way of the DISTINCT ON below.
+        val callerHasSeen = TeacherSubmissionSeen.submission.isNotNull()
+
         val studentsWithSubmissions = (ExerciseVer innerJoin Exercise innerJoin CourseExercise leftJoin Submission)
+            .join(TeacherSubmissionSeen, JoinType.LEFT, Submission.id, TeacherSubmissionSeen.submission) {
+                TeacherSubmissionSeen.teacher eq callerId
+            }
             .select(
                 DistinctOn<Any>(listOf(CourseExercise.id, Submission.student)),
                 CourseExercise.id,
@@ -256,7 +268,8 @@ fun selectAllCourseExercisesLatestSubmissions(
                 Submission.id,
                 Submission.number,
                 Submission.createdAt,
-                Submission.seen,
+                callerHasSeen,
+                Submission.flagged,
                 Submission.grade,
                 Submission.isAutoGrade,
                 Submission.isGradedDirectly
@@ -305,7 +318,8 @@ fun selectAllCourseExercisesLatestSubmissions(
                         it[Submission.number],
                         it[Submission.createdAt],
                         grade,
-                        it[Submission.seen],
+                        it[callerHasSeen],
+                        it[Submission.flagged],
                     )
 
                     val submissionStatus =

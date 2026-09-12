@@ -707,4 +707,75 @@
                              constraintName="uq_course_moodle_short_name"/>
     </changeSet>
 
+    <!--
+        EZ-1249. `submission.seen` was one bit shared by every teacher on the course, and opening a
+        submission now sets it. Those two together mean one teacher clicking through students
+        silently empties their colleagues' queue — tolerable while the mark moved only when somebody
+        pressed a button, wrong once merely reading sets it. "Have I read this" is a question about a
+        person, so it moves to a row per teacher per submission.
+
+        The shared bit does not disappear, it changes jobs: renamed to `flagged`, it is now the
+        teacher-visible mark for "come back to this", which is the thing that genuinely belongs to
+        the course rather than to one reader. The web app has had a flag button all along, writing to
+        `localStorage` — per browser, invisible to colleagues, gone with the cache.
+
+        **Every row resets to false.** The old values answered a different question, asked of nobody
+        in particular; carrying them over would mean either "seen by everyone" or "flagged by
+        someone", and both are claims the data cannot support. A teacher's first look at a course
+        after this deploy shows every latest submission unseen, which is the honest state.
+
+        The rename is not backwards compatible with a running old core — it reads `seen` and would
+        fail on every submission query — so this is a stop-start deploy like every other one here.
+    -->
+    <changeSet id="130926-1" author="kspar">
+        <renameColumn tableName="submission" oldColumnName="seen" newColumnName="flagged"/>
+        <sql>UPDATE submission SET flagged = false</sql>
+    </changeSet>
+
+    <!--
+        One row per teacher per submission they have opened; no row means unseen. `seen_at` is not
+        read by anything yet and is stored because the row is worthless without it: "seen" with no
+        time cannot answer "before or after the student's last edit", which is the first question
+        anyone will ask of it.
+
+        Both foreign keys cascade on delete, unlike `teacher_inline_comment`'s (see the block in
+        `delete_inactive_users.kt` that exists solely because those do not). A seen mark is not an
+        artefact anybody would miss: when the submission goes it is meaningless, and when the teacher
+        goes it cannot be inherited — reassigning "kspar has read this" to another account would be a
+        lie rather than a migration.
+    -->
+    <changeSet id="130926-2" author="kspar">
+        <createTable tableName="teacher_submission_seen">
+            <column name="submission_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="teacher_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="seen_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="teacher_submission_seen"
+                       columnNames="submission_id, teacher_id"
+                       constraintName="pk_teacher_submission_seen"/>
+
+        <addForeignKeyConstraint baseTableName="teacher_submission_seen" baseColumnNames="submission_id"
+                                 referencedTableName="submission" referencedColumnNames="id"
+                                 constraintName="fk_teacher_submission_seen_submission"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="teacher_submission_seen" baseColumnNames="teacher_id"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_teacher_submission_seen_teacher"
+                                 onDelete="CASCADE" onUpdate="CASCADE"/>
+
+        <!-- The read is always "this teacher, these submissions", which the primary key already
+             serves. This one is for the other direction: everything one teacher has read, which is
+             what deleting an account and any future "what have I looked at" view both ask. -->
+        <createIndex tableName="teacher_submission_seen" indexName="idx_teacher_submission_seen_teacher">
+            <column name="teacher_id"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>

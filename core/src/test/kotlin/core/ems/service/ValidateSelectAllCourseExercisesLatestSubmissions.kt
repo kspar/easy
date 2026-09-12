@@ -73,7 +73,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions {
 
     @Test
     fun `returns one latest submission per student per exercise`() {
-        val submissions = selectAllCourseExercisesLatestSubmissions(courseId)
+        val submissions = selectAllCourseExercisesLatestSubmissions(teacherId, courseId)
             .flatMap { it.latestSubmissions }
             .map { it.latestSubmission }
 
@@ -82,7 +82,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions {
 
     @Test
     fun `student 1 gets the later of each pair, 81 and 99`() {
-        val byExercise = selectAllCourseExercisesLatestSubmissions(courseId)
+        val byExercise = selectAllCourseExercisesLatestSubmissions(teacherId, courseId)
 
         val ex1 = byExercise.single { it.courseExerciseId.toLong() == ce1Id }
         val ex2 = byExercise.single { it.courseExerciseId.toLong() == ce2Id }
@@ -98,7 +98,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions {
 
     @Test
     fun `student 2 gets a null for the exercise never attempted and 51 for the other`() {
-        val byExercise = selectAllCourseExercisesLatestSubmissions(courseId)
+        val byExercise = selectAllCourseExercisesLatestSubmissions(teacherId, courseId)
 
         val ex1 = byExercise.single { it.courseExerciseId.toLong() == ce1Id }
         val ex2 = byExercise.single { it.courseExerciseId.toLong() == ce2Id }
@@ -112,7 +112,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions {
 
     @Test
     fun `narrowing to one course exercise returns only that one`() {
-        val only = selectAllCourseExercisesLatestSubmissions(courseId, ce2Id)
+        val only = selectAllCourseExercisesLatestSubmissions(teacherId, courseId, ce2Id)
 
         assertEquals(1, only.size)
         val ex2Sub = only.single().latestSubmissions.single { it.accountId == student2Id }
@@ -121,7 +121,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions {
 
     @Test
     fun `narrowing to the other course exercise still picks the later submission`() {
-        val only = selectAllCourseExercisesLatestSubmissions(courseId, ce1Id)
+        val only = selectAllCourseExercisesLatestSubmissions(teacherId, courseId, ce1Id)
 
         assertEquals(1, only.size)
         val ex1Sub = only.single().latestSubmissions.single { it.accountId == student1Id }
@@ -134,7 +134,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions {
      */
     @Test
     fun `counts completed, started, unstarted and ungraded against each threshold`() {
-        val byExercise = selectAllCourseExercisesLatestSubmissions(courseId)
+        val byExercise = selectAllCourseExercisesLatestSubmissions(teacherId, courseId)
 
         assertEquals(setOf(ce1Id, ce2Id), byExercise.map { it.courseExerciseId.toLong() }.toSet())
 
@@ -181,7 +181,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions {
             Fixtures.submission(ce1Id, student2Id, number = 2, grade = 20, createdAt = tie)
         }
 
-        val latest = selectAllCourseExercisesLatestSubmissions(courseId, ce1Id)
+        val latest = selectAllCourseExercisesLatestSubmissions(teacherId, courseId, ce1Id)
             .single()
             .latestSubmissions
             .single { it.accountId == student2Id }
@@ -250,7 +250,7 @@ class ValidateSelectAllCourseExercisesLatestSubmissions {
         }
 
         val viaMoodlePath = transaction { selectLatestSubmissionsForExercise(ce1Id) }.toSet()
-        val viaCoursesPath = selectAllCourseExercisesLatestSubmissions(courseId, ce1Id)
+        val viaCoursesPath = selectAllCourseExercisesLatestSubmissions(teacherId, courseId, ce1Id)
             .single()
             .latestSubmissions
             .mapNotNull { it.latestSubmission?.submissionId?.toLong() }
