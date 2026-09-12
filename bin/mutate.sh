@@ -193,12 +193,20 @@ mutate "recompile/sweeps-a-referenced-script" \
   'run_core' \
   'AdminRecompileTslTest.*still names'
 
-mutate "storage/public-url-double-slash" \
-  core/src/main/kotlin/core/ems/service/storage/S3StorageService.kt \
-  "s/publicBaseUrl\.trimEnd\('\/'\)/publicBaseUrl/" \
-  'publicBaseUrl}/$key' \
+# Replaces "storage/public-url-double-slash", which mutated S3StorageService — deleted with the
+# backend in EZ-1907, along with the assertion it broke.
+#
+# This one is the same shape of bug in the code that remains. `listKeys` hides `upload-*.part`
+# files, the debris a crash mid-upload leaves behind, and the sweep deletes every listed object with
+# no database row. Stop hiding them and the sweep spends every night deleting the leftovers of the
+# last crash — harmless in itself, which is exactly why the filter reads like dead code to anyone
+# tidying up.
+mutate "storage/partial-uploads-listed-as-objects" \
+  core/src/main/kotlin/core/ems/service/storage/LocalFsStorageService.kt \
+  's/!it\.startsWith\("upload-"\)/it.startsWith("upload-")/' \
+  'filter { it.startsWith("upload-") }' \
   'run_core' \
-  'StorageServiceContractTest.*one slash'
+  'StorageServiceContractTest.*partial upload'
 
 # --- tsl: the compiler whose output nothing used to read ------------------------------------------
 

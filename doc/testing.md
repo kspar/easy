@@ -565,8 +565,9 @@ against *any* backend, including a broken one. It cannot gate a backend deploy, 
    a test failing. See `doc/testing-log.md`.
 7. ~~**Port the bash checks, the public surface, executor integration**~~ — **done 2026-08-16.**
    `articles-check.sh` and `files-check.sh` are gone, replaced by `ArticleApiTest`, `FileApiTest`
-   and a `StorageServiceContractTest` that runs the same assertions against both storage backends
-   (MinIO for the S3 half). The five-pattern `permitAll` surface is exercised behaviourally rather
+   and a `StorageServiceContractTest` that ran the same assertions against both storage backends,
+   MinIO for the S3 half — and now runs them against the one backend left, with no container at
+   all, since EZ-1907. The five-pattern `permitAll` surface is exercised behaviourally rather
    than only structurally. **Submission → grading → feedback now runs in CI** against a
    `com.sun.net.httpserver` executor — including the legs that were never tested anywhere: the
    retry, the timeout, an unparseable response, a drained executor, and the

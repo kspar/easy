@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.StoredFile
 import core.ems.service.storage.StorageService
-import core.ems.service.storage.contentDispositionFor
 import core.ems.service.storage.newStorageKey
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -88,13 +87,13 @@ class UploadStoredFileController(private val storageService: StorageService) {
 
         val filename = sanitiseFilename(file.originalFilename)
 
-        // Sniffed, never taken from the client. This value becomes the Content-Type of a publicly
-        // readable object, so a client-supplied one would be a header we serve to the internet on
-        // somebody else's say-so.
+        // Sniffed, never taken from the client. It is stored on the row and becomes the Content-Type
+        // of an unauthenticated response, so a client-supplied one would be a header we serve to the
+        // internet on somebody else's say-so — and the value the inline allow list decides on.
         val mimeType = file.inputStream.use { tika.detect(it, filename) }
 
         val key = newStorageKey()
-        storageService.put(key, file.inputStream, file.size, mimeType, contentDispositionFor(mimeType, filename))
+        storageService.put(key, file.inputStream)
 
         // After the object, deliberately. A row with no object is a broken image; an object with no
         // row is invisible junk that the sweep collects on its next run. The second is the better

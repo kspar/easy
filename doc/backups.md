@@ -1,8 +1,25 @@
-# Database backups
+# Backups
 
-What `roles/postgres` installs, what it keeps, and what it does not protect against. The
-environment-specific numbers — sizes, hosts, current disk — are deliberately not here; this is the
-mechanism.
+**Two nightly jobs, because there are two kinds of data.** The database is one. Uploaded files are
+the other, and they are not in the database — `stored_file` holds metadata and the bytes live in a
+directory. Restoring only the dump gives you an article full of broken images and a database that
+looks perfectly healthy.
+
+| | installed by | takes | into |
+| --- | --- | --- | --- |
+| `easy-db-backup` | `roles/postgres` | a `pg_dump` of the database | `postgres_backup_dir` |
+| `easy-files-backup` | `roles/core_service` | a tar of the upload directory | `easy_files_backup_dir` |
+
+They are separate units rather than one job because they run as different users: the dump
+authenticates over the unix socket as `postgres`, and uploaded files are mode 0600 owned by the core
+account in a 0750 directory, which `postgres` cannot read. Merging them would mean widening those
+permissions, and a backup that widens the permissions of what it copies has quietly published it.
+
+Most of this document is about the database job, which is the older and more intricate of the two.
+The file job has [its own section](#the-file-archive) and deliberately borrows this one's rules.
+
+The environment-specific numbers — sizes, hosts, current disk — are deliberately not here; this is
+the mechanism.
 
 ## What runs
 
@@ -74,11 +91,40 @@ sudo easy-db-backup --dry-run
 Prints what it would keep, with the reason for each, and what it would remove. Deletes nothing.
 Something that removes backups should be possible to interrogate before it is believed.
 
+## The file archive
+
+`easy-files-backup.sh`, written by `roles/core_service`, run nightly at 05:00 by
+`easy-files-backup.timer`. It produces `files-<YYYY-MM-DD>T<HHMM>.tar.gz` in
+`easy_files_backup_dir`, holding the upload directory with bare storage keys as filenames — so a
+restore is `tar -xzf <archive> -C /srv/easy/files` and nothing else has to change.
+
+It follows the rules above rather than inventing its own: written to `.partial` and renamed only
+after `tar -t` reads it back, pruned only after a successful archive, aged by the timestamp in the
+file name rather than mtime, and interrogable with `sudo easy-files-backup --dry-run`.
+
+Three things specific to it:
+
+- **Retention is a plain window, `easy_files_backup_keep_days`, default 14.** The grandfather-
+  father-son scheme next door exists because deploys take extra dumps, so a count of days was an
+  unbounded count of files. Nothing takes an extra file archive, so a window already has a ceiling.
+- **05:00, deliberately clear of 04:00.** That is when `easy_core_stored_file_sweep_cron` fires, and
+  the sweep is the one job on the host that *deletes from the directory being archived*.
+- **`tar` exiting 1 is tolerated; exiting 2 is not.** This directory is live — an upload can land
+  mid-walk, and GNU tar reports "file removed before we read it" as a warning. Treating that as
+  fatal would mean an ordinary upload could cost a night's backup, silently.
+
+**Why archives and not a mirror.** Keys are immutable, so a mirror would be cheaper — and would
+faithfully reproduce a sweep that deleted a file it should not have, which is the failure this is
+actually insuring against. Dated archives make a wrong deletion recoverable. The cost is that every
+archive is a near-complete copy of the last; if this directory ever becomes large, hardlinked
+snapshots are the first thing to reach for.
+
 ## What this does not protect against
 
-**The dumps are on the same disk, the same filesystem and the same machine as the database.** They
-cover a bad migration, a bad deploy, a careless `DELETE`. They do not cover anything that takes the
-host with it, and an attacker with root deletes them first.
+**Both the dumps and the archives are on the same disk, the same filesystem and the same machine as
+the data they copy.** They cover a bad migration, a bad deploy, a careless `DELETE`, a sweep that
+collected a file still in use. They do not cover anything that takes the host with it, and an
+attacker with root deletes them first.
 
 Off-site copies are tracked separately. The parts that matter there are the ones easily defaulted
 wrongly: credentials that cannot delete what they wrote, encryption before the data leaves the host,

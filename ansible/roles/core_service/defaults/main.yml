@@ -73,3 +73,41 @@ easy_core_deploy_group: easy-deploy
 # environments whose env file sets PRE_RESTART_DUMP. It comes from roles/postgres, so this is only
 # a name — but it is the name that has to appear in sudoers, and the grant is an exact match.
 easy_core_deploy_dump_service: easy-db-backup.service
+
+# --- the nightly file archive ---------------------------------------------------------------------
+# Uploaded files are the only application data not in the database, and until EZ-1907 the argument
+# for why they needed no backup of their own was that a deployed environment kept them in S3. That
+# argument was never true of production, which has been on local disk since it was built under
+# Ansible, and it is true of nothing now. See roles/core_service/templates/easy-files-backup.sh.j2.
+
+easy_files_backup_enabled: true
+
+# Its own directory, not the database one: that is 0700 postgres, this is written by root, and a
+# shared directory would mean one of the two jobs writing somewhere it cannot read back.
+easy_files_backup_dir: /srv/easy/file-backups
+
+# 14 days, matching the database dumps. The thing this protects against — a sweep that collected a
+# file still in use — is noticed on the timescale of somebody opening an old article, which is slow.
+#
+# There is no grandfather-father-son here and no size ceiling implied by the number. Archives are
+# proportional to everything ever uploaded and are taken nightly, so fourteen of them is fourteen
+# copies of the whole directory. That is nothing today and is the thing to revisit first if this
+# directory ever becomes large — most likely by switching to hardlinked snapshots, since keys are
+# immutable and every archive after the first is almost entirely a copy of the last.
+easy_files_backup_keep_days: 14
+
+# 05:00 UTC, and the gap is the point rather than tidiness. Two other things touch these hosts
+# overnight and this has to sit clear of both:
+#
+#   03:30 +20min splay  the database dump (roles/postgres)
+#   04:00               easy_core_stored_file_sweep_cron — which DELETES FROM THIS DIRECTORY
+#
+# The sweep is the one that matters. An archive running while it unlinks files is tar walking a
+# directory that is changing underneath it, and an archive taken mid-sweep is a copy of a state that
+# never existed. The script tolerates the race because it cannot be eliminated — an ordinary upload
+# can land at any hour — but overlapping the one job guaranteed to be deleting would be choosing it.
+easy_files_backup_on_calendar: "*-*-* 05:00:00"
+easy_files_backup_splay: 10min
+
+# Take one immediately when the role runs, so the first archive is watched rather than unattended.
+easy_files_backup_run_now: true

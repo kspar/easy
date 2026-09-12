@@ -197,47 +197,15 @@ easy_core_moodle_grades_wsfunction: local_ut_custom_update_manual_grades
 easy_core_moodle_format: json
 
 # --- file storage -------------------------------------------------------------------------------------
-# `local` by default, because a host that has not been told where to put files should put them
-# somewhere harmless rather than guess at a bucket.
-easy_core_storage_backend: local
+# A directory on this host, and that is the whole of it. There was an `s3` backend and EZ-1907 removed
+# it, taking four assertions, an opt-in flag, a production-bucket guard and a set of credentials with
+# it — every one of which existed to stop an environment pointing at a bucket it did not own, because
+# the nightly sweep deletes objects that have no row in THIS host's database.
+#
+# Nothing replicates this directory, so it has to be in the host's backup. `roles/core_service`
+# installs `easy-files-backup.timer` for it — a job of its own, not part of the database dump, since
+# that one runs as postgres and these files are 0600 owned by core. See doc/backups.md.
 easy_core_storage_local_dir: /srv/easy/files
-
-# Whether this environment may use an object store at all. Its own switch, deliberately NOT
-# easy_core_allow_real_outbound.
-#
-# That flag means "may reach systems that affect real people and real data we do not control" — a
-# real Moodle gradebook, the identity provider whose accounts the deletion cron removes, mail to
-# actual students. A dedicated dev bucket is none of those: it is ours, it is disposable, and the
-# damage it can do is bounded by the bucket it is pointed at.
-#
-# The first version of this guard hung S3 off easy_core_allow_real_outbound, which would have forced
-# dev to set that true — switching off the Moodle, account-deletion and mail assertions as the price
-# of storing files. Five checks disabled to enable one feature is the wrong trade, and the kind that
-# gets made at 6pm and never revisited. The bucket still has its own guard below.
-easy_core_storage_allow_s3: false
-
-# No default for the bucket. Two reasons, and the second is the one that bites: an S3 bucket is
-# shared-nothing only if you make it so, and dev's database is an anonymised copy of production's.
-# Point dev at production's bucket and dev's nightly sweep — which lists the bucket and deletes
-# objects with no matching row — will happily delete production's files, because production's newer
-# uploads have no row in dev's database. That is the same shape as the executor rows in §3.6 of
-# doc/dev-environment.md: a destructive path that arrives through configuration rather than code.
-# easy_core_storage_s3_bucket — asserted when the backend is s3, and asserted to differ from prod's.
-easy_core_storage_s3_region: eu-north-1
-# Empty for real AWS; set to run against MinIO or another S3-compatible server.
-easy_core_storage_s3_endpoint: ""
-# easy_core_storage_s3_public_base_url — no default; it is what /v2/resource redirects to, so a wrong
-# value is every image on the site 404ing.
-easy_core_storage_s3_public_base_url: ""
-
-# The bucket a non-production environment must never be pointed at. Empty by default and the guard
-# is skipped when it is empty — deliberately, because this repository is public and a real bucket
-# name in it is reconnaissance for no benefit. Set it in the environment's group_vars once a
-# production bucket exists, and the guard starts working.
-#
-# The name is not a secret in the Kerckhoffs sense: anonymous ListBucket is denied, so knowing the
-# bucket without knowing a key gets you nothing. It is simply not ours to publish.
-easy_core_storage_prod_bucket: ""
 
 # 20 MB for teachers, 1 GB for admins. The larger also becomes spring.servlet.multipart.max-file-size
 # and nginx's client_max_body_size on /v2/files, since a per-role limit can only be enforced after

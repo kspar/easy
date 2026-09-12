@@ -1,0 +1,53 @@
+# Managed by Ansible (roles/core_service) — local edits are overwritten.
+
+[Unit]
+Description=Nightly archive of uploaded files in {{ easy_core_storage_local_dir }}
+Documentation=https://github.com/kspar/easy/blob/master/doc/dev-environment.md
+
+[Service]
+Type=oneshot
+# Root, and this is the one place in the deployment where that is the answer rather than a smell.
+# Uploads land at 0600 owned by {{ easy_core_user }} in a 0750 directory, so no other account can
+# read them — which is correct, and which leaves root as the only thing that can archive them.
+User=root
+Group=root
+
+ExecStart=/usr/local/bin/easy-files-backup
+
+TimeoutStartSec=3600
+# Same reasoning as the database dump: this shares a host with the app and with student code
+# execution, and a backup is never the most urgent thing happening.
+Nice=10
+IOSchedulingClass=idle
+
+# --- confinement -----------------------------------------------------------------------------
+# It reads one directory and writes another. Running as root makes the confinement matter more than
+# it does for the unprivileged units, not less.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+# No network at all. A backup that suddenly wants a socket is a backup pointed somewhere it should
+# not be, and this one has no business off the host until somebody adds an off-host copy on purpose.
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX
+
+# ProtectSystem=strict makes everything read-only except these. The source is deliberately NOT here:
+# an archiver that can write to the directory it archives is one bug away from being the thing that
+# destroys it.
+#
+# The `-` prefix means "and do not refuse to start if it is missing". Without it systemd fails the
+# unit while setting up its mount namespace — "Failed to set up mount namespacing: No such file or
+# directory" — which names neither this directive nor the path, and which happens *before* the
+# script's own `mkdir -p` could repair it. With the prefix the script can create it, so an operator
+# who removes the directory gets the next archive rather than a puzzle.
+ReadWritePaths=-{{ easy_files_backup_dir }}
+ReadOnlyPaths={{ easy_core_storage_local_dir }}

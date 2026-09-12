@@ -3,7 +3,6 @@ package core.ems.service.storage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import java.io.InputStream
 import java.nio.file.Files
@@ -16,16 +15,19 @@ import kotlin.io.path.name
 /**
  * Files on the local disk, one per key, flat in a single directory.
  *
- * This exists so that a laptop and CI can run the whole feature — upload, serve, sweep — with no AWS
- * account, no credentials and no network. It is the default backend, and it is what
- * `doc/core/files-check.sh` and `./gradlew :core:bootRun` use.
+ * The only [StorageService] there is, on a laptop, in CI and on every deployed host alike, since
+ * EZ-1907 removed the S3 one. It needs no account, no credentials and no network, which is what let
+ * it be the default in the first place and is a good deal more useful now that it is the whole set.
  *
  * It is deliberately not a general-purpose store: no directory sharding, no locking, no concurrent
- * writer story beyond an atomic rename. At the scale a development database reaches, none of that
- * earns its keep, and pretending otherwise would invite someone to deploy it.
+ * writer story beyond an atomic rename. At the scale this project reaches — thousands of images
+ * attached to teaching material — none of that earns its keep. The thing it genuinely lacks is a
+ * second copy: nothing replicates this directory, so it needs a backup of its own. That is
+ * `easy-files-backup.timer`, installed by `ansible/roles/core_service` and written up in
+ * `doc/backups.md`. Deliberately not part of the nightly database dump, which runs as postgres and
+ * cannot read files that are 0600 and owned by core.
  */
 @Service
-@ConditionalOnProperty(name = ["easy.core.storage.backend"], havingValue = "local", matchIfMissing = true)
 class LocalFsStorageService : StorageService {
     private val log = KotlinLogging.logger {}
 
@@ -40,10 +42,7 @@ class LocalFsStorageService : StorageService {
         log.info { "Storing uploaded files on the local filesystem, in $dir" }
     }
 
-    override fun put(key: String, bytes: InputStream, sizeBytes: Long, mimeType: String, contentDisposition: String) {
-        // Neither header is stored: on this backend the read endpoint streams the bytes itself and
-        // derives both from the database row, so there is nowhere for them to be kept. The S3
-        // backend has to attach them to the object because the browser talks to S3 directly.
+    override fun put(key: String, bytes: InputStream) {
         val target = resolve(key)
         val tmp = Files.createTempFile(dir, "upload-", ".part")
         try {
@@ -82,9 +81,6 @@ class LocalFsStorageService : StorageService {
                 .toSet()
         }
     }
-
-    /** No web server serves this directory, so the read endpoint streams the bytes instead. */
-    override fun publicUrl(key: String) = null
 
     /**
      * For keys that came from outside — a URL path segment, so attacker-controlled until proven

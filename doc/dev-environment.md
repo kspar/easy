@@ -142,11 +142,20 @@ A single `pg_dump` of prod, anonymised, restored into the dev postgres once at s
 that dev is its own world: testers' courses and submissions accumulate and are never
 overwritten by a refresh.
 
-**The database is no longer the whole of the data.** Since EZ-1571 uploaded files live in an S3
-bucket and `stored_file` holds only metadata, so a dump carries the rows and not the bytes. Dev has
-its own bucket — it must, because the nightly sweep deletes objects with no row in *this* host's
-database, and an imported database does not know about anything production uploaded since. Expect
-imported content to have broken images, and see `doc/core/s3-setup.md`.
+**The database is no longer the whole of the data.** Since EZ-1571 `stored_file` holds only
+metadata, so a dump carries the rows and not the bytes. The bytes are in `/srv/easy/files` on
+whichever host wrote them — dev's are dev's, production's are production's — and a database import
+brings across rows describing files this host has never had. **Expect imported content to have
+broken images.** That is the expected state and not a fault.
+
+Two consequences worth holding on to:
+
+- The nightly sweep deletes objects with no row in *this* host's database, which is why these
+  directories must never be shared between environments. They no longer can be accidentally: files
+  went into an S3 bucket until EZ-1907, and a bucket is a thing two hosts can be pointed at by a
+  config line, where a local directory is not.
+- `/srv/easy/files` holds the only copy of every uploaded file, so it has a nightly archive of its
+  own in `/srv/easy/file-backups` — see `roles/core_service`. The database dump does not cover it.
 
 ### 3.2 How the anonymisation runs
 

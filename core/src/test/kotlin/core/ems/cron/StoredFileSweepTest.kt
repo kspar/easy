@@ -8,7 +8,6 @@ import core.db.StoredFile
 import core.db.Submission
 import core.db.TeacherActivity
 import core.ems.service.storage.StorageService
-import core.ems.service.storage.contentDispositionFor
 import core.ems.service.storage.newStorageKey
 import core.testing.Auth
 import core.testing.Fixtures
@@ -233,7 +232,7 @@ class StoredFileSweepTest(
         // what `DELETE /v2/files/{id}` deliberately leaves behind. Nothing else finds it: there is
         // no row to list it from, so without this pass it is invisible junk forever.
         val orphan = newStorageKey()
-        storage.put(orphan, ByteArrayInputStream(byteArrayOf(1, 2, 3)), 3, "image/png", contentDispositionFor("image/png", "x.png"))
+        storage.put(orphan, ByteArrayInputStream(byteArrayOf(1, 2, 3)))
 
         val result = sweepNow(deleteEnabled = true)
 
@@ -264,7 +263,7 @@ class StoredFileSweepTest(
     fun `a report-only run names the same files and deletes nothing`() {
         val unreferenced = storeFile(ageHours = 48)
         val orphan = newStorageKey()
-        storage.put(orphan, ByteArrayInputStream(byteArrayOf(9)), 1, "image/png", "inline")
+        storage.put(orphan, ByteArrayInputStream(byteArrayOf(9)))
 
         val report = sweepNow(deleteEnabled = false)
 
@@ -327,10 +326,7 @@ class StoredFileSweepTest(
      */
     private fun storeFile(ageHours: Int, bytes: ByteArray = byteArrayOf(1, 2, 3, 4)): String {
         val key = newStorageKey()
-        storage.put(
-            key, ByteArrayInputStream(bytes), bytes.size.toLong(), "image/png",
-            contentDispositionFor("image/png", "pic.png"),
-        )
+        storage.put(key, ByteArrayInputStream(bytes))
         transaction {
             StoredFile.insert {
                 it[id] = key

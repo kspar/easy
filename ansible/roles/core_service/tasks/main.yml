@@ -109,18 +109,18 @@
     group: "{{ easy_core_group }}"
     mode: "0750"
 
-- name: Create the upload directory the local storage backend writes into
-  # Only for `backend: local`; an s3 host stores nothing here and should not be given a directory
-  # that looks like it does. Nothing created this before, and nothing added it to the unit's
-  # ReadWritePaths either, so a fresh local host installed cleanly and then failed to start — core
-  # cannot create it itself, because ProtectSystem=strict has already made the filesystem read-only
-  # by the time it tries. 0750: core streams these bytes out itself, so nobody else needs to read
-  # them off the disk.
+- name: Create the upload directory
+  # Unconditional since EZ-1907 removed the second backend; it used to be skipped on an s3 host, so
+  # that a host storing nothing here was not given a directory implying otherwise. Nothing created
+  # this before it existed, and nothing added it to the unit's ReadWritePaths either, so a fresh
+  # host installed cleanly and then failed to start — core cannot create it itself, because
+  # ProtectSystem=strict has already made the filesystem read-only by the time it tries. 0750: core
+  # streams these bytes out itself, so nobody else needs to read them off the disk.
   #
-  # Both variables belong to core_config, which runs before this role in the Core play. Referenced
-  # without a `default()` on purpose: the same two values decide what application.yaml says, what
-  # this creates and what the unit may write to, and a fallback spelled here would be a second copy
-  # of the path to keep in step — one that goes wrong silently, as the unit whitelisting the old
+  # The variable belongs to core_config, which runs before this role in the Core play. Referenced
+  # without a `default()` on purpose: the same value decides what application.yaml says, what this
+  # creates and what the unit may write to, and a fallback spelled here would be a second copy of
+  # the path to keep in step — one that goes wrong silently, as the unit whitelisting the old
   # directory while the config names the new one. Running this role with core_config out of scope is
   # an undefined-variable error, which is the correct answer to that.
   ansible.builtin.file:
@@ -129,7 +129,6 @@
     owner: "{{ easy_core_user }}"
     group: "{{ easy_core_group }}"
     mode: "0750"
-  when: easy_core_storage_backend == 'local'
 
 - name: Install the unit
   ansible.builtin.template:
@@ -255,3 +254,85 @@
       not exist yet. Deploy a release with deploy/deploy.sh and it will come up — and stay up
       across reboots.
   when: not easy_core_jar_stat.stat.exists
+
+# --- the nightly file archive ------------------------------------------------------------------------
+# The uploaded-file directory holds the only copy of every image in every article, and nothing else
+# backs it up: roles/postgres dumps the database and stops there. That was survivable while a deployed
+# environment kept these bytes in S3 — except production never did — and EZ-1907 removed the option,
+# so the gap is closed here rather than left as an argument about whose job it is.
+
+- name: Create the file-archive directory
+  ansible.builtin.file:
+    path: "{{ easy_files_backup_dir }}"
+    state: directory
+    owner: root
+    group: root
+    # 0700: an archive of the upload directory is as readable as the upload directory, and that one
+    # is 0750 with 0600 files. A backup that widens the permissions of what it copies is a backup
+    # that has quietly published it.
+    mode: "0700"
+  when: easy_files_backup_enabled | bool
+
+- name: Install the file-archive script
+  ansible.builtin.template:
+    src: easy-files-backup.sh.j2
+    dest: /usr/local/bin/easy-files-backup
+    owner: root
+    group: root
+    mode: "0755"
+    # Catches a templating mistake here rather than at 04:10 in three weeks' time.
+    validate: bash -n %s
+  when: easy_files_backup_enabled | bool
+
+- name: Install the file-archive unit and timer
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - easy-files-backup.service
+    - easy-files-backup.timer
+  when: easy_files_backup_enabled | bool
+
+- name: Start the file-archive timer and keep it started
+  ansible.builtin.systemd_service:
+    name: easy-files-backup.timer
+    state: started
+    enabled: true
+    daemon_reload: true
+  # A dry run simulated the templates rather than writing them, so this would fail on a unit that is
+  # not there — and take the rest of the run with it.
+  when:
+    - easy_files_backup_enabled | bool
+    - not ansible_check_mode
+
+# A timer that is installed and a backup that works are different claims, and only the second is
+# worth anything. Take one now, while somebody is watching: the failure modes are permissions and
+# disk, both of which show up immediately or not at all.
+- name: Take a file archive now, so the first one is not unattended
+  ansible.builtin.command: systemctl start easy-files-backup.service
+  changed_when: true
+  when:
+    - easy_files_backup_enabled | bool
+    - easy_files_backup_run_now | bool
+    - not ansible_check_mode
+
+- name: Show what the file-archive directory holds
+  ansible.builtin.command: ls -lh {{ easy_files_backup_dir }}
+  register: easy_files_backup_listing
+  changed_when: false
+  # NOT `check_mode: false`, which is what roles/postgres does for the equivalent task. There the
+  # directory already exists, so forcing the command to run during --check answers a real question.
+  # Here the task that creates it was only simulated, and on a host that has never run this role the
+  # directory does not exist — so `ls` exits 2 and takes the whole dry run with it. `ansible/run.sh`
+  # tells operators to dry-run production first, which is exactly the path that would have hit this.
+  when:
+    - easy_files_backup_enabled | bool
+    - not ansible_check_mode
+
+- name: Say what is there
+  ansible.builtin.debug:
+    var: easy_files_backup_listing.stdout_lines
+  when: easy_files_backup_enabled | bool

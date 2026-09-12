@@ -7,30 +7,34 @@ import java.util.Base64
 /**
  * Where the bytes of an uploaded file live. [core.db.StoredFile] keeps only the metadata.
  *
- * There are two implementations and the choice is `easy.core.storage.backend`:
- * [S3StorageService] for anything deployed, [LocalFsStorageService] for a laptop and for CI, which
- * have no AWS account and are expected to work with no network at all.
+ * One implementation, [LocalFsStorageService]: a directory on the host core runs on. There was a
+ * second, an S3 bucket of publicly readable objects, and EZ-1907 removed it. Production never used
+ * it, dev's bucket held five smoke-test objects, and what the removal bought beyond a bill is that
+ * dev and production now exercise one serving path instead of two — the streaming one, which is the
+ * one with security properties worth testing, and which production ran while dev tested the other.
  *
- * The URL a file is served from is *not* part of this interface by design. Content stores
- * `/v2/resource/<key>/<filename>` on our own origin permanently, and
- * [core.ems.service.file.ReadStoredFileController] decides per backend what to do with that request
- * — redirect to a public object, or stream. That indirection is the whole reason a storage change
- * never has to rewrite a stored article.
+ * The interface survives the collapse to a single implementation on purpose. Three callers depend
+ * on it, so a future backend — a second host's directory, an object store bought for durability
+ * rather than fashion — is a class rather than a rewrite.
+ *
+ * The URL a file is served from is *not* part of this interface, and that is the part to leave
+ * alone. Content stores `/v2/resource/<key>/<filename>` on our own origin permanently, and
+ * [core.ems.service.file.ReadStoredFileController] serves it. That indirection is why removing an
+ * entire backend touched no stored article, and it is why the next storage change will not either.
  */
 interface StorageService {
 
     /**
-     * Store [bytes] under [key]. [sizeBytes] is required rather than derived because S3 needs the
-     * content length up front to stream a request body instead of buffering it, which is the only
-     * reason a large upload is possible at all.
+     * Store [bytes] under [key]. The stream is consumed and closed.
      *
-     * [mimeType] and [contentDisposition] become response headers on the stored object, so a browser
-     * that follows the redirect sees a real content type and a human filename rather than the key.
-     * The disposition arrives already formatted — see [contentDispositionFor] — because whether a
-     * file may render in the browser is a policy decision, and a storage backend is the wrong place
-     * for one.
+     * Nothing is stored alongside the bytes. The MIME type, the filename and the size are already
+     * columns on [core.db.StoredFile] and the read endpoint builds every response header from that
+     * row — so a file's `Content-Disposition` is decided freshly on each read, and a change to
+     * [contentDispositionFor] reaches files uploaded years ago. This used to take three more
+     * parameters because the S3 backend could *not* do that: the browser fetched the object
+     * directly, so both headers had to be baked in at upload time and were then frozen.
      */
-    fun put(key: String, bytes: InputStream, sizeBytes: Long, mimeType: String, contentDisposition: String)
+    fun put(key: String, bytes: InputStream)
 
     /** Read an object back. Null when it is not there. The caller closes the stream. */
     fun get(key: String): InputStream?
@@ -46,13 +50,6 @@ interface StorageService {
      * (thousands); if it ever is not, the sweep is the thing to page rather than this signature.
      */
     fun listKeys(): Set<String>
-
-    /**
-     * The publicly fetchable URL of an object, or null when this backend has none — which is the
-     * local one, where there is no web server in front of the directory. A null answer is what
-     * makes the read endpoint stream instead of redirect.
-     */
-    fun publicUrl(key: String): String?
 }
 
 
@@ -100,11 +97,12 @@ fun assertValidStorageKey(key: String) =
  *
  * **This used to be the other way round** — a two-element deny list, `text/html` and
  * `image/svg+xml`, with everything else served `inline`. Its reasoning was that an uploaded page
- * "cannot touch the application — different origin, no cookies, no session", and that is true of the
- * S3 backend, which redirects to a bucket URL. It is **false of the local backend**, which streams
- * through core: `roles/nginx` proxies `/v2/resource/` from the *web* origin in every environment, on
- * purpose, so a page served that way is same-origin with the SPA. `local` is the Spring default and
- * what production runs.
+ * "cannot touch the application — different origin, no cookies, no session". That was true only of
+ * the S3 backend, which redirected to a bucket URL, and it is false of the one that remains: core
+ * streams the bytes, and `roles/nginx` proxies `/v2/resource/` from the *web* origin in every
+ * environment, on purpose, so a page served that way is same-origin with the SPA. With S3 gone
+ * (EZ-1907) the false half is the only half, which makes this allow list load-bearing rather than
+ * merely prudent.
  *
  * And a deny list is the wrong shape for the question regardless. "Which types can a browser be
  * talked into executing script from" has no stable answer: `application/xhtml+xml` was missing and
@@ -134,14 +132,13 @@ private val MAY_RENDER_INLINE_PREFIXES = listOf("image/", "audio/", "video/")
 private val NEVER_INLINE = setOf("image/svg+xml")
 
 /**
- * The `Content-Disposition` a stored file is served with. One function because it is applied in two
- * unrelated places — attached to the object at upload time for the S3 backend, and set on the
- * response at read time for the local one — and a policy that lives in two places is a policy that
- * will eventually disagree with itself.
+ * The `Content-Disposition` a stored file is served with.
  *
- * Note the asymmetry that follows from *where* each backend applies it: the local backend decides on
- * every read, so a change here covers files already stored, while S3 baked the answer into the object
- * when it was uploaded and keeps serving the old one. Production is local.
+ * Applied in one place now, at read time, which is a property worth naming rather than assuming:
+ * every answer is computed from the database row on the request that needs it, so editing the
+ * policy above re-serves files uploaded years ago with the new one. The S3 backend attached the
+ * header to the object at upload instead, froze it there, and made this function a policy living in
+ * two places that could disagree. It no longer can.
  */
 fun contentDispositionFor(mimeType: String, filename: String): String {
     val kind = if (mayRenderInline(mimeType)) "inline" else "attachment"

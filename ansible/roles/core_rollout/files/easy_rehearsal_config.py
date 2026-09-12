@@ -138,10 +138,18 @@ def transform(prod: dict, port: int, db_password: str, secret_key_paths: list[st
     _set(cfg, "easy.core.moodle-sync.grades.url", DISCARD)
     _set(cfg, "easy.core.moodle-sync.course-allowlist", NO_COURSE)
 
-    # Storage: a scratch directory, never the bucket and never production's files, and the sweep
-    # that deletes may only report.
-    _set(cfg, "easy.core.storage.backend", "local")
+    # Storage: a scratch directory, never production's files, and the sweep that deletes may only
+    # report. Pointing the directory elsewhere is the whole protection — a rehearsal that swept
+    # production's upload directory would delete files whose rows are in the live database, not the
+    # copy this booted against.
+    #
+    # The `backend` key and the `s3` block below belong to a backend that no longer exists
+    # (EZ-1907). They are still removed rather than ignored, because this transform runs against
+    # whatever config is on the host, which may predate the release that stops writing them — and a
+    # stale `backend: s3` with credentials beside it is exactly the shape of config this file exists
+    # to defuse.
     _set(cfg, "easy.core.storage.local.dir", storage_dir)
+    _get(cfg, "easy.core.storage", {}).pop("backend", None)
     _get(cfg, "easy.core.storage", {}).pop("s3", None)
     _set(cfg, "easy.core.stored-file-sweep.delete", False)
 
@@ -198,7 +206,19 @@ def problems(cfg: dict, port: int) -> list[str]:
     allow = _get(cfg, "easy.core.moodle-sync.course-allowlist", "")
     if not allow or allow != NO_COURSE:
         out.append(f"Moodle: course-allowlist is {allow!r} (empty means UNRESTRICTED), must be {NO_COURSE!r}")
-    want("easy.core.storage.backend", "local", "storage backend")
+    # No `want` on a backend key: there is no such setting any more (EZ-1907), so requiring it to
+    # say "local" would fail every rehearsal against a config the current role wrote, which contains
+    # no such key at all.
+    #
+    # A key that says "local" is tolerated rather than flagged — the same call the Ansible guard in
+    # roles/core_config makes, and for the same reason: it is a line nothing reads that nonetheless
+    # says something true, and a guard that aborts a production rollout over a redundant line is
+    # causing the outage it exists to prevent. Anything *else* is flagged, because the value that
+    # matters is "s3" and the whole job of this function is refusing to boot a rehearsal pointed at
+    # a real external system.
+    backend = _get(cfg, "easy.core.storage.backend")
+    if backend is not None and backend != "local":
+        out.append(f"storage: backend is {backend!r}; there is no backend but the local directory")
     if _get(cfg, "easy.core.storage.s3") is not None:
         out.append("storage: an s3 block is still present")
     sdir = str(_get(cfg, "easy.core.storage.local.dir", ""))

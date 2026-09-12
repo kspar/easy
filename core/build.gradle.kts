@@ -325,9 +325,6 @@ dependencies {
     // See core/src/test/kotlin/core/testing/TestDatabase.kt.
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.junit.jupiter)
-    // And a MinIO, for the S3 half of StorageServiceContractTest. Skipped with a reason when there
-    // is no Docker, rather than silently reducing the suite to the local backend.
-    testImplementation(libs.testcontainers.minio)
 
     // Markdown (CommonMark with GFM extensions)
     implementation(libs.bundles.commonmark)
@@ -337,10 +334,6 @@ dependencies {
 
     // StoredFile type detection
     implementation(libs.tika.core)
-
-    // Object storage for uploaded files (see core/ems/service/storage). Only pulled in by
-    // S3StorageService — the local-filesystem backend a laptop and CI run on touches none of it.
-    implementation(libs.aws.s3)
 
     // Source code similarity
     implementation(libs.fuzzywuzzy)

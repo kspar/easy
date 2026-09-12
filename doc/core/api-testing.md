@@ -83,7 +83,8 @@ curl -s -d grant_type=client_credentials -d client_id=easy-dev-test-runner \
   https://dev.idp.lahendus.ut.ee/auth/realms/master/protocol/openid-connect/token
 ```
 
-`s3-check.sh` does this itself, so normally you never touch it.
+`s3-check.sh` used to do this itself; it went with the S3 backend in EZ-1907, so this is now the
+only way to get a token for a deployed environment.
 
 **Three claims or nothing.** `EasyUserJwtConverter` requires `preferred_username`, `email` and
 `easy_role`, and treats a verified token missing any of them as an *invalid* token — a 401 that
@@ -93,8 +94,8 @@ reads like a bad secret rather than a misconfigured mapper. A service account ha
 
 **And it has to check in before it can own anything.** A brand-new identity has no `account` row.
 `stored_file.created_by_id` is a foreign key to it, so the first upload fails on
-`fk_stored_file_owner` — with a 500, and *after* the object has already been written to S3, leaving
-an orphan for the sweep. The SPA calls `POST /v2/account/checkin` at login; a service account never
+`fk_stored_file_owner` — with a 500, and *after* the bytes have already been written to disk,
+leaving an orphan for the sweep. The SPA calls `POST /v2/account/checkin` at login; a service account never
 logs in, so a script has to. It needs `{"first_name": …, "last_name": …}` and is idempotent.
 
 ## A/B-ing old code against new
@@ -167,11 +168,13 @@ one of which drifts silently because nobody runs it on a schedule.
 | --- | --- | --- |
 | `articles-check.sh`, 26 curl assertions | `core/ems/service/article/ArticleApiTest.kt`, 18 tests | every push |
 | `files-check.sh`, 34 curl assertions | `core/ems/service/file/FileApiTest.kt`, 19 tests | every push |
-| `files-check.sh` against whichever backend | `StorageServiceContractTest`, 15 runs over both | every push, MinIO for the S3 half |
+| `files-check.sh` against whichever backend | `StorageServiceContractTest` | every push, no container |
 
-Those counts come from `core/build/test-results/test/*.xml`, not from counting `@Test` — the storage
-one is 9 annotations and 15 runs, and an annotation count would understate it while looking like a
-measurement. The `curl` figures are `grep -c '^\s*check '` against the scripts at their last commit.
+Those counts come from `core/build/test-results/test/*.xml`, not from counting `@Test`. The storage
+row carries no figure on purpose: it was parameterised over two backends until EZ-1907 removed one,
+so runs and annotations were different numbers, and a number recorded here would now be a stale
+measurement of a suite that has changed shape. Run `bin/testcounts`. The `curl` figures are
+`grep -c '^\s*check '` against the scripts at their last commit.
 
 Three things the port gained, all of them cache or ordering behaviour a script running against a
 long-lived core could not see: that an anonymous reader and a signed-in non-admin get **byte-identical**
@@ -180,23 +183,26 @@ access control); that an admin reading first does not leave the Markdown source 
 anonymous caller reads; and that publishing takes effect immediately.
 
 One thing it deliberately did not gain: **whether a stored object is actually readable by an
-anonymous caller.** That is a bucket policy, set out of band per environment, and asserting it
-against MinIO would answer a question about MinIO.
+anonymous caller.** That was a bucket policy, set out of band per environment, and asserting it
+against MinIO would have answered a question about MinIO.
 
-### `s3-check.sh` stays a script permanently
+### What `s3-check.sh` asked, and what still asks it
 
-It asks whether *this environment's* bucket, credentials and proxying are wired up, which is
-unanswerable from CI by construction. It belongs to EZ-1710's post-deploy story.
+That script checked whether *this environment's* bucket, credentials and proxying were wired up —
+unanswerable from CI by construction, which is why it stayed a script. EZ-1907 removed the bucket
+and the credentials, and the script with them.
+
+The third question survives them and is the one that actually breaks: **does the web origin proxy
+`/v2/resource/` to core?** Stored content references files by a relative URL on the web host, so
+without that proxy an `<img>` gets whatever the web server serves for an unknown path — often the
+SPA's `index.html` with a 200 on it, which renders as a broken image and looks nothing like a proxy
+problem. `roles/nginx` configures it. To check it against a deployed environment:
 
 ```sh
-AWS_PROFILE=easy-dev-test BUCKET=lahendus-dev-files \
-  doc/core/s3-check.sh https://dev.ems.lahendus.ut.ee/v2 https://dev.lahendus.ut.ee
+curl -sI https://dev.lahendus.ut.ee/v2/resource/<key>/x.png
 ```
 
-Its three sections skip cleanly when their prerequisites are missing, so a partial run reports as
-partial rather than as green. The upload section needs `EASY_TOKEN`, because a deployed environment
-has real authentication and the `oidc_claim_*` trick does not work there. `s3-setup.md` covers
-building the bucket in the first place.
+A 200 with `Content-Type: image/png` is right. A 200 with `text/html` is the failure above.
 
 **Do not run it, or anything like it, in CI.** It would need a core started with
 `auth-enabled: false`, which would make the one code path that must never run anywhere real

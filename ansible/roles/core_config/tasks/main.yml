@@ -173,66 +173,40 @@
     quiet: true
   when: not easy_core_allow_real_outbound | bool
 
-- name: Refuse a storage backend that is not one of the two that exist
-  # Every other check on the backend, here and in core_service, is an equality test against 'local'
-  # or 's3', and each one silently takes the other branch for a value that is neither. `S3` would
-  # pass the opt-in guard below, skip the S3-values assert, render no s3 block, get no upload
-  # directory and no ReadWritePaths entry — and then core would match neither storage bean's
-  # @ConditionalOnProperty and die at startup on a missing StorageService, with nothing anywhere
-  # naming the typo. One assert, before any of them.
+- name: Refuse an inventory that still asks for object storage
+  # Four assertions stood here, all guarding the `s3` backend against being pointed at a bucket it
+  # did not own. EZ-1907 removed the backend, so they went with it — and this one replaces them,
+  # because the dangerous state is no longer "s3 configured wrongly" but "s3 configured at all and
+  # silently ignored".
+  #
+  # An environment whose group_vars still says `easy_core_storage_backend: s3` would now render a
+  # config with no such key, start cleanly, and store uploads on local disk while whoever wrote that
+  # line believes they are in a bucket. Files would appear to work — the URL is the same either way
+  # — and the divergence would surface the first time somebody went looking in the bucket and found
+  # the last thing uploaded before this deploy. So: fail the run, and say what to delete.
+  #
+  # `easy_core_storage_backend: local` is tolerated rather than rejected. It is now a variable
+  # nothing reads, but it says something true, and failing a production deploy over a redundant line
+  # would be this assertion causing the outage it exists to prevent. Anything else under that prefix
+  # is an S3 leftover and is not tolerated.
+  #
+  # `varnames` rather than the `vars` dictionary: that dictionary is deprecated and goes away in
+  # ansible-core 2.24, and this assertion outliving the syntax it is written in would be a poor joke
+  # for a task whose whole job is catching things that outlived their reason to exist.
   ansible.builtin.assert:
-    that: easy_core_storage_backend in ['local', 's3']
+    that:
+      - easy_core_storage_backend | default('local') == 'local'
+      - query('varnames', '^easy_core_storage_(allow_s3|s3_|prod_bucket)') | length == 0
     fail_msg: >-
-      easy_core_storage_backend is '{{ easy_core_storage_backend }}'. It must be exactly 'local' or
-      's3' — the comparisons that act on it are case-sensitive, in both Ansible and core.
+      This inventory asks for object storage — backend
+      '{{ easy_core_storage_backend | default('local') }}'
+      {%- set leftovers = query('varnames', '^easy_core_storage_(allow_s3|s3_|prod_bucket)') -%}
+      {%- if leftovers %}, and {{ leftovers | sort | join(', ') }}{% endif %} — and there is no S3
+      backend any more (EZ-1907). Uploaded files go to {{ easy_core_storage_local_dir }} on this
+      host, which is what a run with these variables left in would quietly do while the inventory
+      claimed otherwise. Delete them. If this host has a bucket with objects still in it, copy them
+      into that directory first: their keys are the filenames and nothing else has to change.
     quiet: true
-
-- name: Refuse object storage on an environment that has not opted into it
-  # Not gated on easy_core_allow_real_outbound — see the note on easy_core_storage_allow_s3. This is
-  # its own decision because the risk is its own shape: the nightly sweep lists the bucket and
-  # deletes objects that have no matching row here, so a host pointed at a bucket it does not own
-  # destroys data rather than merely reading someone else's.
-  ansible.builtin.assert:
-    that: easy_core_storage_backend != 's3'
-    fail_msg: >-
-      easy_core_storage_backend is 's3' but easy_core_storage_allow_s3 is false. Set that in this
-      environment's group_vars once it has a bucket of its own — and note "of its own" is the load
-      bearing part, because the stored-file sweep deletes objects that have no row in THIS host's
-      database.
-    quiet: true
-  when: not easy_core_storage_allow_s3 | bool
-
-- name: Refuse to continue without the S3 values that have no safe default
-  ansible.builtin.assert:
-    that: vars[item] is defined and (vars[item] | string | length > 0)
-    fail_msg: >-
-      {{ item }} is not set and the storage backend is s3. public-base-url is what /v2/resource
-      redirects to — without it every image on the site 404s.
-    quiet: true
-  loop:
-    - easy_core_storage_s3_bucket
-    - easy_core_storage_s3_public_base_url
-  when: easy_core_storage_backend == 's3'
-
-- name: Refuse to share production's bucket
-  # The reason this is not obvious: dev's database is an anonymised copy of production's, so most
-  # keys match and nothing looks wrong — until production uploads a file, which has no row in dev's
-  # database, and dev's sweep collects it as an orphaned object that night. Objects are also public
-  # and permanent, so there is no second copy to restore from.
-  ansible.builtin.assert:
-    that: easy_core_storage_s3_bucket != easy_core_storage_prod_bucket
-    fail_msg: >-
-      easy_core_storage_s3_bucket is '{{ easy_core_storage_s3_bucket }}', which is production's
-      bucket, and this environment is not production. The nightly sweep deletes objects that have no
-      row in THIS host's database — and production's newer uploads have none here. Give this
-      environment its own bucket.
-    quiet: true
-  when:
-    - easy_core_storage_backend == 's3'
-    - not easy_core_allow_real_outbound | bool
-    # Skipped while unset — see the default. This guard only exists once someone has told this
-    # repository, or an environment's group_vars, what production's bucket is called.
-    - easy_core_storage_prod_bucket | length > 0
 
 - name: Refuse a mail host that could deliver
   ansible.builtin.assert:
@@ -317,12 +291,11 @@
           (("easy", "core", "keycloak", "client-secret"), lambda: "CHANGEME-no-realm-yet"),
           (("easy", "core", "moodle-sync", "wstoken"), lambda: "CHANGEME-no-moodle-token"),
           (("easy", "core", "youtrack", "token"), lambda: "CHANGEME-no-youtrack-token"),
-          # Deliberately NOT here: easy.core.storage.s3.access-key / secret-key. They belong in this
-          # file when they exist — the credential grep at the end of this role would fail the run if
-          # they appeared in the managed config — but most environments should use an instance role
-          # and have no such credential at all. Creating them as CHANGEME placeholders would then
-          # fail the "no placeholders where real credentials are expected" assertion on exactly the
-          # environments that are correctly configured. Add them by hand where they are needed.
+          # easy.core.storage.s3.access-key / secret-key used to be discussed here, as the one
+          # credential this must NOT create. Storage needs no credential at all now (EZ-1907) — it
+          # is a directory — so an existing secrets file may still carry those two keys. They are
+          # inert: nothing reads them. Deleting them from the host's secrets file and then from IAM
+          # is worth doing, and is not this role's job.
       ]
 
       doc = yaml.safe_load(path.read_text()) if path.exists() else {}

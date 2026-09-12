@@ -94,31 +94,21 @@ easy_core_moodle_grades_url: http://127.0.0.1:9/moodle-disabled-on-dev
 #
 # easy_core_youtrack_enabled: false   <- inherited from the role, on purpose
 
-# --- file storage: dev's own S3 bucket ---------------------------------------------------------------
-# Opted in explicitly, and separately from the outbound catch above, which stays off. An object store
-# is a real external system but not one that can hurt anybody outside this project: the bucket is
-# ours, holds nothing but uploaded images, and is disposable.
+# --- file storage --------------------------------------------------------------------------------
+# Nothing to set. Dev had a bucket of its own — opted into separately from the outbound catch, since
+# an object store holding uploaded images is a real external system but not one that can hurt anybody
+# outside this project — and EZ-1907 removed the backend it fed. The role's default directory is now
+# dev's answer as well as production's, which is the point: dev exercises the serving path production
+# runs, rather than the one only dev had.
 #
-# The one thing that would make it dangerous is sharing it with production, because the nightly sweep
-# deletes objects that have no row in *this* host's database — and dev's database is an anonymised
-# copy, so anything uploaded to production after the last import has no row here. Hence a bucket of
-# dev's own, and the guard in the role that refuses production's name.
-easy_core_storage_allow_s3: true
-easy_core_storage_backend: s3
-easy_core_storage_s3_bucket: lahendus-dev-files
-easy_core_storage_s3_region: eu-north-1
-easy_core_storage_s3_public_base_url: https://lahendus-dev-files.s3.eu-north-1.amazonaws.com
+# The bucket held five 67-byte smoke-test objects, whose rows survive in dev's database and will 404
+# after this deploys. That is worth knowing rather than fixing.
 
 # The sweep reports and deletes nothing until this is flipped. Left off for now on purpose: with no
 # reference columns on stored_file, a content column missing from its scan list means permanently
 # deleting a file that is in use, and a night or two of "would delete ..." in the journal is how you
 # find that out cheaply. Flip it once the logs look right.
 easy_core_stored_file_sweep_delete: false
-
-# The access key is NOT here. It lives in /srv/easy/conf/secrets.yaml on the host under
-# easy.core.storage.s3.{access-key,secret-key}, with the database password and the Keycloak client
-# secret — this file is in a public repository, and the role's credential grep fails the run if a
-# secret ever appears in the managed config instead.
 
 # --- mail: off until there is a catch-all ------------------------------------------------------------
 # §5 wants mailpit here so mail stays testable but cannot escape. Until that role exists, off is the

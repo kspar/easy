@@ -52,12 +52,13 @@ jobs:
       # instance and a gitignored config file that CI had neither of (EZ-1715). Both are gone: the
       # suite starts its own postgres via Testcontainers, and the test config is committed.
       #
-      # It needs a Docker daemon. ubuntu-latest has one. Two containers now: PostgreSQL, and a MinIO
-      # for the S3 half of StorageServiceContractTest — production stores uploaded files in S3 and
-      # CI would otherwise only ever exercise the local filesystem backend. The MinIO half skips
-      # with a reason when there is no Docker at all, and *fails* if Docker is there and the
-      # container will not start — a silent drop to one backend is the failure that test exists to
-      # prevent.
+      # It needs a Docker daemon, for PostgreSQL. ubuntu-latest has one.
+      #
+      # There was a second container, a MinIO for the S3 half of StorageServiceContractTest. Both it
+      # and the backend it tested are gone (EZ-1907), which is also the fix for EZ-1906: the
+      # `minio/minio` repository was withdrawn from Docker Hub, the container stopped starting, and
+      # master's backend job went red on every commit for a week. One less pinned third-party image
+      # is one less thing that can be withdrawn out from under this job.
       #
       # DO NOT add `container:` to this job. The database would then be reachable as a service
       # alias rather than on localhost, and assertDisposableDatabase in

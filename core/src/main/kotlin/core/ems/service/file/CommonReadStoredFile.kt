@@ -70,21 +70,11 @@ class ReadStoredFileController(private val storageService: StorageService) {
         }
 
         // Content-addressed in the sense that matters: a key is minted once and its bytes never
-        // change, so this can be cached for as long as a browser is willing to. If this ever becomes
-        // a redirect to a *signed* URL, this header has to go with it — a year-long cache of a
+        // change, so this can be cached for as long as a browser is willing to. If this ever starts
+        // answering a *signed* URL instead, this header has to go with it — a year-long cache of a
         // ten-minute URL is a broken image for the rest of the year.
         response.setHeader("Cache-Control", "public, max-age=31536000, immutable")
 
-        val publicUrl = storageService.publicUrl(key)
-        if (publicUrl != null) {
-            // The bucket URL is never stored anywhere; it exists only in this response. That is what
-            // keeps the storage backend swappable without touching a single stored article.
-            response.status = HttpServletResponse.SC_FOUND
-            response.setHeader("Location", publicUrl)
-            return
-        }
-
-        // Backends with no public URL — the local filesystem one — stream instead.
         val stream = storageService.get(key)
         if (stream == null) {
             log.warn { "File row ${key.take(6)}… exists but its object does not" }
@@ -99,8 +89,8 @@ class ReadStoredFileController(private val storageService: StorageService) {
         // response into something executable belongs on the response that needs it, next to the
         // Content-Type it is protecting.
         response.setHeader("X-Content-Type-Options", "nosniff")
-        // Same policy the S3 backend bakes into the object at upload time, applied here at read time
-        // because this backend has no object metadata to bake it into.
+        // Computed per read, from the row, rather than stored with the bytes — so widening or
+        // narrowing the inline allow list re-serves every file already uploaded.
         response.setHeader("Content-Disposition", contentDispositionFor(file.mimeType, file.filename))
         stream.use { it.copyTo(response.outputStream) }
     }

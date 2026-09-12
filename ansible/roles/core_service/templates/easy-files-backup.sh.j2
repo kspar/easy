@@ -1,0 +1,118 @@
+#!/bin/bash
+# Managed by Ansible (roles/core_service) — local edits are overwritten.
+#
+# Nightly archive of the uploaded-file directory. See doc/backups.md, whose rules this follows.
+#
+# This exists because EZ-1907 removed the S3 backend, and with it the last argument for why these
+# bytes did not need a backup of their own. They never did have one: the job next door dumps the
+# database and nothing else, so a lost disk took every uploaded image while the rows describing them
+# restored perfectly — an article full of broken images and a database that looks healthy.
+#
+# Why a tar rather than a mirror. Keys are immutable: a file is written once, never rewritten, and
+# only ever deleted by StoredFileSweep. A mirror would therefore be cheaper and would also faithfully
+# reproduce a sweep that deleted something it should not have, which is the failure this is actually
+# insuring against — the sweep ships with `delete: false` precisely because nobody trusts it yet.
+# Dated archives mean a wrong deletion is recoverable for {{ easy_files_backup_keep_days }} days.
+#
+# Root, not the core user: files land at 0600 owned by {{ easy_core_user }}, in a 0750 directory, so
+# nothing else on the host can read them. That is the right mode for them and it leaves root as the
+# only thing that can archive them.
+
+set -euo pipefail
+
+SRC={{ easy_core_storage_local_dir | quote }}
+DIR={{ easy_files_backup_dir | quote }}
+KEEP_DAYS={{ easy_files_backup_keep_days }}
+
+DRY_RUN=false
+[ "${1:-}" = "--dry-run" ] && DRY_RUN=true
+
+# Age from the timestamp in the file name, never from mtime. doc/backups.md states the rule for the
+# database dumps and it is the same rule here: a file copied off-host and back, or restored with
+# `cp -p`, gets an mtime that has nothing to do with when its contents were taken — so mtime pruning
+# either keeps a stale archive forever or deletes today's.
+#
+# `>` and not `>=`: KEEP_DAYS=14 keeps fourteen days of archives, and the fifteenth is the one that
+# goes. An off-by-one here is a day of history, quietly.
+prune() {
+    local now today_epoch kept=0 removed=0
+    now=$(date +%Y-%m-%d)
+    today_epoch=$(date -d "$now" +%s)
+
+    while IFS= read -r f; do
+        local base stamp day age age_epoch
+        base=$(basename "$f")
+        stamp=${base#files-}; stamp=${stamp%.tar.gz}
+        day=${stamp%%T*}
+        # A name this cannot parse is not one of ours. Leave it alone and say so, rather than
+        # guessing at its age — the first version of the sweep next door aborted forever on one
+        # unparseable name, and deleting one is the worse half of that lesson.
+        if ! age_epoch=$(date -d "$day" +%s 2>/dev/null); then
+            echo "  skip   $base (unparseable date; not deleting)"
+            continue
+        fi
+        age=$(( (today_epoch - age_epoch) / 86400 ))
+        if [ "$age" -gt "$KEEP_DAYS" ]; then
+            if $DRY_RUN; then
+                echo "  remove $base (${age}d old, keeping ${KEEP_DAYS}d)"
+            else
+                rm -f -- "$f"
+            fi
+            removed=$((removed + 1))
+        else
+            $DRY_RUN && echo "  keep   $base (${age}d old)"
+            kept=$((kept + 1))
+        fi
+    done < <(find "$DIR" -maxdepth 1 -name 'files-*.tar.gz' -type f | sort)
+
+    echo "retention: kept $kept, removed $removed (older than ${KEEP_DAYS}d, by the date in the name)"
+}
+
+if $DRY_RUN; then
+    # Deletes nothing and takes no archive. Something that removes backups should be possible to
+    # interrogate before it is believed — doc/backups.md.
+    prune
+    exit 0
+fi
+
+if [ ! -d "$SRC" ]; then
+    echo "no such directory: $SRC" >&2
+    exit 1
+fi
+
+mkdir -p "$DIR"
+
+stamp=$(date +%Y-%m-%dT%H%M)
+final="$DIR/files-$stamp.tar.gz"
+partial="$final.partial"
+
+# Same discipline as the database dump: a tar interrupted half way through is a file that looks like
+# a backup and is not one. Write to `.partial`, verify, then rename — atomic within the filesystem.
+cleanup() { rm -f "$partial"; }
+trap cleanup EXIT
+
+# `|| [ $? -eq 1 ]` is not laziness about errors. This directory is live: StoredFileSweep unlinks
+# collected files, and every upload creates an `upload-*.part` and renames it away. GNU tar exits 1
+# for "file removed before we read it" — a warning about a file that was never ours to archive — and
+# exits 2 for anything genuinely wrong. Without this, `set -e` turns an ordinary upload landing
+# mid-walk into a night with no backup and nothing saying so. Exit 2 still aborts, and the
+# verification below is what actually decides the archive is good.
+tar -czf "$partial" -C "$SRC" . || [ $? -eq 1 ]
+
+# Cheap proof the archive is readable rather than merely present. `tar -t` walks the whole thing, so
+# a truncated or half-written file fails here instead of on the day it is needed.
+tar -tzf "$partial" > /dev/null
+
+mv "$partial" "$final"
+trap - EXIT
+
+count=$(tar -tzf "$final" | grep -cv '/$' || true)
+echo "wrote $final ($(du -h "$final" | cut -f1), $count files)"
+
+# Only after a successful archive, for the same reason the database script prunes last: pruning
+# unconditionally means a fortnight of failures quietly eating the history it was protecting.
+#
+# Plain age, not the database script's grandfather-father-son. That scheme exists because deploys
+# take extra dumps and "14 days" was therefore an unbounded number of files. Nothing here is
+# triggered by a deploy, so one archive a night for $KEEP_DAYS nights has a ceiling already.
+prune

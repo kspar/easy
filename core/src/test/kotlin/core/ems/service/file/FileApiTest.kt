@@ -6,7 +6,6 @@ import core.testing.Fixtures
 import core.testing.HttpApi
 import core.testing.IntegrationTest
 import core.testing.TestClock
-import jakarta.servlet.http.HttpServletResponse
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,10 +16,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.test.web.servlet.MockMvc
-import java.io.ByteArrayInputStream
-import java.io.InputStream
 
 /**
  * The file endpoints, end to end: upload, serve, list, mark, delete.
@@ -33,23 +29,15 @@ import java.io.InputStream
  *
  * The script ran against *whichever backend the core it was pointed at happened to use*, and
  * asserted the shape that backend produced — a 200 with bytes for local, a 302 to a public object
- * for S3. That is the part worth preserving, because production runs S3 and a suite that only ever
- * exercises local is coverage of the wrong thing.
+ * for S3. There is one backend now (EZ-1907), so the second shape is gone and with it the stub that
+ * stood in for a bucket. What is left is the one production actually serves, which is the half the
+ * script's two-shape flexibility was always hedging about.
  *
- * It is preserved in two pieces rather than one, because the two halves fail for different reasons:
- *
- * - **The endpoint's branch** — redirect when the backend has a public URL, stream when it does not
- *   — is exercised here, both ways, in `serving`. The S3 leg drives the controller with a stub
- *   backend rather than a real bucket, because what is being tested is `if (publicUrl != null)` and
- *   the headers on either side of it. A MinIO container would test the same three lines while adding
- *   a Docker dependency to the leg that has none.
- * - **The backend semantics** — put/get/list/delete, key validation, idempotency — are exercised
- *   against *both real implementations* in `StorageServiceContractTest`, which does start MinIO.
- *
- * Splitting it that way is also the only way to have both without forking the Spring context.
- * `S3StorageService` is `@ConditionalOnProperty`, so a second backend inside `@IntegrationTest`
- * would mean a second context and ten more seconds on every run — see the rule in
- * `core/testing/IntegrationTest.kt`.
+ * The division of labour survives the simplification. **Serving** — status, headers, disposition,
+ * what happens when a row has no object — is exercised here against a real Spring context. **Backend
+ * semantics** — put/get/list/delete, key validation, idempotency — are exercised in
+ * `StorageServiceContractTest`, which needs no context and, since the MinIO container went with the
+ * S3 backend, no Docker either.
  */
 @IntegrationTest
 class FileApiTest(@Autowired mockMvc: MockMvc, @Autowired private val storageService: StorageService) {
@@ -159,42 +147,13 @@ class FileApiTest(@Autowired mockMvc: MockMvc, @Autowired private val storageSer
         )
     }
 
-    /**
-     * The S3 leg of the serving branch, driven directly.
-     *
-     * The controller is a plain class over a `StorageService`, so a backend that reports a public
-     * URL is one object away — no bucket, no container, no second Spring context. What is asserted
-     * is what the script asserted when it found itself pointed at an S3 core: a 302, a `Location`
-     * off this host, and the same immutable cache header on the redirect itself.
-     */
-    @Test
-    fun `a backend with a public url redirects instead of streaming`() {
-        val key = uploadedKey()
-        val response = MockHttpServletResponse()
-
-        ReadStoredFileController(PublicUrlBackend).controller(key, "pixel.png", response)
-
-        assertEquals(HttpServletResponse.SC_FOUND, response.status)
-        assertEquals("https://bucket.example/$key", response.getHeader("Location"))
-        assertEquals("public, max-age=31536000, immutable", response.getHeader("Cache-Control"))
-        assertEquals(0, response.contentAsByteArray.size) { "A redirect must not also stream the bytes" }
-    }
-
-    @Test
-    fun `a redirecting backend still refuses a key with no row`() {
-        // The row is what proves the file exists; the object store is asked nothing. A backend that
-        // answers a URL for every key — which is what publicUrl does, it is string concatenation —
-        // must not turn an unknown key into a redirect to a 404 on someone else's domain.
-        val response = MockHttpServletResponse()
-        ReadStoredFileController(PublicUrlBackend).controller("a".repeat(27), "x.png", response)
-        assertEquals(404, response.status)
-    }
-
     // --- 1b. what may render in a browser, and what may only download ----------------------------
 
     /**
-     * Objects are public and served from the store's own origin, so an uploaded page is a working
-     * page on a domain we do not vouch for. SVG is the same class for a less obvious reason: safe
+     * Reads are unauthenticated and core streams the bytes, so an uploaded page is a working page on
+     * **our own origin** — `roles/nginx` proxies `/v2/resource/` from the web host, same-origin with
+     * the SPA. That is a stronger reason for this policy than the one the S3 backend had, where the
+     * page at least landed on a bucket domain. SVG is the same class for a less obvious reason: safe
      * inside `<img>`, scriptable when navigated to.
      */
     @Test
@@ -215,8 +174,8 @@ class FileApiTest(@Autowired mockMvc: MockMvc, @Autowired private val storageSer
      * inside it runs. Nothing about the file has to lie: Tika detects `application/xhtml+xml` from
      * the namespace and from the literal `<html xmlns=`, so the extension is irrelevant. And the
      * old comment's reason for tolerating a rendered upload — "different origin, no cookies, no
-     * session" — is true of the S3 backend and false of the local one, which streams through core and
-     * therefore through the web origin. `local` is the default and what production runs.
+     * session" — was only ever true of the S3 backend. It is false of the one that remains, which
+     * streams through core and therefore through the web origin.
      */
     @Test
     fun `xhtml is forced to download, whatever it is called`() {
@@ -414,17 +373,6 @@ class FileApiTest(@Autowired mockMvc: MockMvc, @Autowired private val storageSer
             "The delete endpoint removed the object. Only the sweep may do that — see StoredFileSweep."
         }
         assertNotNull(storageService.get(key))
-    }
-
-    /** A backend that has a public URL for everything, i.e. the shape of `S3StorageService`. */
-    private object PublicUrlBackend : StorageService {
-        override fun put(key: String, bytes: InputStream, sizeBytes: Long, mimeType: String, contentDisposition: String) =
-            error("not called")
-
-        override fun get(key: String): InputStream = ByteArrayInputStream(byteArrayOf())
-        override fun delete(keys: Collection<String>) = error("not called")
-        override fun listKeys(): Set<String> = error("not called")
-        override fun publicUrl(key: String) = "https://bucket.example/$key"
     }
 
     private companion object {

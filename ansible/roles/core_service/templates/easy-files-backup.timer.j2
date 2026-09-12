@@ -1,0 +1,16 @@
+# Managed by Ansible (roles/core_service) — local edits are overwritten.
+
+[Unit]
+Description=Archive uploaded files nightly
+
+[Timer]
+OnCalendar={{ easy_files_backup_on_calendar }}
+RandomizedDelaySec={{ easy_files_backup_splay }}
+# Catches up, for the same reason the database dump does: this produces an artefact for a night that
+# has no other copy, so a host that was down at the scheduled time should still take that archive
+# when it comes back.
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target
