@@ -20,7 +20,6 @@ import {
 import {
   ArrowDropDownOutlined,
   CircleOutlined,
-  FiberManualRecordOutlined,
   FileDownloadOutlined,
   MoreVertOutlined,
   RefreshOutlined,
@@ -34,6 +33,7 @@ import type { RerunController } from './useRerunAllTests.ts'
 import RelativeTime from '../../components/RelativeTime.tsx'
 import ConfirmDialog from '../../components/ConfirmDialog.tsx'
 import { RobotIcon } from '../../components/icons.tsx'
+import UnseenIndicator from './UnseenIndicator.tsx'
 import type { GraderType, SubmissionRow, StudentExerciseStatus } from '../../api/types.ts'
 
 type SortKey = 'name' | 'points' | 'time'
@@ -248,6 +248,32 @@ export default function SubmissionsList({
           </Button>
         )}
 
+        {/* Sort button */}
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<SortOutlined />}
+          onClick={(e) => setSortAnchor(e.currentTarget)}
+          sx={{ textTransform: 'none', height: 32 }}
+        >
+          {sortLabels[sortKey]}
+        </Button>
+        <Menu
+          anchorEl={sortAnchor}
+          open={!!sortAnchor}
+          onClose={() => setSortAnchor(null)}
+        >
+          {(Object.keys(sortLabels) as SortKey[]).map((key) => (
+            <MenuItem
+              key={key}
+              selected={sortKey === key}
+              onClick={() => { setSortKey(key); setSortAnchor(null) }}
+            >
+              {sortLabels[key]}
+            </MenuItem>
+          ))}
+        </Menu>
+
         {/* Everything that acts on the whole shown list, in one place. Both items mean the same by
             "all": this group's students in the order below, which is what the filter chip says. */}
         <Tooltip title={t('general.moreOptions')}>
@@ -286,32 +312,6 @@ export default function SubmissionsList({
               <ListItemText>{t('submission.rerunAll')}</ListItemText>
             </MenuItem>
           )}
-        </Menu>
-
-        {/* Sort button */}
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<SortOutlined />}
-          onClick={(e) => setSortAnchor(e.currentTarget)}
-          sx={{ textTransform: 'none', height: 32 }}
-        >
-          {sortLabels[sortKey]}
-        </Button>
-        <Menu
-          anchorEl={sortAnchor}
-          open={!!sortAnchor}
-          onClose={() => setSortAnchor(null)}
-        >
-          {(Object.keys(sortLabels) as SortKey[]).map((key) => (
-            <MenuItem
-              key={key}
-              selected={sortKey === key}
-              onClick={() => { setSortKey(key); setSortAnchor(null) }}
-            >
-              {sortLabels[key]}
-            </MenuItem>
-          ))}
         </Menu>
       </Box>
 
@@ -410,10 +410,8 @@ export default function SubmissionsList({
             >
               <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1.5 }}>
                 {/* Unseen dot */}
-                <Box sx={{ width: 8, flexShrink: 0 }}>
-                  {sub && !sub.seen && (
-                    <FiberManualRecordOutlined sx={{ fontSize: 8, color: 'info.main' }} />
-                  )}
+                <Box sx={{ width: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {sub && !sub.seen && <UnseenIndicator />}
                 </Box>
 
                 {/* Name */}

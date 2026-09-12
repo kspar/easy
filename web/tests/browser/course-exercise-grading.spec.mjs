@@ -114,6 +114,16 @@ const latestStudents = {
  */
 let savedGrade = null
 
+/**
+ * Whether the server thinks Mari's submission has been looked at.
+ *
+ * Mutable for the same reason as the grade: opening the submission marks it seen, and a fixture
+ * frozen at `seen: false` would have the page discover, on every refetch, that the thing it just
+ * marked is still unread — which is exactly the loop the view's guard exists to prevent, made
+ * invisible.
+ */
+let seenMarked = false
+
 test('course-exercise-grading', async ({ launch, check }) => {
   const { page, shot, close } = await launch({ role: 'teacher,admin', shotPrefix: 'ce-grading-' })
 
@@ -122,6 +132,7 @@ test('course-exercise-grading', async ({ launch, check }) => {
   const grades = []
   const feedbacks = []
   const exports = []
+  const seenPosts = []
 
   await fakeApi(page, [
     // First: this path ends in "/submissions" and every other submission handler below would
@@ -164,6 +175,15 @@ test('course-exercise-grading', async ({ launch, check }) => {
       if (method === 'POST') feedbacks.push({ body, path: new URL(url).pathname })
       return {}
     }],
+    // Ahead of `/submissions/{id}` below, which this path would otherwise match: "seen" is one
+    // segment after /submissions, exactly like a submission id.
+    [/\/submissions\/seen$/, ({ method, body, url }) => {
+      if (method === 'POST') {
+        seenPosts.push({ body, path: new URL(url).pathname })
+        seenMarked = body.seen
+      }
+      return {}
+    }],
     [/\/submissions\/latest\/students(\?|$)/, () => ({
       ...latestStudents,
       // Mari's row reflects what has been saved. Leaving this frozen is the same trap the detail
@@ -201,7 +221,7 @@ test('course-exercise-grading', async ({ launch, check }) => {
       grade: savedGrade === null
         ? null
         : { grade: savedGrade, is_autograde: false, is_graded_directly: true },
-      seen: true,
+      seen: seenMarked,
       // A teacher-graded exercise never ran an autograder, so NONE with no assessment is the
       // honest answer — but core sends both fields regardless, and a stub that omits them is
       // describing a response that cannot happen.
@@ -231,6 +251,40 @@ test('course-exercise-grading', async ({ launch, check }) => {
     await waitUntil(async () => (await page.getByText('int(input())').count()) > 0),
   )
   await shot('01-student-opened')
+
+  // --- reading a submission is what marks it seen ------------------------------------------------
+  // The blue ring in the students list means "nobody has opened this yet". Before this it only
+  // cleared when a teacher also pressed the button beside the submission, so a teacher who graded
+  // a hundred submissions left a hundred rings behind them and the mark stopped meaning anything.
+  check(
+    'opening a submission marks it seen without being asked to',
+    await waitUntil(() => seenPosts.length > 0),
+    `${seenPosts.length} request(s)`,
+  )
+  check(
+    'against the submission on screen, under this course exercise',
+    seenPosts[0]?.path === `/v2/teacher/courses/${COURSE}/exercises/${CE}/submissions/seen` &&
+      JSON.stringify(seenPosts[0]?.body) ===
+        JSON.stringify({ submissions: [{ id: SUBMISSION }], seen: true }),
+    JSON.stringify(seenPosts[0] ?? null),
+  )
+
+  // The button is still there for a teacher who wants the row back on their pile, and the auto-mark
+  // has to leave it alone afterwards — an effect that re-fires on the refetch would turn the toggle
+  // into a button that does nothing.
+  const seenToggle = page.getByRole('button', { name: /Mark as unseen/i })
+  await seenToggle.click()
+  check(
+    'and marking it unseen again is a real toggle',
+    await waitUntil(() => seenPosts.length === 2) && seenPosts[1]?.body.seen === false,
+    JSON.stringify(seenPosts[1] ?? null),
+  )
+  await page.waitForTimeout(600)
+  check(
+    'which the auto-mark does not immediately undo',
+    seenPosts.length === 2,
+    `${seenPosts.length} request(s): ${JSON.stringify(seenPosts.map((p) => p.body.seen))}`,
+  )
 
   // --- the code panel's action menu (EZ-1903) ----------------------------------------------------
   // Asked for as a copy button. It is a menu because the download and the soft-wrap setting were

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Box,
@@ -21,10 +21,8 @@ import {
   ArrowDropDownOutlined,
   ChevronLeftOutlined,
   ChevronRightOutlined,
-  CircleOutlined,
   FlagOutlined,
   FlagRounded,
-  FiberManualRecordRounded,
   RefreshOutlined,
   SearchOutlined,
 } from '@mui/icons-material'
@@ -52,6 +50,7 @@ import AnnotatedCodeEditor, { type NewCommentData } from './AnnotatedCodeEditor.
 import type { TeacherExerciseDetails, SubmissionRow } from '../../api/types.ts'
 import SafeText from '../../components/SafeText.tsx'
 import { saveResponseAsFile } from '../../components/downloadTextFile.ts'
+import UnseenIndicator, { SeenIndicator } from './UnseenIndicator.tsx'
 
 export default function StudentGradingView({
   courseId,
@@ -214,11 +213,37 @@ export default function StudentGradingView({
   const markSeenMutation = useMarkSubmissionsSeen(courseId, courseExerciseId)
   const isSeen = subDetail?.seen ?? currentRow?.submission?.seen ?? false
 
+  /**
+   * What the view has already decided about, so that opening a submission and then marking it
+   * unseen does not immediately undo itself.
+   *
+   * Auto-marking is an effect on the submission that is on screen; without this it would fire again
+   * the moment the manual toggle turned `seen` back off, and the button would look broken.
+   */
+  const seenHandledRef = useRef(new Set<string>())
+
   const toggleSeen = useCallback(() => {
     const subId = subDetail?.id ?? currentRow?.submission?.id
     if (!subId) return
+    seenHandledRef.current.add(subId)
     markSeenMutation.mutate({ submissions: [{ id: subId }], seen: !isSeen })
   }, [subDetail?.id, currentRow?.submission?.id, isSeen, markSeenMutation])
+
+  /**
+   * Looking at a submission is what marks it seen.
+   *
+   * The dot in the students list says "nobody has opened this yet", and a teacher reading the code
+   * has opened it — before this, the dot only cleared if they also remembered to press the button,
+   * which meant the list quietly filled up with rows already graded. Only the latest submission
+   * counts, the same one the list's dot tracks: paging back through history is not the same as
+   * having read the new work.
+   */
+  useEffect(() => {
+    if (!isViewingLatest || !subDetail || subDetail.seen) return
+    if (seenHandledRef.current.has(subDetail.id)) return
+    seenHandledRef.current.add(subDetail.id)
+    markSeenMutation.mutate({ submissions: [{ id: subDetail.id }], seen: true })
+  }, [isViewingLatest, subDetail, markSeenMutation])
 
   // Flag for review (stored in localStorage until backend support is added)
   const flagKey = `flagged:${courseExerciseId}:${studentId}`
@@ -432,10 +457,7 @@ export default function StudentGradingView({
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Tooltip title={isSeen ? t('submission.markUnseen') : t('submission.markSeen')}>
               <IconButton size="small" onClick={toggleSeen}>
-                {isSeen
-                  ? <CircleOutlined sx={{ fontSize: 16, color: 'text.disabled' }} />
-                  : <FiberManualRecordRounded sx={{ fontSize: 16, color: 'error.main' }} />
-                }
+                {isSeen ? <SeenIndicator size={16} /> : <UnseenIndicator size={16} />}
               </IconButton>
             </Tooltip>
             <Tooltip title={isFlagged ? t('submission.unflag') : t('submission.flagForReview')}>
