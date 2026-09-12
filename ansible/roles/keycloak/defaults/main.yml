@@ -119,6 +119,18 @@ keycloak_java_opts: "-Xms256m -Xmx768m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSiz
 # Set to an empty string to add no header at all.
 keycloak_csp_form_action: "'self' *.ut.ee *.google.com http://127.0.0.1:*"
 
+# How long a browser may keep a theme asset before asking again, in seconds.
+#
+# Keycloak's own answer is 2592000 — thirty days, with no ETag and no revalidation — behind a URL
+# whose /resources/<version>/ segment tracks the Keycloak version and not the theme. The two
+# together mean a theme deploy is invisible to everyone who has already loaded the page, for a
+# month, and on 2026-09-01 that showed returning users the stock Keycloak logo instead of Lahendus.
+#
+# Five minutes. These are a handful of small files served from the same host by someone who is on
+# the page for seconds, so the revalidation costs approximately nothing, and it is the difference
+# between a theme fix landing now and landing in September.
+keycloak_static_max_age: 300
+
 # --- the admin-console gate ---------------------------------------------------------------------
 # A door in front of Keycloak's admin console. The console's own answer to "signed in, but not an
 # admin" is a blank page with two spinners, indefinitely — it authenticates fine and

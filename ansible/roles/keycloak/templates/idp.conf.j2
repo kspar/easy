@@ -206,6 +206,34 @@ server {
     }
 {% endif %}
 
+    # Theme assets, cached for minutes rather than a month (EZ-1873).
+    #
+    # Keycloak sends `Cache-Control: max-age=2592000` for everything under /resources/, with no ETag
+    # and no Last-Modified — and the /resources/<version>/ segment in the URL comes from the Keycloak
+    # version, not from the theme. Verified on 2026-09-01: `kc.sh build` leaves it unchanged. So a
+    # theme deploy changes the bytes behind a URL that every browser has been told to keep for thirty
+    # days without asking again, and returning users keep the old stylesheet for a month.
+    #
+    # That produced a visible break: merging two stylesheets into one moved the wordmark rules into
+    # a file browsers already held, and returning users got the stock Keycloak logo until they hard
+    # refreshed. Renaming the file rescued them; this stops the next change needing a rescue.
+    #
+    # Five minutes, then fetch again. With no validators upstream there is nothing to revalidate
+    # against, so `must-revalidate` means a full refetch — of a handful of small local files, by
+    # someone on the login page for seconds, so it costs approximately nothing. Keycloak's own header
+    # is replaced rather than added to: proxy_hide_header first, or the browser sees both.
+    #
+    # Nothing else is repeated here. Keycloak sends Strict-Transport-Security, X-Content-Type-Options
+    # and Referrer-Policy on this path itself, same as on the token endpoint above, so this block's
+    # add_header suppressing the server-level three loses nothing. The CSP from `location /` is about
+    # where a form may post; a stylesheet has no form.
+    location {{ keycloak_http_relative_path }}/resources/ {
+        {{ proxy_to_keycloak() }}
+
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "public, max-age={{ keycloak_static_max_age }}, must-revalidate" always;
+    }
+
     location / {
         {{ proxy_to_keycloak() }}
 {% if keycloak_csp_form_action %}
