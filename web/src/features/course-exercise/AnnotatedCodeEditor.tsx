@@ -64,6 +64,7 @@ import { useFileDropAndPasteExtension } from '../../components/editorFileDrop.ts
 import { COMPACT_TOOLS } from '../../components/markdown/markdownTools.ts'
 import { applyFormat } from '../../components/markdown/markdownActions.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import { downloadTextFile } from '../../components/downloadTextFile.ts'
 import { indentation } from '../../components/editorIndent.ts'
 import SafeText from '../../components/SafeText.tsx'
 
@@ -287,7 +288,14 @@ export default function AnnotatedCodeEditor({
   const [portalVersion, setPortalVersion] = useState(0)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
-  const [snackMsg, setSnackMsg] = useState<string | null>(null)
+
+  // Sequence number so that copying twice in a row still restarts the auto-hide timer — setting an
+  // identical string is a no-op to React, so `open` never changes and MUI keeps the first clock.
+  // See the same note in SolutionEditor.
+  const [snack, setSnack] = useState<{ msg: string, seq: number } | null>(null)
+  const setSnackMsg = useCallback((msg: string | null) => {
+    setSnack((prev) => (msg === null ? null : { msg, seq: (prev?.seq ?? 0) + 1 }))
+  }, [])
 
   // `solution` is the prop rather than the editor's current document on purpose: the document
   // carries the inline-comment widgets, and what a teacher wants on their clipboard or on disk is
@@ -299,16 +307,10 @@ export default function AnnotatedCodeEditor({
     } catch {
       setSnackMsg(t('general.copyFailed'))
     }
-  }, [solution, t])
+  }, [solution, t, setSnackMsg])
 
   const handleDownload = useCallback(() => {
-    const blob = new Blob([solution], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = downloadName ?? fileName
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadTextFile(solution, downloadName ?? fileName)
   }, [solution, downloadName, fileName])
 
   const commentsRef = useRef(comments)
@@ -551,6 +553,17 @@ export default function AnnotatedCodeEditor({
       }),
     })
     setPortalVersion((v) => v + 1)
+
+    // A composer opened on the bottom-most visible line would otherwise land under the fold: the
+    // widget goes in *after* its line, the editor scrolls inside its own cap, and CodeMirror's
+    // `view.focus()` uses preventScroll, so nothing brings it back. What the teacher would see is
+    // their click making the one affordance — the `+` icon, hidden by `has-draft` — disappear, with
+    // nothing appearing in its place. Scrolled after the dispatch that inserts it, so there is
+    // something to scroll to.
+    if (draft) {
+      const line = view.state.doc.line(Math.min(draft.lineEnd, view.state.doc.lines))
+      view.dispatch({ effects: EditorView.scrollIntoView(line.to, { y: 'center' }) })
+    }
   }, [comments, draft])
 
   /* ── Toggle gutter visibility when draft is open ── */
@@ -679,10 +692,11 @@ export default function AnnotatedCodeEditor({
       {portals}
 
       <Snackbar
-        open={snackMsg !== null}
+        key={snack?.seq}
+        open={snack !== null}
         autoHideDuration={3000}
         onClose={() => setSnackMsg(null)}
-        message={snackMsg}
+        message={snack?.msg}
       />
 
       <ConfirmDialog

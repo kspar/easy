@@ -22,6 +22,7 @@ import { errorMessage } from '../../api/errorMessage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
 import { useFileDropExtension } from '../../components/editorFileDrop.ts'
 import { indentation } from '../../components/editorIndent.ts'
+import { downloadTextFile } from '../../components/downloadTextFile.ts'
 import { readSolutionFile, solutionFileErrorKey } from './solutionFile.ts'
 import { record } from '../bug-report/breadcrumbs.ts'
 
@@ -74,7 +75,16 @@ export default forwardRef<SolutionEditorHandle, {
   const viewRef = useRef<EditorView | null>(null)
   const { wrap, wrapExtension, toggleWrap } = useSoftWrap('code', viewRef)
   const prevExerciseRef = useRef(courseExerciseId)
-  const [snackMsg, setSnackMsg] = useState<string | null>(null)
+  /**
+   * The sequence number is what makes the same message twice in a row visible. Setting an identical
+   * string is a no-op to React, so `open` never changes, MUI's `autoHideDuration` timer is never
+   * restarted, and a second copy three seconds after the first has its confirmation vanish almost
+   * immediately — which reads as the action not having taken. `key` on the Snackbar remounts it.
+   */
+  const [snack, setSnack] = useState<{ msg: string, seq: number } | null>(null)
+  const setSnackMsg = useCallback((msg: string | null) => {
+    setSnack((prev) => (msg === null ? null : { msg, seq: (prev?.seq ?? 0) + 1 }))
+  }, [])
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
 
   const submit = useSubmitSolution(courseId, courseExerciseId)
@@ -326,7 +336,7 @@ export default forwardRef<SolutionEditorHandle, {
       // moment earlier is the first thing worth knowing about it.
       record('action', `loaded ${file.name} into the editor (${result.text.length} chars)`)
     })
-  }, [t, exercise.is_open])
+  }, [t, exercise.is_open, setSnackMsg])
 
   // Always registered, open or closed. The hook keeps the extension itself stable and reads the
   // callback from a ref, so a changing `is_open` costs nothing and does not rebuild the editor.
@@ -416,14 +426,10 @@ export default forwardRef<SolutionEditorHandle, {
   }, [])
 
   const handleDownload = useCallback(() => {
-    const solution = getSolution()
-    const blob = new Blob([solution], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${courseExerciseId}_${Date.now()}_${exercise.solution_file_name}`
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadTextFile(
+      getSolution(),
+      `${courseExerciseId}_${Date.now()}_${exercise.solution_file_name}`,
+    )
   }, [getSolution, courseExerciseId, exercise.solution_file_name])
 
   const handleCopy = useCallback(async () => {
@@ -435,7 +441,7 @@ export default forwardRef<SolutionEditorHandle, {
       // look identical to a copy that worked, and the next paste would be the old clipboard.
       setSnackMsg(t('general.copyFailed'))
     }
-  }, [getSolution, t])
+  }, [getSolution, t, setSnackMsg])
 
   const handleUpload = useCallback(() => {
     const input = document.createElement('input')
@@ -517,7 +523,7 @@ export default forwardRef<SolutionEditorHandle, {
         record('action', `submission failed: ${err instanceof Error ? err.message : String(err)}`)
       },
     })
-  }, [getSolution, submit, awaitAutograde, exercise.grader_type, t, onSubmitted, onAutogradeStart, refetchAfterSubmit, currentDoc, cancelSaveTimer, saveDraftMutate, writeDraftCache, scheduleDraftSave, courseExerciseId])
+  }, [getSolution, submit, awaitAutograde, exercise.grader_type, t, onSubmitted, onAutogradeStart, refetchAfterSubmit, currentDoc, cancelSaveTimer, saveDraftMutate, writeDraftCache, scheduleDraftSave, courseExerciseId, setSnackMsg])
 
   // When autograde completes: refetch submissions, which carry the results. The exercises list is
   // the parent's to refresh — it does so on the same transition, from `onSubmitted`.
@@ -650,10 +656,11 @@ export default forwardRef<SolutionEditorHandle, {
       )}
 
       <Snackbar
-        open={snackMsg !== null}
+        key={snack?.seq}
+        open={snack !== null}
         autoHideDuration={3000}
         onClose={() => setSnackMsg(null)}
-        message={snackMsg}
+        message={snack?.msg}
       />
 
       {/* Only reachable when a navigation was blocked and the flush save failed. */}
