@@ -82,21 +82,36 @@ prune() {
     for k in $(printf '%s\n' "${!newest_of_week[@]}"  | sort | tail -n "$KEEP_WEEKLY");  do f=${newest_of_week[$k]};  keep[$f]="${keep[$f]:+${keep[$f]}+}weekly";  done
     for k in $(printf '%s\n' "${!newest_of_month[@]}" | sort | tail -n "$KEEP_MONTHLY"); do f=${newest_of_month[$k]}; keep[$f]="${keep[$f]:+${keep[$f]}+}monthly"; done
 
+    local skipped=0
     while IFS= read -r f; do
+        base=$(basename "$f"); stamp=${base#"$DB-"}; stamp=${stamp%.dump}; day=${stamp%%T*}
+        # A dump whose name carries no usable date is left alone, and the two loops above are the
+        # reason this is needed. They `continue` past such a name, so it joins no bucket — and then
+        # fell through to `rm` here for the sole reason that nothing claimed it. That deletes a
+        # backup *because* its age could not be determined, which is exactly backwards.
+        #
+        # It is not hypothetical. Renaming a dump to keep it — `<db>-before-the-big-migration.dump`
+        # — still matches the glob above, parses as no date, and was removed by the next nightly
+        # prune. The one file somebody deliberately set aside was the one this destroyed.
+        if ! [[ $day =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            skipped=$((skipped + 1))
+            echo "  skip   $base (no date in the name; not deleting)"
+            continue
+        fi
         if [ -n "${keep[$f]:-}" ]; then
             kept=$((kept + 1))
-            [ "$DRY_RUN" = true ] && echo "  keep   $(basename "$f")  (${keep[$f]})"
+            [ "$DRY_RUN" = true ] && echo "  keep   $base  (${keep[$f]})"
         else
             removed=$((removed + 1))
             if [ "$DRY_RUN" = true ]; then
-                echo "  remove $(basename "$f")"
+                echo "  remove $base"
             else
                 rm -f "$f"
             fi
         fi
     done < <(find "$DIR" -maxdepth 1 -name "$DB-*.dump" -type f | sort)
 
-    echo "retention: kept $kept, removed $removed (all dumps <${KEEP_ALL_DAYS}d, then daily $KEEP_DAILY, weekly $KEEP_WEEKLY, monthly $KEEP_MONTHLY)"
+    echo "retention: kept $kept, removed $removed${skipped:+, skipped $skipped} (all dumps <${KEEP_ALL_DAYS}d, then daily $KEEP_DAILY, weekly $KEEP_WEEKLY, monthly $KEEP_MONTHLY)"
 }
 
 if [ "$DRY_RUN" = true ]; then

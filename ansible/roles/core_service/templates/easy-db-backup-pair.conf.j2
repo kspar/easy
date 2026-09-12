@@ -1,0 +1,29 @@
+# Managed by Ansible (roles/core_service) — local edits are overwritten.
+#
+# Binds the uploaded-file archive to the database dump, so the two halves of a backup are always
+# taken together and always in the right order.
+#
+# **Why a drop-in rather than lines in the unit itself.** The unit belongs to roles/postgres, which
+# runs BEFORE core_service in the Core play — and a role's defaults only come into scope for roles
+# after it. `easy_files_backup_enabled` is core_service's, so a `{% raw %}{% if %}{% endraw %}` in postgres's template would
+# read it as undefined and silently never emit these lines. A drop-in written by the role that owns
+# the variable cannot fail that way, and it is installed only where the file archive exists.
+#
+# **Why this fixes the gap it was written for.** Every path that takes a pre-deploy dump starts this
+# same unit: `deploy/deploy.sh` (PRE_RESTART_DUMP), `roles/core_rollout` via
+# `core_rollout_dump_service`, `import-prod-dump.yml`, and the nightly timer. Before this, only the
+# nightly one had a matching archive, so a dump taken before a deploy paired with the *previous*
+# night's files and anything uploaded that day restored as a broken image. One dependency edge here
+# covers all four callers at once, with no change to deploy.sh, the rollout, or the sudoers grant —
+# systemd starts the dependency itself, so the grant still names one unit.
+#
+# `Wants=` and not `Requires=`: a file archive that fails must not cost us the database dump. The
+# dump is the half that cannot be reconstructed from anywhere.
+#
+# `After=` is what makes the order files-then-database, which is the direction `TeacherUploadFile`
+# already writes in — an object with no row is invisible junk the sweep collects, a row with no
+# object is a broken image. The dump waits for the archive to finish.
+
+[Unit]
+Wants=easy-files-backup.service
+After=easy-files-backup.service

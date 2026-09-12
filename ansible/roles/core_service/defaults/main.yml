@@ -109,29 +109,15 @@ easy_files_backup_keep_daily: 5
 easy_files_backup_keep_weekly: 2
 easy_files_backup_keep_monthly: 2
 
-# 03:10 UTC, twenty minutes AHEAD of the database dump, and the ordering is the point.
+# No schedule of its own any more. The database dump pulls this archive in front of itself through
+# a systemd drop-in (see templates/easy-db-backup-pair.conf.j2), so the two halves of a backup share
+# one trigger and cannot drift apart. It had a timer at 03:10, and the reasoning that put it there —
+# files before the database, both before the 04:00 sweep — is now enforced by the dependency instead
+# of by two clocks that happened to agree.
 #
-# Three things touch this host overnight and the sequence has to be right:
-#
-#   03:10               this archive
-#   03:30 +20min splay  the database dump (roles/postgres)
-#   04:00               easy_core_stored_file_sweep_cron — which DELETES FROM THIS DIRECTORY
-#
-# **Files first, then the database.** `TeacherUploadFile` already settled which way round this
-# belongs: it writes the object before the row, because "a row with no object is a broken image; an
-# object with no row is invisible junk that the sweep collects". A file uploaded between these two
-# jobs lands on the harmless side of that — bytes in the archive, no row in the dump. Dump first and
-# the same upload becomes a broken image on restore.
-#
-# **Both before the sweep.** An earlier revision put this at 05:00 to keep tar clear of the sweep
-# unlinking files underneath it. That bought a smaller problem and sold a bigger one: it put the one
-# job that DELETES between the two halves, so a restore paired a database still listing a file with
-# an archive taken after it was collected. The tar race is handled in the script instead, where it
-# belongs — an upload can land at any hour, so it was never avoidable by scheduling anyway.
-#
-# No splay. It exists to keep many hosts from starting at once; there is one host per environment,
-# and here a deterministic gap in front of the dump is worth more than jitter.
-easy_files_backup_on_calendar: "*-*-* 03:10:00"
+# The consequence worth knowing: this archive runs whenever `easy-db-backup.service` runs, which is
+# the nightly timer AND every pre-deploy dump. That is the point. It also means a host with the file
+# archive enabled and the database dump disabled takes no archives at all.
 
 # Take one immediately when the role runs, so the first archive is watched rather than unattended.
 easy_files_backup_run_now: true

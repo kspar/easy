@@ -284,29 +284,59 @@
     validate: bash -n %s
   when: easy_files_backup_enabled | bool
 
-- name: Install the file-archive unit and timer
+- name: Install the file-archive unit
   ansible.builtin.template:
-    src: "{{ item }}.j2"
-    dest: "/etc/systemd/system/{{ item }}"
+    src: easy-files-backup.service.j2
+    dest: /etc/systemd/system/easy-files-backup.service
     owner: root
     group: root
     mode: "0644"
-  loop:
-    - easy-files-backup.service
-    - easy-files-backup.timer
   when: easy_files_backup_enabled | bool
 
-- name: Start the file-archive timer and keep it started
+- name: Make somewhere for the drop-in to live
+  ansible.builtin.file:
+    path: /etc/systemd/system/easy-db-backup.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: easy_files_backup_enabled | bool
+
+- name: Make the database dump take a file archive first
+  # The whole of the pairing, and the fix for pre-deploy dumps having no archive. See the drop-in's
+  # own header for why it is a drop-in and not lines in postgres's unit.
+  ansible.builtin.template:
+    src: easy-db-backup-pair.conf.j2
+    dest: /etc/systemd/system/easy-db-backup.service.d/10-pair-with-file-archive.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: easy_files_backup_enabled | bool
+
+- name: Retire the file archive's own timer
+  # It had one, at 03:10, twenty minutes ahead of the dump. The drop-in above makes it redundant and
+  # worse than redundant: the dump now pulls an archive itself, so keeping this would take two
+  # archives every night half an hour apart, and leave a reader of the directory guessing which one
+  # pairs with the dump. One trigger, and the pairing is structural rather than scheduled.
+  #
+  # Removed explicitly rather than by deleting the template. A timer already enabled on a host stays
+  # enabled forever if Ansible merely stops writing it.
   ansible.builtin.systemd_service:
     name: easy-files-backup.timer
-    state: started
-    enabled: true
+    state: stopped
+    enabled: false
+  failed_when: false
+  when: not ansible_check_mode
+
+- name: And take its unit file away
+  ansible.builtin.file:
+    path: /etc/systemd/system/easy-files-backup.timer
+    state: absent
+
+- name: Let systemd see the drop-in and the removed timer
+  ansible.builtin.systemd_service:
     daemon_reload: true
-  # A dry run simulated the templates rather than writing them, so this would fail on a unit that is
-  # not there — and take the rest of the run with it.
-  when:
-    - easy_files_backup_enabled | bool
-    - not ansible_check_mode
+  when: not ansible_check_mode
 
 # A timer that is installed and a backup that works are different claims, and only the second is
 # worth anything. Take one now, while somebody is watching: the failure modes are permissions and
