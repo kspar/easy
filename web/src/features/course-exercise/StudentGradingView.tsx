@@ -30,7 +30,7 @@ import {
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import {
-  exportSubmission,
+  exportSubmissions,
   useCreateInlineComment,
   useDeleteInlineComment,
   useMarkSubmissionsSeen,
@@ -194,7 +194,7 @@ export default function StudentGradingView({
    */
   const handleDownloadSubmission = useCallback(async () => {
     if (!activeSubSummary) return
-    const response = await exportSubmission(courseId, courseExerciseId, activeSubSummary.id)
+    const response = await exportSubmissions(courseId, courseExerciseId, [activeSubSummary.id])
     await saveResponseAsFile(response, exercise.solution_file_name)
   }, [courseId, courseExerciseId, activeSubSummary, exercise.solution_file_name])
 

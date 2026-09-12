@@ -178,8 +178,23 @@ test('course-exercise-rerun-all', async ({ launch, check }) => {
   let graderType = 'AUTO'
   resetServer()
 
+  const exportCalls = []
+
   await fakeApi(page, [
     ['/account/checkin', () => ({})],
+
+    // Above the submission handlers: this path also ends in "/submissions". Fulfilled by hand
+    // because the endpoint answers with a file and the name in a header, not with JSON.
+    [/\/export\/courses\/[^/]+\/exercises\/[^/]+\/submissions$/, ({ route, method, body }) => {
+      if (method === 'POST') exportCalls.push(body.submissions.map((x) => x.id))
+      route.fulfill({
+        status: 200,
+        contentType: 'application/zip',
+        headers: { 'Content-disposition': `attachment; filename=submissions_${COURSE}_${CE}.zip` },
+        body: 'PK',
+      })
+      return undefined
+    }],
 
     // Above the submission-detail and course-exercise handlers, whose URLs this one also matches.
     // Shadowed the other way round, every check below would pass against a page that never called it.
@@ -238,24 +253,42 @@ test('course-exercise-rerun-all', async ({ launch, check }) => {
     await page.getByText('Sum of two numbers').first().waitFor({ timeout: 15000 })
   }
 
-  const rerunButton = page.getByRole('button', { name: 'Re-run all tests' }).first()
-  // Scoped to the dialog: the toolbar button and the dialog's confirm button carry the same label,
-  // and an unscoped locator would resolve to the one already on screen.
+  // Both bulk actions live behind one overflow menu since EZ-1903, so starting a run is two
+  // clicks: open the menu, pick the item. The menu itself is always there — it also holds the
+  // download, which every exercise has — so its presence says nothing about re-running.
+  const actionsMenu = page.getByRole('button', { name: /More options/i }).first()
+  const rerunItem = page.getByRole('menuitem', { name: 'Re-run all tests' })
+  const openActions = async () => {
+    await actionsMenu.click()
+    await page.getByRole('menu').first().waitFor()
+  }
+  const closeActions = async () => {
+    await page.keyboard.press('Escape')
+    await page.getByRole('menu').first().waitFor({ state: 'hidden' })
+  }
+  const startRerun = async () => {
+    await openActions()
+    await rerunItem.click()
+  }
+  // Scoped to the dialog: the menu item and the dialog's confirm button carry the same label, and
+  // an unscoped locator would resolve to whichever is on screen.
   const confirmButton = page.getByRole('dialog').getByRole('button', { name: 'Re-run all tests' })
   const gradeChip = (s) =>
     page.getByRole('button', { name: new RegExp(`${s.family}, ${s.given}`) })
 
   await open()
 
+  await openActions()
   check(
-    'the button is offered on an auto-graded exercise',
-    await waitUntil(() => rerunButton.isVisible()),
+    'the action is offered on an auto-graded exercise',
+    await waitUntil(() => rerunItem.isVisible()),
   )
   await shot('01-students-tab')
+  await closeActions()
 
   // --- the whole course -------------------------------------------------------------------------
   const letJaanFinish = holdGradingOf(JAAN.sub)
-  await rerunButton.click()
+  await startRerun()
 
   check(
     'it confirms first, naming how many submissions it is about to re-grade',
@@ -327,7 +360,7 @@ test('course-exercise-rerun-all', async ({ launch, check }) => {
   await open()
   const letMariGo = holdGradingOf(MARI.sub)
 
-  await rerunButton.click()
+  await startRerun()
   await confirmButton.click()
   await page.getByRole('dialog').waitFor({ state: 'detached' })
   await waitUntil(() => retryCalls.length === 1)
@@ -360,7 +393,7 @@ test('course-exercise-rerun-all', async ({ launch, check }) => {
   await open()
   const letMariFinish = holdGradingOf(MARI.sub)
 
-  await rerunButton.click()
+  await startRerun()
   await confirmButton.click()
 
   // The confirmation dialog's own button is also called Cancel, and it lingers for the length of
@@ -418,7 +451,7 @@ test('course-exercise-rerun-all', async ({ launch, check }) => {
     await waitUntil(async () => (await gradeChip(JAAN).count()) === 0),
   )
 
-  await rerunButton.click()
+  await startRerun()
   check(
     'and the confirmation says which group it is about to re-grade',
     await waitUntil(async () => (await page.getByRole('dialog').innerText()).includes('Rühm A')),
@@ -439,6 +472,25 @@ test('course-exercise-rerun-all', async ({ launch, check }) => {
     "and Jaan, who is filtered out, is left alone",
     grades[JAAN.sub] === 40,
   )
+
+  // The download makes the same promise as the re-run: "all" means the list on screen. A teacher
+  // who has filtered to one group and asks for everything wants that group, not the course.
+  const zip = page.waitForEvent('download').catch(() => null)
+  await openActions()
+  await page.getByRole('menuitem', { name: /Download/i }).click()
+  await waitUntil(async () => exportCalls.length > 0)
+  check(
+    "downloading sends only the shown group's submissions, as the re-run does",
+    exportCalls.length === 1 && exportCalls[0].length === 1 && exportCalls[0][0] === MARI.sub,
+    JSON.stringify(exportCalls[0] ?? null),
+  )
+  const savedZip = await zip
+  check(
+    'and the saved file keeps the name core gave it',
+    savedZip?.suggestedFilename() === `submissions_${COURSE}_${CE}.zip`,
+    savedZip?.suggestedFilename() ?? 'no download event',
+  )
+
   await shot('08-group-only')
 
   // --- a grader that is down stops the run rather than being asked once per student --------------
@@ -452,7 +504,7 @@ test('course-exercise-rerun-all', async ({ launch, check }) => {
   failEveryRetry = true
   await open()
 
-  await rerunButton.click()
+  await startRerun()
   await confirmButton.click()
   await page.getByRole('dialog').waitFor({ state: 'detached' })
 
@@ -473,10 +525,16 @@ test('course-exercise-rerun-all', async ({ launch, check }) => {
   resetServer()
   graderType = 'TEACHER'
   await open().catch(() => {})
+  await openActions()
   check(
-    'the button is not offered when the exercise is teacher-graded',
-    await waitUntil(async () => (await page.getByRole('button', { name: 'Re-run all tests' }).count()) === 0),
+    'the action is not offered when the exercise is teacher-graded',
+    await waitUntil(async () => (await rerunItem.count()) === 0),
   )
+  check(
+    'though the menu is still there, because downloading does not depend on a grader',
+    await page.getByRole('menuitem', { name: /Download/i }).first().isVisible(),
+  )
+  await closeActions()
 
   await close()
 })

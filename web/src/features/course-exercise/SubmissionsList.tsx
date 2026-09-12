@@ -1,26 +1,34 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   Alert,
   Box,
   Button,
   Chip,
   CircularProgress,
+  IconButton,
   LinearProgress,
   List,
   ListItemButton,
+  ListItemIcon,
+  ListItemText,
   Menu,
   MenuItem,
+  Snackbar,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import {
   ArrowDropDownOutlined,
   CircleOutlined,
   FiberManualRecordOutlined,
+  FileDownloadOutlined,
+  MoreVertOutlined,
   RefreshOutlined,
   SortOutlined,
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
-import { useTeacherSubmissionSummaries, useCourseGroups } from '../../api/exercises.ts'
+import { exportSubmissions, useTeacherSubmissionSummaries, useCourseGroups } from '../../api/exercises.ts'
+import { saveResponseAsFile } from '../../components/downloadTextFile.ts'
 import useSavedGroup from '../../hooks/useSavedGroup.ts'
 import type { RerunController } from './useRerunAllTests.ts'
 import RelativeTime from '../../components/RelativeTime.tsx'
@@ -63,6 +71,9 @@ export default function SubmissionsList({
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [sortAnchor, setSortAnchor] = useState<Element | null>(null)
   const [confirmRerun, setConfirmRerun] = useState(false)
+  const [actionsAnchor, setActionsAnchor] = useState<Element | null>(null)
+  const [downloading, setDownloading] = useState(false)
+  const [downloadFailed, setDownloadFailed] = useState(false)
 
   const { data: groups } = useCourseGroups(courseId)
   const { data: students, isLoading } = useTeacherSubmissionSummaries(
@@ -122,13 +133,37 @@ export default function SubmissionsList({
   const gradedCount = stats.completed
   const totalStudents = stats.total
 
-  // The run follows the list on screen: this group's students, in the order they are shown, and only
-  // the ones with a submission to re-run. Snapshotted when the run starts — the list is re-read after
-  // every submission, so anything read from it mid-run would be a moving target.
-  const rerunnableIds = useMemo(
+  // Both bulk actions follow the list on screen: this group's students, in the order they are
+  // shown, and only the ones who have submitted anything. Snapshotted when the action starts — the
+  // list is re-read after every re-run, so anything read from it mid-run would be a moving target.
+  const shownSubmissionIds = useMemo(
     () => sorted.flatMap((r) => (r.submission ? [r.submission.id] : [])),
     [sorted],
   )
+
+  /**
+   * Every submission on screen, in one request, saved under the name core sends back.
+   *
+   * The same endpoint the single save in the grading view uses. Several ids make it a zip named
+   * for the course exercise; one makes it that one file — so a group with a single submitter does
+   * not hand the teacher a zip holding one thing.
+   *
+   * Deliberately not re-read from the server here: what gets downloaded is what the list is
+   * showing, group filter and all, which is the same promise the re-run makes.
+   */
+  const handleDownloadAll = useCallback(async () => {
+    if (shownSubmissionIds.length === 0) return
+    setDownloading(true)
+    setDownloadFailed(false)
+    try {
+      const response = await exportSubmissions(courseId, courseExerciseId, shownSubmissionIds)
+      await saveResponseAsFile(response, `submissions_${courseId}_${courseExerciseId}.zip`)
+    } catch {
+      setDownloadFailed(true)
+    } finally {
+      setDownloading(false)
+    }
+  }, [courseId, courseExerciseId, shownSubmissionIds])
 
   const canRerun = graderType === 'AUTO'
   const { running, currentSubmissionId } = rerun.progress
@@ -198,32 +233,60 @@ export default function SubmissionsList({
 
         <Box sx={{ flex: 1 }} />
 
-        {/* Re-run every shown submission's tests */}
-        {canRerun && (
-          running ? (
-            <Button
-              size="small"
-              variant="outlined"
-              color="warning"
-              onClick={rerun.cancel}
-              disabled={rerun.progress.cancelled}
-              sx={{ textTransform: 'none', height: 32 }}
-            >
-              {rerun.progress.cancelled ? t('submission.rerunStopping') : t('general.cancel')}
-            </Button>
-          ) : (
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<RefreshOutlined />}
-              onClick={() => setConfirmRerun(true)}
-              disabled={rerunnableIds.length === 0}
-              sx={{ textTransform: 'none', height: 32 }}
-            >
-              {t('submission.rerunAll')}
-            </Button>
-          )
+        {/* Stopping a run stays a button of its own. It is the only control on this bar with a
+            deadline attached — every second it spends behind a menu is another student graded. */}
+        {canRerun && running && (
+          <Button
+            size="small"
+            variant="outlined"
+            color="warning"
+            onClick={rerun.cancel}
+            disabled={rerun.progress.cancelled}
+            sx={{ textTransform: 'none', height: 32 }}
+          >
+            {rerun.progress.cancelled ? t('submission.rerunStopping') : t('general.cancel')}
+          </Button>
         )}
+
+        {/* Everything that acts on the whole shown list, in one place. Both items mean the same by
+            "all": this group's students in the order below, which is what the filter chip says. */}
+        <Tooltip title={t('general.moreOptions')}>
+          <IconButton
+            size="small"
+            onClick={(e) => setActionsAnchor(e.currentTarget)}
+            sx={{ height: 32, width: 32 }}
+          >
+            <MoreVertOutlined fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Menu
+          anchorEl={actionsAnchor}
+          open={!!actionsAnchor}
+          onClose={() => setActionsAnchor(null)}
+        >
+          <MenuItem
+            onClick={() => { setActionsAnchor(null); handleDownloadAll() }}
+            disabled={shownSubmissionIds.length === 0 || downloading}
+          >
+            <ListItemIcon>
+              {downloading
+                ? <CircularProgress size={18} />
+                : <FileDownloadOutlined fontSize="small" />}
+            </ListItemIcon>
+            <ListItemText>
+              {t('submission.downloadAll', { count: shownSubmissionIds.length })}
+            </ListItemText>
+          </MenuItem>
+          {canRerun && (
+            <MenuItem
+              onClick={() => { setActionsAnchor(null); setConfirmRerun(true) }}
+              disabled={shownSubmissionIds.length === 0 || running}
+            >
+              <ListItemIcon><RefreshOutlined fontSize="small" /></ListItemIcon>
+              <ListItemText>{t('submission.rerunAll')}</ListItemText>
+            </MenuItem>
+          )}
+        </Menu>
 
         {/* Sort button */}
         <Button
@@ -251,6 +314,13 @@ export default function SubmissionsList({
           ))}
         </Menu>
       </Box>
+
+      <Snackbar
+        open={downloadFailed}
+        autoHideDuration={6000}
+        onClose={() => setDownloadFailed(false)}
+        message={t('submission.downloadAllFailed')}
+      />
 
       {/* Re-run progress */}
       {running && (
@@ -419,13 +489,13 @@ export default function SubmissionsList({
         confirmColor="primary"
         message={
           groupName
-            ? t('submission.rerunConfirmGroup', { count: rerunnableIds.length, group: groupName })
-            : t('submission.rerunConfirm', { count: rerunnableIds.length })
+            ? t('submission.rerunConfirmGroup', { count: shownSubmissionIds.length, group: groupName })
+            : t('submission.rerunConfirm', { count: shownSubmissionIds.length })
         }
         onClose={() => setConfirmRerun(false)}
         onConfirm={() => {
           setConfirmRerun(false)
-          void rerun.start(rerunnableIds)
+          void rerun.start(shownSubmissionIds)
         }}
       />
     </Box>
