@@ -1,14 +1,138 @@
+# The whole local stack in containers: database, core, web and the mock executor. Nothing runs on
+# the host. See DEVELOPMENT.md for the commands; this comment is about the one non-obvious decision.
+#
+# Every service joins the network namespace of `net`, so they all share one `localhost` — the
+# same picture the host had when each of these was a native process. That is not a shortcut, it is
+# the point:
+#
+#   - Core with `easy.core.auth-enabled: false` refuses to start unless it binds a loopback address
+#     (SecurityConf.assertAuthDisabledOnlyOnLoopback). On a normal compose bridge network the web
+#     container would have to reach it at `core:8080`, which needs a 0.0.0.0 bind, which the guard
+#     forbids — and weakening the guard for Docker would be weakening it everywhere. Sharing the
+#     namespace means Vite's proxy reaches core at 127.0.0.1 exactly as it did natively, and core
+#     stays genuinely unreachable from outside the namespace. The only door in is the Vite proxy on
+#     :5173, which is also the only door there was before.
+#   - The developer's gitignored application.yaml says `localhost:5432` for the database, the
+#     test-data changeset registers the mock executor at `http://localhost:5111`, and vite.config.ts
+#     proxies to `http://localhost:8080`. None of those change. A setup that needed three files to
+#     spell `db`, `executor` and `core` instead would be three ways for a laptop and a container to
+#     disagree.
+#
+# The consequences: `ports` live on `net`, because a service that borrows a namespace cannot
+# publish its own, and core's 8080 is not among them — a loopback bind is not reachable through
+# port publishing, by definition. `curl localhost:5173/v2/...` goes through Vite's proxy, which
+# forwards `oidc_claim_*` headers untouched, so doc/core/api-testing.md still works with one
+# port number changed; that doc also has the recipe for reaching the port from inside.
+#
+# Source is bind-mounted, so an edit on the host is an edit in the container. Build output and
+# dependency caches are NOT shared with the host, on purpose: node_modules holds platform-specific
+# binaries (a macOS esbuild is useless to Linux node) and a host IDE's Gradle import writing into
+# the same build/ as a container's bootRun is a race nobody wins. Each of those directories is a
+# named volume below, which also makes the second start fast.
+
 services:
+  # Owns the shared network namespace and every published port. Does nothing else, ever: its one
+  # job is to never restart, because the moment it does, every other container's network is gone.
+  net:
+    image: alpine:3.21
+    command: sleep infinity
+    init: true
+    ports:
+      - "${EASY_DB_PORT:-5432}:5432"
+      - "${EASY_WEB_PORT:-5173}:5173"
+      - "${EASY_EXECUTOR_PORT:-5111}:5111"
+
   db:
     image: postgres:16
-    ports:
-      - "5432:5432"
+    network_mode: "service:net"
     environment:
       POSTGRES_DB: easyems
       POSTGRES_USER: easyems
       POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U easyems -d easyems"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # `./gradlew :core:bootRun` against the bind-mounted source. Liquibase runs on start, as always.
+  # No hot reload: after a backend change, `docker compose restart core` recompiles (incrementally)
+  # and starts again. The first start downloads Gradle and every dependency into the gradle-home
+  # volume and takes minutes; later ones take as long as the incremental compile.
+  core:
+    image: eclipse-temurin:25-jdk
+    network_mode: "service:net"
+    depends_on:
+      db:
+        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - .:/app
+      # Gradle's wrapper distribution and dependency cache.
+      - gradle-home:/root/.gradle
+      # Build state that must not be shared with a host build — see the header comment. Every
+      # directory Gradle or Kotlin writes into the tree is listed; a new module needs a new line.
+      - gradle-project:/app/.gradle
+      - kotlin-project:/app/.kotlin
+      - build-root:/app/build
+      - build-core:/app/core/build
+      - build-tsl:/app/tsl/build
+      - build-tsl-common:/app/tsl-common/build
+      # `easy.core.storage.local.dir` in the sample config. Uploaded files survive a container
+      # recreate this way; if your application.yaml points somewhere else, this volume is inert.
+      - easy-files:/tmp/easy-files
+    # --console=plain: Gradle's rich console is a stream of cursor movements in `compose logs`.
+    # --no-daemon: a daemon exists to outlive the build, and here nothing outlives the container.
+    command: ./gradlew :core:bootRun --console=plain --no-daemon
+    stop_grace_period: 30s
+
+  # Vite dev server with HMR, on :5173 like the native `npm run dev`. Reinstalls node_modules only
+  # when package-lock.json has changed since the last install — `npm ci` wipes and rebuilds the
+  # whole directory, so doing it unconditionally would cost a minute on every start.
+  web:
+    image: node:20-alpine
+    network_mode: "service:net"
+    depends_on:
+      - core
+    working_dir: /app/web
+    volumes:
+      - .:/app
+      - web-node-modules:/app/web/node_modules
+    # --host: Vite binds localhost by default, which port publishing cannot reach (same fact as
+    # core's 8080 above, from the other side). 0.0.0.0 here is inside the container namespace;
+    # what the host sees is still only the published port.
+    command: >
+      sh -c '
+        if ! cmp -s package-lock.json node_modules/.installed-lock; then
+          npm ci --no-audit --no-fund && cp package-lock.json node_modules/.installed-lock
+        fi
+        exec npx vite --host 0.0.0.0 --strictPort
+      '
+
+  # Pretends to be a grading executor; the test-data changeset registers it at localhost:5111.
+  # Its UI at http://localhost:5111 sets the grade, feedback and delay it returns.
+  executor:
+    image: node:20-alpine
+    network_mode: "service:net"
+    working_dir: /app
+    volumes:
+      - ./mock-executor:/app:ro
+    command: node server.mjs
 
 volumes:
   pgdata:
+  # Fixed name, so every checkout of this repo — the main one and each worktree — shares one
+  # dependency cache and only compiles its own code. Gradle locks its caches, so concurrent stacks
+  # are fine. It does mean `down -v` in any checkout deletes it (unless another core is running).
+  gradle-home:
+    name: easy-gradle-home
+  gradle-project:
+  kotlin-project:
+  build-root:
+  build-core:
+  build-tsl:
+  build-tsl-common:
+  easy-files:
+  web-node-modules:

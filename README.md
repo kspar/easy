@@ -52,7 +52,13 @@ is Python; neither is a Gradle project.
 
 ## Getting started
 
-Needs **JDK 25**, Node 20+, and Docker.
+Needs Docker, and a `core/src/main/resources/application.yaml` made from the sample beside it.
+
+```sh
+docker compose up                          # everything: PostgreSQL, core, web on :5173, a fake executor on :5111
+```
+
+Or, with **JDK 25** and Node 20+ on the host, each piece natively:
 
 ```sh
 docker compose up db                       # PostgreSQL, migrated and seeded

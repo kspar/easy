@@ -46,6 +46,18 @@ name, exercise it through a JWT claim against a real IdP instead (`core/dev-idp/
 `/v2`, so browser-based local dev works against an auth-disabled core with no IdP — that file is
 where to look if the header names ever drift.
 
+With the stack in Docker (`DEVELOPMENT.md` §1) core's 8080 is not published, so send the same curl
+to `http://localhost:5173/v2/...` instead: the Vite proxy forwards `oidc_claim_*` headers it did
+not fabricate untouched. The port itself is reachable only from inside the shared namespace, and the
+JDK image has no HTTP client, so borrow the executor container's busybox wget — spelling out
+`127.0.0.1`, because busybox tries `::1` first and core binds IPv4 loopback only:
+
+```sh
+docker compose exec executor wget -qO- --header 'oidc_claim_preferred_username: dev-student' \
+  --header 'oidc_claim_email: student@test.ee' --header 'oidc_claim_easy_role: student' \
+  http://127.0.0.1:8080/v2/student/courses
+```
+
 These headers are a **local-dev mechanism only**. Deployed environments set
 `easy.core.auth-enabled: true`, and core then verifies the Keycloak access token itself against
 the realm's JWKS (`core/conf/security/EasyUserJwtConverter.kt`), ignoring these headers entirely.

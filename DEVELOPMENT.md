@@ -2,51 +2,50 @@
 
 ## 0. Prerequisites
 
-- **JDK 25** — the backend will not build on anything older. Gradle itself also needs 17+.
-- Node 20+ and Docker for the frontend and database.
+**Docker.** Nothing else for §1. Running a piece natively (§2, §3) needs **JDK 25** (Gradle itself
+needs 17+) and **Node 20+**; if your default `JAVA_HOME` is older, prefix Gradle commands with
+`JAVA_HOME=$(/usr/libexec/java_home -v 25)`.
 
-If your default `JAVA_HOME` points somewhere else, prefix the Gradle commands below:
+## 1. Everything in Docker
 
-```sh
-JAVA_HOME=$(/usr/libexec/java_home -v 25) ./gradlew bootRun
-```
-
-## 1. Database
-
-Start PostgreSQL:
+Copy `core/src/main/resources/application.yaml.sample` to `application.yaml` beside it (gitignored),
+set `auth-enabled: false` and `jdbc-url: jdbc:postgresql://localhost:5432/easyems`. Then:
 
 ```sh
-docker compose up db
+docker compose up
 ```
 
-To rebuild from scratch (wipes all data, re-runs Liquibase migrations + test data):
+Web on http://localhost:5173 (core behind its `/v2` proxy), mock executor on http://localhost:5111,
+PostgreSQL on :5432. The first start downloads Gradle, dependencies and node_modules into volumes
+and takes minutes; later starts don't. The Gradle cache is one volume shared by every checkout, so
+a worktree's first start only compiles.
+
+- Frontend edits: live (HMR). Backend edits: `docker compose restart core`. No hot reload.
+- Core's 8080 is not published on purpose — every container shares one `localhost` so core can keep
+  its loopback-only bind (§4); the header of `docker-compose.yml` says why. Curl it through `:5173`
+  (`doc/core/api-testing.md`).
+- `docker compose down db -v && docker compose up db` wipes and rebuilds the database.
+- `docker compose exec core ./gradlew ...` / `exec web npm ...` run tools in the containers. Tests: §5.
+- `EASY_WEB_PORT`, `EASY_DB_PORT`, `EASY_EXECUTOR_PORT` move the published ports, e.g. for a second
+  checkout.
+
+## 2. Backend, natively
 
 ```sh
-docker compose down db -v
-docker compose up db
+docker compose up db     # PostgreSQL only
+./gradlew bootRun        # core on :8080; Liquibase runs on startup
 ```
-
-## 2. Backend
-
-```sh
-./gradlew bootRun
-```
-
-Runs on port 8080 by default. Liquibase migrations run automatically on startup.
 
 Stack: Spring Boot 4.1, Kotlin 2.3, Exposed 1.3, Jackson 3, on JDK 25. If you're
 writing backend code, the package names moved during the Java 25 migration — see
 `doc/java-25-migration.md`.
 
-## 3. Frontend
+## 3. Frontend, natively
 
 ```sh
-cd web
-npm install
-npm run dev
+cd web && npm install && npm run dev    # http://localhost:5173
+node mock-executor/server.mjs           # the mock executor (§6), on :5111
 ```
-
-Runs on http://localhost:5173.
 
 ## 4. Auth: which of the two modes you're in
 
@@ -129,6 +128,14 @@ bin/testcounts          # how big each suite is
 bin/testcounts --run    # run every suite and report what it says
 ```
 
+Inside the `core` container (§1) there is no Docker daemon for Testcontainers, so the second form
+is the only one — the compose database is on the shared `localhost`:
+
+```sh
+docker compose exec db psql -U easyems -d postgres -c "create database easyems_test;"
+docker compose exec -e EASY_TEST_JDBC_URL=jdbc:postgresql://localhost:5432/easyems_test core ./gradlew :core:test
+```
+
 `EASY_TEST_JDBC_URL` skips Docker and uses a database you made yourself — handy when you want to
 `psql` into it afterwards and look. Create it with:
 
@@ -183,6 +190,7 @@ have been enough to make `./gradlew test` wipe the dev database.
 ## 6. Mock Executor
 
 A lightweight Node server that pretends to be an auto-assessment executor. No dependencies required.
+`docker compose up` (§1) runs it as the `executor` container; natively it is
 
 ```sh
 node mock-executor/server.mjs
