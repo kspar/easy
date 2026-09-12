@@ -71,11 +71,28 @@ def _read_deployed_at() -> str:
     """
     When this executor's code was put here, as an ISO timestamp.
 
-    There is no build to date — aae is copied, not compiled — so the honest equivalent is the
-    modification time of the source itself, which a deploy sets when it writes the file. Answers
-    "is this running what we shipped an hour ago", which is the question core and web answer with
-    their build times.
+    There is no build to date — aae is copied, not compiled — so a deploy stamps this the way it
+    stamps `COMMIT`, and that stamp wins. Same shape as [_read_commit], and for the same reason: a
+    deployed executor is a copy of the source with nothing else to ask.
+
+    **This used to be `getmtime(__file__)` and that was wrong (EZ-1905).** The role deploys the
+    source with `copy` over a loop of files, and `copy` only rewrites a file whose content differs —
+    so a release that did not happen to touch *this* file left the timestamp alone. EZ-1899 changed
+    only `containers.py`, and afterwards both hosts reported a build time three weeks stale while
+    running that day's commit and reporting it correctly. Next to an accurate commit, a wrong date
+    is worse than no date: they look equally authoritative.
+
+    The mtime survives as the fallback, which is the right answer in a checkout — no deploy has
+    happened, so "when was this last written" is exactly what is being asked.
     """
+    try:
+        with open(os.path.join(_REPO_ROOT, "DEPLOYED_AT")) as f:
+            stamped = f.read().strip()
+            if stamped:
+                return stamped
+    except OSError:
+        pass
+
     try:
         return datetime.fromtimestamp(
             os.path.getmtime(os.path.abspath(__file__)), tz=timezone.utc

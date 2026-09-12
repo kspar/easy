@@ -89,7 +89,16 @@
 
 # server.py reports these on /v1/version, which core passes through to the About page (EZ-1709).
 # A deployed executor has no git history to ask, so the commit is stamped here instead.
-- name: Stamp the version and commit the executor is running
+#
+# DEPLOYED_AT is stamped for the same reason and was added later (EZ-1905). The build time used to be
+# read from `server.py`'s mtime, which looks equivalent and is not: the task above deploys with
+# `copy`, `copy` rewrites only files whose content differs, and a release that does not touch that one
+# file therefore leaves the timestamp untouched. It read three weeks stale on both hosts while they
+# ran that day's commit.
+#
+# `aae/tests/test_version_and_status.py` asserts this loop stamps exactly what `server.py` reads, so
+# removing a name here fails the suite rather than quietly reintroducing a lying timestamp.
+- name: Stamp the version, commit and deploy time the executor is running
   ansible.builtin.copy:
     content: "{{ item.content }}\n"
     dest: "{{ executor_stamp_dir }}/{{ item.name }}"
@@ -101,6 +110,10 @@
       content: "{{ lookup('file', playbook_dir + '/../VERSION') | trim }}"
     - name: COMMIT
       content: "{{ executor_commit | default(lookup('pipe', 'git -C ' + playbook_dir + '/.. rev-parse --short=7 HEAD'), true) }}"
+    # Written every run, so this is when the executor was last deployed rather than when it last
+    # changed. Those differ, and the second is not what the field claims to be.
+    - name: DEPLOYED_AT
+      content: "{{ ansible_date_time.iso8601 }}"
   loop_control:
     label: "{{ item.name }}"
   notify: Restart the executor

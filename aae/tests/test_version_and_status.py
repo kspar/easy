@@ -71,13 +71,16 @@ def test_no_COMMIT_file_and_no_git_reports_unknown(repo):
     assert server._read_commit() == "unknown"
 
 
-def test_the_deploy_time_is_the_mtime_of_the_source(monkeypatch, tmp_path):
-    """
-    aae is copied, not compiled, so there is no build to date.
+def test_the_deploy_time_comes_from_the_stamp_a_deploy_writes(repo):
+    """A stamped `DEPLOYED_AT` wins, the way `COMMIT` does, and for the same reason."""
+    (repo / "DEPLOYED_AT").write_text("2026-09-12T08:30:00Z\n")
+    assert server._read_deployed_at() == "2026-09-12T08:30:00Z"
 
-    The modification time of `server.py` is the honest equivalent — a deploy sets it when it writes
-    the file — and it answers the question core and web answer with their build times: is this
-    running what we shipped an hour ago?
+
+def test_without_a_stamp_it_falls_back_to_the_mtime_of_the_source(repo):
+    """
+    Which is the right answer in a checkout: no deploy has happened, so "when was this last
+    written" is exactly the question being asked.
     """
     stamp = server._read_deployed_at()
 
@@ -85,6 +88,38 @@ def test_the_deploy_time_is_the_mtime_of_the_source(monkeypatch, tmp_path):
     assert "T" in stamp
     # No sub-second precision: it is displayed on an About page, not diffed.
     assert "." not in stamp
+
+
+def test_the_deploy_stamps_everything_server_py_reads_back():
+    """The reader and the writer are in two languages and two directories. Pin them together.
+
+    `server.py` reads `VERSION`, `COMMIT` and `DEPLOYED_AT`; `roles/executor` stamps them. Nothing
+    but this connects the two, and the failure when they drift is silent and plausible — a number on
+    the About page that is simply old, sitting beside two that are right.
+
+    That is not hypothetical (EZ-1905). The deploy time used to be inferred from `server.py`'s mtime
+    instead of stamped, and because the role deploys with `copy` — which rewrites only files whose
+    content differs — a release touching any *other* file left it untouched. Both hosts spent three
+    weeks reporting a stale build time while running and correctly reporting that day's commit.
+
+    So this asserts the set, not the presence: adding a reader without a stamp fails here, and so
+    does removing a stamp something still reads.
+    """
+    import re
+
+    tasks = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "ansible", "roles", "executor", "tasks", "main.yml",
+    )
+    with open(tasks, encoding="utf-8") as f:
+        stamped = set(re.findall(r"^\s*- name: ([A-Z_]+)$", f.read(), re.MULTILINE))
+
+    with open(os.path.abspath(server.__file__), encoding="utf-8") as f:
+        source = f.read()
+    read_back = set(re.findall(r'_REPO_ROOT, "([A-Z_]+)"', source))
+
+    assert read_back == {"VERSION", "COMMIT", "DEPLOYED_AT"}, read_back
+    assert read_back <= stamped, f"server.py reads {read_back - stamped} that no deploy writes"
 
 
 # --- classifying how a container ended -------------------------------------------------------------

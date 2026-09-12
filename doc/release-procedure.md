@@ -75,7 +75,17 @@ them, and bumping `VERSION` changes nothing about which grader is live.
 The one thing a release *should* do is look: the About page lists the installed version of every
 grading library beside the component versions, so "which graders is this release going out
 alongside" is one page rather than an investigation. `doc/aae/grading-images.md` has the rest,
-including how a production promotion works, which is still manual.
+including how a production promotion works — which is no longer manual, and has not been since
+2026-09-11 (EZ-1899). A merged change to `doc/aae/pins/prod.yml` now reaches production in about
+five minutes on its own.
+
+Two things about trusting that page while checking a release. Its numbers can trail a deploy by up
+to a minute or so, because the executor, core and the browser each cache briefly; a refresh settles
+it, and anything still stale after a couple of minutes is a real problem rather than a cache. And
+the executor's *build time* is stamped by the deploy (EZ-1905) rather than inferred from a file's
+modification time, which is what it used to be — that version could read weeks old while the
+executor ran current code, so a stale-looking date beside a correct commit was worth nothing.
+`aae/tests/test_version_and_status.py` fails if a future deploy stops writing that stamp.
 
 ## Steps
 
