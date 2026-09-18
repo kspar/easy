@@ -56,9 +56,11 @@ const libraryExercise = {
   max_mem_mb: 30,
   assets: [],
   executors: [],
+  // The course renames the exercise, which is the case EZ-1912 came from: the embed showed the
+  // library title, and "Sum of two numbers" is not what anyone on that course calls it.
   on_courses: [
     { id: '148', title: 'Algoritmid', alias: null, course_exercise_id: '5944', course_exercise_title_alias: null },
-    { id: COURSE, title: 'Programmeerimise alused', alias: null, course_exercise_id: CE, course_exercise_title_alias: null },
+    { id: COURSE, title: 'Programmeerimise alused', alias: null, course_exercise_id: CE, course_exercise_title_alias: 'Koduülesanne 3.3' },
   ],
   on_courses_no_access: 0,
 }
@@ -129,6 +131,24 @@ test('course-exercise-embed', async ({ launch, check }) => {
   check('so the snippet already carries the course link', (await snippet()).includes(`course=${COURSE}`))
   check('and the course exercise id', (await snippet()).includes(`exercise=${CE}`))
 
+  // EZ-1912. The title the course gave the exercise, in both halves of the URL: the parameter the
+  // embed page reads, and the path segment a reader sees. Percent-encoded in the query and
+  // slugified in the path — the same split `slugify` exists for (EZ-1831).
+  const aliasField = dialog.getByRole('textbox', { name: 'Title override' })
+  check(
+    'the course exercise title is filled in as the title override',
+    await waitUntil(async () => (await aliasField.inputValue()) === 'Koduülesanne 3.3'),
+  )
+  check(
+    'and says where it came from, since the field arrived with text in it',
+    await dialog.getByText(/title this exercise has on the course/).isVisible(),
+  )
+  check(
+    'so the snippet carries it as title-alias',
+    (await snippet()).includes(`title-alias=${encodeURIComponent('Koduülesanne 3.3')}`),
+  )
+  check('and the path slug names it too', (await snippet()).includes('/Koduülesanne-3.3?'))
+
   await linkField.click()
   const options = page.getByRole('option')
   // nth(1), not first: "No link" stays at the top as the neutral choice, so the current course is
@@ -155,11 +175,38 @@ test('course-exercise-embed', async ({ launch, check }) => {
     'the preview shows the solution editor once testing is on',
     await waitUntil(async () => (await preview.locator('.cm-content').count()) > 0),
   )
+  // Named by the course's title rather than the library's — the preview loads the real embed page
+  // at the real URL, so this is the reported symptom asserted end to end.
   check(
-    'and the preview carries the course link',
-    await preview.getByRole('link', { name: /Sum of two numbers\s+Lahendus/ }).isVisible(),
+    'and the preview carries the course link, under the course title',
+    await preview.getByRole('link', { name: /Koduülesanne 3.3\s+Lahendus/ }).isVisible(),
   )
   await shot('01-dialog')
+
+  // Picking another course re-seeds the title, because the title you want is the one belonging to
+  // the course you are linking to. Algoritmid does not rename the exercise, so there is no override
+  // to emit and the embed falls back to the library title on its own.
+  await linkField.click()
+  await page.getByRole('option', { name: /Algoritmid/ }).click()
+  check(
+    'switching course re-seeds the title override',
+    await waitUntil(async () => (await aliasField.inputValue()) === ''),
+  )
+  check('and a course without its own title emits no title-alias', !(await snippet()).includes('title-alias='))
+
+  // Typed by hand, and from here the field is the teacher's: someone embedding into a wiki page may
+  // want a third title, and it must not be overwritten by the next dropdown change.
+  await aliasField.fill('Ülesanne wikis')
+  await linkField.click()
+  await page.getByRole('option', { name: /Programmeerimise alused/ }).click()
+  check(
+    'a hand-typed title survives switching course',
+    (await aliasField.inputValue()) === 'Ülesanne wikis',
+  )
+  check(
+    'and it is what the snippet carries',
+    (await snippet()).includes(`title-alias=${encodeURIComponent('Ülesanne wikis')}`),
+  )
 
   await page.keyboard.press('Escape')
   await waitUntil(async () => (await page.getByRole('dialog').count()) === 0)

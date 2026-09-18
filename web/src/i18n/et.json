@@ -458,6 +458,7 @@
     "embedToggle": "Luba manustamine",
     "embedTitleAlias": "Pealkirja asendus",
     "embedTitleAliasHint": "Valikuline — kuvatakse ülesande pealkirja asemel",
+    "embedTitleAliasFromCourse": "Ülesande pealkiri sellel kursusel — muuda või tühjenda, et kasutada ülesandekogu pealkirja",
     "embedLinkCourse": "Link kursusele",
     "embedLinkCourseHint": "Lisab lingi hinnatavale versioonile",
     "embedNoLink": "Linki pole",

@@ -109,6 +109,46 @@ export default function EmbedDialog({
     setLinkCourse(on ? (currentCourseExerciseId ?? '') : '')
   }
 
+  /**
+   * The course exercise's own title, when it has one — the fix for EZ-1912.
+   *
+   * An exercise has two titles: the one it carries in the library, and the `title_alias` a course
+   * may give it ("Koduülesanne 3.3"). The embed page shows `title-alias` when the snippet carries
+   * one and the library title otherwise, and this dialog emitted no `title-alias` at all — so a
+   * teacher embedding from a course got the library title, which on courses that rename their
+   * exercises is not the title anyone reading that page knows the exercise by.
+   *
+   * Which course to take it from: the one selected in the link dropdown, falling back to the one
+   * the dialog was opened from. The fallback is what keeps turning the *link* off from also
+   * changing the *title* — two unrelated decisions that happen to be driven by the same dropdown.
+   */
+  const aliasSource = linkCourse || currentCourseExerciseId
+  const courseTitleAlias =
+    onCourses.find((c) => c.course_exercise_id === aliasSource)?.course_exercise_title_alias ?? ''
+
+  // Seeded, not forced: it fills in when the exercise arrives or another course is picked, and
+  // stops following either the moment the field is touched. Someone embedding into a wiki page may
+  // want a third title, and clearing the field by hand is how you ask for the library one — so a
+  // deliberate empty string has to survive the next render, which is why this is a ref and not a
+  // comparison against `courseTitleAlias`.
+  const aliasEdited = useRef(false)
+
+  // A different exercise is a different title, and this dialog is mounted by the page rather than
+  // by being opened — navigate from one exercise to the next and it is the same instance with the
+  // same state. Without this reset, an override typed on one exercise would follow the teacher to
+  // every exercise after it and quietly block the seeding below.
+  useEffect(() => {
+    aliasEdited.current = false
+  }, [exerciseId])
+
+  useEffect(() => {
+    if (aliasEdited.current) return
+    setTitleAlias(courseTitleAlias)
+    // `exerciseId` is a dependency so this re-seeds when the exercise changes, even if the two
+    // exercises happen to carry the same alias. It runs after the reset above, which is what makes
+    // that ordering load-bearing rather than incidental.
+  }, [courseTitleAlias, exerciseId])
+
   // The preview sizes itself from the same `ez-frame-resize` message a real embed uses, so it
   // never scrolls inside its own box and the dialog does the scrolling — and the protocol gets
   // exercised every time anyone opens this.
@@ -218,10 +258,16 @@ export default function EmbedDialog({
   // `decodeURI(<the url the frame reports>)` against the `src` attribute, so a percent-encoded path
   // decodes to something the attribute never said and no iframe is ever found: the embed keeps its
   // 150px default and the exercise is cut off (EZ-1831). A readable slug survives that round trip.
+  //
+  // The title in the path follows the one the embed will actually display, so a snippet taken from
+  // a course reads `…/Koduülesanne-3.3` rather than naming the library exercise the reader never
+  // sees (EZ-1912). Nothing routes on this segment — every path carrying a slug ends in a splat —
+  // so it is appearance only, and an alias that slugifies to nothing leaves the trailing-slash
+  // shape production already serves.
   const origin = window.location.origin
   const src =
     `${origin}/embed/exercises/${exerciseId}/` +
-    `${slugify(exerciseTitle)}${query}`
+    `${slugify(titleAlias.trim() || exerciseTitle)}${query}`
 
   const html =
     `<script src="${origin}${RESIZER_SCRIPT_PATH}"></script>\n` +
@@ -299,10 +345,19 @@ export default function EmbedDialog({
               <TextField
                 label={t('library.embedTitleAlias')}
                 value={titleAlias}
-                onChange={(e) => setTitleAlias(e.target.value)}
+                onChange={(e) => {
+                  aliasEdited.current = true
+                  setTitleAlias(e.target.value)
+                }}
                 size="small"
                 sx={{ flex: 1 }}
-                helperText={t('library.embedTitleAliasHint')}
+                // A box that arrives with text in it owes the reader an explanation of where the
+                // text came from; the generic hint is for the library, where it arrives empty.
+                helperText={
+                  courseTitleAlias && titleAlias === courseTitleAlias
+                    ? t('library.embedTitleAliasFromCourse')
+                    : t('library.embedTitleAliasHint')
+                }
                 disabled={!showTitle}
               />
             </Box>

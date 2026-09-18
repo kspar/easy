@@ -458,6 +458,7 @@
     "embedToggle": "Allow embedding",
     "embedTitleAlias": "Title override",
     "embedTitleAliasHint": "Optional — shown instead of the exercise title",
+    "embedTitleAliasFromCourse": "The title this exercise has on the course — edit it, or clear it for the library title",
     "embedLinkCourse": "Link to course",
     "embedLinkCourseHint": "Adds a link through to the graded version",
     "embedNoLink": "No link",

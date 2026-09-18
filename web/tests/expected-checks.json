@@ -11,7 +11,7 @@
   "boot-guard.spec.mjs": 14,
   "bug-report.spec.mjs": 32,
   "course-exercise-assessment.spec.mjs": 18,
-  "course-exercise-embed.spec.mjs": 16,
+  "course-exercise-embed.spec.mjs": 24,
   "course-exercise-feedback-shapes.spec.mjs": 7,
   "course-exercise-grading.spec.mjs": 39,
   "course-exercise-layout.spec.mjs": 11,
