@@ -75,6 +75,7 @@ kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8" }
 
 # --- Versioned ---
 commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
+commonmark-ext-autolink = { module = "org.commonmark:commonmark-ext-autolink", version.ref = "commonmark" }
 commonmark-ext-gfm-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-strikethrough", version.ref = "commonmark" }
 commonmark-ext-gfm-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang3" }
@@ -99,4 +100,4 @@ tika-core = { module = "org.apache.tika:tika-core", version.ref = "tika" }
 
 [bundles]
 exposed = ["exposed-core", "exposed-jdbc", "exposed-dao", "exposed-jodatime", "exposed-json"]
-commonmark = ["commonmark", "commonmark-ext-gfm-tables", "commonmark-ext-gfm-strikethrough"]
+commonmark = ["commonmark", "commonmark-ext-gfm-tables", "commonmark-ext-gfm-strikethrough", "commonmark-ext-autolink"]

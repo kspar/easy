@@ -1,5 +1,7 @@
 package core.ems.service
 
+import org.commonmark.ext.autolink.AutolinkExtension
+import org.commonmark.ext.autolink.AutolinkType
 import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension
 import org.commonmark.ext.gfm.tables.TablesExtension
 import org.commonmark.parser.Parser
@@ -32,6 +34,22 @@ class MarkdownService {
     private val extensions = listOf(
         TablesExtension.create(),
         StrikethroughExtension.create(),
+        // Bare `scheme://…` URLs and bare email addresses become links (EZ-1913). commonmark-java
+        // enables nothing by default, so without this a pasted URL was text and a teacher had to
+        // know to write `<https://…>`. Needs nothing from [SAFELIST] or [externaliseLinks] that a
+        // written link did not already need: `a[href]` with http/https/mailto is allowed, and
+        // target and rel are set on every anchor after the clean.
+        //
+        // `WWW` is deliberately off, leaving `URL` and `EMAIL`. A bare `www.example.org` autolinks
+        // to `http://www.example.org` — the extension has no say in the scheme it invents — and
+        // silently downgrading a reader to plaintext HTTP is not a thing to do in exchange for
+        // saving them eight characters. Written out as two types rather than `create()` so that the
+        // absent third one is visible.
+        //
+        // `URL` matches any `scheme://`, not only http and https, which is wider than it sounds:
+        // `ftp://…` autolinks too and then loses its `href` to the safelist. [unlinkHreflessAnchors]
+        // is what keeps that from reaching a reader as dead link-styled text.
+        AutolinkExtension.builder().linkTypes(AutolinkType.URL, AutolinkType.EMAIL).build(),
         // `$x$` and `$$x$$`, typeset in the browser by KaTeX. Has to be a parser extension rather
         // than a client-side scan of this output: see MathExtension (EZ-1732).
         MathExtension.create(),
@@ -218,9 +236,65 @@ private fun sanitise(html: String, cleaner: Cleaner): String {
     val dirty = Jsoup.parseBodyFragment(html, SANITISER_BASE_URI)
     val clean = cleaner.clean(dirty)
     clean.outputSettings(dirty.outputSettings())
+    // Both before [externaliseLinks], so that what it marks up is the final set of anchors.
+    reuniteSplitAnchors(clean)
+    unlinkHreflessAnchors(clean)
     externaliseLinks(clean)
     concealHiddenText(clean)
     return clean.body().html()
+}
+
+/**
+ * Puts back together the anchor that autolinking an inline raw `<a>` tears in half (EZ-1913, found
+ * in review).
+ *
+ * The autolink extension skips the inside of a Markdown link, because that is a `Link` node it can
+ * see. It cannot see an anchor an author wrote as raw HTML: `<a href="…">` arrives as `HtmlInline`
+ * and the label between the tags is an ordinary `Text` node, so a label that happens to be a URL
+ * gets autolinked *inside* the anchor. Nested anchors are not valid HTML, so jsoup then closes the
+ * outer one where the inner one starts, and the result is
+ *
+ * ```html
+ * <a href="{what the author wrote}"></a><a href="{the label}">{the label}</a>
+ * ```
+ *
+ * — the author's destination on an empty anchor nobody can click, and a reader sent to the URL that
+ * was only ever the label. Silent, and in the wrong direction: a link that goes somewhere else is
+ * worse than a link that does not work.
+ *
+ * So an empty anchor *with an href* whose next sibling is an anchor takes that sibling's contents
+ * and the sibling goes. `href`, not merely empty: `<a name="x"></a>` before a link is an anchor from
+ * the asciidoc era doing its job, and swallowing the link after it would be this function causing
+ * the bug it exists to fix.
+ *
+ * Nothing in the converted corpus is written this way, which is why this is here rather than in a
+ * migration: it is for the text somebody writes next week.
+ */
+private fun reuniteSplitAnchors(jdoc: org.jsoup.nodes.Document) {
+    jdoc.select("a[href]").filter { it.childNodeSize() == 0 }.forEach { empty ->
+        val next = empty.nextElementSibling() ?: return@forEach
+        if (next.tagName() != "a") return@forEach
+        next.childNodes().toList().forEach { empty.appendChild(it) }
+        next.remove()
+    }
+}
+
+/**
+ * An anchor the safelist stripped the `href` from becomes text again.
+ *
+ * The safelist allows `http`, `https` and `mailto` on `a[href]` and drops every other scheme, which
+ * is the rule that stops `javascript:`. Before autolinking, the only way to reach that rule was to
+ * write the link yourself, and losing the href of a `javascript:` link you typed on purpose is the
+ * whole point. Autolinking reaches it by accident: `URL` matches any `scheme://`, so a line
+ * mentioning `ftp://ftp.gnu.org/pub/x.tar.gz` became an anchor, lost its href to the safelist, and
+ * left the reader looking at link-styled text that does nothing — worse than the plain text it was
+ * before the extension existed.
+ *
+ * `[name]` is exempt: an `<a name="…">` legitimately has no href, and it is how the asciidoc era
+ * anchored its cross-references. Unwrapping those would break every `href="#…"` pointing at one.
+ */
+private fun unlinkHreflessAnchors(jdoc: org.jsoup.nodes.Document) {
+    jdoc.select("a:not([href]):not([name])").forEach { it.unwrap() }
 }
 
 private fun externaliseLinks(jdoc: org.jsoup.nodes.Document) {

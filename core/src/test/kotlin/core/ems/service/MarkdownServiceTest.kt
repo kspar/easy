@@ -1,5 +1,6 @@
 package core.ems.service
 
+import org.jsoup.Jsoup
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -40,7 +41,7 @@ class MarkdownServiceTest {
      */
     @TestFactory
     fun markupSurvives() = listOf(
-        // Everything commonmark and the two extensions emit.
+        // Everything commonmark and the extensions emit.
         "# Heading" to "<h1>Heading</h1>",
         "###### Deep" to "<h6>Deep</h6>",
         "*em*" to "<em>em</em>",
@@ -335,6 +336,132 @@ class MarkdownServiceTest {
         // author's class can only do something where `web/` already cooperates, and it cannot undo
         // the hiding, because an inline declaration beats any stylesheet rule it could name.
         assertTrue(html.contains("class=\"x\""), html)
+    }
+
+    // --- Autolink (EZ-1913) -----------------------------------------------------------------------
+
+    @Test
+    fun `a bare URL becomes a link, externalised like a written one`() {
+        val a = Jsoup.parseBodyFragment(service.mdToHtml("Loe https://docs.python.org/3/ läbi."))
+            .select("a").single()
+        assertEquals("https://docs.python.org/3/", a.attr("href"))
+        assertEquals("https://docs.python.org/3/", a.text())
+        // The pipeline's own rule, not the extension's: every anchor is externalised after the
+        // clean, and an autolinked one must not be the exception.
+        assertEquals("_blank", a.attr("target"))
+        assertEquals("noopener noreferrer", a.attr("rel"))
+    }
+
+    @Test
+    fun `a bare email becomes a mailto link`() {
+        val a = Jsoup.parseBodyFragment(service.mdToHtml("Kirjuta kspar@ut.ee.")).select("a").single()
+        assertEquals("mailto:kspar@ut.ee", a.attr("href"))
+    }
+
+    /**
+     * The case that decides whether this extension is safe to enable on this corpus. Exercise text
+     * is full of URLs written inside code — a `pip install` line, a `requests.get(...)` example —
+     * and turning one into a link would put an anchor inside a code block.
+     */
+    @Test
+    fun `a URL inside code stays literal`() {
+        val inSpan = service.mdToHtml("Käivita `pip install -i https://pypi.org/simple x`")
+        assertFalse(inSpan.contains("<a"), inSpan)
+        val inFence = service.mdToHtml("```python\nrequests.get('https://example.org')\n```")
+        assertFalse(inFence.contains("<a"), inFence)
+    }
+
+    @Test
+    fun `a written Markdown link is not wrapped in a second anchor`() {
+        val html = service.mdToHtml("[Python](https://docs.python.org/3/)")
+        assertEquals(1, Jsoup.parseBodyFragment(html).select("a").size, html)
+        assertFalse(html.contains("<a href=\"https://docs.python.org/3/\">https"), html)
+    }
+
+    /**
+     * A `javascript:` URL is not a scheme the extension autolinks in the first place, so this is
+     * belt and braces — but it is the one that would matter, and the safelist is what enforces it.
+     */
+    @Test
+    fun `a bare javascript URL does not become a link`() {
+        val html = service.mdToHtml("javascript:alert(1)")
+        assertFalse(html.contains("<a"), html)
+    }
+
+    /**
+     * The review finding: an anchor written as raw HTML is invisible to the extension's "not inside
+     * a link" guard, so a URL used as the *label* was autolinked inside it, jsoup split the nested
+     * anchors, and the author's destination ended up on an empty anchor while the reader got sent to
+     * the label instead. [reuniteSplitAnchors] puts it back.
+     */
+    @Test
+    fun `a URL used as the label of a raw HTML anchor keeps the author's destination`() {
+        val html = service.mdToHtml("""Vaata <a href="https://short.example/1">https://pikk.example/kursus/2026</a> lehte.""")
+        val anchors = Jsoup.parseBodyFragment(html).select("a")
+        assertEquals(1, anchors.size, html)
+        assertEquals("https://short.example/1", anchors.single().attr("href"), html)
+        assertEquals("https://pikk.example/kursus/2026", anchors.single().text(), html)
+    }
+
+    @Test
+    fun `the same holds for an email used as a label`() {
+        val html = service.mdToHtml("""Kirjuta <a href="mailto:kspar@ut.ee">meile@ut.ee</a>.""")
+        val a = Jsoup.parseBodyFragment(html).select("a").single()
+        assertEquals("mailto:kspar@ut.ee", a.attr("href"), html)
+        assertEquals("meile@ut.ee", a.text(), html)
+    }
+
+    /**
+     * The guard on that repair. An `<a name="…">` with a link after it is an asciidoc-era
+     * cross-reference target doing its job, and eating the following link would make the repair
+     * worse than the bug.
+     */
+    @Test
+    fun `a named anchor does not swallow the link that follows it`() {
+        val html = service.mdToHtml("""<a name="x"></a><a href="https://example.org">siia</a>""")
+        val anchors = Jsoup.parseBodyFragment(html).select("a")
+        assertEquals(2, anchors.size, html)
+        assertEquals("x", anchors[0].attr("name"), html)
+        assertEquals("siia", anchors[1].text(), html)
+    }
+
+    /**
+     * `URL` autolinks any `scheme://`, and the safelist then strips every scheme but http, https and
+     * mailto. Without [unlinkHreflessAnchors] the reader is left with link-styled text that does
+     * nothing, which is worse than the plain text this was before the extension.
+     */
+    @Test
+    fun `a scheme the safelist rejects goes back to being text`() {
+        for (url in listOf("ftp://ftp.gnu.org/pub/x.tar.gz", "file:///etc/passwd", "foo://bar.example/baz")) {
+            val html = service.mdToHtml("Lae alla $url ja ava.")
+            assertFalse(html.contains("<a"), html)
+            assertTrue(html.contains(url), html)
+        }
+    }
+
+    /**
+     * `WWW` is off, so a bare `www.` token stays text rather than autolinking to an `http://` URL
+     * the extension invents.
+     */
+    @Test
+    fun `a bare www token is not autolinked to plaintext HTTP`() {
+        val html = service.mdToHtml("Vaata www.example.org lehte.")
+        assertFalse(html.contains("<a"), html)
+        assertFalse(html.contains("http://"), html)
+    }
+
+    /**
+     * Documented rather than fixed, and the one autolink false positive likely on a programming
+     * course: an `EMAIL` match needs only something that looks like a domain after the `@`. The
+     * corpus has no instance of it today, and the escape hatch — a code span — is what such a line
+     * wants anyway. Here so that the next person to meet it finds it described instead of surprising.
+     */
+    @Test
+    fun `a version specifier in prose is autolinked as an email, which is the known false positive`() {
+        val a = Jsoup.parseBodyFragment(service.mdToHtml("Paigalda foo@1.2.3 versioon.")).select("a").single()
+        assertEquals("mailto:foo@1.2.3", a.attr("href"))
+        // And the escape hatch works.
+        assertFalse(service.mdToHtml("Paigalda `foo@1.2.3` versioon.").contains("<a"))
     }
 
     @Test
