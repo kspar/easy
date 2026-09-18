@@ -131,23 +131,16 @@ export default function EmbedDialog({
   // want a third title, and clearing the field by hand is how you ask for the library one — so a
   // deliberate empty string has to survive the next render, which is why this is a ref and not a
   // comparison against `courseTitleAlias`.
+  // Nothing resets this on a change of exercise, and nothing needs to: **both callers key this
+  // dialog on the exercise it is for**, so a different exercise is a different instance. Every
+  // piece of state here assumes that — the course selection and the starting-code draft as much as
+  // this flag — so a third call site that forgets the key breaks more than the title.
   const aliasEdited = useRef(false)
-
-  // A different exercise is a different title, and this dialog is mounted by the page rather than
-  // by being opened — navigate from one exercise to the next and it is the same instance with the
-  // same state. Without this reset, an override typed on one exercise would follow the teacher to
-  // every exercise after it and quietly block the seeding below.
-  useEffect(() => {
-    aliasEdited.current = false
-  }, [exerciseId])
 
   useEffect(() => {
     if (aliasEdited.current) return
     setTitleAlias(courseTitleAlias)
-    // `exerciseId` is a dependency so this re-seeds when the exercise changes, even if the two
-    // exercises happen to carry the same alias. It runs after the reset above, which is what makes
-    // that ordering load-bearing rather than incidental.
-  }, [courseTitleAlias, exerciseId])
+  }, [courseTitleAlias])
 
   // The preview sizes itself from the same `ez-frame-resize` message a real embed uses, so it
   // never scrolls inside its own box and the dialog does the scrolling — and the protocol gets

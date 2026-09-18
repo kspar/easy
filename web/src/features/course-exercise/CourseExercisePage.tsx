@@ -1331,7 +1331,17 @@ function TeacherExerciseView() {
             <SettingsOutlined />
           </IconButton>
         </Tooltip>
+        {/*
+          Keyed on the course exercise, as the library page keys it on the library exercise. The
+          dialog holds a course selection, a title override and a starting-code draft, all of which
+          belong to one exercise — and this page does not unmount between exercises when the next
+          one is already in the react-query cache, so without a key that state follows the teacher
+          from exercise to exercise. It showed up as the dialog's selected course naming a course
+          exercise you had navigated away from, which then costs the snippet its `course=` link and
+          its `title-alias` both (EZ-1912, caught in review).
+        */}
         <EmbedDialog
+          key={courseExerciseId}
           exerciseId={exercise.exercise_id}
           currentCourseId={courseId}
           currentCourseExerciseId={courseExerciseId}

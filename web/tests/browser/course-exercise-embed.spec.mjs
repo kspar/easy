@@ -12,6 +12,13 @@ import { fakeApi, waitUntil, BASE_URL } from '../support/harness.mjs'
 const COURSE = '119'
 const CE = '4147'
 const EX = '9001'
+/**
+ * A second course carrying the same library exercise under a second name. It makes the fixture
+ * ambiguous on purpose: "the course exercise's title" has to mean the one you are on, not the first
+ * row in the response that happens to have a title of its own.
+ */
+const COURSE_2 = '160'
+const CE_2 = '4148'
 
 /** The course exercise view. Deliberately without the embed fields — that is the point. */
 let courseExercise = {
@@ -61,6 +68,10 @@ const libraryExercise = {
   on_courses: [
     { id: '148', title: 'Algoritmid', alias: null, course_exercise_id: '5944', course_exercise_title_alias: null },
     { id: COURSE, title: 'Programmeerimise alused', alias: null, course_exercise_id: CE, course_exercise_title_alias: 'Koduülesanne 3.3' },
+    // The same library exercise, on a second course under a second name. This is what makes the
+    // navigation check at the end mean something: with the dialog unkeyed, coming back to the first
+    // course exercise showed *this* row's title.
+    { id: COURSE_2, title: 'Programmeerimine II', alias: null, course_exercise_id: CE_2, course_exercise_title_alias: 'Kodutöö 4.1' },
   ],
   on_courses_no_access: 0,
 }
@@ -139,6 +150,11 @@ test('course-exercise-embed', async ({ launch, check }) => {
     'the course exercise title is filled in as the title override',
     await waitUntil(async () => (await aliasField.inputValue()) === 'Koduülesanne 3.3'),
   )
+  // Not the other course's name for the same exercise, which is equally present in the response.
+  check(
+    "and it is this course's title, not another course's",
+    (await aliasField.inputValue()) !== 'Kodutöö 4.1',
+  )
   check(
     'and says where it came from, since the field arrived with text in it',
     await dialog.getByText(/title this exercise has on the course/).isVisible(),
@@ -196,6 +212,14 @@ test('course-exercise-embed', async ({ launch, check }) => {
 
   // Typed by hand, and from here the field is the teacher's: someone embedding into a wiki page may
   // want a third title, and it must not be overwritten by the next dropdown change.
+  // Picking the other course this exercise is on re-seeds to that course's name for it.
+  await linkField.click()
+  await page.getByRole('option', { name: 'Programmeerimine II' }).click()
+  check(
+    'each course supplies its own title for the same exercise',
+    await waitUntil(async () => (await aliasField.inputValue()) === 'Kodutöö 4.1'),
+  )
+
   await aliasField.fill('Ülesanne wikis')
   await linkField.click()
   await page.getByRole('option', { name: /Programmeerimise alused/ }).click()
