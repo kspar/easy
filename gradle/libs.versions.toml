@@ -9,7 +9,7 @@
 # to be kept in sync with `liquibase` below by hand. It is commented at the call site.
 
 [versions]
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 # Kover, not JaCoCo. JaCoCo lags new class-file versions and this build is on JDK 25 — a coverage
 # tool that can block the build on a JDK upgrade is a liability in something meant to gate a deploy.
 # Kover is Kotlin-native and reads the same bytecode the compiler just produced.
@@ -20,9 +20,9 @@ liquibaseGradle = "3.1.0"
 
 commonmark = "0.30.0"
 commonsLang3 = "3.20.0"
-exposed = "1.4.0"
+exposed = "1.5.0"
 fuzzywuzzy = "1.4.0"
-jsoup = "1.23.1"
+jsoup = "1.23.2"
 # :tsl and :tsl-common get JUnit explicitly. :core does not need this — it inherits jupiter from
 # spring-boot-starter-test, whose version the Boot BOM decides; pinning it here for those two would
 # risk the two modules disagreeing on the platform version inside one build.
