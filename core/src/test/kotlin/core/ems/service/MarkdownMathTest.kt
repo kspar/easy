@@ -390,7 +390,109 @@ class MarkdownMathTest {
     }
 
 
+    // --- The ```math fence (EZ-1911) --------------------------------------------------------------
+
+    /**
+     * The reported case, byte for byte: the stored Markdown the adoc→md conversion produced from an
+     * Asciidoctor `[latexmath]` block. Before this, the reader got the
+     * TeX in a code box — `div`, `pre`, `code` and `class` all survive the safelist, so nothing
+     * about it looked broken from the renderer's side.
+     */
+    @Test
+    fun `a math fence inside the converted informalequation wrapper is typeset`() {
+        val source = """
+            <div class="informalequation">
+
+            ```math
+            \frac{u + v}{\displaystyle 1 + \frac{uv}{c^2}}
+            ```
+
+            </div>
+        """.trimIndent()
+        assertEquals(listOf("display" to """\frac{u + v}{\displaystyle 1 + \frac{uv}{c^2}}"""), maths(source))
+        // The code box is what the student was looking at. It has to be gone, not merely
+        // accompanied by a formula.
+        assertFalse(html(source).contains("language-math"), html(source))
+        assertFalse(html(source).contains("<pre>"), html(source))
+    }
+
+    @Test
+    fun `a math fence is displayed maths, and the dollars are the fallback text`() {
+        val source = "```math\nx^2\n```"
+        assertEquals(listOf("display" to "x^2"), maths(source))
+        // Same element text as `$$x^2$$` produces, so an unloaded KaTeX leaves something readable
+        // rather than a row of backticks.
+        assertEquals("\$\$x^2\$\$", Jsoup.parseBodyFragment(html(source)).select("[data-easy-tex]").text())
+    }
+
+    @Test
+    fun `the info string is matched on its first word, case-insensitively`() {
+        assertEquals(listOf("x^2"), tex("```Math\nx^2\n```"))
+        assertEquals(listOf("x^2"), tex("```math linenums\nx^2\n```"))
+    }
+
+    /**
+     * `latex` and `tex` are how a block that is *showing* LaTeX source is labelled, and on a course
+     * that teaches typesetting the source is the lesson.
+     */
+    @Test
+    fun `only the math info string is claimed`() {
+        for (info in listOf("latex", "tex", "python", "mathematica", "")) {
+            val source = "```$info\nx^2\n```"
+            assertTrue(tex(source).isEmpty(), "`$info` should stay a code block: ${html(source)}")
+            assertTrue(html(source).contains("<pre>"), html(source))
+        }
+    }
+
+    @Test
+    fun `an empty math fence stays the code block it looks like`() {
+        val source = "```math\n\n```"
+        assertTrue(tex(source).isEmpty(), html(source))
+        assertTrue(html(source).contains("<pre>"), html(source))
+    }
+
+    /**
+     * Markdown would eat none of this — a fence's content is already literal — but the TeX still has
+     * to arrive unmangled, and it is the same attribute the client reads.
+     */
+    @Test
+    fun `TeX inside a fence reaches the attribute verbatim`() {
+        assertEquals(listOf("""a * b _ c \\ \alpha"""), tex("```math\na * b _ c \\\\ \\alpha\n```"))
+    }
+
+    @Test
+    fun `a math fence nested in a list item is typeset, with its indentation stripped`() {
+        assertEquals(listOf("x^2"), tex("1. Consider:\n\n   ```math\n   x^2\n   ```\n"))
+    }
+
+    @Test
+    fun `angle brackets in a fence are escaped rather than becoming tags`() {
+        val source = "```math\n<script>alert(1)</script>\n```"
+        assertEquals(listOf("<script>alert(1)</script>"), tex(source))
+        assertFalse(html(source).contains("<script>"), html(source))
+    }
+
+
     // --- Nothing else changed ---------------------------------------------------------------------
+
+    /**
+     * The fence renderer takes over `FencedCodeBlock` from [CoreHtmlNodeRenderer] and hands
+     * everything else straight back, so the ordinary code block has to be checked explicitly: an
+     * unwired delegation would silently drop every code block on the site, which on this site is
+     * most of the content.
+     */
+    @Test
+    fun `an ordinary fenced code block renders exactly as the core renderer does`() {
+        val html = html("```python\nprint('tere')\n```")
+        assertTrue(html.contains("<pre>"), html)
+        assertTrue(html.contains("class=\"language-python\""), html)
+        assertTrue(html.contains("print('tere')"), html)
+    }
+
+    @Test
+    fun `an indented code block is still a code block`() {
+        assertTrue(html("    x^2").contains("<pre>"))
+    }
 
     @Test
     fun `ordinary Markdown is untouched by the extension`() {

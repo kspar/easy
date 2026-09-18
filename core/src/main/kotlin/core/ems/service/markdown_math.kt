@@ -2,6 +2,7 @@ package core.ems.service
 
 import org.commonmark.node.CustomBlock
 import org.commonmark.node.CustomNode
+import org.commonmark.node.FencedCodeBlock
 import org.commonmark.node.Node
 import org.commonmark.parser.Parser
 import org.commonmark.parser.SourceLine
@@ -17,6 +18,7 @@ import org.commonmark.parser.block.BlockStart
 import org.commonmark.parser.block.MatchedBlockParser
 import org.commonmark.parser.block.ParserState
 import org.commonmark.renderer.NodeRenderer
+import org.commonmark.renderer.html.CoreHtmlNodeRenderer
 import org.commonmark.renderer.html.HtmlNodeRendererContext
 import org.commonmark.renderer.html.HtmlRenderer
 
@@ -58,12 +60,36 @@ import org.commonmark.renderer.html.HtmlRenderer
  * source *with* its delimiters, so the failure mode when KaTeX does not load is what students see
  * today — `$x^2$` — rather than a blank space where a formula was.
  *
- * ## Delimiters: `$` only
+ * ## Delimiters: `$`, and the ```` ```math ```` fence
  *
  * Not `\(…\)`, which is what Asciidoctor used to emit and the obvious thing to keep supporting. It
  * cannot work: `(` is ASCII punctuation, so Markdown turns `\(x\)` into the literal text `(x)`
  * before anything here could look at it. The adoc→md migration already rewrote those 48 exercises to
  * `$…$` for this reason.
+ *
+ * A fenced code block whose info string is `math` is displayed maths too (EZ-1911). Both halves of
+ * that are deliberate:
+ *
+ * - **Why at all.** It is GitHub's own second spelling, alongside the dollars we already had, so it
+ *   is what a teacher who writes Markdown elsewhere will type. It is also what the adoc→md
+ *   conversion produced for the five exercises whose AsciiDoc used a `[latexmath]` passthrough
+ *   block: Asciidoctor rendered those to `<div class="informalequation"><pre><code
+ *   class="language-math">`, and converting that HTML back to Markdown gives a ```` ```math ````
+ *   fence. Nothing here claimed it, so the reader got the TeX in a code box — reported by a student
+ *   on a live course, and almost certainly broken in the old MathJax UI too, since the same code
+ *   block is in the pre-migration HTML.
+ * - **Why only `math`.** Not `latex` or `tex`, which are the natural info strings for a block that
+ *   is *showing* LaTeX source — on a course that teaches typesetting, `latex` means "here is the
+ *   code", and typesetting it would destroy the lesson. `math` has no such second reading.
+ *
+ * The fence is claimed in the *renderer* rather than the parser, which is the opposite of the choice
+ * made for `$…$` above and for the same underlying reason — where the damage happens. Inline maths
+ * has to be claimed during parsing because emphasis and escapes would eat it first. A fenced block's
+ * content is already literal by the time CommonMark is done with it, so there is nothing to protect,
+ * and a renderer costs one delegating call instead of a second implementation of fence scanning
+ * (closing-fence length, indentation, interrupting paragraphs). `NodeRendererMap` consults custom
+ * factories before the core one and keeps the first for a node type, so ours wins and hands
+ * everything that is not maths straight back to [CoreHtmlNodeRenderer].
  *
  * ## The known gap in the currency heuristic
  *
@@ -144,9 +170,19 @@ internal fun unwrapCodeSpan(tex: String): String {
     return tex.substring(leading, tex.length - trailing)
 }
 
+/** The one info string that means "typeset this", not "show this". See [MathExtension]. */
+private const val FENCE_INFO = "math"
+
 private class MathNodeRenderer(private val context: HtmlNodeRendererContext) : NodeRenderer {
 
-    override fun getNodeTypes(): Set<Class<out Node>> = setOf(MathInline::class.java, MathBlock::class.java)
+    /**
+     * Built here rather than on demand: it is stateless, and the alternative is one instance per
+     * fenced code block in the document.
+     */
+    private val core = CoreHtmlNodeRenderer(context)
+
+    override fun getNodeTypes(): Set<Class<out Node>> =
+        setOf(MathInline::class.java, MathBlock::class.java, FencedCodeBlock::class.java)
 
     override fun render(node: Node) {
         val writer = context.writer
@@ -158,18 +194,49 @@ private class MathNodeRenderer(private val context: HtmlNodeRendererContext) : N
                 writer.tag("/span")
             }
 
-            is MathBlock -> {
-                // An unterminated bare `$$` at the end of a document leaves nothing to typeset.
-                // Emitting the element anyway gives KaTeX an empty formula, which it renders as a
-                // stray empty box in the middle of the text.
-                if (node.tex.isBlank()) return
-                writer.line()
-                writer.tag("div", attrs(node, "div", "display", node.tex))
-                writer.text("$$${node.tex}$$")
-                writer.tag("/div")
-                writer.line()
+            // An unterminated bare `$$` at the end of a document leaves nothing to typeset.
+            // Emitting the element anyway gives KaTeX an empty formula, which it renders as a
+            // stray empty box in the middle of the text.
+            is MathBlock -> if (node.tex.isNotBlank()) renderDisplay(node, node.tex)
+
+            is FencedCodeBlock -> {
+                // The fence's own trailing newline is not part of the formula, and neither is the
+                // indentation of a fence inside a list item.
+                val tex = node.literal.orEmpty().trim()
+                // A blank ```math fence falls through to the code block it looks like, rather than
+                // rendering as nothing: the author typed a visible thing, and an empty formula is
+                // the stray-empty-box case above.
+                if (isMathFence(node.info) && tex.isNotBlank()) renderDisplay(node, tex) else core.render(node)
             }
+
+            // Not reachable through `getNodeTypes`, and delegating rather than throwing is what
+            // keeps it that way if a later node type is added to that set and missed here.
+            else -> core.render(node)
         }
+    }
+
+    /**
+     * A fence is maths when the **first word** of its info string is `math`, case-insensitively.
+     * The first word only, because an info string is free text after the language — Asciidoctor and
+     * highlighters both put attributes there — and the language is the part that says what the
+     * block is.
+     */
+    private fun isMathFence(info: String?): Boolean =
+        info?.trim()?.substringBefore(' ')?.lowercase() == FENCE_INFO
+
+    /**
+     * Shared by the `$$` block and the `math` fence, so the two spellings cannot drift into
+     * producing different HTML for the same formula — the element text keeps the dollar delimiters
+     * in both cases, since that is the fallback a reader sees when KaTeX does not load, and `$$x$$`
+     * is more use there than a row of backticks.
+     */
+    private fun renderDisplay(node: Node, tex: String) {
+        val writer = context.writer
+        writer.line()
+        writer.tag("div", attrs(node, "div", "display", tex))
+        writer.text("$$$tex$$")
+        writer.tag("/div")
+        writer.line()
     }
 
     /**
