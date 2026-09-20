@@ -7,6 +7,7 @@ import { basicSetup } from 'codemirror'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { useSoftWrap, type WrapScope } from './editorWrap.ts'
 import { indentation } from './editorIndent.ts'
+import { readOnlyEditor } from './editorReadOnly.ts'
 
 /**
  * Thin CodeMirror 6 wrapper for the places that need a plain text/code box: the exercise
@@ -101,8 +102,7 @@ export default function CodeEditor({
       EditorView.updateListener.of((u) => {
         if (u.docChanged) onChangeRef.current?.(u.state.doc.toString())
       }),
-      EditorState.readOnly.of(readOnly),
-      EditorView.editable.of(!readOnly),
+      ...(readOnly ? [readOnlyEditor] : []),
       EditorView.theme({
         '&': { minHeight, ...(maxHeight ? { maxHeight } : {}) },
         '.cm-scroller': { overflow: 'auto' },

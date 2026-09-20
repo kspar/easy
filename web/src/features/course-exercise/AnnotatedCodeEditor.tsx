@@ -66,6 +66,7 @@ import { applyFormat } from '../../components/markdown/markdownActions.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
 import { downloadTextFile } from '../../components/downloadTextFile.ts'
 import { indentation } from '../../components/editorIndent.ts'
+import { readOnlyEditor } from '../../components/editorReadOnly.ts'
 import SafeText from '../../components/SafeText.tsx'
 
 /* ───────── Types ───────── */
@@ -522,8 +523,7 @@ export default function AnnotatedCodeEditor({
         ...(Array.isArray(addCommentGutter) ? addCommentGutter : [addCommentGutter]),
         basicSetup,
         lang,
-        EditorState.readOnly.of(true),
-        EditorView.editable.of(false),
+        readOnlyEditor,
         wrapExtension(),
         annotationField,
         ...(canEdit ? [lineHoverPlugin()] : []),

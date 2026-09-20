@@ -25,6 +25,7 @@ import { useSubmissions } from '../../api/exercises.ts'
 import type { AutomaticAssessmentResp } from '../../api/types.ts'
 import ErrorAlert from '../../components/ErrorAlert.tsx'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import { readOnlyEditor } from '../../components/editorReadOnly.ts'
 
 export default function PreviousSubmissions({
   courseId,
@@ -234,8 +235,7 @@ function ReadOnlyEditor({ code, solutionFileName }: { code: string; solutionFile
       const extensions = [
         basicSetup,
         lang,
-        EditorView.editable.of(false),
-        EditorState.readOnly.of(true),
+        readOnlyEditor,
         wrapExtension(),
       ]
       if (theme.palette.mode === 'dark') {

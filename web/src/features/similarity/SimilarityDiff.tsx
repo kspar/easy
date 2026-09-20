@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { MergeView } from '@codemirror/merge'
-import { EditorView, lineNumbers } from '@codemirror/view'
-import { EditorState } from '@codemirror/state'
+import { lineNumbers } from '@codemirror/view'
 import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { useTheme } from '@mui/material/styles'
 import { Box } from '@mui/material'
 import { languageFromFilename } from '../course-exercise/editorLanguage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
+import { readOnlyEditor } from '../../components/editorReadOnly.ts'
 import { sharedCodeHighlighting } from './similarityHighlight.ts'
 
 /**
@@ -51,8 +51,7 @@ export default function SimilarityDiff({
 
       const extensions = [
         lineNumbers(),
-        EditorView.editable.of(false),
-        EditorState.readOnly.of(true),
+        readOnlyEditor,
         wrapExtension(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         lang,

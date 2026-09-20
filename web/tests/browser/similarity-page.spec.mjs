@@ -209,6 +209,21 @@ test('similarity-page', async ({ launch, check }) => {
   )
   await shot('02-pair-expanded')
 
+  // --- select-all takes one side, not the page (EZ-1920) -------------------------------------------------
+  // This editor is built from parts and has no keymap of its own, so it is the one place where the
+  // binding in `readOnlyEditor` is the only thing standing between Cmd+A and the whole page.
+  await page.locator('.cm-mergeView .cm-editor').nth(1).locator('.cm-line').nth(2).click()
+  await page.keyboard.press('ControlOrMeta+a')
+  const picked = await page.evaluate(() => window.getSelection().toString())
+  check(
+    "select-all in one side of the diff takes that student's solution",
+    picked.includes('tulemus = x + y') && picked.includes('print(tulemus)'),
+  )
+  check(
+    'and neither the other side nor the page around it',
+    !picked.includes('summa') && !picked.includes('Maasikas'),
+  )
+
   // --- the score filter ---------------------------------------------------------------------------------
   // The low-scoring pair references a submission the response does not describe, which is what the
   // real endpoint does when a pair falls outside the returned set — it must not crash the page.
