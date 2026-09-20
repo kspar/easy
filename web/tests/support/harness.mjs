@@ -22,7 +22,16 @@ export const BASE_URL =
   process.env.HARNESS_URL ?? `http://localhost:${process.env.HARNESS_PORT ?? 5199}`
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-export const SHOTS_DIR = join(HERE, '../screenshots')
+export const SHOTS_DIR = process.env.HARNESS_SHOTS_DIR ?? join(HERE, '../screenshots')
+
+/**
+ * `HARNESS_VIEWPORT=2560x1440` re-runs any spec at another window size, so its fixtures — the
+ * realistic ones, which the audit sweeps do not have — can be looked at on a large monitor. It
+ * replaces only the *default*: a spec that asks for a viewport is asserting geometry at that size.
+ * Pair it with `HARNESS_SHOTS_DIR` so the shots do not overwrite the suite's own.
+ */
+const [envW, envH] = (process.env.HARNESS_VIEWPORT ?? '').split('x').map(Number)
+const DEFAULT_VIEWPORT = envW && envH ? { width: envW, height: envH } : { width: 1100, height: 800 }
 
 /**
  * Open a context and a page with localStorage seeded the way the app expects on boot.
@@ -44,7 +53,7 @@ export function makeLaunch(browser, testInfo, register) {
     role = 'teacher,admin',
     language = 'en', // the app defaults to Estonian — most selectors assume 'en'
     theme = 'light',
-    viewport = { width: 1100, height: 800 },
+    viewport = DEFAULT_VIEWPORT,
     colorScheme = 'light',
     reducedMotion,
     shotPrefix = '',
@@ -55,7 +64,7 @@ export function makeLaunch(browser, testInfo, register) {
 
     const ctx = await browser.newContext({
       viewport,
-      deviceScaleFactor: 2, // legible screenshots
+      deviceScaleFactor: envW ? 1 : 2, // legible screenshots; a 2560 shot at 2x is 5120 wide
       colorScheme,
       ...(reducedMotion ? { reducedMotion } : {}),
     })
