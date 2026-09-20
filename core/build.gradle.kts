@@ -25,6 +25,11 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+// The Boot BOM's Tomcat lags its security releases; io.spring.dependency-management reads this
+// property in place of the BOM's own. The version and the condition for deleting it are in
+// gradle/libs.versions.toml.
+extra["tomcat.version"] = libs.versions.tomcat.get()
+
 /**
  * Coverage: **report everywhere, gate in four places.**
  *

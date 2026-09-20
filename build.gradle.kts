@@ -1,3 +1,16 @@
+// The Spring Boot Gradle plugin pulls commons-lang3 3.16.0 onto the build classpath through
+// commons-compress. Nothing here runs it against untrusted input, but the dependency graph reports
+// it all the same, so it is lifted to the version the application itself uses. The literal is
+// because catalog accessors are not available inside `buildscript` — keep it in sync with
+// `commonsLang3` in gradle/libs.versions.toml.
+buildscript {
+    dependencies {
+        constraints {
+            classpath("org.apache.commons:commons-lang3:3.20.0")
+        }
+    }
+}
+
 // Every plugin version used anywhere in the build is declared here, once, from
 // gradle/libs.versions.toml. Subprojects apply these without a version — see :core, :tsl and
 // :tsl-common. Putting a version back in a subproject reintroduces the duplication this
