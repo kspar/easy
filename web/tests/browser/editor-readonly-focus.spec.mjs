@@ -91,7 +91,14 @@ const selectedText = (page) =>
   page.evaluate(() => window.getSelection().toString().replace(/\s+/g, ' ').trim())
 
 
-test('editor-readonly-focus', async ({ launch, check }) => {
+/** Cursor elements that would actually paint. CodeMirror keeps them in the DOM and hides them. */
+const caretsShown = (editor) =>
+  editor.evaluate((el) =>
+    [...el.querySelectorAll('.cm-cursor')].filter((c) => getComputedStyle(c).display !== 'none').length)
+
+const outlineOf = (content) => content.evaluate((el) => getComputedStyle(el).outlineStyle)
+
+test('editor-readonly-focus',async ({ launch, check }) => {
   const { page, shot, close } = await launch({ role: 'teacher,admin', shotPrefix: 'ro-focus-' })
 
   await fakeApi(page, [
@@ -148,6 +155,10 @@ test('editor-readonly-focus', async ({ launch, check }) => {
     'clicking a line puts focus in the editor, not just a highlight on the line',
     await waitUntil(() => content.evaluate((el) => el === document.activeElement)),
   )
+  // Focus is what makes CodeMirror draw its cursor, and a blinking caret in text nobody can type
+  // in is a promise the editor does not keep.
+  check('but no caret — there is nowhere to type', (await caretsShown(editor)) === 0)
+  check('and no focus ring after a click', (await outlineOf(content)) === 'none')
 
   await page.keyboard.press('ControlOrMeta+a')
   const selected = await selectedText(page)
@@ -184,6 +195,11 @@ test('editor-readonly-focus', async ({ launch, check }) => {
     'and Shift+Tab comes back to it, so the keyboard alone can reach the solution',
     await waitUntil(() => content.evaluate((el) => el === document.activeElement)),
   )
+  // With the caret gone the ring is the only thing telling a keyboard user where they are, and
+  // CodeMirror switches the content element's outline off, so it does not come for free.
+  check('arriving by keyboard draws the focus ring', (await outlineOf(content)) === 'solid')
+  check('still without a caret', (await caretsShown(editor)) === 0)
+  await shot('02-keyboard-focus')
 
   await close()
 })

@@ -21,7 +21,7 @@
   "course-exercises.spec.mjs": 111,
   "courses-page.spec.mjs": 27,
   "editor-file-drop.spec.mjs": 15,
-  "editor-readonly-focus.spec.mjs": 7,
+  "editor-readonly-focus.spec.mjs": 11,
   "editor-soft-wrap.spec.mjs": 10,
   "editor-tab-indent.spec.mjs": 7,
   "embed-exercise.spec.mjs": 41,
