@@ -34,6 +34,7 @@
   "library-exercise-ui.spec.mjs": 78,
   "library-page.spec.mjs": 11,
   "library-share-recent.spec.mjs": 12,
+  "markdown-image-size.spec.mjs": 14,
   "markdown-math.spec.mjs": 20,
   "markdown-upload.spec.mjs": 15,
   "nav-bug-dashboard.spec.mjs": 15,

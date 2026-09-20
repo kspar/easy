@@ -4,6 +4,7 @@ import org.commonmark.ext.autolink.AutolinkExtension
 import org.commonmark.ext.autolink.AutolinkType
 import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension
 import org.commonmark.ext.gfm.tables.TablesExtension
+import org.commonmark.ext.image.attributes.ImageAttributesExtension
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 import org.jsoup.Jsoup
@@ -50,6 +51,13 @@ class MarkdownService {
         // `ftp://…` autolinks too and then loses its `href` to the safelist. [unlinkHreflessAnchors]
         // is what keeps that from reaching a reader as dead link-styled text.
         AutolinkExtension.builder().linkTypes(AutolinkType.URL, AutolinkType.EMAIL).build(),
+        // `![alt](url){width=300}` — the author's way to size one image (EZ-1914). The extension
+        // understands `width` and `height` and nothing else, and both were already in [SAFELIST]
+        // for the raw `<img width=…>` the converted corpus contains, so this adds a spelling rather
+        // than a capability. The *default* size is not here and must not be: this HTML is stored,
+        // so a default baked into it would reach only the texts somebody re-saves. It is a rule in
+        // `web/`'s `proseStyles.ts`, which an explicit `width` opts out of.
+        ImageAttributesExtension.create(),
         // `$x$` and `$$x$$`, typeset in the browser by KaTeX. Has to be a parser extension rather
         // than a client-side scan of this output: see MathExtension (EZ-1732).
         MathExtension.create(),

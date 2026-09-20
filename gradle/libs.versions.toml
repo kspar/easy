@@ -78,6 +78,7 @@ commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" 
 commonmark-ext-autolink = { module = "org.commonmark:commonmark-ext-autolink", version.ref = "commonmark" }
 commonmark-ext-gfm-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-strikethrough", version.ref = "commonmark" }
 commonmark-ext-gfm-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
+commonmark-ext-image-attributes = { module = "org.commonmark:commonmark-ext-image-attributes", version.ref = "commonmark" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang3" }
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
 exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed" }
@@ -100,4 +101,4 @@ tika-core = { module = "org.apache.tika:tika-core", version.ref = "tika" }
 
 [bundles]
 exposed = ["exposed-core", "exposed-jdbc", "exposed-dao", "exposed-jodatime", "exposed-json"]
-commonmark = ["commonmark", "commonmark-ext-gfm-tables", "commonmark-ext-gfm-strikethrough", "commonmark-ext-autolink"]
+commonmark = ["commonmark", "commonmark-ext-gfm-tables", "commonmark-ext-gfm-strikethrough", "commonmark-ext-autolink", "commonmark-ext-image-attributes"]

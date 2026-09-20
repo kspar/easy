@@ -2,6 +2,17 @@ import type { Theme } from '@mui/material'
 import type { SystemStyleObject } from '@mui/system'
 
 /**
+ * The largest an image with no size of its own is drawn — see the Media section of [proseStyles].
+ *
+ * `rem`, so that they follow the reader's font size along with the text the image sits in. The
+ * width is a little under the statement pane's, so that the cap is felt where students actually
+ * read and not only in the wide views; the height keeps a whole image, with the sentence that
+ * introduces it, inside a laptop viewport.
+ */
+const IMAGE_DEFAULT_MAX_WIDTH = '32rem'
+const IMAGE_DEFAULT_MAX_HEIGHT = '28rem'
+
+/**
  * The styling for author-written content rendered from Markdown — exercise statements, articles,
  * feedback, comments.
  *
@@ -354,12 +365,44 @@ export function proseStyles(theme: Theme): SystemStyleObject<Theme> {
     },
 
     /* ── Media ────────────────────────────────────────────────────────── */
+    // ## An image has a default size, and the author can overrule it (EZ-1914)
+    //
+    // `max-width: 100%` alone stops an image widening the pane and does nothing about an image
+    // *filling* it, and most do: a screenshot off a retina display is twice as many pixels wide as
+    // the thing it shows, so it is drawn as wide as its container allows. In the 640px statement
+    // pane that was merely large. In the article and library views, where the column is the width
+    // of the page, a screenshot of a three-line dialog took the whole screen.
+    //
+    // So the rules are split by whether the author gave a size:
+    //
+    //  - **none given** — capped by [IMAGE_DEFAULT_MAX_WIDTH] and [IMAGE_DEFAULT_MAX_HEIGHT]. Caps,
+    //    not sizes: a small image stays small. Both dimensions stay `auto`, which is what lets the
+    //    browser honour two maxima at once and keep the aspect ratio. The height cap is for the
+    //    portrait case — a phone screenshot is narrow enough to pass any width cap and still be
+    //    two screens tall.
+    //  - **`width` given** — `![alt](url){width=300}` or `{width=50%}`, or the raw `<img width=…>`
+    //    of the converted corpus. That is the author's decision and only the pane limits it:
+    //    `{width=100%}` is how to get the old behaviour back for a diagram that needs the room.
+    //
+    // **This has to be CSS and cannot be markup.** `*_html` is rendered when a text is saved, so a
+    // default written by core would reach only the texts somebody re-saves — the EZ-1792 trap. A
+    // rule here reaches every stored image on the next page load.
     '& img': {
       display: 'block',
       maxWidth: '100%',
-      height: 'auto',
       borderRadius: '6px',
     },
+    // `height: auto` is what keeps the aspect ratio when `max-width` clamps an image that carries
+    // both attributes. It is withheld from the one shape it would break: a lone `height`, which an
+    // author-level `auto` would override outright, leaving `{height=200}` a silent no-op.
+    '& img:not([height]), & img[width]': { height: 'auto' },
+    '& img:not([width]):not([height])': {
+      maxWidth: `min(100%, ${IMAGE_DEFAULT_MAX_WIDTH})`,
+      maxHeight: IMAGE_DEFAULT_MAX_HEIGHT,
+    },
+    // A lone `height` leaves the width to follow the aspect ratio, until `max-width` clamps it in a
+    // narrow pane — at which point the box is no longer the image's shape. Letterbox, not stretch.
+    '& img[height]:not([width])': { objectFit: 'contain' },
     // The UA's `margin: 1em 40px` on `figure` is the source of the unexplained indent on every
     // converted image — the conversion wrapped them all in `<figure>`.
     '& figure': { mt: 0, mb: 2, mx: 0 },

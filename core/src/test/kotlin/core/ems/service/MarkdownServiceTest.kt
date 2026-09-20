@@ -62,6 +62,12 @@ class MarkdownServiceTest {
         "[m](mailto:a@b.example)" to "href=\"mailto:a@b.example\"",
         "<https://example.org>" to "href=\"https://example.org\"",
         "![alt](https://example.org/i.png)" to "<img src=\"https://example.org/i.png\" alt=\"alt\">",
+        // The author's size for one image (EZ-1914). A percentage is the form that matters most —
+        // "half the column" is what an author usually means — and is the one a stricter reading
+        // of `width` as a pixel count would lose.
+        "![alt](/v2/resource/k/p.png){width=300}" to "width=\"300\"",
+        "![alt](/v2/resource/k/p.png){width=50%}" to "width=\"50%\"",
+        "![alt](/v2/resource/k/p.png){width=300 height=200}" to "height=\"200\"",
         // Table alignment arrives as an `align` attribute on every cell, not as a class.
         "| a |\n|:-:|\n| 1 |" to "<th align=\"center\">a</th>",
 
@@ -143,6 +149,10 @@ class MarkdownServiceTest {
         Triple("base element", "Text.\n\n<base href=\"https://evil.example/\">", "<base"),
         Triple("meta refresh", "Text.\n\n<meta http-equiv=refresh content=\"0;url=https://e.example\">", "<meta"),
         Triple("style attribute", "<span style=\"position:fixed;top:0\">x</span>", "style="),
+        // The `{…}` after an image is an attribute syntax, so it is asked the attribute questions
+        // (EZ-1914): it must not be a way to write the two things raw HTML is refused.
+        Triple("image attributes, event handler", "![a](/x.png){onerror=alert(1)}", "onerror=\"alert"),
+        Triple("image attributes, style", "![a](/x.png){style=position:fixed}", "style=\"position"),
         // The four positions of the same payload. Before the safelist, the first of these came back
         // empty and the other three did not — see the class KDoc.
         Triple("script alone", "<script>alert(1)</script>", "<script"),
