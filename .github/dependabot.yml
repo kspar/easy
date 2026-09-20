@@ -36,9 +36,18 @@ updates:
           - patch
     commit-message:
       prefix: "deps(web)"
-    # No ignores. react-router is deliberately held at v7 — the v8 RSC advisory does not apply to
-    # a client-only SPA (see EZ-1720) — but that is a decision to re-make when a PR appears, not
-    # one to bury here where nobody would find it.
+    # One ignore, and it is not a held-back upgrade: @types/node describes the Node runtime, so its
+    # major follows `node-version` in the workflows and the node image in docker-compose.yml, not
+    # the registry. A major ahead of the runtime type-checks calls to APIs that are not there. Bump
+    # it by hand in the same change that moves Node. (It already sits at 24 against a Node 20
+    # runtime — a gap to close, not a precedent.)
+    ignore:
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+    # No other ignores. react-router is deliberately held at v7 — the v8 RSC advisory does not
+    # apply to a client-only SPA (see EZ-1720) — but that is a decision to re-make when a PR
+    # appears, not one to bury here where nobody would find it.
 
   # The browser-testing harness used to live in web/dev-harness with its own package.json and its
   # own dependabot entry. It is web/tests/ now, and @playwright/test and vitest are devDependencies
