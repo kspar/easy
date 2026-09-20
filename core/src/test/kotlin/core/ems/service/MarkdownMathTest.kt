@@ -397,13 +397,21 @@ class MarkdownMathTest {
      * Asciidoctor `[latexmath]` block. Before this, the reader got the
      * TeX in a code box — `div`, `pre`, `code` and `class` all survive the safelist, so nothing
      * about it looked broken from the renderer's side.
+     *
+     * **Note the space in `` ``` math ``.** That is how pandoc's GFM writer spells a fenced block's
+     * info string, so it is the spelling every affected exercise actually carries — this test said
+     * `` ```math `` until the re-render on dev showed what was in the database. CommonMark strips
+     * the leading whitespace before anything here sees it, which is *why* the fix works on the
+     * corpus, but that is a fact about commonmark worth pinning rather than assuming: an
+     * implementation that kept the space would leave every real exercise unfixed while this file
+     * stayed green.
      */
     @Test
     fun `a math fence inside the converted informalequation wrapper is typeset`() {
         val source = """
             <div class="informalequation">
 
-            ```math
+            ``` math
             \frac{u + v}{\displaystyle 1 + \frac{uv}{c^2}}
             ```
 
@@ -429,6 +437,21 @@ class MarkdownMathTest {
     fun `the info string is matched on its first word, case-insensitively`() {
         assertEquals(listOf("x^2"), tex("```Math\nx^2\n```"))
         assertEquals(listOf("x^2"), tex("```math linenums\nx^2\n```"))
+    }
+
+    /**
+     * Whitespace between the fence and the language, which is the spelling the whole converted
+     * corpus uses — pandoc's GFM writer puts it there. Nothing in this file produced it until an
+     * actual re-render showed it, and a fence that quietly stayed a code block would have made the
+     * fix look applied and change nothing.
+     */
+    @Test
+    fun `a space between the fence and the language is still maths`() {
+        assertEquals(listOf("x^2"), tex("``` math\nx^2\n```"))
+        assertEquals(listOf("x^2"), tex("```   math\nx^2\n```"))
+        assertEquals(listOf("x^2"), tex("``` Math \nx^2\n```"))
+        // And the leading space does not turn some other language into maths.
+        assertTrue(tex("``` python\nx^2\n```").isEmpty())
     }
 
     /**
