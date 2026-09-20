@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Box,
@@ -94,6 +94,41 @@ const flagRaise = {
   '@media (prefers-reduced-motion: reduce)': { '& > svg': { animation: 'none' } },
 }
 
+/**
+ * The student's code, and beside it what the teacher does about it — EZ-1917.
+ *
+ * In one column the test results and the grade form sat under the code, which at 1920×1080 put the
+ * bottom of that column at 1769px in a 1080px window: read the code, scroll to the grade field,
+ * type, next student, scroll back up, thirty-five times. Given the width, the two go side by side
+ * and the grade form is in view for as long as the code is.
+ *
+ * The threshold is about what is left for the code: below ~1300px a side column would hand back the
+ * clipping that going wide (EZ-1915) had just removed. And it is this view's width that is asked
+ * about, not the window's — it is what the task text and the divider leave. On a 1920 monitor that
+ * means the row appears once the task text is collapsed, which is how student twelve of thirty-five
+ * gets graded anyway.
+ *
+ * Measured rather than asked of CSS. A container query is the obvious tool and the wrong one here:
+ * `container-type` makes the element the containing block for `position: fixed` descendants in
+ * Safari and Firefox, and the three Snackbars under this view are exactly that — "comment saved"
+ * would anchor to the bottom of a 1700px pane instead of the window.
+ */
+const GRADING_ROW_MIN_WIDTH = 1300
+
+function useIsAtLeast(minWidth: number) {
+  const [el, setEl] = useState<HTMLElement | null>(null)
+  const [atLeast, setAtLeast] = useState(false)
+  useLayoutEffect(() => {
+    if (!el) return
+    const measure = () => setAtLeast(el.getBoundingClientRect().width >= minWidth)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [el, minWidth])
+  return [setEl, atLeast] as const
+}
+
 export default function StudentGradingView({
   courseId,
   courseExerciseId,
@@ -110,6 +145,7 @@ export default function StudentGradingView({
   onSelectStudent: (studentId: string) => void
 }) {
   const { t } = useTranslation()
+  const [rootRef, sideBySide] = useIsAtLeast(GRADING_ROW_MIN_WIDTH)
   const { username } = useAuth()
   const [filterGroup] = useSavedGroup(courseId)
 
@@ -329,7 +365,7 @@ export default function StudentGradingView({
   }, [sortedStudents, pickerSearch])
 
   return (
-    <Box>
+    <Box ref={rootRef}>
       {/* Student header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
         <Tooltip title={t('submission.backToList')}>
@@ -576,9 +612,16 @@ export default function StudentGradingView({
 
       {/* Submission content — only render when detail (with solution) is loaded */}
       {subDetail && (
-        <>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: sideBySide ? 'minmax(0, 1fr) clamp(400px, 30%, 560px)' : 'minmax(0, 1fr)',
+            columnGap: sideBySide ? 3 : 0,
+            alignItems: 'start',
+          }}
+        >
           {/* Code view with inline comments */}
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2, minWidth: 0 }}>
             <AnnotatedCodeEditor
               key={subDetail.id}
               solution={subDetail.solution}
@@ -592,6 +635,9 @@ export default function StudentGradingView({
             />
           </Box>
 
+          {/* Everything that is *about* the code rather than the code: beside it when there is
+              room, under it when there is not — see `GRADING_ROW_MIN_WIDTH`. */}
+          <Box sx={{ minWidth: 0 }}>
           {/* Grading itself failed: without this the teacher a student was told to contact sees
               nothing at all — no failure label, and the retry affordance below is gated behind an
               assessment a FAILED run does not produce (audit X-026). */}
@@ -684,7 +730,9 @@ export default function StudentGradingView({
           />
 
           {/* Activity feed (grade + feedback composer + history) */}
-          <Box sx={{ mt: 3 }}>
+          {/* At the head of its own column the heading lines up with the top of the code; the gap
+              is only for when something sits above it. */}
+          <Box sx={{ mt: sideBySide && !subDetail.auto_assessment && !isGraderFailed(subDetail) ? 0 : 3 }}>
             <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
               {t('submission.activity')}
             </Typography>
@@ -704,7 +752,8 @@ export default function StudentGradingView({
               showComposer={isViewingLatest}
             />
           </Box>
-        </>
+          </Box>
+        </Box>
       )}
     </Box>
   )

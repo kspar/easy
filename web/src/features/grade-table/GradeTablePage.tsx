@@ -18,6 +18,7 @@ import {
   Button,
   Tooltip,
 } from '@mui/material'
+import type { Theme } from '@mui/material'
 import {
   ArrowBackOutlined,
   ArrowDropDownOutlined,
@@ -31,6 +32,7 @@ import { useTeacherCourseExercises, useCourseGroups } from '../../api/exercises.
 import { spaLinkProps } from '../../components/spaLink.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
 import useSavedGroup from '../../hooks/useSavedGroup.ts'
+import useFrameHeight from '../../hooks/useFrameHeight.ts'
 import type { StudentExerciseStatus, TeacherCourseExercise } from '../../api/types.ts'
 import {
   buildRows,
@@ -72,7 +74,13 @@ const sortLabelInactiveSx = {
 } as const
 
 /**
- * Wraps an exercise column's link and its sort arrow, side by side.
+ * Wraps an exercise column's link and its sort arrow, the arrow *under* the title.
+ *
+ * Stacked, because the header is what sets the column's width and the number below it needs very
+ * little (EZ-1918). Side by side on one unbroken line a column was ~137px wide to hold "100", and
+ * the title was cut at 100px regardless — a 2560 monitor showed 7 of a course's 24 exercises, every
+ * one of them ending in an ellipsis. With the title wrapped onto two lines and the arrow out of the
+ * row, a column is `EXERCISE_TITLE_WIDTH` plus padding, and the title gets twice the characters.
  *
  * The hover rule lives here rather than on the sort control because the control has no text of its
  * own any more: `sortLabelInactiveSx` keeps an inactive arrow at `opacity: 0` until hover, and with
@@ -81,13 +89,30 @@ const sortLabelInactiveSx = {
  */
 const sortHeaderSx = {
   display: 'inline-flex',
+  flexDirection: 'column',
   alignItems: 'center',
-  gap: 0.25,
   '&:hover .MuiTableSortLabel-icon': { opacity: 0.5 },
+  // The centring offsets in `sortLabelSx` are for an arrow beside text. Under it there is nothing
+  // to balance against, and the icon's own side margins would only widen the column.
+  '& .MuiTableSortLabel-root': { ml: 0, mr: 0 },
+  '& .MuiTableSortLabel-icon': { mx: 0 },
 } as const
 
-const sortedColBg = 'action.hover'
-const sortedColHoverBg = 'action.selected'
+const EXERCISE_TITLE_WIDTH = 72
+
+/**
+ * The sorted column's tint and the hovered row's, as a layer *over* the cell's background rather
+ * than as the background itself.
+ *
+ * Both colours are translucent. As a `bgcolor` they replaced the opaque background of the sticky
+ * cells, which nobody could see while nothing scrolled underneath them — and the moment the table
+ * scrolled inside itself (EZ-1919) the rows showed through the header, a student's name printed
+ * across "NAME". A gradient of one colour is a tint that leaves whatever is beneath it in place.
+ */
+const tint = (key: 'hover' | 'selected') => (theme: Theme) =>
+  `linear-gradient(${theme.palette.action[key]}, ${theme.palette.action[key]})`
+const sortedColTint = tint('hover')
+const sortedColHoverTint = tint('selected')
 
 const stickyColSx = {
   position: 'sticky',
@@ -106,6 +131,7 @@ export default function GradeTablePage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   usePageTitle(t('grades.title'))
+  const { frameRef, frameHeight } = useFrameHeight(true)
 
   // Filter & sort state
   const [filterGroup, setFilterGroup] = useSavedGroup(courseId!)
@@ -188,7 +214,11 @@ export default function GradeTablePage() {
       )}
 
       {sortedExercises.length > 0 && (
-        <>
+        // As wide as the table needs and no wider. The table fills its container, so in a wide
+        // window a course with three exercises had three columns 400px apart and a row was a
+        // number, a gap, a number. Shrunk to its content the columns sit together, and the toolbar
+        // — inside the same box — keeps its export button over the table instead of a monitor away.
+        <Box sx={{ width: 'fit-content', minWidth: 'min(100%, 640px)', maxWidth: '100%' }}>
           {/* Filter bar */}
           <Box sx={{ display: 'flex', gap: 0.75, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Group filter */}
@@ -259,18 +289,31 @@ export default function GradeTablePage() {
             </Button>
           </Box>
 
-          {/* Grade table */}
-          <TableContainer component={Paper} variant="outlined">
+          {/*
+          Grade table — limited to the window's remaining height, so it scrolls inside itself.
+
+          `stickyHeader` pins the header to the nearest scrolling ancestor, which is this container.
+          Without a height it only ever scrolled sideways, the window did the vertical scrolling,
+          and the header left with the page: 35 students down, a grid of numbers with no exercise
+          names over it (EZ-1919). A limit rather than a height, so a short roster is not stretched
+          to the bottom of the window; the floor keeps a landscape phone from getting a slit.
+          */}
+          <TableContainer
+            component={Paper}
+            variant="outlined"
+            ref={frameRef}
+            sx={{ maxHeight: frameHeight ? `max(320px, ${frameHeight})` : 'none' }}
+          >
             <Table size="small" stickyHeader sx={{
               '& .MuiTableCell-sizeSmall': { px: 0.75 },
               '& .MuiTableCell-sizeSmall:last-child': { pr: 2 },
-              '& .MuiTableBody-root .MuiTableRow-root:hover .MuiTableCell-root': { bgcolor: sortedColBg },
-              '& .MuiTableBody-root .MuiTableRow-root:hover .sorted-col': { bgcolor: sortedColHoverBg },
+              '& .MuiTableBody-root .MuiTableRow-root:hover .MuiTableCell-root': { backgroundImage: sortedColTint },
+              '& .MuiTableBody-root .MuiTableRow-root:hover .sorted-col': { backgroundImage: sortedColHoverTint },
             }}>
               <TableHead>
                 <TableRow>
                   {/* Name column — sortable */}
-                  <TableCell sx={{ ...headerStickyColSx, ...(sortKey === 'name' && { bgcolor: sortedColBg }) }}>
+                  <TableCell sx={{ ...headerStickyColSx, ...(sortKey === 'name' && { backgroundImage: sortedColTint }) }}>
                     <TableSortLabel
                       active={sortKey === 'name'}
                       direction={sortKey === 'name' ? sortDir : 'asc'}
@@ -282,7 +325,7 @@ export default function GradeTablePage() {
                   </TableCell>
 
                   {/* Σ column — sortable by completion */}
-                  <TableCell align="center" sx={{ whiteSpace: 'nowrap', ...(sortKey === 'completion' && { bgcolor: sortedColBg }) }}>
+                  <TableCell align="center" sx={{ whiteSpace: 'nowrap', ...(sortKey === 'completion' && { backgroundImage: sortedColTint }) }}>
                     <TableSortLabel
                       active={sortKey === 'completion'}
                       direction={sortKey === 'completion' ? sortDir : 'desc'}
@@ -297,7 +340,7 @@ export default function GradeTablePage() {
                   {sortedExercises.map((ex: TeacherCourseExercise) => {
                     const isActive = sortKey === ex.course_exercise_id
                     return (
-                      <TableCell key={ex.course_exercise_id} align="center" sx={isActive ? { bgcolor: sortedColBg } : undefined}>
+                      <TableCell key={ex.course_exercise_id} align="center" sx={{ verticalAlign: 'bottom', ...(isActive && { backgroundImage: sortedColTint }) }}>
                         {/*
                         The link sits *beside* the sort control, not inside it.
 
@@ -320,12 +363,22 @@ export default function GradeTablePage() {
                             // followed spaLinkProps. Editing the helper would not have reached it.
                             {...spaLinkProps(`/courses/${courseId}/exercises/${ex.course_exercise_id}`, navigate)}
                             sx={{
-                              display: 'inline-block',
-                              maxWidth: 100,
+                              // Two lines, then an ellipsis; the whole title stays in `title`.
+                              display: '-webkit-box',
+                              WebkitBoxOrient: 'vertical',
+                              WebkitLineClamp: 2,
+                              width: EXERCISE_TITLE_WIDTH,
                               overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              verticalAlign: 'middle',
+                              // Estonian compounds ("kahemõõtmelised") are wider than the column
+                              // on their own, and a word that cannot break is clipped mid-letter.
+                              overflowWrap: 'anywhere',
+                              hyphens: 'auto',
+                              lineHeight: 1.25,
+                              // The theme sets table headers in tracked capitals, which suits a
+                              // label like "NAME". A title is the teacher's own text: capitals
+                              // cost it a quarter of the column and "Tsükkel while" its meaning.
+                              textTransform: 'none',
+                              letterSpacing: 0,
                               color: ex.student_visible ? 'text.primary' : 'text.disabled',
                               textDecoration: 'none',
                               '&:hover': { textDecoration: 'underline' },
@@ -350,12 +403,12 @@ export default function GradeTablePage() {
               <TableBody>
                 {/* Summary row */}
                 <TableRow>
-                  <TableCell className={sortKey === 'name' ? 'sorted-col' : undefined} sx={{ ...stickyColSx, whiteSpace: 'nowrap', color: 'text.secondary', ...(sortKey === 'name' && { bgcolor: sortedColBg }) }}>
+                  <TableCell className={sortKey === 'name' ? 'sorted-col' : undefined} sx={{ ...stickyColSx, whiteSpace: 'nowrap', color: 'text.secondary', ...(sortKey === 'name' && { backgroundImage: sortedColTint }) }}>
                     {'Σ (' + students.length + ')'}
                   </TableCell>
-                  <TableCell className={sortKey === 'completion' ? 'sorted-col' : undefined} sx={sortKey === 'completion' ? { bgcolor: sortedColBg } : undefined} />
+                  <TableCell className={sortKey === 'completion' ? 'sorted-col' : undefined} sx={sortKey === 'completion' ? { backgroundImage: sortedColTint } : undefined} />
                   {exerciseFinishedCounts.map((count, i) => (
-                    <TableCell key={i} align="center" className={sortKey === sortedExercises[i]?.course_exercise_id ? 'sorted-col' : undefined} sx={{ color: 'text.secondary', ...(sortKey === sortedExercises[i]?.course_exercise_id && { bgcolor: sortedColBg }) }}>
+                    <TableCell key={i} align="center" className={sortKey === sortedExercises[i]?.course_exercise_id ? 'sorted-col' : undefined} sx={{ color: 'text.secondary', ...(sortKey === sortedExercises[i]?.course_exercise_id && { backgroundImage: sortedColTint }) }}>
                       {count}
                     </TableCell>
                   ))}
@@ -373,13 +426,13 @@ export default function GradeTablePage() {
                           maxWidth: 180,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          ...(sortKey === 'name' && { bgcolor: sortedColBg }),
+                          ...(sortKey === 'name' && { backgroundImage: sortedColTint }),
                         }}
                       >
                         {student.givenName} {student.familyName}
                       </TableCell>
                     </Tooltip>
-                    <TableCell align="center" className={sortKey === 'completion' ? 'sorted-col' : undefined} sx={{ color: 'text.secondary', ...(sortKey === 'completion' && { bgcolor: sortedColBg }) }}>
+                    <TableCell align="center" className={sortKey === 'completion' ? 'sorted-col' : undefined} sx={{ color: 'text.secondary', ...(sortKey === 'completion' && { backgroundImage: sortedColTint }) }}>
                       {student.finishedCount}
                     </TableCell>
                     {student.grades.map((g) => {
@@ -403,7 +456,7 @@ export default function GradeTablePage() {
                             color: statusColor(g.status),
                             fontWeight: g.grade !== null ? 500 : undefined,
                             whiteSpace: 'nowrap',
-                            ...(sortKey === g.courseExerciseId && { bgcolor: sortedColBg }),
+                            ...(sortKey === g.courseExerciseId && { backgroundImage: sortedColTint }),
                           }}
                         >
                           <Typography
@@ -456,7 +509,7 @@ export default function GradeTablePage() {
               </TableBody>
             </Table>
           </TableContainer>
-        </>
+        </Box>
       )}
     </>
   )

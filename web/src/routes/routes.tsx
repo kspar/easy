@@ -21,6 +21,7 @@ import AccountSettingsPage from '../features/account/AccountSettingsPage.tsx'
 import SystemMessagesPage from '../features/admin/SystemMessagesPage.tsx'
 import ArticlesPage from '../features/articles/ArticlesPage.tsx'
 import ArticlePage from '../features/articles/ArticlePage.tsx'
+import { WIDE } from './routeWidth.ts'
 
 const router = createBrowserRouter([
   {
@@ -97,7 +98,9 @@ const router = createBrowserRouter([
               ),
             },
             {
+              // `WIDE` on the four pages where width is the work — see routeWidth.ts.
               path: 'courses/:courseId/exercises/:courseExerciseId',
+              handle: WIDE,
               element: (
                 <RequireAuth>
                   <CourseExercisePage />
@@ -114,6 +117,7 @@ const router = createBrowserRouter([
             },
             {
               path: 'courses/:courseId/grades',
+              handle: WIDE,
               element: (
                 <RequireAuth allowedRoles={['teacher', 'admin']}>
                   <GradeTablePage />
@@ -122,6 +126,7 @@ const router = createBrowserRouter([
             },
             {
               path: 'courses/:courseId/similarity',
+              handle: WIDE,
               element: (
                 <RequireAuth allowedRoles={['teacher', 'admin']}>
                   <SimilarityPage />
@@ -142,6 +147,7 @@ const router = createBrowserRouter([
             },
             {
               path: 'library/exercise/:exerciseId/*',
+              handle: WIDE,
               element: (
                 <RequireAuth allowedRoles={['teacher', 'admin']}>
                   <ExercisePage />

@@ -8,6 +8,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/useAuth.ts'
+import { useIsWideRoute } from '../routes/routeWidth.ts'
 import type { Role } from '../auth/auth-context.ts'
 import { apiFetch } from '../api/client.ts'
 import type { StudentCourse, TeacherCourse } from '../api/types.ts'
@@ -93,6 +94,7 @@ export default function AppLayout() {
   const location = useLocation()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const isWideRoute = useIsWideRoute()
 
   // Where the reporter has been, for a bug report's activity log (EZ-1786). Here because every
   // authenticated route renders through this layout, so one effect covers all of them.
@@ -1159,8 +1161,13 @@ export default function AppLayout() {
           Without it there is nothing for a screen reader to skip to, so reaching the content means
           tabbing past the whole sidebar on every single navigation. One here covers every route,
           because every route renders through this Outlet.
+
+          Width is the route's to declare (EZ-1915, routeWidth.ts). `ml: 0` takes a capped page out
+          of the centre and puts it beside the sidebar: wide and capped pages then share a left
+          edge, where centring moved the title ~550px sideways between Grades and Participants on
+          a 2560 monitor. Below `lg` the container fills its parent and the margin changes nothing.
           */}
-          <Container component="main" maxWidth="lg" sx={{ py: 3 }}>
+          <Container component="main" maxWidth={isWideRoute ? false : 'lg'} sx={{ py: 3, ml: 0 }}>
             <Outlet />
           </Container>
         </Box>

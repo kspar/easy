@@ -75,10 +75,24 @@ is not a hierarchy tool.
 The app is tested and known-good for **containment** at: **390×844**, **768×1024**, **1440×900**,
 **2560×1440** (R-014: zero horizontal overflow app-wide; the page never scrolls sideways — a wide
 table scrolls in its own container, see `GradeTablePage`'s `TableContainer` + sticky first column).
-Two standing debts to not repeat: don't fix an element's height (X-008's 200px editor), and don't
-assume `lg` is the biggest screen (X-025, EZ-1527 — content caps at 1200px on a 2560 display).
+One standing debt to not repeat: don't fix an element's height (X-008's 200px editor).
 
-Check: `HARNESS_PORT=5299 node tests/audit/s345-viewport-sweep.mjs`.
+**Width is the route's to declare** (EZ-1915). A page is capped at `lg` unless its route carries
+`handle: WIDE` (`src/routes/routeWidth.ts`), and capped pages sit beside the sidebar, not centred,
+so wide and capped pages share a left edge. Ask which kind a new page is: a **workbench** holds code,
+a matrix or two things side by side and uses every pixel (exercise page, grades, similarity, library
+exercise) — a **list or form** is a name at one end of a row and a control at the other, and
+widening it only moves them apart. Inside a wide page the same rule holds for its parts: prose gets
+a measure (the task text defaults to `min(40%, 720px)`, EZ-1916), a list gets a cap
+(`SubmissionsList`), and a table is as wide as its columns (`GradeTablePage`). Lay out by the width
+a component actually has, since in a split pane that is not the window's — and **measure it, don't
+use a container query** where a Snackbar lives underneath: `container-type` re-anchors
+`position: fixed` descendants in Safari and Firefox (`useIsAtLeast` in `StudentGradingView`,
+EZ-1917).
+
+Check: `HARNESS_PORT=5299 node tests/audit/s345-viewport-sweep.mjs` for containment;
+`tests/audit/s5b-large-monitor-dense.mjs` for the wide pages with a course's worth of data;
+`npx playwright test large-monitor-layout` is the gate.
 
 ## Loading, empty, error
 

@@ -128,6 +128,19 @@ time-travelling recording of everything the browser did. Open one with
 locally (`PW_TRACE=1` / `PW_TRACE=0` to force it), because on a laptop a failure can be reproduced
 by re-running one spec and on a runner it cannot be reproduced at all.
 
+**Looking at a page on another screen size.** Specs open an 1100×800 window unless they ask for
+something else, which is below the `lg` breakpoint — nothing the shell does for a large monitor
+happens there. To see any spec's fixtures at another size, without touching the spec:
+
+```
+HARNESS_VIEWPORT=2560x1440 HARNESS_SHOTS_DIR=/tmp/wide npx playwright test grade-table
+```
+
+It replaces only the default viewport (a spec that passes one is asserting geometry at that size),
+shoots at 1x rather than 2x, and `HARNESS_SHOTS_DIR` keeps the results out of `tests/screenshots/`.
+Assertions may fail at the other size; the screenshots are the point. What must hold on a large
+monitor is asserted in `large-monitor-layout.spec.mjs`.
+
 **`retries` is 0 and should stay 0.** A retry converts an intermittent failure into a green build
 plus a log line nobody reads, and the flakes this suite has are mostly *product* timing bugs — the
 90ms redirect, a poll that stops, refetch races — exactly the class a retry hides. The escape hatch

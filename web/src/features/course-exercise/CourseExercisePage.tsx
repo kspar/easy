@@ -50,6 +50,7 @@ import type {
   TeacherExerciseDetails as TeacherExerciseDetailsType,
 } from '../../api/types.ts'
 import usePageTitle from '../../hooks/usePageTitle.ts'
+import useFrameHeight from '../../hooks/useFrameHeight.ts'
 import SolutionEditor, { type SolutionEditorHandle } from './SolutionEditor.tsx'
 import AutoTestResults from './AutoTestResults.tsx'
 import { isGraderFailed } from './okV3.ts'
@@ -129,9 +130,23 @@ function GradeChip({
 
 type CollapseState = 'none' | 'left' | 'right'
 
+/**
+ * The split between the task text and the work — EZ-1916.
+ *
+ * It used to be a percentage, 40/60, which was fine inside a 1200px shell and wrong the moment the
+ * page went wide (EZ-1915): 40% of a 2560 monitor is 920px of prose, about 130 characters a line,
+ * while the editor beside it still clipped code. Prose has a best width and code does not, so the
+ * text gets 40% *up to* a readable measure and the work gets everything else.
+ *
+ * A dragged divider is remembered in pixels for the same reason. "30%" is a different thing on
+ * every monitor; "500px of task text" is what the person actually chose.
+ */
 const DEFAULT_LEFT_PCT = 40
+const DEFAULT_LEFT_MAX_PX = 720
 const MIN_PCT = 20
 const MAX_PCT = 80
+/** The width the shell capped this page at before EZ-1915 — what a stored percentage was a percentage of. */
+const LEGACY_PANE_WIDTH = 1152
 const HEADER_HEIGHT = 48
 function readStored<T>(key: string, fallback: T): T {
   try {
@@ -139,79 +154,6 @@ function readStored<T>(key: string, fallback: T): T {
     return v != null ? JSON.parse(v) : fallback
   } catch {
     return fallback
-  }
-}
-
-/**
- * The space between the bottom of `el` and the bottom of the document — the page container's own
- * padding, in practice — read off the ancestors' box properties rather than off the rendered
- * geometry.
- *
- * Geometry cannot answer this once the frame is in place. The first attempt asked
- * `scrollHeight - (top + height)`, which is right while the content overflows and badly wrong when
- * it does not: `scrollHeight` never drops below the viewport, so an empty page reports its unused
- * space as padding, the frame shrinks to make room for it, which leaves more unused space. It
- * settled at a frame 56px tall. Padding and margins are the same whatever the content does.
- *
- * Assumes the frame is the last thing on the page, which it is in both views here.
- */
-function spaceBelow(el: HTMLElement): number {
-  let total = 0
-  for (let node: HTMLElement | null = el.parentElement; node && node !== document.documentElement; node = node.parentElement) {
-    const style = getComputedStyle(node)
-    total += parseFloat(style.paddingBottom) + parseFloat(style.borderBottomWidth) + parseFloat(style.marginBottom)
-  }
-  return total
-}
-
-/**
- * The height this page may occupy, measured from where it actually starts rather than assumed.
- *
- * `calc(100vh - 48px)` was the old guess, and it was wrong by the height of everything between the
- * app bar and the panes — the title row — so the statement pane ran past the bottom of the window.
- * Measuring also survives what moves this page's top edge at runtime: a system message or update
- * banner appearing above the app bar, and a long title wrapping onto a second line when the window
- * narrows. The first changes the page's height, which is why `document.body` is watched; the
- * second does not, which is why the header is too.
- *
- * `frameSx` is `undefined` while disabled (mobile), which leaves the page in ordinary document flow.
- */
-function useFrameHeight(enabled: boolean) {
-  // Callback refs, held in state rather than in a ref object: the frame only exists once the
-  // exercise has loaded, and a `useRef` would still be null on the mount this effect runs in —
-  // leaving the page unframed for the rest of its life with nothing to re-trigger the measurement.
-  const [frameEl, setFrameEl] = useState<HTMLDivElement | null>(null)
-  const [headerEl, setHeaderEl] = useState<HTMLDivElement | null>(null)
-  const [top, setTop] = useState<number | null>(null)
-
-  useLayoutEffect(() => {
-    // No `setTop(null)` here: whether the frame applies is read off `enabled` below, so the
-    // disabled path has nothing to write, and a stale measurement is re-taken on the way back in.
-    if (!enabled || !frameEl) return
-    const measure = () => {
-      // Plus the scroll offset: the rect is viewport-relative, and the first measurement is taken
-      // while the page is still an ordinary scrolling document.
-      const above = frameEl.getBoundingClientRect().top + window.scrollY
-      setTop(Math.round(above + spaceBelow(frameEl)))
-    }
-    measure()
-
-    const observer = new ResizeObserver(measure)
-    observer.observe(document.body)
-    if (headerEl) observer.observe(headerEl)
-    window.addEventListener('resize', measure)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', measure)
-    }
-  }, [enabled, frameEl, headerEl])
-
-  return {
-    frameRef: setFrameEl,
-    headerRef: setHeaderEl,
-    frameSx: !enabled || top == null
-      ? undefined
-      : { height: `calc(100dvh - ${top}px)`, minHeight: 0, display: 'flex', flexDirection: 'column' as const },
   }
 }
 
@@ -236,15 +178,17 @@ function SplitPane({
   const { t } = useTranslation()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  const pctKey = `splitPane.${storageKey}.leftPct`
+  const pxKey = `splitPane.${storageKey}.leftPx`
+  const legacyPctKey = `splitPane.${storageKey}.leftPct`
   const collapseKey = `splitPane.${storageKey}.collapsed`
-  const [leftPct, setLeftPctRaw] = useState(() => readStored<number>(pctKey, DEFAULT_LEFT_PCT))
+  // `null` until someone drags the divider: the default is a CSS expression, not a number.
+  const [leftPx, setLeftPxRaw] = useState(() => readStored<number | null>(pxKey, null))
   const [collapsed, setCollapsedRaw] = useState<CollapseState>(() => readStored<CollapseState>(collapseKey, 'none'))
 
-  const setLeftPct = useCallback((pct: number) => {
-    setLeftPctRaw(pct)
-    localStorage.setItem(pctKey, JSON.stringify(pct))
-  }, [pctKey])
+  const setLeftPx = useCallback((px: number) => {
+    setLeftPxRaw(px)
+    localStorage.setItem(pxKey, JSON.stringify(px))
+  }, [pxKey])
 
   const setCollapsed = useCallback((val: CollapseState | ((prev: CollapseState) => CollapseState)) => {
     setCollapsedRaw((prev) => {
@@ -254,25 +198,36 @@ function SplitPane({
     })
   }, [])
   const containerRef = useRef<HTMLDivElement>(null)
+  const leftRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
-  const leftPctRef = useRef(leftPct)
-  leftPctRef.current = leftPct
+
+  // A divider dragged before EZ-1916 was stored as a percentage of a pane the shell capped at
+  // 1152px. Convert it once, against that width rather than today's, so the task text stays the
+  // size it was dragged to instead of growing with the monitor.
+  useLayoutEffect(() => {
+    if (leftPx != null || !containerRef.current) return
+    const legacyPct = readStored<number | null>(legacyPctKey, null)
+    if (legacyPct == null) return
+    localStorage.removeItem(legacyPctKey)
+    const was = Math.min(containerRef.current.getBoundingClientRect().width, LEGACY_PANE_WIDTH)
+    setLeftPx(Math.round((legacyPct / 100) * was))
+  }, [leftPx, legacyPctKey, setLeftPx, isMobile])
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (collapsed !== 'none' || !containerRef.current) return
+      if (collapsed !== 'none' || !containerRef.current || !leftRef.current) return
       e.preventDefault()
       dragging.current = true
 
-      const rect = containerRef.current.getBoundingClientRect()
-      const currentDividerX = rect.left + (leftPctRef.current / 100) * rect.width
-      const offsetX = e.clientX - currentDividerX
+      // Off the rendered pane rather than recomputed: the default width is a CSS `min()`, and the
+      // stored one is clamped, so the state alone does not say where the divider is.
+      const offsetX = e.clientX - leftRef.current.getBoundingClientRect().right
 
       const onMouseMove = (ev: MouseEvent) => {
         if (!dragging.current || !containerRef.current) return
         const rect = containerRef.current.getBoundingClientRect()
-        const pct = ((ev.clientX - offsetX - rect.left) / rect.width) * 100
-        setLeftPct(Math.min(MAX_PCT, Math.max(MIN_PCT, pct)))
+        const px = ev.clientX - offsetX - rect.left
+        setLeftPx(Math.round(Math.min((MAX_PCT / 100) * rect.width, Math.max((MIN_PCT / 100) * rect.width, px))))
       }
 
       const onMouseUp = () => {
@@ -288,7 +243,7 @@ function SplitPane({
       document.addEventListener('mousemove', onMouseMove)
       document.addEventListener('mouseup', onMouseUp)
     },
-    [collapsed],
+    [collapsed, setLeftPx],
   )
 
   const toggleCollapse = useCallback(
@@ -318,10 +273,17 @@ function SplitPane({
       {/* Left pane */}
       {showLeft && (
         <Box
+          ref={leftRef}
           sx={{
             ...(collapsed === 'right'
               ? { flex: 1, minWidth: 0 }
-              : { width: `${leftPct}%`, flexShrink: 0 }),
+              : {
+                  // The clamp keeps a width dragged on a big monitor usable on a small one.
+                  width: leftPx == null
+                    ? `min(${DEFAULT_LEFT_PCT}%, ${DEFAULT_LEFT_MAX_PX}px)`
+                    : `clamp(${MIN_PCT}%, ${leftPx}px, ${MAX_PCT}%)`,
+                  flexShrink: 0,
+                }),
             overflow: 'auto',
             pr: collapsed !== 'none' ? 0 : 2,
             ...(fill

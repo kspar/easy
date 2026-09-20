@@ -7,9 +7,11 @@
  * three surfaces where width is work — the teacher's grading view, the grade table, the student's
  * editor — with fixtures sized like a real course, at the two monitor sizes people actually own.
  *
- * Each surface is shot twice: as it is, and with the shell's `maxWidth="lg"` lifted by one injected
- * rule. The second is a *sketch*, not a fix — it shows what each page does with the room today,
- * which is how one tells a page that only needs the cap removed from one that needs a layout.
+ * As first committed (4a2d2627) it shot each surface three ways — as it was, with the shell's cap
+ * lifted by one injected rule, and with a CSS-only sketch of the fix — and that report is the
+ * before-state: editor 639px on either monitor, 7 of 24 grade columns, a sticky header at −468px.
+ * The sketches became EZ-1915, EZ-1916, EZ-1918 and EZ-1919, so they are gone from here and the
+ * driver now measures the app as it is. Re-run it after touching any of the four wide pages.
  *
  *   cd web && npx vite --config vite.stub.config.ts --port 5299 --strictPort &
  *   HARNESS_PORT=5299 node tests/audit/s5b-large-monitor-dense.mjs
@@ -25,21 +27,6 @@ const MONITORS = [
   ['fhd', { width: 1920, height: 1080 }],
   ['qhd', { width: 2560, height: 1440 }],
 ]
-
-/** The sketch: the shell's cap lifted, nothing else touched. */
-const UNCAPPED = 'main.MuiContainer-root { max-width: none !important; }'
-
-/**
- * The third shot, per surface: the cap lifted *and* the one thing lifting it breaks put right, still
- * without touching the source. Prose that ran to 900px goes back to a readable measure by giving
- * the split its stored ratio; the grade table's headers wrap onto two lines so a column is as wide
- * as its number rather than as wide as its title.
- */
-const STATEMENT_PX = 720
-const COMPACT_TABLE = `${UNCAPPED}
-  thead th a { max-width: 76px !important; white-space: normal !important; line-height: 1.2; text-align: center;
-    display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  thead th { vertical-align: bottom; }`
 
 // --- a course's worth of people -------------------------------------------------------------------
 
@@ -257,9 +244,9 @@ const studentHandlers = [
 
 const SURFACES = [
   { name: 'teacher-students', role: 'teacher,admin', handlers: teacherHandlers, path: `/courses/${COURSE}/exercises/${CE}`, ready: 'Maasikas' },
-  { name: 'teacher-grading', role: 'teacher,admin', handlers: teacherHandlers, path: `/courses/${COURSE}/exercises/${CE}?student=s1`, ready: 'loe_hinded', splitKey: 'teacherExercise' },
+  { name: 'teacher-grading', role: 'teacher,admin', handlers: teacherHandlers, path: `/courses/${COURSE}/exercises/${CE}?student=s1`, ready: 'loe_hinded' },
   { name: 'grade-table', role: 'teacher,admin', handlers: teacherHandlers, path: `/courses/${COURSE}/grades`, ready: 'Maasikas' },
-  { name: 'student-exercise', role: 'student', handlers: studentHandlers, path: `/courses/${COURSE}/exercises/${CE}`, ready: 'loe_hinded', splitKey: 'studentExercise' },
+  { name: 'student-exercise', role: 'student', handlers: studentHandlers, path: `/courses/${COURSE}/exercises/${CE}`, ready: 'loe_hinded' },
 ]
 
 const measure = (page) =>
@@ -288,7 +275,8 @@ const measure = (page) =>
       tableW: w(table),
       tableBoxW: w(tableBox),
       tableHiddenPx: tableBox ? Math.max(0, tableBox.scrollWidth - tableBox.clientWidth) : null,
-      headersTruncated: heads.filter((th) => [...th.querySelectorAll('*')].some((el) => el.scrollWidth > el.clientWidth + 1)).length,
+      // Either direction: a one-line header overflows sideways, a line-clamped one downwards.
+      headersTruncated: heads.filter((th) => [...th.querySelectorAll('*')].some((el) => el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1)).length,
       headers: heads.length,
       contentBottom: bottoms.length ? Math.round(Math.max(...bottoms)) : null,
       docScrollH: document.documentElement.scrollHeight,
@@ -299,44 +287,41 @@ const results = []
 
 for (const [vpName, viewport] of MONITORS) {
   for (const s of SURFACES) {
-    for (const variant of ['now', 'uncapped', 'sketch']) {
-      if (variant === 'sketch' && s.name === 'teacher-students') continue
-      await withBrowser(async ({ launch }) => {
-        const { page } = await launch({ role: s.role, language: 'et', viewport })
-        await fakeApi(page, s.handlers, { log: false, contract: false })
-        if (variant === 'sketch' && s.splitKey) {
-          // 260 drawer + 48 of container padding: what `main` has once the cap is gone.
-          const pct = Math.round((STATEMENT_PX / (viewport.width - 308)) * 100)
-          await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [`splitPane.${s.splitKey}.leftPct`, String(pct)])
+    await withBrowser(async ({ launch }) => {
+      const { page } = await launch({ role: s.role, language: 'et', viewport })
+      await fakeApi(page, s.handlers, { log: false, contract: false })
+      try {
+        await page.goto(`${BASE_URL}${s.path}`, { timeout: 20000 })
+        await waitUntil(async () => (await page.getByText(s.ready).count()) > 0, { timeout: 12000 })
+        await page.waitForTimeout(1200)
+        const m = await measure(page)
+        // Does the table's header survive scrolling the roster? `stickyHeader` sticks to the nearest
+        // scroll container, and one that only scrolls sideways never moves it. The wheel goes to
+        // whatever is under the pointer, so put the pointer on the table: whether it is the table
+        // or the window that then scrolls is half of what is being asked.
+        if (s.name === 'grade-table') {
+          // Near the left: the table is only as wide as its columns, and the middle may be past it.
+          await page.mouse.move(400, viewport.height / 2)
+          await page.mouse.wheel(0, 900)
+          await page.waitForTimeout(300)
+          Object.assign(m, await page.evaluate(() => ({
+            // A cell, not the `thead`: MUI's `stickyHeader` makes each `th` sticky and lets the row
+            // element scroll away underneath them, so the row's own position says nothing.
+            headerTopAfterScroll: Math.round(document.querySelector('thead th:nth-child(3)')?.getBoundingClientRect().top ?? NaN),
+            windowScrolledBy: Math.round(window.scrollY),
+            tableScrolledBy: Math.round(document.querySelector('.MuiTableContainer-root')?.scrollTop ?? NaN),
+          })))
         }
-        try {
-          await page.goto(`${BASE_URL}${s.path}`, { timeout: 20000 })
-          await waitUntil(async () => (await page.getByText(s.ready).count()) > 0, { timeout: 12000 })
-          if (variant === 'uncapped') await page.addStyleTag({ content: UNCAPPED })
-          if (variant === 'sketch') await page.addStyleTag({ content: s.name === 'grade-table' ? COMPACT_TABLE : UNCAPPED })
-          await page.waitForTimeout(1200)
-          const m = await measure(page)
-          // Does the table's header survive scrolling the roster? `stickyHeader` sticks to the nearest
-          // scroll container, and one that only scrolls sideways never moves it.
-          if (s.name === 'grade-table') {
-            await page.mouse.wheel(0, 900)
-            await page.waitForTimeout(300)
-            m.headerTopAfterScroll = await page.evaluate(() => Math.round(document.querySelector('thead')?.getBoundingClientRect().top ?? NaN))
-            m.scrolledBy = await page.evaluate(() => Math.round(window.scrollY))
-            await page.evaluate(() => window.scrollTo(0, 0))
-            await page.waitForTimeout(200)
-          }
-          results.push({ surface: s.name, viewport: vpName, variant, ...m })
-          console.log(`${vpName} ${s.name.padEnd(18)} ${variant.padEnd(9)} main ${m.mainW}/${m.viewportW} (${m.usedPct}%)  editor ${m.editorW ?? '-'} clipped ${m.codeClippedPx ?? '-'}px  table hidden ${m.tableHiddenPx ?? '-'}px  truncated heads ${m.headersTruncated}/${m.headers}`)
-          await shoot(page, `s5b-${vpName}-${s.name}-${variant}`, { fullPage: false })
-        } catch (e) {
-          console.log(`${vpName} ${s.name} ${variant} FAILED: ${e.message.split('\n')[0].slice(0, 120)}`)
-          results.push({ surface: s.name, viewport: vpName, variant, error: e.message.split('\n')[0] })
-          await shoot(page, `s5b-${vpName}-${s.name}-${variant}-FAILED`, { fullPage: false })
-        }
-        await page.close()
-      })
-    }
+        results.push({ surface: s.name, viewport: vpName, ...m })
+        console.log(`${vpName} ${s.name.padEnd(18)} main ${m.mainW}/${m.viewportW} (${m.usedPct}%)  editor ${m.editorW ?? '-'} clipped ${m.codeClippedPx ?? '-'}px  table hidden ${m.tableHiddenPx ?? '-'}px  truncated heads ${m.headersTruncated}/${m.headers}  thead top after scroll ${m.headerTopAfterScroll ?? '-'}`)
+        await shoot(page, `s5b-${vpName}-${s.name}`, { fullPage: false })
+      } catch (e) {
+        console.log(`${vpName} ${s.name} FAILED: ${e.message.split('\n')[0].slice(0, 120)}`)
+        results.push({ surface: s.name, viewport: vpName, error: e.message.split('\n')[0] })
+        await shoot(page, `s5b-${vpName}-${s.name}-FAILED`, { fullPage: false })
+      }
+      await page.close()
+    })
   }
 }
 

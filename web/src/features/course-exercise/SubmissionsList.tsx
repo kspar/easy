@@ -185,7 +185,9 @@ export default function SubmissionsList({
   }
 
   return (
-    <Box>
+    // Capped, though the page is wide (EZ-1915): a row here is a name at one end and a grade at the
+    // other, and in a 1300px pane they were 1000px apart with nothing to carry the eye across.
+    <Box sx={{ maxWidth: 800 }}>
       {/* Header bar */}
       <Box sx={{ display: 'flex', gap: 0.75, mb: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Group filter */}
