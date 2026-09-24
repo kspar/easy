@@ -20,6 +20,7 @@ import org.jetbrains.exposed.v1.core.max
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.stereotype.Service
@@ -60,6 +61,21 @@ class AiFeedbackService(
             throw InvalidRequestException(
                 "AI token budget of course $courseId is spent", ReqError.AI_LIMIT_REACHED,
                 "limit" to "token_budget", notify = false
+            )
+        }
+
+        // The exercise's own allowance for this student. Zero means the exercise has AI off, which
+        // is the same "nothing to explain here" the student would get on a passing submission;
+        // an allowance used up is a limit, and says so.
+        val (allowed, used) = explanationsAllowedAndUsed(courseExId, studentId)
+        if (allowed == 0) {
+            throw notAvailable("course exercise $courseExId has AI explanations switched off")
+        }
+        if (used >= allowed) {
+            throw InvalidRequestException(
+                "Student $studentId has used $used of $allowed AI explanations on course exercise $courseExId",
+                ReqError.AI_LIMIT_REACHED, "limit" to "per_student", "allowed" to allowed.toString(),
+                notify = false
             )
         }
 
@@ -134,6 +150,20 @@ class AiFeedbackService(
             throw notAvailable("submission $submissionId passed all tests")
         }
 
+        // The solution goes into the prompt whole, so its length is the size of the request.
+        val maxChars = (CourseExercise innerJoin Course)
+            .select(Course.aiMaxSolutionChars)
+            .where { CourseExercise.id eq courseExId }
+            .single()[Course.aiMaxSolutionChars]
+        val solutionLength = submission[Submission.solution].length
+        if (solutionLength > maxChars) {
+            throw InvalidRequestException(
+                "Solution of submission $submissionId is $solutionLength characters, course allows $maxChars",
+                ReqError.AI_LIMIT_REACHED, "limit" to "solution_length", "allowed" to maxChars.toString(),
+                notify = false
+            )
+        }
+
         val exercise = (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
             .select(
                 ExerciseVer.title, ExerciseVer.textMd, ExerciseVer.textHtml, ExerciseVer.solutionFileName,
@@ -155,6 +185,13 @@ class AiFeedbackService(
 
     private fun notAvailable(why: String) =
         InvalidRequestException("AI feedback not available: $why", ReqError.AI_FEEDBACK_NOT_AVAILABLE, notify = false)
+
+    private fun explanationsAllowedAndUsed(courseExId: Long, studentId: String): Pair<Int, Long> = transaction {
+        val allowed = CourseExercise.select(CourseExercise.aiExplanationsPerStudent)
+            .where { CourseExercise.id eq courseExId }
+            .single()[CourseExercise.aiExplanationsPerStudent]
+        allowed to countOkExplanations(courseExId, studentId)
+    }
 
     private fun isBudgetSpent(courseId: Long): Boolean = transaction {
         Course.select(Course.aiTokenBudget, Course.aiTokensUsed)
@@ -217,5 +254,14 @@ class AiFeedbackService(
     companion object {
         /** Changeset 240926-2. Matched by name in the failed insert's message. */
         private const val UNIQUE_OK_INDEX = "uq_ai_feedback_submission_ok"
+
+        /** OK explanations this student has on this exercise. FAILED attempts cost nothing here either. */
+        fun countOkExplanations(courseExId: Long, studentId: String): Long =
+            AiFeedback.selectAll()
+                .where {
+                    AiFeedback.courseExercise eq courseExId and (AiFeedback.student eq studentId) and
+                            (AiFeedback.status eq AiFeedbackStatus.OK)
+                }
+                .count()
     }
 }

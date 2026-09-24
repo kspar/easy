@@ -116,6 +116,11 @@ object Course : LongIdTable("course") {
     val aiTokenBudget = long("ai_token_budget").nullable()
     val aiTokensUsed = long("ai_tokens_used").default(0)
     val aiTokensResetAt = datetime("ai_tokens_reset_at").nullable()
+
+    // EZ-1712. Longest solution (characters) that gets an explanation. Changeset 240926-5.
+    val aiMaxSolutionChars = integer("ai_max_solution_chars").default(DEFAULT_AI_MAX_SOLUTION_CHARS)
+
+    const val DEFAULT_AI_MAX_SOLUTION_CHARS = 6000
 }
 
 object CourseGroup : LongIdTable("course_group") {
@@ -154,6 +159,9 @@ object CourseExercise : LongIdTable("course_exercise") {
     val instructionsAdoc = text("instructions_adoc").nullable()
     val titleAlias = text("title_alias").nullable()
     val moodleExId = text("moodle_exercise_id").nullable()
+
+    // EZ-1712. AI explanations one student may get on this exercise; 0 = none. Changeset 240926-4.
+    val aiExplanationsPerStudent = integer("ai_explanations_per_student").default(0)
 }
 
 /**

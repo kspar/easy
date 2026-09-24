@@ -179,6 +179,7 @@ export default function ExerciseSettingsDialog({
   const [softDeadline, setSoftDeadline] = useState<Date | null>(null)
   const [hardDeadline, setHardDeadline] = useState<Date | null>(null)
   const [threshold, setThreshold] = useState('0')
+  const [aiExplanations, setAiExplanations] = useState('0')
   const [snackOpen, setSnackOpen] = useState(false)
 
   const [studentExceptions, setStudentExceptions] = useState<StudentExceptionRow[]>([])
@@ -194,6 +195,7 @@ export default function ExerciseSettingsDialog({
       setSoftDeadline(parseIso(exercise.soft_deadline))
       setHardDeadline(parseIso(exercise.hard_deadline))
       setThreshold(String(exercise.threshold))
+      setAiExplanations(String(exercise.ai_explanations_per_student))
       setStudentExceptions(
         (exercise.exception_students ?? []).map((ex) => exceptionFromApi(ex, students)),
       )
@@ -207,6 +209,8 @@ export default function ExerciseSettingsDialog({
 
   const thresholdNum = parseInt(threshold, 10)
   const thresholdValid = !isNaN(thresholdNum) && thresholdNum >= 0 && thresholdNum <= 100
+  const aiExplanationsNum = parseInt(aiExplanations, 10)
+  const aiExplanationsValid = !isNaN(aiExplanationsNum) && aiExplanationsNum >= 0 && aiExplanationsNum <= 1000
   // Only while the picker is on screen. A half-typed date left behind by switching away from
   // "scheduled" would otherwise disable Save for good, with the offending field not rendered —
   // a dead button and nothing to explain it, which is the failure this whole change removes.
@@ -227,7 +231,7 @@ export default function ExerciseSettingsDialog({
     studentExceptions.every((r) => exceptionRowValid(r, inherited)) &&
     groupExceptions.every((r) => exceptionRowValid(r, inherited))
   const canSave =
-    thresholdValid && visibleFromValid && softDeadlineValid && hardDeadlineValid &&
+    thresholdValid && aiExplanationsValid && visibleFromValid && softDeadlineValid && hardDeadlineValid &&
     deadlineOrderValid && exceptionsValid
   const isSaving = updateExercise.isPending || putExceptions.isPending || deleteExceptions.isPending
 
@@ -244,6 +248,9 @@ export default function ExerciseSettingsDialog({
 
     // Threshold
     replace.threshold = thresholdNum
+
+    // AI explanations per student (EZ-1712)
+    replace.ai_explanations_per_student = aiExplanationsNum
 
     // Visibility
     if (visibility === 'visible') {
@@ -499,6 +506,18 @@ export default function ExerciseSettingsDialog({
             onChange={(e) => setThreshold(e.target.value)}
             inputProps={{ min: 0, max: 100 }}
             error={!thresholdValid}
+            size="small"
+          />
+
+          {/* Off by default: a course key alone switches nothing on (EZ-1712). */}
+          <TextField
+            label={t('exercises.aiExplanationsPerStudent')}
+            type="number"
+            value={aiExplanations}
+            onChange={(e) => setAiExplanations(e.target.value)}
+            inputProps={{ min: 0, max: 1000 }}
+            error={!aiExplanationsValid}
+            helperText={aiExplanationsNum === 0 ? t('exercises.aiExplanationsOff') : t('exercises.aiExplanationsHelp')}
             size="small"
           />
 

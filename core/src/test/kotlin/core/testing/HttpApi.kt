@@ -152,6 +152,9 @@ class HttpApi(private val mockMvc: MockMvc) {
     fun put(path: String, body: String? = null, caller: RequestPostProcessor? = null) =
         call(HttpMethod.PUT, path, caller, body)
 
+    fun patch(path: String, body: String? = null, caller: RequestPostProcessor? = null) =
+        call(HttpMethod.PATCH, path, caller, body)
+
     /** A `multipart/form-data` upload, which is the only way to reach `POST /v2/files`. */
     fun upload(
         path: String,

@@ -56,6 +56,7 @@ export default function CourseAiSettingsDialog({
   const [apiKey, setApiKey] = useState('')
   const [baseUrl, setBaseUrl] = useState('')
   const [tokenBudget, setTokenBudget] = useState('')
+  const [maxSolutionChars, setMaxSolutionChars] = useState('6000')
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [confirmDisable, setConfirmDisable] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
@@ -66,6 +67,7 @@ export default function CourseAiSettingsDialog({
     setModel(props?.model ?? DEFAULT_MODEL)
     setBaseUrl(props?.base_url ?? '')
     setTokenBudget(props?.token_budget != null ? String(props.token_budget) : '')
+    setMaxSolutionChars(String(props?.max_solution_chars ?? 6000))
     setAdvancedOpen(!!props?.base_url)
     // Never pre-filled: the server does not have it to give, and a field that looks full would
     // invite "save" to overwrite a working key with the placeholder.
@@ -79,7 +81,10 @@ export default function CourseAiSettingsDialog({
   const budgetDigits = tokenBudget.replace(/[\s,]/g, '')
   const budgetValid = budgetDigits === '' || /^[1-9]\d*$/.test(budgetDigits)
   const budgetNumber = budgetValid && budgetDigits !== '' ? Number(budgetDigits) : null
-  const canSave = model.trim().length > 0 && budgetValid && (configured || apiKey.trim().length > 0) && !update.isPending
+  const maxCharsNumber = parseInt(maxSolutionChars.replace(/[\s,]/g, ''), 10)
+  const maxCharsValid = Number.isFinite(maxCharsNumber) && maxCharsNumber >= 1 && maxCharsNumber <= 1_000_000
+  const canSave = model.trim().length > 0 && budgetValid && maxCharsValid &&
+    (configured || apiKey.trim().length > 0) && !update.isPending
 
   // The estimate follows the model field as it is typed, so a teacher weighing two models sees
   // the price move. What has been spent is priced at the same rate — a course that changed model
@@ -99,6 +104,7 @@ export default function CourseAiSettingsDialog({
           base_url: isAdmin ? baseUrl.trim() || null : null,
           api_key: apiKey.trim() || null,
           token_budget: budgetNumber,
+          max_solution_chars: maxCharsNumber,
         },
       },
       {
@@ -189,6 +195,17 @@ export default function CourseAiSettingsDialog({
                   ? t('courses.aiTokenBudgetEstimate', { cost: formatUsd(budgetEstimate), provider: 'Anthropic' })
                   : t('courses.aiTokenBudgetNoEstimate')
             }
+          />
+
+          <TextField
+            label={t('courses.aiMaxSolutionChars')}
+            value={maxSolutionChars}
+            onChange={(e) => setMaxSolutionChars(e.target.value)}
+            size="small"
+            disabled={isLoading}
+            error={!maxCharsValid}
+            inputProps={{ inputMode: 'numeric', maxLength: 9 }}
+            helperText={t('courses.aiMaxSolutionCharsHelp')}
           />
 
           {configured && (

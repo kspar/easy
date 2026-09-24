@@ -178,6 +178,21 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
+    fun `the solution length limit has a default, is written with the props, and kept when absent`() {
+        write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k"))
+        assertEquals(6000L, read().jsonOrNull!!.get("ai_props").get("max_solution_chars").asLong())
+
+        write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to null, "max_solution_chars" to 2500))
+        assertEquals(2500L, read().jsonOrNull!!.get("ai_props").get("max_solution_chars").asLong())
+
+        write(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null))
+        assertEquals(2500L, read().jsonOrNull!!.get("ai_props").get("max_solution_chars").asLong())
+
+        val zero = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to null, "max_solution_chars" to 0))
+        assertEquals(400, zero.status) { zero.body }
+    }
+
+    @Test
     fun `reset zeroes the counter, records when, and leaves the budget alone`() {
         write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "token_budget" to 1000))
         transaction { Course.update({ Course.id eq courseId }) { it[aiTokensUsed] = 800 } }

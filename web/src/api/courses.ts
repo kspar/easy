@@ -99,6 +99,7 @@ export function useUpdateCourseAiProps(courseId: string) {
         base_url: string | null
         api_key: string | null
         token_budget: number | null
+        max_solution_chars: number
       } | null
     }) => apiFetch(`/courses/${courseId}/ai`, { method: 'PUT', body }),
     onSuccess: () => {

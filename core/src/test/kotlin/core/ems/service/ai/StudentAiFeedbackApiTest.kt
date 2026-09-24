@@ -5,6 +5,7 @@ import core.db.AiFeedbackStatus
 import core.db.AiProviderType
 import core.db.AutoGradeStatus
 import core.db.Course
+import core.db.CourseExercise
 import core.testing.Auth
 import core.testing.FakeAnthropic
 import core.testing.Fixtures
@@ -73,7 +74,7 @@ class StudentAiFeedbackApiTest(@Autowired mockMvc: MockMvc) {
             Fixtures.enrolStudent(courseId, student)
             Fixtures.enrolStudent(courseId, otherStudent)
             val exercise = Fixtures.autoExercise("Sum of two numbers", teacher)
-            courseExId = Fixtures.courseExercise(courseId, exercise)
+            courseExId = Fixtures.courseExercise(courseId, exercise, aiExplanationsPerStudent = 3)
             submissionId = failedSubmission(student, number = 1)
         }
     }
@@ -314,6 +315,119 @@ class StudentAiFeedbackApiTest(@Autowired mockMvc: MockMvc) {
         // ...and the next one does not.
         val second = transaction { failedSubmission(student, number = 2) }
         assertEquals("AI_LIMIT_REACHED", explain(second).errorCode)
+    }
+
+    private fun setPerStudent(n: Int) = transaction {
+        CourseExercise.update({ CourseExercise.id eq courseExId }) { it[aiExplanationsPerStudent] = n }
+    }
+
+    private fun explanationsLeft(): String? =
+        api.get("/v2/student/courses/$courseId/exercises/$courseExId", Auth.asStudent(student)).field("ai_explanations_left")
+
+    @Test
+    fun `zero per student means the exercise has AI off`() {
+        setPerStudent(0)
+        val resp = explain()
+        assertEquals("AI_FEEDBACK_NOT_AVAILABLE", resp.errorCode) { resp.body }
+        assertTrue(anthropic.requests.isEmpty())
+
+        val page = api.get("/v2/student/courses/$courseId/exercises/$courseExId", Auth.asStudent(student))
+        assertEquals("false", page.field("ai_feedback_enabled"))
+        assertEquals("0", page.field("ai_explanations_left"))
+    }
+
+    @Test
+    fun `the per-student allowance counts down and then refuses`() {
+        setPerStudent(2)
+        assertEquals("2", explanationsLeft())
+
+        assertEquals(200, explain().status)
+        assertEquals("1", explanationsLeft())
+        // The same submission again is the idempotent re-read, not a second explanation.
+        assertEquals(200, explain().status)
+        assertEquals("1", explanationsLeft())
+
+        val second = transaction { failedSubmission(student, number = 2) }
+        assertEquals(200, explain(second).status)
+        assertEquals("0", explanationsLeft())
+        val page = api.get("/v2/student/courses/$courseId/exercises/$courseExId", Auth.asStudent(student))
+        assertEquals("false", page.field("ai_feedback_enabled")) { "Allowance spent, button must go" }
+
+        val third = transaction { failedSubmission(student, number = 3) }
+        val refused = explain(third)
+        assertEquals("AI_LIMIT_REACHED", refused.errorCode) { refused.body }
+        assertEquals("per_student", refused.jsonOrNull?.get("attrs")?.get("limit")?.asString())
+        assertEquals("2", refused.jsonOrNull?.get("attrs")?.get("allowed")?.asString())
+        assertEquals(2, anthropic.requests.size) { "The provider was called for the refused one" }
+
+        // Another student's count is their own.
+        val theirs = transaction { failedSubmission(otherStudent, number = 1) }
+        assertEquals(200, explain(theirs, caller = otherStudent).status)
+    }
+
+    @Test
+    fun `a failed attempt does not use up the allowance`() {
+        setPerStudent(1)
+        anthropic.respond(FakeAnthropic.Behaviour.Fail(500))
+        explain()
+        assertEquals("1", explanationsLeft())
+        anthropic.respond(FakeAnthropic.Behaviour.Answer("Now."))
+        assertEquals(200, explain().status)
+        assertEquals("0", explanationsLeft())
+    }
+
+    @Test
+    fun `a teacher sets the allowance through the exercise settings`() {
+        val resp = api.patch(
+            "/v2/courses/$courseId/exercises/$courseExId",
+            api.body("replace" to mapOf("ai_explanations_per_student" to 7)),
+            Auth.asTeacher(teacher),
+        )
+        assertEquals(200, resp.status) { resp.body }
+        assertEquals("7", explanationsLeft())
+
+        val details = api.get("/v2/teacher/courses/$courseId/exercises/$courseExId", Auth.asTeacher(teacher))
+        assertEquals("7", details.field("ai_explanations_per_student")) { details.body }
+
+        val negative = api.patch(
+            "/v2/courses/$courseId/exercises/$courseExId",
+            api.body("replace" to mapOf("ai_explanations_per_student" to -1)),
+            Auth.asTeacher(teacher),
+        )
+        assertEquals(400, negative.status) { negative.body }
+    }
+
+    @Test
+    fun `a solution longer than the course allows is refused before the provider is called`() {
+        transaction { Course.update({ Course.id eq courseId }) { it[aiMaxSolutionChars] = 40 } }
+
+        // 39 characters: under.
+        val short = transaction {
+            val id = Fixtures.submission(
+                courseExId, student, number = 2, grade = 40, solution = "x = 1\n".repeat(6) + "pri",
+                isAutoGrade = true, autoGradeStatus = AutoGradeStatus.COMPLETED,
+            )
+            Fixtures.autogradeActivity(courseExId, student, id, 40, okV3)
+            id
+        }
+        assertEquals(200, explain(short).status)
+
+        val long = transaction {
+            val id = Fixtures.submission(
+                courseExId, student, number = 3, grade = 40, solution = "x = 1\n".repeat(7),
+                isAutoGrade = true, autoGradeStatus = AutoGradeStatus.COMPLETED,
+            )
+            Fixtures.autogradeActivity(courseExId, student, id, 40, okV3)
+            id
+        }
+        val refused = explain(long)
+        assertEquals("AI_LIMIT_REACHED", refused.errorCode) { refused.body }
+        assertEquals("solution_length", refused.jsonOrNull?.get("attrs")?.get("limit")?.asString())
+        assertEquals("40", refused.jsonOrNull?.get("attrs")?.get("allowed")?.asString())
+        assertEquals(1, anthropic.requests.size)
+
+        val page = api.get("/v2/student/courses/$courseId/exercises/$courseExId", Auth.asStudent(student))
+        assertEquals("40", page.field("ai_max_solution_chars")) { page.body }
     }
 
     @Test

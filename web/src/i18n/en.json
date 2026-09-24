@@ -35,7 +35,10 @@
     "aiNotConfigured": "AI feedback is not switched on for this course.",
     "aiFeedbackNotAvailable": "There is nothing to explain for this submission. Only your latest submission with failing tests can be explained.",
     "aiProviderError": "The AI service did not answer. This is not a problem with your solution — try again in a while.",
-    "aiLimitReached": "This course has used up its AI budget. Your teacher can raise or reset it."
+    "aiLimitReached": "This course has used up its AI budget. Your teacher can raise or reset it.",
+    "aiLimitReachedPerStudent_one": "You have used your {{count}} AI explanation for this exercise.",
+    "aiLimitReachedPerStudent_other": "You have used all {{count}} AI explanations for this exercise.",
+    "aiLimitReachedSolutionLength": "Your solution is too long for an AI explanation. This course explains solutions of up to {{count}} characters."
   },
   "general": {
     "add": "Add",
@@ -184,7 +187,10 @@
     "aiUsageSince": "since {{date}}",
     "aiUsageReset": "Reset counter",
     "aiUsageResetConfirm": "Reset this course's token counter to zero? The budget stays; the explanations already given are kept.",
-    "aiUsageResetDone": "Token counter reset"
+    "aiUsageResetDone": "Token counter reset",
+    "aiMaxSolutionChars": "Longest solution to explain",
+    "aiMaxSolutionCharsHelp": "In characters. Longer solutions get no AI explanation. 6 000 is about a hundred lines of Python.",
+    "aiSolutionTooLong": "This solution is too long for an AI explanation."
   },
   "exercises": {
     "title": "Exercises",
@@ -201,6 +207,9 @@
     "hidden": "Hidden",
     "visibleFrom": "Visible from",
     "threshold": "Threshold",
+    "aiExplanationsPerStudent": "AI explanations per student",
+    "aiExplanationsOff": "0: no AI explanations on this exercise.",
+    "aiExplanationsHelp": "How many times one student may ask the AI to explain failing tests. Needs AI feedback set up on the course.",
     "removeFromCourse": "Remove from course",
     "gradedAutomatically": "Graded by tests",
     "gradedByTeacher": "Graded by teacher",

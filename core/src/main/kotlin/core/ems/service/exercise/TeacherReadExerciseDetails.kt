@@ -45,6 +45,7 @@ class TeacherReadExDetailsCont {
         @get:JsonProperty("solution_file_name") val solutionFileName: String,
         @get:JsonProperty("solution_file_type") val solutionFileType: SolutionFileType,
         @get:JsonProperty("threshold") val threshold: Int,
+        @get:JsonProperty("ai_explanations_per_student") val aiExplanationsPerStudent: Int,
         @get:JsonSerialize(using = DateTimeSerializer::class)
         @get:JsonProperty("last_modified") val lastModified: DateTime,
         @get:JsonProperty("student_visible") val studentVisible: Boolean,
@@ -132,6 +133,7 @@ class TeacherReadExDetailsCont {
                 CourseExercise.softDeadline,
                 CourseExercise.hardDeadline,
                 CourseExercise.gradeThreshold,
+                CourseExercise.aiExplanationsPerStudent,
                 CourseExercise.studentVisibleFrom,
                 CourseExercise.assessmentsStudentVisible,
                 CourseExercise.instructionsHtml,
@@ -179,6 +181,7 @@ class TeacherReadExDetailsCont {
                     it[ExerciseVer.solutionFileName],
                     it[ExerciseVer.solutionFileType],
                     it[CourseExercise.gradeThreshold],
+                    it[CourseExercise.aiExplanationsPerStudent],
                     it[ExerciseVer.validFrom],
                     it[CourseExercise.studentVisibleFrom].notNullAndInPast(),
                     it[CourseExercise.studentVisibleFrom],

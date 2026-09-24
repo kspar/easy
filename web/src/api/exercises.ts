@@ -241,6 +241,7 @@ export interface CourseExercisePatch {
   replace?: {
     title_alias?: string
     threshold?: number
+    ai_explanations_per_student?: number
     soft_deadline?: string
     hard_deadline?: string
     student_visible?: boolean

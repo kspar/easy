@@ -11,6 +11,7 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
@@ -48,6 +49,8 @@ class UpdateCourseAiPropsController {
         // resetting it is its own action (ResetCourseAiUsage), so that raising a budget is not
         // also, silently, a reset.
         @param:JsonProperty("token_budget") @field:Min(1) val tokenBudget: Long?,
+        // Characters. Absent keeps the stored value; there is no "unlimited", the column is not null.
+        @param:JsonProperty("max_solution_chars") @field:Min(1) @field:Max(1_000_000) val maxSolutionChars: Int?,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -123,6 +126,7 @@ class UpdateCourseAiPropsController {
                 it[aiProvider] = props.provider
                 it[aiModel] = props.model.trim()
                 it[aiTokenBudget] = props.tokenBudget
+                if (props.maxSolutionChars != null) it[aiMaxSolutionChars] = props.maxSolutionChars
                 // An admin's write is authoritative for the URL, blank included; a teacher's keeps it.
                 if (caller.isAdmin()) it[aiBaseUrl] = newBaseUrl
                 if (newKey != null) it[aiApiKey] = newKey.trim()

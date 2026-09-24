@@ -36,6 +36,7 @@ let courseExercise = {
   student_visible: true,
   student_visible_from: null,
   has_lib_access: true,
+  ai_explanations_per_student: 0,
   exception_students: null,
   exception_groups: null,
 }

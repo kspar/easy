@@ -31,6 +31,9 @@ const exercise = {
   threshold: 100,
   instructions_html: null,
   is_open: true,
+  ai_feedback_enabled: false,
+  ai_explanations_left: 0,
+  ai_max_solution_chars: 6000,
   solution_file_name: 'lahendus.py',
   solution_file_type: 'TEXT_EDITOR',
 }
@@ -79,6 +82,7 @@ const teacherExercise = {
   assets: [],
   executors: [{ id: '1', name: 'mock-executor' }],
   has_lib_access: true,
+  ai_explanations_per_student: 0,
   exception_students: null,
   exception_groups: null,
 }

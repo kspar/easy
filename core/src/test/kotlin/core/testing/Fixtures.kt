@@ -319,6 +319,7 @@ object Fixtures {
         aiModel: String? = null,
         aiTokenBudget: Long? = null,
         aiTokensUsed: Long = 0,
+        aiMaxSolutionChars: Int = Course.DEFAULT_AI_MAX_SOLUTION_CHARS,
     ): Long = Course.insertAndGetId {
         it[Course.title] = title
         it[Course.alias] = alias
@@ -336,6 +337,7 @@ object Fixtures {
         it[Course.aiModel] = aiModel
         it[Course.aiTokenBudget] = aiTokenBudget
         it[Course.aiTokensUsed] = aiTokensUsed
+        it[Course.aiMaxSolutionChars] = aiMaxSolutionChars
     }.value
 
     /**
@@ -415,6 +417,8 @@ object Fixtures {
         orderIdx: Int = 1,
         studentVisibleFrom: DateTime? = TestClock.fixed(0),
         assessmentsStudentVisible: Boolean = true,
+        // Production's default too: AI explanations are opt-in per exercise (EZ-1712).
+        aiExplanationsPerStudent: Int = 0,
     ): Long {
         val at = TestClock.next()
         return CourseExercise.insertAndGetId {
@@ -427,6 +431,7 @@ object Fixtures {
             it[CourseExercise.orderIdx] = orderIdx
             it[CourseExercise.assessmentsStudentVisible] = assessmentsStudentVisible
             it[CourseExercise.titleAlias] = titleAlias
+            it[CourseExercise.aiExplanationsPerStudent] = aiExplanationsPerStudent
         }.value
     }
 

@@ -47,6 +47,9 @@ class UpdateCourseExercise(private val markdownService: MarkdownService) {
         @param:JsonProperty("instructions_adoc") val legacyInstructionsAdoc: String? = null,
         @param:JsonProperty("threshold") @field:Min(0) @field:Max(100)
         val threshold: Int?,
+        // EZ-1712. 0 switches AI explanations off for this exercise.
+        @param:JsonProperty("ai_explanations_per_student") @field:Min(0) @field:Max(1000)
+        val aiExplanationsPerStudent: Int?,
         @param:JsonProperty("soft_deadline")
         @param:JsonDeserialize(using = DateTimeDeserializer::class)
         val softDeadline: DateTime?,
@@ -113,6 +116,8 @@ class UpdateCourseExercise(private val markdownService: MarkdownService) {
                 }
                 if (replace?.threshold != null)
                     it[gradeThreshold] = replace.threshold
+                if (replace?.aiExplanationsPerStudent != null)
+                    it[aiExplanationsPerStudent] = replace.aiExplanationsPerStudent
                 if (replace?.softDeadline != null)
                     it[softDeadline] = replace.softDeadline
                 if (replace?.hardDeadline != null)

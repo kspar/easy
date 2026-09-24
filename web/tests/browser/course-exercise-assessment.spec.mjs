@@ -63,6 +63,7 @@ const scriptGraded = {
   assets: [{ file_name: 'helper.py', file_content: 'EXPECTED = 5\n' }],
   executors: [{ id: '1', name: 'mock-executor' }],
   has_lib_access: true,
+  ai_explanations_per_student: 0,
   exception_students: null,
   exception_groups: null,
 }

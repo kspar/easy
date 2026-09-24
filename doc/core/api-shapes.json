@@ -346,6 +346,7 @@
       "api_key_configured": { "kind": "boolean" },
       "api_key_hint": { "kind": "string", "nullable": true },
       "base_url": { "kind": "string", "nullable": true },
+      "max_solution_chars": { "kind": "number" },
       "model": { "kind": "string" },
       "provider": { "kind": "enum", "values": ["ANTHROPIC"] },
       "token_budget": { "kind": "number", "nullable": true },
@@ -358,6 +359,7 @@
     "core.ems.service.ai.UpdateCourseAiPropsController.AiPropsReq": {
       "api_key": { "kind": "string", "nullable": true },
       "base_url": { "kind": "string", "nullable": true },
+      "max_solution_chars": { "kind": "number", "nullable": true },
       "model": { "kind": "string" },
       "provider": { "kind": "enum", "values": ["ANTHROPIC"] },
       "token_budget": { "kind": "number", "nullable": true }
@@ -815,7 +817,9 @@
       "id": { "kind": "string" }
     },
     "core.ems.service.exercise.StudentReadExerciseDetailsController.Resp": {
+      "ai_explanations_left": { "kind": "number" },
       "ai_feedback_enabled": { "kind": "boolean" },
+      "ai_max_solution_chars": { "kind": "number" },
       "deadline": { "kind": "datetime", "nullable": true },
       "effective_title": { "kind": "string" },
       "grader_type": { "kind": "enum", "values": ["AUTO", "TEACHER"] },
@@ -928,6 +932,7 @@
       "value": { "kind": "datetime", "nullable": true }
     },
     "core.ems.service.exercise.TeacherReadExDetailsCont.Resp": {
+      "ai_explanations_per_student": { "kind": "number" },
       "assessments_student_visible": { "kind": "boolean" },
       "assets": { "kind": "array", "nullable": true, "type": "core.ems.service.exercise.TeacherReadExDetailsCont.RespAsset" },
       "container_image": { "kind": "string", "nullable": true },
@@ -983,6 +988,7 @@
       "student_id": { "kind": "string" }
     },
     "core.ems.service.exercise.UpdateCourseExercise.ReplaceReq": {
+      "ai_explanations_per_student": { "kind": "number", "nullable": true },
       "assessments_student_visible": { "kind": "boolean", "nullable": true },
       "hard_deadline": { "kind": "datetime", "nullable": true },
       "instructions_adoc": { "kind": "string", "nullable": true },

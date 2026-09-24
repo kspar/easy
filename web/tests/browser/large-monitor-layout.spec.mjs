@@ -93,6 +93,7 @@ const exerciseDetails = {
   assets: null,
   executors: null,
   has_lib_access: true,
+  ai_explanations_per_student: 0,
   exception_students: null,
   exception_groups: null,
 }

@@ -29,6 +29,7 @@ const exercise = {
   solution_file_name: 'sum.py',
   solution_file_type: 'TEXT_EDITOR',
   threshold: 100,
+  ai_explanations_per_student: 3,
   student_visible: true,
   student_visible_from: null,
   has_lib_access: false,

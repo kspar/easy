@@ -43,6 +43,8 @@ class ReadCourseAiPropsController {
         @get:JsonProperty("tokens_used") val tokensUsed: Long,
         @get:JsonProperty("tokens_reset_at") @get:JsonSerialize(using = DateTimeSerializer::class)
         val tokensResetAt: DateTime?,
+        // Longest solution, in characters, that gets an explanation.
+        @get:JsonProperty("max_solution_chars") val maxSolutionChars: Int,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -57,7 +59,7 @@ class ReadCourseAiPropsController {
     private fun selectAiProps(courseId: Long): AiPropsResp? = transaction {
         Course.select(
             Course.aiProvider, Course.aiApiKey, Course.aiBaseUrl, Course.aiModel,
-            Course.aiTokenBudget, Course.aiTokensUsed, Course.aiTokensResetAt,
+            Course.aiTokenBudget, Course.aiTokensUsed, Course.aiTokensResetAt, Course.aiMaxSolutionChars,
         )
             .where { Course.id eq courseId }
             .single()
@@ -73,6 +75,7 @@ class ReadCourseAiPropsController {
                     tokenBudget = it[Course.aiTokenBudget],
                     tokensUsed = it[Course.aiTokensUsed],
                     tokensResetAt = it[Course.aiTokensResetAt],
+                    maxSolutionChars = it[Course.aiMaxSolutionChars],
                 )
             }
     }

@@ -150,6 +150,17 @@ export function errorMessage(err: unknown, t: TFunction): string {
     return t('errors.moodleCourseAlreadyLinkedTo', { value: body.attrs.course_title })
   }
 
+  // One code, two limits (EZ-1712): the course's budget, or this student's allowance on this
+  // exercise. Only the second has a number worth saying.
+  if (body.code === 'AI_LIMIT_REACHED' && body.attrs?.limit === 'per_student') {
+    const allowed = Number(body.attrs.allowed)
+    if (Number.isFinite(allowed) && allowed > 0) return t('errors.aiLimitReachedPerStudent', { count: allowed })
+  }
+  if (body.code === 'AI_LIMIT_REACHED' && body.attrs?.limit === 'solution_length') {
+    const allowed = Number(body.attrs.allowed)
+    if (Number.isFinite(allowed) && allowed > 0) return t('errors.aiLimitReachedSolutionLength', { count: allowed })
+  }
+
   if (EMAIL_CODES.has(body.code)) {
     for (const [attr, key] of Object.entries(NOT_FOUND_BY_ATTR)) {
       const value = body.attrs?.[attr]

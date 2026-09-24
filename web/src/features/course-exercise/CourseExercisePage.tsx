@@ -730,7 +730,7 @@ function StudentExerciseView() {
   // only ever answer with an error.
   const aiExplained = latestSubmission != null &&
     (activities?.ai_feedback ?? []).some((a) => a.submission_id === latestSubmission.id)
-  const canExplain =
+  const explainable =
     exercise.ai_feedback_enabled &&
     // Not before the feed has loaded: until then "not explained yet" is only "not known yet", and
     // a button that shows for a second and then leaves is a button that gets clicked.
@@ -739,6 +739,10 @@ function StudentExerciseView() {
     latestSubmission.auto_assessment != null &&
     latestSubmission.auto_assessment.grade < 100 &&
     !aiExplained
+  // The course's length limit is the one condition worth a sentence rather than silence: the
+  // student can do something about it, and would otherwise wonder where the button went.
+  const solutionTooLong = explainable && latestSubmission.solution.length > exercise.ai_max_solution_chars
+  const canExplain = explainable && !solutionTooLong
 
   const explainButton = canExplain ? (
     <Tooltip title={t('submission.explainWithAiHint')}>
@@ -840,6 +844,11 @@ function StudentExerciseView() {
           {requestAiFeedback.isError && (
             <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
               {errorMessage(requestAiFeedback.error, t)}
+            </Typography>
+          )}
+          {solutionTooLong && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+              {t('courses.aiSolutionTooLong')}
             </Typography>
           )}
         </>

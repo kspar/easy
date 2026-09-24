@@ -35,7 +35,10 @@
     "aiNotConfigured": "AI tagasiside ei ole sellel kursusel sisse lülitatud.",
     "aiFeedbackNotAvailable": "Selle esituse kohta pole midagi selgitada. Selgitada saab ainult viimast esitust, mille testid ebaõnnestusid.",
     "aiProviderError": "AI teenus ei vastanud. See ei ole sinu lahenduse viga — proovi mõne aja pärast uuesti.",
-    "aiLimitReached": "Selle kursuse AI eelarve on otsas. Õpetaja saab seda suurendada või nullida."
+    "aiLimitReached": "Selle kursuse AI eelarve on otsas. Õpetaja saab seda suurendada või nullida.",
+    "aiLimitReachedPerStudent_one": "Oled oma {{count}} AI selgituse selle ülesande kohta ära kasutanud.",
+    "aiLimitReachedPerStudent_other": "Oled kõik {{count}} AI selgitust selle ülesande kohta ära kasutanud.",
+    "aiLimitReachedSolutionLength": "Sinu lahendus on AI selgituse jaoks liiga pikk. Sellel kursusel selgitatakse kuni {{count}} märgi pikkuseid lahendusi."
   },
   "general": {
     "add": "Lisa",
@@ -184,7 +187,10 @@
     "aiUsageSince": "alates {{date}}",
     "aiUsageReset": "Nulli loendur",
     "aiUsageResetConfirm": "Nullida selle kursuse tokenite loendur? Eelarve jääb alles; juba antud selgitused säilivad.",
-    "aiUsageResetDone": "Tokenite loendur nullitud"
+    "aiUsageResetDone": "Tokenite loendur nullitud",
+    "aiMaxSolutionChars": "Pikim selgitatav lahendus",
+    "aiMaxSolutionCharsHelp": "Märkides. Pikemad lahendused AI selgitust ei saa. 6 000 on umbes sada rida Pythonit.",
+    "aiSolutionTooLong": "See lahendus on AI selgituse jaoks liiga pikk."
   },
   "exercises": {
     "title": "Ülesanded",
@@ -201,6 +207,9 @@
     "hidden": "Peidetud",
     "visibleFrom": "Muutub nähtavaks",
     "threshold": "Lävend",
+    "aiExplanationsPerStudent": "AI selgitusi õpilase kohta",
+    "aiExplanationsOff": "0: sellel ülesandel AI selgitusi ei anta.",
+    "aiExplanationsHelp": "Mitu korda võib üks õpilane paluda AI-l ebaõnnestunud teste selgitada. Eeldab, et kursusel on AI tagasiside seadistatud.",
     "removeFromCourse": "Eemalda kursuselt",
     "gradedAutomatically": "Testidega hinnatud",
     "gradedByTeacher": "Õpetaja hinnatud",

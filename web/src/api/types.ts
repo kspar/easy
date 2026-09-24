@@ -64,6 +64,10 @@ export interface ExerciseDetails {
   solution_file_type: SolutionFileType
   /** EZ-1712. The course has an AI provider, so a failed submission can be explained. */
   ai_feedback_enabled: boolean
+  /** How many more explanations this student may ask for on this exercise. */
+  ai_explanations_left: number
+  /** Longest solution, in characters, the course will explain. */
+  ai_max_solution_chars: number
 }
 
 /** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/all -> submissions[].auto_assessment */
@@ -133,6 +137,8 @@ export interface CourseAiProps {
   /** Spent against the budget since `tokens_reset_at` (or ever, when that is null). */
   tokens_used: number
   tokens_reset_at: string | null
+  /** Longest solution, in characters, that gets an explanation. */
+  max_solution_chars: number
 }
 
 /** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/activities -> teacher_activities[].teacher */
@@ -263,6 +269,8 @@ export interface TeacherExerciseDetails {
   solution_file_name: string
   solution_file_type: SolutionFileType
   threshold: number
+  /** EZ-1712. AI explanations one student may get on this exercise; 0 = off. */
+  ai_explanations_per_student: number
   last_modified: string
   student_visible: boolean
   student_visible_from: string | null

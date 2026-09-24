@@ -29,6 +29,8 @@ const exercise = (aiEnabled) => ({
   solution_file_name: 'sum.py',
   solution_file_type: 'TEXT_EDITOR',
   ai_feedback_enabled: aiEnabled,
+  ai_explanations_left: aiEnabled ? 3 : 0,
+  ai_max_solution_chars: 6000,
 })
 
 const feedback = (status) => JSON.stringify({

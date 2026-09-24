@@ -42,7 +42,7 @@ test('course-ai-settings', async ({ launch, check }) => {
         ai_props: configured
           ? {
             provider: 'ANTHROPIC', model: 'claude-opus-5', base_url: null, api_key_configured: true, api_key_hint: '9876',
-            token_budget: 1000000, tokens_used: tokensUsed, tokens_reset_at: null,
+            token_budget: 1000000, tokens_used: tokensUsed, tokens_reset_at: null, max_solution_chars: 6000,
           }
           : null,
       }

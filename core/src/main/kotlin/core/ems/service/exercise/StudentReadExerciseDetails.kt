@@ -9,6 +9,7 @@ import core.ems.service.access_control.RequireStudentVisible
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
+import core.ems.service.ai.AiFeedbackService
 import core.util.DateTimeSerializer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.and
@@ -43,6 +44,12 @@ class StudentReadExerciseDetailsController {
         // EZ-1712. Whether the course has an AI provider, so the page knows to offer "explain"
         // without a second request. Says nothing about which provider or whose key.
         @get:JsonProperty("ai_feedback_enabled") val aiFeedbackEnabled: Boolean,
+        // How many more this student may ask for on this exercise. Zero with `enabled` false is
+        // the normal off state; the page shows the number when it is small enough to matter.
+        @get:JsonProperty("ai_explanations_left") val aiExplanationsLeft: Int,
+        // Longest solution the course will explain, so the page can withhold the button for a
+        // submission that core would refuse anyway.
+        @get:JsonProperty("ai_max_solution_chars") val aiMaxSolutionChars: Int,
     )
 
     @Secured("ROLE_STUDENT")
@@ -71,6 +78,7 @@ class StudentReadExerciseDetailsController {
                 CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
                 CourseExercise.titleAlias, CourseExercise.studentVisibleFrom,
                 Course.aiProvider, Course.aiApiKey, Course.aiTokenBudget, Course.aiTokensUsed,
+                Course.aiMaxSolutionChars, CourseExercise.aiExplanationsPerStudent,
             )
             .where {
                 CourseExercise.course eq courseId and
@@ -79,6 +87,10 @@ class StudentReadExerciseDetailsController {
             }
             .map {
                 val exceptions = selectCourseExerciseExceptions(courseExId, studentId)
+
+                // EZ-1712. The exercise's allowance minus what this student has had, never below 0.
+                val explanationsLeft = (it[CourseExercise.aiExplanationsPerStudent] -
+                        AiFeedbackService.countOkExplanations(courseExId, studentId)).coerceAtLeast(0).toInt()
 
                 Resp(
                     it[CourseExercise.titleAlias] ?: it[ExerciseVer.title],
@@ -90,10 +102,14 @@ class StudentReadExerciseDetailsController {
                     isCourseExerciseOpenForSubmit(exceptions, courseExId, studentId, it[CourseExercise.hardDeadline]),
                     it[ExerciseVer.solutionFileName],
                     it[ExerciseVer.solutionFileType],
-                    // Configured, and not out of budget: a spent budget hides the button rather
-                    // than offering one that answers with an error (EZ-1712).
+                    // Configured, not out of budget, and this student still has explanations
+                    // left on this exercise: any of those failing hides the button rather than
+                    // offering one that answers with an error (EZ-1712).
                     it[Course.aiProvider] != null && !it[Course.aiApiKey].isNullOrBlank() &&
-                            (it[Course.aiTokenBudget]?.let { b -> it[Course.aiTokensUsed] < b } ?: true),
+                            (it[Course.aiTokenBudget]?.let { b -> it[Course.aiTokensUsed] < b } ?: true) &&
+                            explanationsLeft > 0,
+                    explanationsLeft,
+                    it[Course.aiMaxSolutionChars],
                 )
             }
             .singleOrInvalidRequest()

@@ -896,4 +896,34 @@
         </addColumn>
     </changeSet>
 
+    <!--
+        EZ-1712. How many AI explanations one student may get on one exercise. Zero is the default
+        and means none: AI is opt-in per exercise, so a course key on its own switches nothing on,
+        and an exam-style exercise added next week is off until somebody says otherwise. Checked
+        against a count of the student's OK rows in ai_feedback for that exercise, so there is no
+        second counter to keep in step.
+    -->
+    <changeSet id="240926-4" author="kspar">
+        <addColumn tableName="course_exercise">
+            <column name="ai_explanations_per_student" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!--
+        EZ-1712. The longest solution, in characters, an AI explanation is offered for. The solution
+        goes into the prompt whole, so this is the one knob that bounds the cost of a single request
+        — a pasted 3 000-line file would otherwise be a 3 000-line prompt on the teacher's key. The
+        default is roomy for the course this is for: 6 000 characters is about a hundred lines of
+        Python, and a beginner's program that is longer than that is usually a different problem.
+    -->
+    <changeSet id="240926-5" author="kspar">
+        <addColumn tableName="course">
+            <column name="ai_max_solution_chars" type="integer" defaultValueNumeric="6000">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>
