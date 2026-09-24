@@ -102,6 +102,14 @@ object Course : LongIdTable("course") {
     val lastSubmissionAt = datetime("last_submission_at").nullable()
     val color = text("color")
     val courseCode = text("course_code").nullable()
+
+    // EZ-1711. Bring-your-own-key AI config. All four null means the course has no AI features;
+    // provider + key set means it does. `aiApiKey` is plaintext for the POC (see changeset 240926-1)
+    // and must never leave core — the read endpoint returns a flag and the last four characters.
+    val aiProvider = enumerationByName("ai_provider", 20, AiProviderType::class).nullable()
+    val aiApiKey = text("ai_api_key").nullable()
+    val aiBaseUrl = text("ai_base_url").nullable()
+    val aiModel = text("ai_model").nullable()
 }
 
 object CourseGroup : LongIdTable("course_group") {
@@ -317,6 +325,27 @@ object AutogradeActivity : LongIdTable("autograde_activity") {
     val createdAt = datetime("created_at")
     val grade = integer("grade")
     val feedback = text("feedback").nullable()
+}
+
+/**
+ * EZ-1712. An AI's explanation of a failed submission, with its audit trail. Deliberately not a
+ * [TeacherActivity]: no teacher, no grade, and the feed reader shows it under an "AI" label rather
+ * than a name. See changeset 240926-2 for why the OK-per-submission uniqueness is a partial index.
+ */
+object AiFeedback : LongIdTable("ai_feedback") {
+    val courseExercise = reference("course_exercise_id", CourseExercise)
+    val student = reference("student_id", Account)
+    val submission = reference("submission_id", Submission)
+    val createdAt = datetime("created_at")
+    val status = enumerationByName("status", 10, AiFeedbackStatus::class)
+    val provider = enumerationByName("provider", 20, AiProviderType::class)
+    val model = text("model")
+    val feedbackMd = text("feedback_md").nullable()
+    val feedbackHtml = text("feedback_html").nullable()
+    val prompt = text("prompt")
+    val responseRaw = text("response_raw").nullable()
+    val tokensIn = integer("tokens_in").nullable()
+    val tokensOut = integer("tokens_out").nullable()
 }
 
 object AnonymousSubmission : LongIdTable("anonymous_submission") {

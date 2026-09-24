@@ -229,7 +229,7 @@ test('course-exercise-rerun-all', async ({ launch, check }) => {
     // with it and "the run survived" would be untestable rather than false.
     [`/submissions/all/students/`, () => ({ submissions: [] })],
     ['/inline-comments', () => ({ inline_comments: [] })],
-    ['/activities', () => ({ teacher_activities: [] })],
+    ['/activities', () => ({ teacher_activities: [], ai_feedback: [] })],
     [new RegExp(`/submissions/(${MARI.sub}|${JAAN.sub})(\\?|$)`), ({ url }) => ({
       id: url.includes(MARI.sub) ? MARI.sub : JAAN.sub,
       submission_number: 1,

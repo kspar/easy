@@ -40,6 +40,9 @@ class StudentReadExerciseDetailsController {
         @get:JsonProperty("is_open") val isOpenForSubmissions: Boolean,
         @get:JsonProperty("solution_file_name") val solutionFileName: String,
         @get:JsonProperty("solution_file_type") val solutionFileType: SolutionFileType,
+        // EZ-1712. Whether the course has an AI provider, so the page knows to offer "explain"
+        // without a second request. Says nothing about which provider or whose key.
+        @get:JsonProperty("ai_feedback_enabled") val aiFeedbackEnabled: Boolean,
     )
 
     @Secured("ROLE_STUDENT")
@@ -61,12 +64,13 @@ class StudentReadExerciseDetailsController {
     }
 
     private fun selectStudentExerciseDetails(courseId: Long, courseExId: Long, studentId: String): Resp = transaction {
-        (CourseExercise innerJoin Exercise innerJoin ExerciseVer)
+        (Course innerJoin CourseExercise innerJoin Exercise innerJoin ExerciseVer)
             .select(
                 ExerciseVer.title, ExerciseVer.textHtml, ExerciseVer.graderType, ExerciseVer.solutionFileName,
                 ExerciseVer.solutionFileType, CourseExercise.softDeadline, CourseExercise.hardDeadline,
                 CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
-                CourseExercise.titleAlias, CourseExercise.studentVisibleFrom
+                CourseExercise.titleAlias, CourseExercise.studentVisibleFrom,
+                Course.aiProvider, Course.aiApiKey,
             )
             .where {
                 CourseExercise.course eq courseId and
@@ -86,6 +90,7 @@ class StudentReadExerciseDetailsController {
                     isCourseExerciseOpenForSubmit(exceptions, courseExId, studentId, it[CourseExercise.hardDeadline]),
                     it[ExerciseVer.solutionFileName],
                     it[ExerciseVer.solutionFileType],
+                    it[Course.aiProvider] != null && !it[Course.aiApiKey].isNullOrBlank(),
                 )
             }
             .singleOrInvalidRequest()

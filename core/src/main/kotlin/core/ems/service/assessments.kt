@@ -48,8 +48,39 @@ data class InlineCommentResp(
 )
 
 
+/**
+ * EZ-1712. What the feed shows for an AI explanation. No teacher, no grade, and none of the audit
+ * columns (prompt, raw response, tokens) — those are for an operator with database access, not for
+ * the student the prompt was about.
+ */
+data class AiFeedbackResp(
+    @get:JsonProperty("id") val id: String,
+    @get:JsonProperty("submission_id") val submissionId: String,
+    @get:JsonProperty("submission_number") val submissionNumber: Int,
+    @get:JsonProperty("created_at") @get:JsonSerialize(using = DateTimeSerializer::class) val createdAt: DateTime,
+    @get:JsonProperty("provider") val provider: AiProviderType,
+    @get:JsonProperty("model") val model: String,
+    @get:JsonProperty("feedback_md") val feedbackMd: String,
+    @get:JsonProperty("feedback_html") val feedbackHtml: String,
+)
+
+fun ResultRow.toAiFeedbackResp() = AiFeedbackResp(
+    this[AiFeedback.id].value.toString(),
+    this[AiFeedback.submission].value.toString(),
+    this[Submission.number],
+    this[AiFeedback.createdAt],
+    this[AiFeedback.provider],
+    this[AiFeedback.model],
+    this[AiFeedback.feedbackMd].orEmpty(),
+    this[AiFeedback.feedbackHtml].orEmpty(),
+)
+
 data class ActivityResp(
     @get:JsonProperty("teacher_activities") val teacherActivities: List<TeacherActivityResp>,
+    // EZ-1712. A second list rather than a `type` on the first: the two have different authors,
+    // different columns and different rules, and a client that has never heard of AI feedback keeps
+    // working unchanged.
+    @get:JsonProperty("ai_feedback") val aiFeedback: List<AiFeedbackResp>,
 )
 
 fun selectStudentAllExerciseActivities(courseExId: Long, studentId: String): ActivityResp = transaction {
@@ -82,7 +113,19 @@ fun selectStudentAllExerciseActivities(courseExId: Long, studentId: String): Act
             )
         }
 
-    ActivityResp(teacherActivities)
+    val aiFeedback = (Submission innerJoin AiFeedback)
+        .select(
+            AiFeedback.id, AiFeedback.submission, Submission.number, AiFeedback.createdAt,
+            AiFeedback.provider, AiFeedback.model, AiFeedback.feedbackMd, AiFeedback.feedbackHtml,
+        )
+        .where {
+            AiFeedback.student eq studentId and (AiFeedback.courseExercise eq courseExId) and
+                    (AiFeedback.status eq AiFeedbackStatus.OK)
+        }
+        .orderBy(AiFeedback.createdAt, SortOrder.ASC)
+        .map { it.toAiFeedbackResp() }
+
+    ActivityResp(teacherActivities, aiFeedback)
 }
 
 

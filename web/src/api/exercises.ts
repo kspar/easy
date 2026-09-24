@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch, apiFetchKeepalive } from './client.ts'
 import type {
+  ActivitiesResp,
+  AiFeedbackResp,
   CourseExercise,
   CourseInviteResp,
   DraftResp,
@@ -13,7 +15,6 @@ import type {
   SimilarityResp,
   SubmissionResp,
   SubmissionRow,
-  TeacherActivityResp,
   TeacherAutoassessResp,
   TeacherCourseExercise,
   TeacherExerciseDetails,
@@ -193,9 +194,31 @@ export function useTeacherActivities(
       'activities',
     ],
     queryFn: () =>
-      apiFetch<{ teacher_activities: TeacherActivityResp[] }>(
+      apiFetch<ActivitiesResp>(
         `/student/courses/${courseId}/exercises/${courseExerciseId}/activities`,
-      ).then((r) => r.teacher_activities),
+      ),
+  })
+}
+
+/**
+ * EZ-1712. Ask for an AI explanation of a failed submission. Blocking, like `useRetryAutoassess`:
+ * core calls the provider inside the request, so the spinner is the whole progress UI. The
+ * explanation comes back in the response and, from then on, in the activities list — which is
+ * what the feed renders, hence the invalidation rather than a manual insert.
+ */
+export function useRequestAiFeedback(courseId: string, courseExerciseId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ submissionId, language }: { submissionId: string; language: string }) =>
+      apiFetch<AiFeedbackResp>(
+        `/student/courses/${courseId}/exercises/${courseExerciseId}/submissions/${submissionId}/ai-feedback`,
+        { method: 'POST', body: { language } },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['student', 'courses', courseId, 'exercises', courseExerciseId, 'activities'],
+      })
+    },
   })
 }
 
@@ -551,9 +574,9 @@ export function useTeacherStudentActivities(
   return useQuery({
     queryKey: ['teacher', 'courses', courseId, 'exercises', courseExerciseId, 'students', studentId, 'activities'],
     queryFn: () =>
-      apiFetch<{ teacher_activities: TeacherActivityResp[] }>(
+      apiFetch<ActivitiesResp>(
         `/teacher/courses/${courseId}/exercises/${courseExerciseId}/students/${studentId}/activities`,
-      ).then((r) => r.teacher_activities),
+      ),
     enabled: !!studentId,
   })
 }

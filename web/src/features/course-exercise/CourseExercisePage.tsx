@@ -4,6 +4,7 @@ import {
   CircularProgress,
   Alert,
   Box,
+  Button,
   Chip,
   Collapse,
   Divider,
@@ -16,6 +17,7 @@ import {
 import { useTheme } from '@mui/material/styles'
 import {
   ArrowBackOutlined,
+  AutoAwesomeOutlined,
   ExpandMoreOutlined,
   CheckCircle,
   CircleOutlined,
@@ -40,7 +42,11 @@ import {
   useSubmissions,
   useParticipants,
   useCourseGroups,
+  useTeacherActivities,
+  useRequestAiFeedback,
 } from '../../api/exercises.ts'
+import { errorMessage } from '../../api/errorMessage.ts'
+import SafeText from '../../components/SafeText.tsx'
 import type {
   ExceptionStudent,
   ExceptionGroup,
@@ -593,7 +599,7 @@ function StudentExerciseView() {
     courseId: string
     courseExerciseId: string
   }>()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const dateFnsLocale = useDateLocale()
 
   const {
@@ -603,6 +609,11 @@ function StudentExerciseView() {
   } = useExerciseDetails(courseId!, courseExerciseId!)
 
   const { data: submissions, isLoading: submissionsLoading } = useSubmissions(courseId!, courseExerciseId!)
+
+  // EZ-1712. The same query TeacherFeedback reads (react-query dedupes it); here it answers one
+  // question — has the latest submission already been explained? — so the button can retire.
+  const { data: activities } = useTeacherActivities(courseId!, courseExerciseId!)
+  const requestAiFeedback = useRequestAiFeedback(courseId!, courseExerciseId!)
 
   // The draft matters only for seeding the editor, and the editor must not initialise before it
   // arrives — a draft applied to an already-open editor would be silently ignored. `isSuccess`
@@ -714,6 +725,43 @@ function StudentExerciseView() {
 
   const deadlinePassed = exercise.deadline != null && isPast(new Date(exercise.deadline))
 
+  // EZ-1712. Offered only when there is something to explain and it has not been explained yet.
+  // Every condition here is also enforced by core; this is about not showing a button that would
+  // only ever answer with an error.
+  const aiExplained = latestSubmission != null &&
+    (activities?.ai_feedback ?? []).some((a) => a.submission_id === latestSubmission.id)
+  const canExplain =
+    exercise.ai_feedback_enabled &&
+    // Not before the feed has loaded: until then "not explained yet" is only "not known yet", and
+    // a button that shows for a second and then leaves is a button that gets clicked.
+    activities !== undefined &&
+    latestSubmission?.autograde_status === 'COMPLETED' &&
+    latestSubmission.auto_assessment != null &&
+    latestSubmission.auto_assessment.grade < 100 &&
+    !aiExplained
+
+  const explainButton = canExplain ? (
+    <Tooltip title={t('submission.explainWithAiHint')}>
+      <span>
+        <Button
+          size="small"
+          variant="outlined"
+          aria-label={t('submission.explainWithAi')}
+          disabled={requestAiFeedback.isPending}
+          startIcon={
+            requestAiFeedback.isPending
+              ? <CircularProgress size={14} color="inherit" />
+              : <AutoAwesomeOutlined fontSize="small" />
+          }
+          onClick={() => requestAiFeedback.mutate({ submissionId: latestSubmission.id, language: i18n.language })}
+          sx={{ textTransform: 'none', whiteSpace: 'nowrap' }}
+        >
+          <SafeText>{t('submission.explainWithAi')}</SafeText>
+        </Button>
+      </span>
+    </Tooltip>
+  ) : undefined
+
   const leftPane = (
     <>
       {/* The chips sit at the top of the statement and scroll away with it: only the title row
@@ -787,7 +835,13 @@ function StudentExerciseView() {
             autoAssessment={latestSubmission.auto_assessment}
             staggerReveal={autogradeStatus === 'revealing'}
             onStaggerDone={handleStaggerDone}
+            headerAction={explainButton}
           />
+          {requestAiFeedback.isError && (
+            <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
+              {errorMessage(requestAiFeedback.error, t)}
+            </Typography>
+          )}
         </>
       )}
 

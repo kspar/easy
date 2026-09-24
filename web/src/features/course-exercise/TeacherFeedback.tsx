@@ -19,89 +19,12 @@ import RelativeTime from '../../components/RelativeTime.tsx'
 import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
 import ReadOnlyCodeSnippet from './ReadOnlyCodeSnippet.tsx'
 import { useTeacherActivities, useStudentInlineComments } from '../../api/exercises.ts'
-import type { InlineCommentResp, SubmissionResp, TeacherActivityResp } from '../../api/types.ts'
+import type { InlineCommentResp, SubmissionResp } from '../../api/types.ts'
 import ErrorAlert from '../../components/ErrorAlert.tsx'
+import { buildTimeline } from './timeline.ts'
+import AiFeedbackCard from './AiFeedbackCard.tsx'
 
 const CONTEXT_LINES = 3
-const MERGE_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
-
-/* ───────── Timeline (same logic as ActivityFeed) ───────── */
-
-interface TimelineEntry {
-  teacherId: string
-  teacherName: string
-  time: string
-  activity?: TeacherActivityResp
-  inlineComments: InlineCommentResp[]
-  submissionNumbers: Set<number>
-}
-
-function buildTimeline(
-  activities: TeacherActivityResp[],
-  inlineComments: InlineCommentResp[],
-): TimelineEntry[] {
-  const entries: TimelineEntry[] = activities.map((a) => ({
-    teacherId: a.teacher.id,
-    teacherName: `${a.teacher.given_name} ${a.teacher.family_name}`,
-    time: a.created_at,
-    activity: a,
-    inlineComments: [],
-    submissionNumbers: new Set([a.submission_number]),
-  }))
-  entries.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
-
-  const orphans: InlineCommentResp[] = []
-  for (const c of inlineComments) {
-    const cTime = new Date(c.created_at).getTime()
-    let bestBefore: TimelineEntry | null = null
-    let bestBeforeDiff = Infinity
-    let bestAfter: TimelineEntry | null = null
-    let bestAfterDiff = Infinity
-    for (const entry of entries) {
-      if (!entry.activity || entry.teacherId !== c.teacher.id) continue
-      const eTime = new Date(entry.time).getTime()
-      const diff = Math.abs(eTime - cTime)
-      if (diff >= MERGE_WINDOW_MS) continue
-      if (eTime <= cTime && diff < bestBeforeDiff) {
-        bestBefore = entry
-        bestBeforeDiff = diff
-      } else if (eTime > cTime && diff < bestAfterDiff) {
-        bestAfter = entry
-        bestAfterDiff = diff
-      }
-    }
-    const best = bestBefore ?? bestAfter
-    if (best) {
-      best.inlineComments.push(c)
-      best.submissionNumbers.add(c.submission_number)
-    } else {
-      orphans.push(c)
-    }
-  }
-
-  for (const c of orphans) {
-    const cTime = new Date(c.created_at).getTime()
-    const match = entries.find(
-      (e) => !e.activity && e.teacherId === c.teacher.id &&
-        Math.abs(new Date(e.time).getTime() - cTime) < MERGE_WINDOW_MS,
-    )
-    if (match) {
-      match.inlineComments.push(c)
-      match.submissionNumbers.add(c.submission_number)
-    } else {
-      entries.push({
-        teacherId: c.teacher.id,
-        teacherName: `${c.teacher.given_name} ${c.teacher.family_name}`,
-        time: c.created_at,
-        inlineComments: [c],
-        submissionNumbers: new Set([c.submission_number]),
-      })
-    }
-  }
-
-  entries.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-  return entries
-}
 
 /* ───────── Annotated code (unchanged from before) ───────── */
 
@@ -420,7 +343,9 @@ export default function TeacherFeedback({
   if (isLoading) return <CircularProgress size={24} />
   if (activitiesError)
     return <ErrorAlert error={activitiesError} />
-  if ((!activities || activities.length === 0) && (!inlineComments || inlineComments.length === 0)) return null
+  const teacherActivities = activities?.teacher_activities ?? []
+  const aiFeedback = activities?.ai_feedback ?? []
+  if (teacherActivities.length === 0 && aiFeedback.length === 0 && (!inlineComments || inlineComments.length === 0)) return null
 
   // Build a map of submission_id -> solution for quick lookup
   const solutionBySubmissionId = new Map<string, string>()
@@ -430,16 +355,28 @@ export default function TeacherFeedback({
     }
   }
 
-  const timelineEntries = buildTimeline(activities ?? [], inlineComments ?? [])
+  const timelineEntries = buildTimeline(teacherActivities, inlineComments ?? [], aiFeedback)
 
   return (
     <Box>
       <Divider sx={{ my: 3 }} />
+      {/* "Feedback", not "Teacher feedback", once an AI card can be in it (EZ-1712): a heading that
+          names the teacher over a card that says AI would be the one place the two got confused. */}
       <Typography variant="h6" gutterBottom>
-        {t('submission.teacherFeedback')}
+        {aiFeedback.length > 0 ? t('submission.feedbackHeading') : t('submission.teacherFeedback')}
       </Typography>
 
       {timelineEntries.map((entry, i) => {
+        if (entry.kind === 'ai') {
+          return (
+            <AiFeedbackCard
+              key={`ai-${entry.aiFeedback!.id}`}
+              entry={entry.aiFeedback!}
+              onSelectSubmissionNumber={onSelectSubmissionNumber}
+            />
+          )
+        }
+
         const { activity } = entry
         const subNums = [...entry.submissionNumbers].sort((a, b) => a - b)
 

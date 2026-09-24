@@ -251,7 +251,7 @@ test('course-exercise-grading', async ({ launch, check }) => {
             : { grade: savedGrade, is_autograde: false, is_graded_directly: true },
       }],
     })],
-    [/\/students\/[^/]+\/activities$/, () => ({ teacher_activities: [] })],
+    [/\/students\/[^/]+\/activities$/, () => ({ teacher_activities: [], ai_feedback: [] })],
     [/\/students\/[^/]+\/inline-comments$/, () => ({ inline_comments: [] })],
     [/\/submissions\/[^/]+$/, () => ({
       id: SUBMISSION,
@@ -567,7 +567,9 @@ test('course-exercise-grading', async ({ launch, check }) => {
   // --- back to the list ------------------------------------------------------------------------------
   // The deep link is a URL, so leaving has to change the URL too — otherwise Back lands on the same
   // student and the browser's history is a lie.
-  await page.getByRole('button', { name: /back|tagasi/i }).first().click()
+  // Anchored: an unanchored /back/ also matches the sidebar's "AI feedback" entry (EZ-1712), which
+  // is a button too and sits earlier in the DOM.
+  await page.getByRole('button', { name: /^(back|tagasi)$/i }).first().click()
   check(
     'going back to the list drops ?student= from the URL',
     await waitUntil(() => !page.url().includes('student=')),

@@ -300,7 +300,7 @@ function handlers() {
 
     [`/student/courses/${COURSE}/exercises/${CE}/submissions/all`, () => submissions],
     [`/student/courses/${COURSE}/exercises/${CE}/draft`, ({ route }) => route.fulfill({ status: 204, body: '' })],
-    [`/student/courses/${COURSE}/exercises/${CE}/activities`, () => ({ teacher_activities: [] })],
+    [`/student/courses/${COURSE}/exercises/${CE}/activities`, () => ({ teacher_activities: [], ai_feedback: [] })],
     [`/student/courses/${COURSE}/exercises/${CE}/inline-comments`, () => ({ inline_comments: [] })],
 
     // The submit itself. Anchored, so it does not swallow the two endpoints above it.

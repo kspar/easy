@@ -36,7 +36,13 @@ enum class ReqError(val errorCodeStr: String) {
     EXERCISE_WRONG_SOLUTION_TYPE("EXERCISE_WRONG_SOLUTION_TYPE"),
     STUDENT_NOT_ON_COURSE("STUDENT_NOT_ON_COURSE"),
 
-    BUG_REPORT_RATE_LIMITED("BUG_REPORT_RATE_LIMITED")
+    BUG_REPORT_RATE_LIMITED("BUG_REPORT_RATE_LIMITED"),
+
+    // EZ-1712. The course has no AI provider configured; a submission that is not the student's
+    // latest failed one; the provider answered with an error or not at all.
+    AI_NOT_CONFIGURED("AI_NOT_CONFIGURED"),
+    AI_FEEDBACK_NOT_AVAILABLE("AI_FEEDBACK_NOT_AVAILABLE"),
+    AI_PROVIDER_ERROR("AI_PROVIDER_ERROR")
 }
 
 

@@ -66,7 +66,7 @@ test('nav-cmd-click', async ({ launch, check }) => {
   // Sidebar entries that open something rather than going somewhere. An href on one of these would
   // be wrong, so they are excluded by name — and the list is short and explicit so that a *new*
   // item arriving without an href still fails rather than quietly joining the exceptions.
-  const ACTION_ITEMS = ['Course settings']
+  const ACTION_ITEMS = ['Course settings', 'AI feedback']
   const isAction = (i) => ACTION_ITEMS.some((a) => i.text.includes(a))
   const navItems = items.filter((i) => !isAction(i))
 

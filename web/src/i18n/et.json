@@ -31,7 +31,10 @@
     "moodleEmptyResponse": "Moodle vastas tühjalt. Kontrolli kursuse Moodle'i identifikaatorit.",
     "moodleGradeSyncError": "Moodle ei võtnud hindeid vastu.",
     "accountMigrationFailed": "Seda kontot ei õnnestunud üle tuua.",
-    "bugReportRateLimited": "Saatsid just mitu teadet. Oota hetk, enne kui saadad järgmise."
+    "bugReportRateLimited": "Saatsid just mitu teadet. Oota hetk, enne kui saadad järgmise.",
+    "aiNotConfigured": "AI tagasiside ei ole sellel kursusel sisse lülitatud.",
+    "aiFeedbackNotAvailable": "Selle esituse kohta pole midagi selgitada. Selgitada saab ainult viimast esitust, mille testid ebaõnnestusid.",
+    "aiProviderError": "AI teenus ei vastanud. See ei ole sinu lahenduse viga — proovi mõne aja pärast uuesti."
   },
   "general": {
     "add": "Lisa",
@@ -155,7 +158,22 @@
     "courseSettings": "Kursuse sätted",
     "courseName": "Kursuse nimi",
     "courseIdentifier": "Kursuse identifikaator",
-    "courseSaved": "Kursus salvestatud"
+    "courseSaved": "Kursus salvestatud",
+    "aiSettings": "AI tagasiside",
+    "aiHelp": "Kui teenusepakkuja on seadistatud, saab õpilane, kelle testid ebaõnnestuvad, küsida lühikest AI selgitust. Päringute eest maksab siia sisestatud võtme omanik, mitte platvorm.",
+    "aiProvider": "Teenusepakkuja",
+    "aiModel": "Mudel",
+    "aiApiKey": "API võti",
+    "aiApiKeyConfigured": "Seadistatud (lõpeb {{hint}})",
+    "aiApiKeyKeep": "Jäta tühjaks, et praegune võti alles jääks.",
+    "aiAdvancedShow": "Täpsemad sätted",
+    "aiAdvancedHide": "Peida täpsemad sätted",
+    "aiBaseUrl": "API aadress",
+    "aiBaseUrlHelp": "Ainult oma serveris või vaheserveri kaudu töötava teenuse jaoks. Jäta tühjaks, et kasutada teenusepakkuja enda aadressi.",
+    "aiDisable": "Lülita välja",
+    "aiDisableConfirm": "Lülitada AI tagasiside sellel kursusel välja? Salvestatud võti kustutatakse; õpilastele juba antud selgitused jäävad alles.",
+    "aiSaved": "AI sätted salvestatud",
+    "aiDisabled": "AI tagasiside on välja lülitatud"
   },
   "exercises": {
     "title": "Ülesanded",
@@ -311,6 +329,12 @@
     "retryAutoassessHint": "Käivitab selle esituse testid uuesti, esitust ennast muutmata. Kasulik siis, kui need ebaõnnestusid koodist sõltumatul põhjusel — käivitaja oli maas või test aegus.",
     "retryAutoassessDone": "Testimine on lõpetatud — allolev tulemus on värske.",
     "retryAutoassessFailed": "Teste ei õnnestunud käivitada.",
+    "explainWithAi": "Selgita AI abil",
+    "explainWithAiHint": "Palub AI-l paari lausega selgitada, miks testid ebaõnnestusid. Lahendust see ei ütle.",
+    "aiLabel": "AI",
+    "aiFeedbackTitle": "AI selgitus",
+    "aiFeedbackDisclaimer": "Loodud automaatselt testitulemuste põhjal, mitte õpetaja kirjutatud. See võib eksida.",
+    "feedbackHeading": "Tagasiside",
     "rerunAll": "Käivita kõik testid uuesti",
     "downloadAll_one": "Lae alla {{count}} lahendus",
     "downloadAll_other": "Lae alla {{count}} lahendust",

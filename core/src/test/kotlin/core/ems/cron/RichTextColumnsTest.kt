@@ -1,6 +1,7 @@
 package core.ems.cron
 
 import core.db.Account
+import core.db.AiFeedback
 import core.db.Asset
 import core.db.AnonymousSubmission
 import core.db.BugReport
@@ -121,6 +122,18 @@ class RichTextColumnsTest {
         AutoExercise.gradingScript to "grading script, never rendered",
         Asset.fileName to "grading asset name",
         Asset.fileContent to "grading asset content, never rendered",
+
+        // AI feedback (EZ-1712). `feedback_html` *is* rendered, but nobody typed it: it is the
+        // model's answer to a prompt that contains no uploads, so a `/v2/resource/...` string in it
+        // would be a hallucination, not a reference keeping a file alive.
+        AiFeedback.feedbackMd to "model-generated text, no way to paste into it",
+        AiFeedback.feedbackHtml to "model-generated text, no way to paste into it",
+        AiFeedback.prompt to "audit copy of the prompt, never rendered",
+        AiFeedback.responseRaw to "audit copy of the provider's response, never rendered",
+        AiFeedback.model to "external identifier",
+        Course.aiApiKey to "credential set by a teacher, not content",
+        Course.aiBaseUrl to "provider address set by a teacher, not content",
+        Course.aiModel to "external identifier",
 
         // Infrastructure and diagnostics.
         Executor.name to "plain name",

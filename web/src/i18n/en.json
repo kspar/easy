@@ -31,7 +31,10 @@
     "moodleEmptyResponse": "Moodle answered with nothing. Check the course's Moodle identifier.",
     "moodleGradeSyncError": "Moodle did not accept the grades.",
     "accountMigrationFailed": "This account could not be migrated.",
-    "bugReportRateLimited": "You have sent several reports just now. Wait a moment before sending another."
+    "bugReportRateLimited": "You have sent several reports just now. Wait a moment before sending another.",
+    "aiNotConfigured": "AI feedback is not switched on for this course.",
+    "aiFeedbackNotAvailable": "There is nothing to explain for this submission. Only your latest submission with failing tests can be explained.",
+    "aiProviderError": "The AI service did not answer. This is not a problem with your solution — try again in a while."
   },
   "general": {
     "add": "Add",
@@ -155,7 +158,22 @@
     "courseSettings": "Course settings",
     "courseName": "Course name",
     "courseIdentifier": "Course identifier",
-    "courseSaved": "Course saved"
+    "courseSaved": "Course saved",
+    "aiSettings": "AI feedback",
+    "aiHelp": "With a provider set up, a student whose tests fail can ask for a short AI explanation. Requests are billed to the key entered here, never to the platform.",
+    "aiProvider": "Provider",
+    "aiModel": "Model",
+    "aiApiKey": "API key",
+    "aiApiKeyConfigured": "Configured (ends in {{hint}})",
+    "aiApiKeyKeep": "Leave empty to keep the current key.",
+    "aiAdvancedShow": "Advanced settings",
+    "aiAdvancedHide": "Hide advanced settings",
+    "aiBaseUrl": "API address",
+    "aiBaseUrlHelp": "Only for a self-hosted or proxied endpoint. Leave empty for the provider's own.",
+    "aiDisable": "Switch off",
+    "aiDisableConfirm": "Switch off AI feedback for this course? The stored key is deleted; explanations students have already received stay.",
+    "aiSaved": "AI settings saved",
+    "aiDisabled": "AI feedback switched off"
   },
   "exercises": {
     "title": "Exercises",
@@ -311,6 +329,12 @@
     "retryAutoassessHint": "Runs the tests on this submission again without changing it. Useful when they failed for a reason unrelated to the code — the executor was down, or a test timed out.",
     "retryAutoassessDone": "Tests finished — the result below is up to date.",
     "retryAutoassessFailed": "Could not start the tests.",
+    "explainWithAi": "Explain with AI",
+    "explainWithAiHint": "Asks an AI to explain, in a few sentences, why the tests failed. It will not give you the solution.",
+    "aiLabel": "AI",
+    "aiFeedbackTitle": "AI explanation",
+    "aiFeedbackDisclaimer": "Generated automatically from the test results, not written by your teacher. It can be wrong.",
+    "feedbackHeading": "Feedback",
     "rerunAll": "Re-run all tests",
     "downloadAll_one": "Download {{count}} submission",
     "downloadAll_other": "Download {{count}} submissions",

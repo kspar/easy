@@ -60,6 +60,20 @@ enum class BugReportForwardState {
     DISABLED
 }
 
+// Length in Table object is 20. Which vendor a course's AI key belongs to. One value for now; the
+// enum exists so that feature code switches on it in exactly one place (AiProviderFactory) when the
+// OpenAI-compatible and RAG providers from EZ-1711 arrive.
+enum class AiProviderType {
+    ANTHROPIC
+}
+
+// Length in Table object is 10. FAILED rows are kept: they are the audit trail of a provider that
+// was down or a key that was revoked, and the partial unique index ignores them so a retry can win.
+enum class AiFeedbackStatus {
+    OK,
+    FAILED
+}
+
 // There was an InlineCommentType { COMMENT, SUGGESTION } here for the length of one commit. EZ-1777
 // made the inline-comment `type` field an enum because core accepted any string in it; the answer to
 // "what should this validate?" turned out to be that the field carried nothing `suggested_code` did

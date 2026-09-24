@@ -2,9 +2,11 @@ package core.testing
 
 import core.db.Account
 import core.db.AccountGroup
+import core.db.AiProviderType
 import core.db.Asset
 import core.db.AutoExercise
 import core.db.AutoGradeStatus
+import core.db.AutogradeActivity
 import core.db.ContainerImage
 import core.db.Course
 import core.db.CourseExercise
@@ -309,6 +311,12 @@ object Fixtures {
         moodleShortName: String? = null,
         moodleSyncStudents: Boolean = false,
         moodleSyncGrades: Boolean = false,
+        // EZ-1711. Provider + key is what makes a course AI-enabled; [aiBaseUrl] is where a test
+        // points the provider at a [FakeAnthropic] instead of the real thing.
+        aiProvider: AiProviderType? = null,
+        aiApiKey: String? = null,
+        aiBaseUrl: String? = null,
+        aiModel: String? = null,
     ): Long = Course.insertAndGetId {
         it[Course.title] = title
         it[Course.alias] = alias
@@ -320,6 +328,31 @@ object Fixtures {
         it[moodleSyncGradesInProgress] = false
         it[archived] = false
         it[color] = "#137EF9"
+        it[Course.aiProvider] = aiProvider
+        it[Course.aiApiKey] = aiApiKey
+        it[Course.aiBaseUrl] = aiBaseUrl
+        it[Course.aiModel] = aiModel
+    }.value
+
+    /**
+     * What the autograder said about a submission — the row `insertAutogradeActivity` writes, minus
+     * the grade/stats side effects on the submission itself, which a test sets on [submission]
+     * directly when it cares. [feedback] is stored verbatim: OK_V3 JSON or legacy text, exactly as
+     * `aae` would have sent it.
+     */
+    fun autogradeActivity(
+        courseExerciseId: Long,
+        studentId: String,
+        submissionId: Long,
+        grade: Int,
+        feedback: String?,
+    ): Long = AutogradeActivity.insertAndGetId {
+        it[courseExercise] = EntityID(courseExerciseId, CourseExercise)
+        it[student] = EntityID(studentId, Account)
+        it[submission] = EntityID(submissionId, Submission)
+        it[createdAt] = TestClock.next()
+        it[AutogradeActivity.grade] = grade
+        it[AutogradeActivity.feedback] = feedback
     }.value
 
     /** A group on a course — not [group], which is a library-permissions group. Returns its id. */

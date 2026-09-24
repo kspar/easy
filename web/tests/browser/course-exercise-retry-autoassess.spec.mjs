@@ -107,7 +107,7 @@ test('course-exercise-retry-autoassess', async ({ launch, check }) => {
       }],
     })],
 
-    [`/students/${STUDENT}/activities`, () => ({ teacher_activities: [] })],
+    [`/students/${STUDENT}/activities`, () => ({ teacher_activities: [], ai_feedback: [] })],
     [`/students/${STUDENT}/inline-comments`, () => ({ inline_comments: [] })],
     [`/submissions/${SUB}`, () => submissionDetail()],
 

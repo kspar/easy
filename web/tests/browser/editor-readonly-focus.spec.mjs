@@ -120,7 +120,7 @@ test('editor-readonly-focus',async ({ launch, check }) => {
         grade: null,
       }],
     })],
-    [/\/students\/[^/]+\/activities$/, () => ({ teacher_activities: [] })],
+    [/\/students\/[^/]+\/activities$/, () => ({ teacher_activities: [], ai_feedback: [] })],
     [/\/students\/[^/]+\/inline-comments$/, () => ({ inline_comments: [] })],
     [/\/submissions\/[^/]+$/, () => ({
       id: SUBMISSION,

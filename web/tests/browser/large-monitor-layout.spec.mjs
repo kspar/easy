@@ -119,7 +119,7 @@ const handlers = () => [
       grade: { grade: 100, is_autograde: false, is_graded_directly: true },
     }],
   })],
-  [/\/students\/[^/]+\/activities$/, () => ({ teacher_activities: [] })],
+  [/\/students\/[^/]+\/activities$/, () => ({ teacher_activities: [], ai_feedback: [] })],
   [/\/students\/[^/]+\/inline-comments$/, () => ({ inline_comments: [] })],
   [/\/submissions\/[^/]+$/, () => ({
     id: 'sub-77', solution, submission_number: 1, created_at: '2026-09-01T10:00:00.000Z',

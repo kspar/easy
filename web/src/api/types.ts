@@ -62,6 +62,8 @@ export interface ExerciseDetails {
   is_open: boolean
   solution_file_name: string
   solution_file_type: SolutionFileType
+  /** EZ-1712. The course has an AI provider, so a failed submission can be explained. */
+  ai_feedback_enabled: boolean
 }
 
 /** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/all -> submissions[].auto_assessment */
@@ -89,6 +91,44 @@ export interface DraftResp {
 }
 
 // Teacher activity types (student view)
+
+/**
+ * EZ-1712. An AI's explanation of a failed submission. No teacher, no grade; the feed shows it under
+ * an "AI" label. The same shape comes back from the student's POST that creates one.
+ *
+ * @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/activities -> ai_feedback[]
+ * @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/students/{studentId}/activities -> ai_feedback[]
+ * @endpoint POST /v2/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/ai-feedback -> (root)
+ */
+export interface AiFeedbackResp {
+  id: string
+  submission_id: string
+  submission_number: number
+  created_at: string
+  provider: 'ANTHROPIC'
+  model: string
+  feedback_md: string
+  feedback_html: string
+}
+
+/**
+ * @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/activities -> (root)
+ * @endpoint GET /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/students/{studentId}/activities -> (root)
+ */
+export interface ActivitiesResp {
+  teacher_activities: TeacherActivityResp[]
+  ai_feedback: AiFeedbackResp[]
+}
+
+/** @endpoint GET /v2/courses/{courseId}/ai -> ai_props */
+export interface CourseAiProps {
+  provider: 'ANTHROPIC'
+  model: string
+  base_url: string | null
+  /** The key itself never comes back; this and the last four characters are all a teacher sees. */
+  api_key_configured: boolean
+  api_key_hint: string | null
+}
 
 /** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/activities -> teacher_activities[].teacher */
 export interface TeacherResp {

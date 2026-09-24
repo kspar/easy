@@ -778,4 +778,102 @@
         </createIndex>
     </changeSet>
 
+    <!--
+        EZ-1711. Per-course AI provider configuration — bring your own key. The platform never pays
+        for inference: a course either has a teacher's key on it or has no AI features at all, and
+        "no provider" is the signal that hides them (all four null), never an error.
+
+        `ai_api_key` is stored as the teacher typed it. That is a proof-of-concept shortcut, taken
+        knowingly: core has no encryption at rest anywhere yet, and inventing it inside this changeset
+        would have made the key the one encrypted thing in a database of plaintext everything else.
+        The read endpoint never returns it (a "configured" flag and the last four characters only),
+        and the write endpoint treats an absent key as "keep the old one". Encryption is still owed;
+        it is tracked on the issue, not forgotten here.
+    -->
+    <changeSet id="240926-1" author="kspar">
+        <addColumn tableName="course">
+            <column name="ai_provider" type="text"/>
+            <column name="ai_api_key" type="text"/>
+            <column name="ai_base_url" type="text"/>
+            <column name="ai_model" type="text"/>
+        </addColumn>
+    </changeSet>
+
+    <!--
+        EZ-1712. What an AI told a student about a failed submission, and everything needed to audit
+        that later: the whole prompt, the provider's raw response, token counts, which model. Not a
+        `teacher_activity` row — that table's `teacher_id` is non-null and its reader insists the
+        author is a teacher, and an explanation nobody wrote is not a teacher activity however much
+        it resembles one on screen. Keeping it apart is also what keeps AI out of every grade-shaped
+        code path: there is no grade column to touch.
+
+        One successful explanation per submission. The unique index is partial — a FAILED attempt
+        (provider down, key revoked) is kept for the audit trail and must not block the retry that
+        succeeds. Both foreign keys cascade for the same reason `teacher_submission_seen`'s do:
+        derived data, meaningless without its submission, not something to inherit when an account
+        goes.
+    -->
+    <changeSet id="240926-2" author="kspar">
+        <createTable tableName="ai_feedback">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_ai_feedback"/>
+            </column>
+            <column name="course_exercise_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="student_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submission_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="model" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="feedback_md" type="text"/>
+            <column name="feedback_html" type="text"/>
+            <column name="prompt" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="response_raw" type="text"/>
+            <column name="tokens_in" type="integer"/>
+            <column name="tokens_out" type="integer"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="ai_feedback" baseColumnNames="course_exercise_id"
+                                 referencedTableName="course_exercise" referencedColumnNames="id"
+                                 constraintName="fk_ai_feedback_course_exercise"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="ai_feedback" baseColumnNames="student_id"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_ai_feedback_student"
+                                 onDelete="CASCADE" onUpdate="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="ai_feedback" baseColumnNames="submission_id"
+                                 referencedTableName="submission" referencedColumnNames="id"
+                                 constraintName="fk_ai_feedback_submission"
+                                 onDelete="CASCADE"/>
+
+        <!-- The activity feed reads "this student, this exercise", same as teacher_activity. -->
+        <createIndex tableName="ai_feedback" indexName="idx_ai_feedback_course_exercise_student">
+            <column name="course_exercise_id"/>
+            <column name="student_id"/>
+        </createIndex>
+
+        <!-- Partial, so Liquibase's own createIndex cannot express it. Matched by name in the
+             service when two clicks race — the loser reads the winner's row instead of erroring. -->
+        <sql>CREATE UNIQUE INDEX uq_ai_feedback_submission_ok ON ai_feedback (submission_id) WHERE status = 'OK'</sql>
+        <rollback>
+            <sql>DROP INDEX uq_ai_feedback_submission_ok</sql>
+        </rollback>
+    </changeSet>
+
 </databaseChangeLog>

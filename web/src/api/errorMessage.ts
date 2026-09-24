@@ -57,6 +57,12 @@ const CODE_KEYS: Record<string, string> = {
   ACCOUNT_MIGRATION_FAILED: 'errors.accountMigrationFailed',
   BUG_REPORT_RATE_LIMITED: 'errors.bugReportRateLimited',
 
+  // AI feedback (EZ-1712). The first two are states the button's own gating should have hidden;
+  // the third is the provider, which is nobody's fault here.
+  AI_NOT_CONFIGURED: 'errors.aiNotConfigured',
+  AI_FEEDBACK_NOT_AVAILABLE: 'errors.aiFeedbackNotAvailable',
+  AI_PROVIDER_ERROR: 'errors.aiProviderError',
+
   // TSL_COMPILE_FAILED is deliberately absent: X-018 gives it a fuller treatment, with the
   // compiler's own diagnostic behind a disclosure. A one-liner here would be a downgrade.
 }

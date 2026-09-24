@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client.ts'
-import type { StudentCourse, TeacherCourse } from './types.ts'
+import type { CourseAiProps, StudentCourse, TeacherCourse } from './types.ts'
 
 export function useStudentCourses(enabled = true) {
   return useQuery({
@@ -67,6 +67,43 @@ export function useUpdateCourse(courseId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teacher', 'courses'] })
       queryClient.invalidateQueries({ queryKey: ['course', courseId] })
+    },
+  })
+}
+
+/** EZ-1711. What the course has configured, key withheld — see `CourseAiProps`. */
+export function useCourseAiProps(courseId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['courses', courseId, 'ai'],
+    queryFn: () =>
+      // `?? null`, because react-query treats `undefined` as "the query function forgot to return"
+      // and throws — which is what a `{}` body from a stub, or from a proxy that ate the response,
+      // would otherwise produce.
+      apiFetch<{ ai_props: CourseAiProps | null }>(`/courses/${courseId}/ai`).then((r) => r.ai_props ?? null),
+    enabled,
+  })
+}
+
+/**
+ * EZ-1711. `ai_props: null` switches AI features off for the course. `api_key: null` on a write
+ * keeps the stored key, which is the only way to edit the model without retyping the key core will
+ * never show again.
+ */
+export function useUpdateCourseAiProps(courseId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      ai_props: {
+        provider: 'ANTHROPIC'
+        model: string
+        base_url: string | null
+        api_key: string | null
+      } | null
+    }) => apiFetch(`/courses/${courseId}/ai`, { method: 'PUT', body }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses', courseId, 'ai'] })
+      // The student page reads `ai_feedback_enabled` from the exercise details.
+      queryClient.invalidateQueries({ queryKey: ['student', 'courses', courseId, 'exercises'] })
     },
   })
 }

@@ -45,7 +45,9 @@ import {
 import { useAuth } from '../../auth/useAuth.ts'
 import RelativeTime from '../../components/RelativeTime.tsx'
 import { RobotIcon, TeacherFaceIcon } from '../../components/icons.tsx'
-import type { InlineCommentResp, TeacherActivityResp } from '../../api/types.ts'
+import type { AiFeedbackResp, InlineCommentResp, TeacherActivityResp } from '../../api/types.ts'
+import { buildTimeline, type TimelineEntry } from './timeline.ts'
+import AiFeedbackCard from './AiFeedbackCard.tsx'
 import ConfirmDialog from '../../components/ConfirmDialog.tsx'
 import ReadOnlyCodeSnippet from './ReadOnlyCodeSnippet.tsx'
 import RenderedMarkdown from '../../components/markdown/RenderedMarkdown.tsx'
@@ -57,7 +59,6 @@ import { indentation } from '../../components/editorIndent.ts'
 import SafeText from '../../components/SafeText.tsx'
 
 const NOTIFY_KEY = 'teacherNotifyStudent'
-const MERGE_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
 
 function readNotifyPref(): boolean {
   try {
@@ -95,89 +96,6 @@ function applyLinePrefix(view: EditorView, prefix: string) {
   view.focus()
 }
 
-/* ───────── Timeline types ───────── */
-
-interface TimelineEntry {
-  teacherId: string
-  teacherName: string
-  time: string
-  activity?: TeacherActivityResp
-  inlineComments: InlineCommentResp[]
-  submissionNumbers: Set<number>
-}
-
-function buildTimeline(
-  activities: TeacherActivityResp[] | undefined,
-  inlineComments: InlineCommentResp[] | undefined,
-): TimelineEntry[] {
-  // One entry per activity, sorted ascending by time for matching
-  const entries: TimelineEntry[] = (activities ?? []).map((a) => ({
-    teacherId: a.teacher.id,
-    teacherName: `${a.teacher.given_name} ${a.teacher.family_name}`,
-    time: a.created_at,
-    activity: a,
-    inlineComments: [],
-    submissionNumbers: new Set([a.submission_number]),
-  }))
-  entries.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
-
-  // Attach each inline comment to the closest activity by the same teacher within the window
-  // Prefer preceding activities; only use a following activity if no preceding one is in the window
-  const orphans: InlineCommentResp[] = []
-  for (const c of inlineComments ?? []) {
-    const cTime = new Date(c.created_at).getTime()
-    let bestBefore: TimelineEntry | null = null
-    let bestBeforeDiff = Infinity
-    let bestAfter: TimelineEntry | null = null
-    let bestAfterDiff = Infinity
-    for (const entry of entries) {
-      if (!entry.activity || entry.teacherId !== c.teacher.id) continue
-      const eTime = new Date(entry.time).getTime()
-      const diff = Math.abs(eTime - cTime)
-      if (diff >= MERGE_WINDOW_MS) continue
-      if (eTime <= cTime && diff < bestBeforeDiff) {
-        bestBefore = entry
-        bestBeforeDiff = diff
-      } else if (eTime > cTime && diff < bestAfterDiff) {
-        bestAfter = entry
-        bestAfterDiff = diff
-      }
-    }
-    const best = bestBefore ?? bestAfter
-    if (best) {
-      best.inlineComments.push(c)
-      best.submissionNumbers.add(c.submission_number)
-    } else {
-      orphans.push(c)
-    }
-  }
-
-  // Orphan inline comments (no preceding activity) — group by teacher within the window
-  for (const c of orphans) {
-    const cTime = new Date(c.created_at).getTime()
-    const match = entries.find(
-      (e) => !e.activity && e.teacherId === c.teacher.id &&
-        Math.abs(new Date(e.time).getTime() - cTime) < MERGE_WINDOW_MS,
-    )
-    if (match) {
-      match.inlineComments.push(c)
-      match.submissionNumbers.add(c.submission_number)
-    } else {
-      entries.push({
-        teacherId: c.teacher.id,
-        teacherName: `${c.teacher.given_name} ${c.teacher.family_name}`,
-        time: c.created_at,
-        inlineComments: [c],
-        submissionNumbers: new Set([c.submission_number]),
-      })
-    }
-  }
-
-  // Sort descending for display
-  entries.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-  return entries
-}
-
 /* ───────── Component ───────── */
 
 export default function ActivityFeed({
@@ -191,6 +109,7 @@ export default function ActivityFeed({
   gradeInfo,
   activities,
   allInlineComments,
+  aiFeedback,
   solutionFileName,
   onSubmitted,
   showComposer = true,
@@ -206,6 +125,8 @@ export default function ActivityFeed({
   gradeInfo: { isAutograde: boolean; isGradedDirectly: boolean } | null
   activities?: TeacherActivityResp[]
   allInlineComments?: InlineCommentResp[]
+  /** EZ-1712. What an AI told this student; shown to the teacher exactly as the student saw it. */
+  aiFeedback?: AiFeedbackResp[]
   solutionFileName?: string
   onSubmitted?: () => void
   showComposer?: boolean
@@ -421,8 +342,8 @@ export default function ActivityFeed({
   }, [editFeedback, courseId, courseExerciseId, queryClient, t])
 
   const timelineEntries = useMemo(
-    () => buildTimeline(activities, allInlineComments),
-    [activities, allInlineComments],
+    () => buildTimeline(activities, allInlineComments, aiFeedback),
+    [activities, allInlineComments, aiFeedback],
   )
 
   const tbSx = {
@@ -603,7 +524,14 @@ export default function ActivityFeed({
       )}
 
       {/* Timeline */}
-      {timelineEntries.length > 0 && timelineEntries.map((entry, i) => (
+      {timelineEntries.length > 0 && timelineEntries.map((entry, i) => (entry.kind === 'ai' ? (
+        <AiFeedbackCard
+          key={`ai-${entry.aiFeedback!.id}`}
+          entry={entry.aiFeedback!}
+          onSelectSubmissionNumber={onSelectSubmissionNumber}
+          dense
+        />
+      ) : (
         <TimelineEntryCard
           key={entry.activity?.id ?? `orphan-${i}`}
           entry={entry}
@@ -614,7 +542,7 @@ export default function ActivityFeed({
           onSelectSubmissionNumber={onSelectSubmissionNumber}
           t={t}
         />
-      ))}
+      )))}
 
       {timelineEntries.length === 0 && (
         <Typography variant="caption" color="text.secondary">

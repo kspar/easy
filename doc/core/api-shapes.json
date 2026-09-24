@@ -25,6 +25,7 @@
     "GET /v2/courses/invite/{invite-id}": { "response": "core.ems.service.course.invite.GetCourseInfoByInvite.Resp" },
     "GET /v2/courses/moodle/invite/{invite-id}": { "response": "core.ems.service.course.invite.moodle.GetMoodleLinkedCourseInfoByInvite.Resp" },
     "GET /v2/courses/teacher/{courseId}/grades": { "response": "core.ems.service.ExercisesResp" },
+    "GET /v2/courses/{courseId}/ai": { "response": "core.ems.service.ai.ReadCourseAiPropsController.Resp" },
     "GET /v2/courses/{courseId}/basic": { "response": "core.ems.service.course.ReadBasicCourseInfo.Resp" },
     "GET /v2/courses/{courseId}/export/submissions": {  },
     "GET /v2/courses/{courseId}/groups": { "response": "core.ems.service.course.group.ReadCourseGroupsController.Resp" },
@@ -102,6 +103,7 @@
     "POST /v2/student/courses/{courseId}/access": {  },
     "POST /v2/student/courses/{courseId}/exercises/{courseExerciseId}/draft": { "request": "core.ems.service.exercise.StudentSubmitDraftController.Req" },
     "POST /v2/student/courses/{courseId}/exercises/{courseExerciseId}/submissions": { "request": "core.ems.service.exercise.StudentSubmitCont.Req" },
+    "POST /v2/student/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/ai-feedback": { "request": "core.ems.service.exercise.StudentRequestAiFeedbackController.Req", "response": "core.ems.service.AiFeedbackResp" },
     "POST /v2/teacher/courses/{courseId}/access": {  },
     "POST /v2/teacher/courses/{courseId}/exercises": { "request": "core.ems.service.exercise.AddExerciseToCourseCont.Req", "response": "core.ems.service.exercise.AddExerciseToCourseCont.Resp" },
     "POST /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions": { "request": "core.ems.service.exercise.TeacherSubmitBehalfStudent.Req" },
@@ -117,6 +119,7 @@
     "PUT /v2/admin/exercises/{exerciseId}/rewrite": { "request": "core.ems.service.exercise.UpdateExercise.Req" },
     "PUT /v2/articles/{articleId}": { "request": "core.ems.service.article.UpdateArticleController.Req" },
     "PUT /v2/courses/{courseId}": { "request": "core.ems.service.course.UpdateCourse.Req" },
+    "PUT /v2/courses/{courseId}/ai": { "request": "core.ems.service.ai.UpdateCourseAiPropsController.Req" },
     "PUT /v2/courses/{courseId}/exercises/{courseExerciseId}/exception": { "request": "core.ems.service.exercise.exceptions.PutCourseExerciseExceptions.Req" },
     "PUT /v2/courses/{courseId}/invite": { "request": "core.ems.service.course.invite.GenerateCourseInvite.Req", "response": "core.ems.service.course.invite.GenerateCourseInvite.Resp" },
     "PUT /v2/courses/{courseId}/moodle": { "request": "core.ems.service.moodle.MoodleLinkCourseController.Req" },
@@ -165,7 +168,18 @@
       "name": { "kind": "string" }
     },
     "core.ems.service.ActivityResp": {
+      "ai_feedback": { "kind": "array", "type": "core.ems.service.AiFeedbackResp" },
       "teacher_activities": { "kind": "array", "type": "core.ems.service.TeacherActivityResp" }
+    },
+    "core.ems.service.AiFeedbackResp": {
+      "created_at": { "kind": "datetime" },
+      "feedback_html": { "kind": "string" },
+      "feedback_md": { "kind": "string" },
+      "id": { "kind": "string" },
+      "model": { "kind": "string" },
+      "provider": { "kind": "enum", "values": ["ANTHROPIC"] },
+      "submission_id": { "kind": "string" },
+      "submission_number": { "kind": "number" }
     },
     "core.ems.service.AutomaticAssessmentResp": {
       "feedback": { "kind": "string", "nullable": true },
@@ -326,6 +340,25 @@
     "core.ems.service.VersionsController.Resp": {
       "core": { "kind": "object", "type": "core.ems.service.VersionsController.ComponentResp" },
       "executors": { "kind": "array", "type": "core.ems.service.VersionsController.ExecutorResp" }
+    },
+    "core.ems.service.ai.ReadCourseAiPropsController.AiPropsResp": {
+      "api_key_configured": { "kind": "boolean" },
+      "api_key_hint": { "kind": "string", "nullable": true },
+      "base_url": { "kind": "string", "nullable": true },
+      "model": { "kind": "string" },
+      "provider": { "kind": "enum", "values": ["ANTHROPIC"] }
+    },
+    "core.ems.service.ai.ReadCourseAiPropsController.Resp": {
+      "ai_props": { "kind": "object", "nullable": true, "type": "core.ems.service.ai.ReadCourseAiPropsController.AiPropsResp" }
+    },
+    "core.ems.service.ai.UpdateCourseAiPropsController.AiPropsReq": {
+      "api_key": { "kind": "string", "nullable": true },
+      "base_url": { "kind": "string", "nullable": true },
+      "model": { "kind": "string" },
+      "provider": { "kind": "enum", "values": ["ANTHROPIC"] }
+    },
+    "core.ems.service.ai.UpdateCourseAiPropsController.Req": {
+      "ai_props": { "kind": "object", "nullable": true, "type": "core.ems.service.ai.UpdateCourseAiPropsController.AiPropsReq" }
     },
     "core.ems.service.article.CreateArticleAliasController.Req": {
       "alias": { "kind": "string" }
@@ -777,6 +810,7 @@
       "id": { "kind": "string" }
     },
     "core.ems.service.exercise.StudentReadExerciseDetailsController.Resp": {
+      "ai_feedback_enabled": { "kind": "boolean" },
       "deadline": { "kind": "datetime", "nullable": true },
       "effective_title": { "kind": "string" },
       "grader_type": { "kind": "enum", "values": ["AUTO", "TEACHER"] },
@@ -816,6 +850,9 @@
       "solution": { "kind": "string" },
       "submission_status": { "kind": "enum", "values": ["COMPLETED", "STARTED", "UNGRADED", "UNSTARTED"] },
       "submission_time": { "kind": "datetime" }
+    },
+    "core.ems.service.exercise.StudentRequestAiFeedbackController.Req": {
+      "language": { "kind": "string" }
     },
     "core.ems.service.exercise.StudentSubmitCont.Req": {
       "solution": { "kind": "string" }

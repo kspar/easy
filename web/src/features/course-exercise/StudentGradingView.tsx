@@ -745,8 +745,9 @@ export default function StudentGradingView({
               onGradeChange={setGrade}
               initialGrade={initialGrade}
               gradeInfo={gradeInfo}
-              activities={activities}
+              activities={activities?.teacher_activities}
               allInlineComments={allInlineComments}
+              aiFeedback={activities?.ai_feedback}
               solutionFileName={exercise.solution_file_name}
               onSelectSubmissionNumber={handleSelectSubmissionNumber}
               showComposer={isViewingLatest}

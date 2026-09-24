@@ -52,6 +52,7 @@ import {
   PeopleOutlined,
   CompareArrowsOutlined,
   SettingsOutlined,
+  AutoAwesomeOutlined,
   AdminPanelSettingsOutlined,
   MenuBookOutlined,
   OpenInNewOutlined,
@@ -64,6 +65,7 @@ import { useThemeMode } from '../theme/useThemeMode.ts'
 import { useCourseExercises } from '../api/exercises.ts'
 import { useCourse } from '../api/courses.ts'
 import EditCourseDialog from '../features/course-settings/EditCourseDialog.tsx'
+import CourseAiSettingsDialog from '../features/course-settings/CourseAiSettingsDialog.tsx'
 import BugReportDialog from '../features/bug-report/BugReportDialog.tsx'
 import { record } from '../features/bug-report/breadcrumbs.ts'
 import { updateReportContext } from '../features/bug-report/reportContext.ts'
@@ -158,6 +160,7 @@ export default function AppLayout() {
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [aiSettingsOpen, setAiSettingsOpen] = useState(false)
   const [bugReportOpen, setBugReportOpen] = useState(false)
   const [snackbar, setSnackbar] = useState<string | null>(null)
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null)
@@ -697,6 +700,17 @@ export default function AppLayout() {
                 <ListItemText primary={t('courses.courseSettings')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
               </ListItemButton>
             </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => { setAiSettingsOpen(true); if (isMobile) setDrawerOpen(false) }}
+                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  <AutoAwesomeOutlined sx={{ fontSize: 18 }} color="action" />
+                </ListItemIcon>
+                <ListItemText primary={t('courses.aiSettings')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
+              </ListItemButton>
+            </ListItem>
             {moodleCourseItem}
           </List>
         )}
@@ -1182,6 +1196,13 @@ export default function AppLayout() {
           courseId={loadableCourseId}
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
+        />
+      )}
+      {isTeacherOrAdmin && loadableCourseId && (
+        <CourseAiSettingsDialog
+          courseId={loadableCourseId}
+          open={aiSettingsOpen}
+          onClose={() => setAiSettingsOpen(false)}
         />
       )}
 
