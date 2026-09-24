@@ -11,6 +11,7 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import org.jetbrains.exposed.v1.core.eq
@@ -43,6 +44,10 @@ class UpdateCourseAiPropsController {
         @param:JsonProperty("model") @field:NotBlank @field:Size(max = 100) val model: String,
         @param:JsonProperty("base_url") @field:Size(max = 500) val baseUrl: String?,
         @param:JsonProperty("api_key") @field:Size(max = 500) val apiKey: String?,
+        // EZ-1712. Tokens, in + out. Null lifts the limit; the counter is untouched either way —
+        // resetting it is its own action (ResetCourseAiUsage), so that raising a budget is not
+        // also, silently, a reset.
+        @param:JsonProperty("token_budget") @field:Min(1) val tokenBudget: Long?,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -64,6 +69,9 @@ class UpdateCourseAiPropsController {
                     it[aiApiKey] = null
                     it[aiBaseUrl] = null
                     it[aiModel] = null
+                    // The budget goes with the config; the counter and its reset date stay, so that
+                    // switching AI off and on again does not also forget what it has cost so far.
+                    it[aiTokenBudget] = null
                 }
             }
             return
@@ -114,6 +122,7 @@ class UpdateCourseAiPropsController {
             Course.update({ Course.id eq courseId }) {
                 it[aiProvider] = props.provider
                 it[aiModel] = props.model.trim()
+                it[aiTokenBudget] = props.tokenBudget
                 // An admin's write is authoritative for the URL, blank included; a teacher's keeps it.
                 if (caller.isAdmin()) it[aiBaseUrl] = newBaseUrl
                 if (newKey != null) it[aiApiKey] = newKey.trim()

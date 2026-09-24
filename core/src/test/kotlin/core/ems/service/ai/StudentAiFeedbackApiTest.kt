@@ -12,6 +12,7 @@ import core.testing.HttpApi
 import core.testing.IntegrationTest
 import core.testing.TestClock
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
@@ -256,6 +257,69 @@ class StudentAiFeedbackApiTest(@Autowired mockMvc: MockMvc) {
         }
         assertEquals(200, explain(legacy).status)
         assertTrue(anthropic.requests.single().body.contains("Expected 1, got 3"))
+    }
+
+    private fun tokensUsed(): Long = transaction {
+        Course.select(Course.aiTokensUsed).where { Course.id eq courseId }.single()[Course.aiTokensUsed]
+    }
+
+    private fun setBudget(budget: Long?, used: Long) = transaction {
+        Course.update({ Course.id eq courseId }) {
+            it[aiTokenBudget] = budget
+            it[aiTokensUsed] = used
+        }
+    }
+
+    @Test
+    fun `every answer is charged to the course's counter, in plus out`() {
+        anthropic.respond(FakeAnthropic.Behaviour.Answer("One.", inputTokens = 700, outputTokens = 30))
+        assertEquals(200, explain().status)
+        assertEquals(730L, tokensUsed())
+
+        // A second submission, a second charge; the idempotent re-read of the first costs nothing.
+        assertEquals(200, explain().status)
+        assertEquals(730L, tokensUsed())
+        val second = transaction { failedSubmission(student, number = 2) }
+        assertEquals(200, explain(second).status)
+        assertEquals(1460L, tokensUsed())
+    }
+
+    @Test
+    fun `a failed answer is not charged`() {
+        anthropic.respond(FakeAnthropic.Behaviour.Fail(500))
+        explain()
+        assertEquals(0L, tokensUsed())
+    }
+
+    @Test
+    fun `a spent budget refuses before the provider is called, and hides the button`() {
+        setBudget(budget = 1000, used = 1000)
+
+        val resp = explain()
+        assertEquals("AI_LIMIT_REACHED", resp.errorCode) { resp.body }
+        assertEquals("token_budget", resp.jsonOrNull?.get("attrs")?.get("limit")?.asString())
+        assertTrue(anthropic.requests.isEmpty()) { "The provider was called with the budget spent" }
+        assertTrue(rows().isEmpty())
+
+        val page = api.get("/v2/student/courses/$courseId/exercises/$courseExId", Auth.asStudent(student))
+        assertEquals("false", page.field("ai_feedback_enabled")) { page.body }
+    }
+
+    @Test
+    fun `the last request under budget goes through and may overshoot`() {
+        setBudget(budget = 1000, used = 999)
+        anthropic.respond(FakeAnthropic.Behaviour.Answer("One.", inputTokens = 700, outputTokens = 30))
+        assertEquals(200, explain().status)
+        assertEquals(1729L, tokensUsed())
+        // ...and the next one does not.
+        val second = transaction { failedSubmission(student, number = 2) }
+        assertEquals("AI_LIMIT_REACHED", explain(second).errorCode)
+    }
+
+    @Test
+    fun `no budget means no limit`() {
+        setBudget(budget = null, used = 5_000_000)
+        assertEquals(200, explain().status)
     }
 
     @Test

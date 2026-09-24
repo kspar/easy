@@ -34,7 +34,8 @@
     "bugReportRateLimited": "You have sent several reports just now. Wait a moment before sending another.",
     "aiNotConfigured": "AI feedback is not switched on for this course.",
     "aiFeedbackNotAvailable": "There is nothing to explain for this submission. Only your latest submission with failing tests can be explained.",
-    "aiProviderError": "The AI service did not answer. This is not a problem with your solution — try again in a while."
+    "aiProviderError": "The AI service did not answer. This is not a problem with your solution — try again in a while.",
+    "aiLimitReached": "This course has used up its AI budget. Your teacher can raise or reset it."
   },
   "general": {
     "add": "Add",
@@ -173,7 +174,17 @@
     "aiDisable": "Switch off",
     "aiDisableConfirm": "Switch off AI feedback for this course? The stored key is deleted; explanations students have already received stay.",
     "aiSaved": "AI settings saved",
-    "aiDisabled": "AI feedback switched off"
+    "aiDisabled": "AI feedback switched off",
+    "aiTokenBudget": "Token budget",
+    "aiTokenBudgetHelp": "Tokens in and out, across the whole course. Empty means no limit.",
+    "aiTokenBudgetEstimate": "≈ {{cost}} at current {{provider}} list prices",
+    "aiTokenBudgetNoEstimate": "No price known for this model, so no estimate.",
+    "aiUsage": "Used: {{tokens}} tokens",
+    "aiUsageWithCost": "Used: {{tokens}} tokens (≈ {{cost}})",
+    "aiUsageSince": "since {{date}}",
+    "aiUsageReset": "Reset counter",
+    "aiUsageResetConfirm": "Reset this course's token counter to zero? The budget stays; the explanations already given are kept.",
+    "aiUsageResetDone": "Token counter reset"
   },
   "exercises": {
     "title": "Exercises",

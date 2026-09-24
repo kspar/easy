@@ -70,7 +70,7 @@ class StudentReadExerciseDetailsController {
                 ExerciseVer.solutionFileType, CourseExercise.softDeadline, CourseExercise.hardDeadline,
                 CourseExercise.gradeThreshold, CourseExercise.instructionsHtml,
                 CourseExercise.titleAlias, CourseExercise.studentVisibleFrom,
-                Course.aiProvider, Course.aiApiKey,
+                Course.aiProvider, Course.aiApiKey, Course.aiTokenBudget, Course.aiTokensUsed,
             )
             .where {
                 CourseExercise.course eq courseId and
@@ -90,7 +90,10 @@ class StudentReadExerciseDetailsController {
                     isCourseExerciseOpenForSubmit(exceptions, courseExId, studentId, it[CourseExercise.hardDeadline]),
                     it[ExerciseVer.solutionFileName],
                     it[ExerciseVer.solutionFileType],
-                    it[Course.aiProvider] != null && !it[Course.aiApiKey].isNullOrBlank(),
+                    // Configured, and not out of budget: a spent budget hides the button rather
+                    // than offering one that answers with an error (EZ-1712).
+                    it[Course.aiProvider] != null && !it[Course.aiApiKey].isNullOrBlank() &&
+                            (it[Course.aiTokenBudget]?.let { b -> it[Course.aiTokensUsed] < b } ?: true),
                 )
             }
             .singleOrInvalidRequest()

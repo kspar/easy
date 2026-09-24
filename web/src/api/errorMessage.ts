@@ -62,6 +62,7 @@ const CODE_KEYS: Record<string, string> = {
   AI_NOT_CONFIGURED: 'errors.aiNotConfigured',
   AI_FEEDBACK_NOT_AVAILABLE: 'errors.aiFeedbackNotAvailable',
   AI_PROVIDER_ERROR: 'errors.aiProviderError',
+  AI_LIMIT_REACHED: 'errors.aiLimitReached',
 
   // TSL_COMPILE_FAILED is deliberately absent: X-018 gives it a fuller treatment, with the
   // compiler's own diagnostic behind a disclosure. A one-liner here would be a downgrade.

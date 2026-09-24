@@ -42,7 +42,9 @@ enum class ReqError(val errorCodeStr: String) {
     // latest failed one; the provider answered with an error or not at all.
     AI_NOT_CONFIGURED("AI_NOT_CONFIGURED"),
     AI_FEEDBACK_NOT_AVAILABLE("AI_FEEDBACK_NOT_AVAILABLE"),
-    AI_PROVIDER_ERROR("AI_PROVIDER_ERROR")
+    AI_PROVIDER_ERROR("AI_PROVIDER_ERROR"),
+    // The course's token budget is spent. Attribute `limit` names which limit, for when there are more.
+    AI_LIMIT_REACHED("AI_LIMIT_REACHED")
 }
 
 

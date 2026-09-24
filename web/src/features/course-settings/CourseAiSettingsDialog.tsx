@@ -17,9 +17,11 @@ import {
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../auth/useAuth.ts'
-import { useCourseAiProps, useUpdateCourseAiProps } from '../../api/courses.ts'
+import { useCourseAiProps, useResetCourseAiUsage, useUpdateCourseAiProps } from '../../api/courses.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
 import ConfirmDialog from '../../components/ConfirmDialog.tsx'
+import { formatDateTime, useDateLocale } from '../../i18n/dateLocale.ts'
+import { estimateUsd, formatUsd } from './aiPricing.ts'
 
 const DEFAULT_MODEL = 'claude-opus-5'
 
@@ -47,18 +49,23 @@ export default function CourseAiSettingsDialog({
   const isAdmin = activeRole === 'admin'
   const { data: props, isLoading } = useCourseAiProps(courseId, open)
   const update = useUpdateCourseAiProps(courseId)
+  const resetUsage = useResetCourseAiUsage(courseId)
+  const dateLocale = useDateLocale()
 
   const [model, setModel] = useState(DEFAULT_MODEL)
   const [apiKey, setApiKey] = useState('')
   const [baseUrl, setBaseUrl] = useState('')
+  const [tokenBudget, setTokenBudget] = useState('')
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [confirmDisable, setConfirmDisable] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   const [snack, setSnack] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     setModel(props?.model ?? DEFAULT_MODEL)
     setBaseUrl(props?.base_url ?? '')
+    setTokenBudget(props?.token_budget != null ? String(props.token_budget) : '')
     setAdvancedOpen(!!props?.base_url)
     // Never pre-filled: the server does not have it to give, and a field that looks full would
     // invite "save" to overwrite a working key with the placeholder.
@@ -66,7 +73,21 @@ export default function CourseAiSettingsDialog({
   }, [props, open])
 
   const configured = props?.api_key_configured === true
-  const canSave = model.trim().length > 0 && (configured || apiKey.trim().length > 0) && !update.isPending
+
+  // Digits only; an empty field is "no limit". Anything else is refused at the Save button rather
+  // than sent for core to refuse.
+  const budgetDigits = tokenBudget.replace(/[\s,]/g, '')
+  const budgetValid = budgetDigits === '' || /^[1-9]\d*$/.test(budgetDigits)
+  const budgetNumber = budgetValid && budgetDigits !== '' ? Number(budgetDigits) : null
+  const canSave = model.trim().length > 0 && budgetValid && (configured || apiKey.trim().length > 0) && !update.isPending
+
+  // The estimate follows the model field as it is typed, so a teacher weighing two models sees
+  // the price move. What has been spent is priced at the same rate — a course that changed model
+  // mid-way gets an approximation, which is what the "≈" is for.
+  const budgetEstimate = budgetNumber != null ? estimateUsd(model, budgetNumber) : null
+  const usedTokens = props?.tokens_used ?? 0
+  const usedEstimate = usedTokens > 0 ? estimateUsd(model, usedTokens) : null
+  const tokensFmt = (n: number) => n.toLocaleString(dateLocale.code === 'et' ? 'et-EE' : 'en-GB')
 
   function handleSave() {
     update.mutate(
@@ -77,6 +98,7 @@ export default function CourseAiSettingsDialog({
           // A teacher's write never carries a URL; core keeps the stored one for them.
           base_url: isAdmin ? baseUrl.trim() || null : null,
           api_key: apiKey.trim() || null,
+          token_budget: budgetNumber,
         },
       },
       {
@@ -86,6 +108,11 @@ export default function CourseAiSettingsDialog({
         },
       },
     )
+  }
+
+  function handleReset() {
+    setConfirmReset(false)
+    resetUsage.mutate(undefined, { onSuccess: () => setSnack(t('courses.aiUsageResetDone')) })
   }
 
   function handleDisable() {
@@ -147,6 +174,47 @@ export default function CourseAiSettingsDialog({
             inputProps={{ maxLength: 500 }}
           />
 
+          <TextField
+            label={t('courses.aiTokenBudget')}
+            value={tokenBudget}
+            onChange={(e) => setTokenBudget(e.target.value)}
+            size="small"
+            disabled={isLoading}
+            error={!budgetValid}
+            inputProps={{ inputMode: 'numeric', maxLength: 15 }}
+            helperText={
+              budgetNumber == null
+                ? t('courses.aiTokenBudgetHelp')
+                : budgetEstimate != null
+                  ? t('courses.aiTokenBudgetEstimate', { cost: formatUsd(budgetEstimate), provider: 'Anthropic' })
+                  : t('courses.aiTokenBudgetNoEstimate')
+            }
+          />
+
+          {configured && (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                {usedEstimate != null
+                  ? t('courses.aiUsageWithCost', { tokens: tokensFmt(usedTokens), cost: formatUsd(usedEstimate) })
+                  : t('courses.aiUsage', { tokens: tokensFmt(usedTokens) })}
+                {props?.tokens_reset_at && (
+                  <>
+                    {' · '}
+                    {t('courses.aiUsageSince', { date: formatDateTime(new Date(props.tokens_reset_at), dateLocale) })}
+                  </>
+                )}
+              </Typography>
+              <Button
+                size="small"
+                onClick={() => setConfirmReset(true)}
+                disabled={resetUsage.isPending || usedTokens === 0}
+                sx={{ textTransform: 'none', flexShrink: 0 }}
+              >
+                {t('courses.aiUsageReset')}
+              </Button>
+            </Box>
+          )}
+
           {isAdmin && (
           <Box>
             <Button size="small" onClick={() => setAdvancedOpen((v) => !v)} sx={{ textTransform: 'none', px: 0 }}>
@@ -192,6 +260,15 @@ export default function CourseAiSettingsDialog({
         confirmLabel={t('courses.aiDisable')}
         onClose={() => setConfirmDisable(false)}
         onConfirm={handleDisable}
+      />
+
+      <ConfirmDialog
+        open={confirmReset}
+        message={t('courses.aiUsageResetConfirm')}
+        confirmLabel={t('courses.aiUsageReset')}
+        confirmColor="primary"
+        onClose={() => setConfirmReset(false)}
+        onConfirm={handleReset}
       />
 
       <Snackbar

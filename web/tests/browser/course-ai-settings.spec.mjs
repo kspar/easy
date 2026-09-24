@@ -18,10 +18,20 @@ test('course-ai-settings', async ({ launch, check }) => {
   const { page, shot, close } = await launch({ role: 'teacher,admin', language: 'en', shotPrefix: 'course-ai-settings-' })
 
   let configured = true
+  let tokensUsed = 123456
   const puts = []
+  const resets = []
 
   await fakeApi(page, [
     ['/account/checkin', () => ({})],
+    // Before the props handler, whose needle is a prefix of this URL.
+    [`/courses/${COURSE_ID}/ai/reset-usage`, ({ method }) => {
+      if (method === 'POST') {
+        resets.push(method)
+        tokensUsed = 0
+      }
+      return {}
+    }],
     [`/courses/${COURSE_ID}/ai`, ({ method, body }) => {
       if (method === 'PUT') {
         puts.push(body)
@@ -30,7 +40,10 @@ test('course-ai-settings', async ({ launch, check }) => {
       }
       return {
         ai_props: configured
-          ? { provider: 'ANTHROPIC', model: 'claude-opus-5', base_url: null, api_key_configured: true, api_key_hint: '9876' }
+          ? {
+            provider: 'ANTHROPIC', model: 'claude-opus-5', base_url: null, api_key_configured: true, api_key_hint: '9876',
+            token_budget: 1000000, tokens_used: tokensUsed, tokens_reset_at: null,
+          }
           : null,
       }
     }],
@@ -63,17 +76,55 @@ test('course-ai-settings', async ({ launch, check }) => {
     await waitUntil(async () => (await dialog.getByPlaceholder(/ends in 9876/).count()) > 0),
   )
   check('and the value is nowhere on the page', (await page.getByText('sk-ant').count()) === 0)
-  await shot('01-dialog')
 
-  // --- edit the model, leave the key alone ------------------------------------------------------
+  // --- budget, estimate and usage ---------------------------------------------------------------
+  // 1 000 000 tokens on claude-opus-5 at 90 % input: 0.9 × $5 + 0.1 × $25 = $7.00.
+  const budgetField = dialog.getByLabel(/Token budget/)
+  check('the budget is shown', await waitUntil(async () => (await budgetField.inputValue()) === '1000000'))
+  check('with its estimated cost', (await dialog.getByText(/≈ \$7\.00/).count()) > 0)
+  check('and what has been used so far, priced the same way', (await dialog.getByText(/Used: 123[\s,]456 tokens \(≈ \$0\.86\)/).count()) > 0)
+
+  // The estimate follows the model as it is typed: sonnet is 2/10, so $2.80.
   const modelField = dialog.getByLabel(/^Model/)
   await modelField.fill('claude-sonnet-5')
+  check('changing the model re-prices the budget', await waitUntil(async () => (await dialog.getByText(/≈ \$2\.80/).count()) > 0))
+  await modelField.fill('my-local-model')
+  check('an unknown model gets no estimate rather than a wrong one', await waitUntil(async () => (await dialog.getByText(/No price known/).count()) > 0))
+  await modelField.fill('claude-sonnet-5')
+
+  // A budget of 2 500 000 on sonnet: $7.00 again, by a different route.
+  await budgetField.fill('2500000')
+  check('a new budget is re-estimated', await waitUntil(async () => (await dialog.getByText(/≈ \$7\.00/).count()) > 0))
+  await shot('01-dialog')
+
+  await budgetField.fill('abc')
+  check('a non-number disables Save', await waitUntil(() => dialog.getByRole('button', { name: /^Save$/ }).isDisabled()))
+  await budgetField.fill('2500000')
+
+  // --- edit the model, leave the key alone ------------------------------------------------------
   await dialog.getByRole('button', { name: /^Save$/ }).click()
 
   check('saving PUTs once', await waitUntil(() => puts.length === 1))
   check('with the new model', puts[0]?.ai_props?.model === 'claude-sonnet-5')
+  check('and the new budget as a number', puts[0]?.ai_props?.token_budget === 2500000)
   check('and api_key null, meaning keep the stored one', puts[0]?.ai_props?.api_key === null)
   check('the dialog closes', await waitUntil(async () => (await page.getByRole('dialog').count()) === 0))
+
+  // --- reset the counter ------------------------------------------------------------------------
+  await entry.click()
+  await waitUntil(() => page.getByRole('dialog').isVisible())
+  await page.getByRole('dialog').getByRole('button', { name: /Reset counter/ }).click()
+  const resetConfirm = page.getByRole('dialog').filter({ hasText: /Reset this course's token counter/ })
+  check('resetting asks first', await waitUntil(() => resetConfirm.isVisible()))
+  await resetConfirm.getByRole('button', { name: /Reset counter/ }).click()
+  check('confirming POSTs to reset-usage, and nothing to the props', await waitUntil(() => resets.length === 1 && puts.length === 1))
+  check(
+    'and the dialog now shows zero used, with the reset button gone quiet',
+    await waitUntil(async () => (await page.getByRole('dialog').getByText(/Used: 0 tokens/).count()) > 0),
+  )
+  check('reset is disabled at zero', await page.getByRole('dialog').getByRole('button', { name: /Reset counter/ }).isDisabled())
+  await page.getByRole('dialog').getByRole('button', { name: /^Cancel$/ }).click()
+  await waitUntil(async () => (await page.getByRole('dialog').count()) === 0)
 
   // --- switch off -------------------------------------------------------------------------------
   await entry.click()

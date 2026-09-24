@@ -78,6 +78,7 @@
     "POST /v2/courses/join/{invite-id}": { "response": "core.ems.service.course.invite.JoinCourseByInvite.Resp" },
     "POST /v2/courses/moodle/join/{inviteId}": { "response": "core.ems.service.course.invite.moodle.JoinMoodleLinkedCourseByInvite.Resp" },
     "POST /v2/courses/moodle/{courseId}/students/invite": { "request": "core.ems.service.course.invite.moodle.SendMoodleCourseInvites.Req" },
+    "POST /v2/courses/{courseId}/ai/reset-usage": {  },
     "POST /v2/courses/{courseId}/archive": { "request": "core.ems.service.course.ArchiveCourse.Req" },
     "POST /v2/courses/{courseId}/exercises/{courseExerciseId}/reorder": { "request": "core.ems.service.exercise.TeacherReorderExerciseController.Req" },
     "POST /v2/courses/{courseId}/groups": { "request": "core.ems.service.course.group.CreateCourseGroupController.Req", "response": "core.ems.service.course.group.CreateCourseGroupController.Resp" },
@@ -346,7 +347,10 @@
       "api_key_hint": { "kind": "string", "nullable": true },
       "base_url": { "kind": "string", "nullable": true },
       "model": { "kind": "string" },
-      "provider": { "kind": "enum", "values": ["ANTHROPIC"] }
+      "provider": { "kind": "enum", "values": ["ANTHROPIC"] },
+      "token_budget": { "kind": "number", "nullable": true },
+      "tokens_reset_at": { "kind": "datetime", "nullable": true },
+      "tokens_used": { "kind": "number" }
     },
     "core.ems.service.ai.ReadCourseAiPropsController.Resp": {
       "ai_props": { "kind": "object", "nullable": true, "type": "core.ems.service.ai.ReadCourseAiPropsController.AiPropsResp" }
@@ -355,7 +359,8 @@
       "api_key": { "kind": "string", "nullable": true },
       "base_url": { "kind": "string", "nullable": true },
       "model": { "kind": "string" },
-      "provider": { "kind": "enum", "values": ["ANTHROPIC"] }
+      "provider": { "kind": "enum", "values": ["ANTHROPIC"] },
+      "token_budget": { "kind": "number", "nullable": true }
     },
     "core.ems.service.ai.UpdateCourseAiPropsController.Req": {
       "ai_props": { "kind": "object", "nullable": true, "type": "core.ems.service.ai.UpdateCourseAiPropsController.AiPropsReq" }

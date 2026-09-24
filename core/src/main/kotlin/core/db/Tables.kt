@@ -110,6 +110,12 @@ object Course : LongIdTable("course") {
     val aiApiKey = text("ai_api_key").nullable()
     val aiBaseUrl = text("ai_base_url").nullable()
     val aiModel = text("ai_model").nullable()
+
+    // EZ-1712. Budget in tokens (in + out), null = unlimited; the counter it is compared with, bumped
+    // with every OK explanation; and when the counter was last zeroed. See changeset 240926-3.
+    val aiTokenBudget = long("ai_token_budget").nullable()
+    val aiTokensUsed = long("ai_tokens_used").default(0)
+    val aiTokensResetAt = datetime("ai_tokens_reset_at").nullable()
 }
 
 object CourseGroup : LongIdTable("course_group") {

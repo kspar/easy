@@ -10,7 +10,7 @@
   "auth-redirect-loop.spec.mjs": 16,
   "boot-guard.spec.mjs": 14,
   "bug-report.spec.mjs": 32,
-  "course-ai-settings.spec.mjs": 13,
+  "course-ai-settings.spec.mjs": 25,
   "course-exercise-ai-feedback-teacher.spec.mjs": 5,
   "course-exercise-ai-feedback.spec.mjs": 13,
   "course-exercise-assessment.spec.mjs": 18,

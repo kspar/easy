@@ -10,6 +10,8 @@ import core.exception.ReqError
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.plus
+import org.jetbrains.exposed.v1.jdbc.update
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
@@ -51,6 +53,16 @@ class AiFeedbackService(
                 "Course $courseId has no AI provider configured", ReqError.AI_NOT_CONFIGURED, notify = false
             )
 
+        // Checked before the call, charged after it. One request can therefore overshoot the
+        // budget by its own size, which is the cheap and honest alternative to reserving tokens
+        // for an answer whose length nobody knows yet.
+        if (isBudgetSpent(courseId)) {
+            throw InvalidRequestException(
+                "AI token budget of course $courseId is spent", ReqError.AI_LIMIT_REACHED,
+                "limit" to "token_budget", notify = false
+            )
+        }
+
         val ctx = loadContext(courseExId, submissionId, studentId, language)
         val built = AiFeedbackPrompt.build(ctx)
         val audit = built.forAudit()
@@ -79,6 +91,7 @@ class AiFeedbackService(
                 courseExId, submissionId, studentId, AiFeedbackStatus.OK, provider.type, result.model,
                 feedbackMd = result.text, feedbackHtml = html, prompt = audit, raw = result.rawResponse,
                 tokensIn = result.tokensIn, tokensOut = result.tokensOut,
+                chargeToCourse = courseId,
             )
             log.info { "AI feedback $id stored for submission $submissionId (${result.tokensIn} in, ${result.tokensOut} out)" }
             selectOk(submissionId) ?: throw IllegalStateException("AI feedback $id was inserted and is not there")
@@ -143,11 +156,34 @@ class AiFeedbackService(
     private fun notAvailable(why: String) =
         InvalidRequestException("AI feedback not available: $why", ReqError.AI_FEEDBACK_NOT_AVAILABLE, notify = false)
 
+    private fun isBudgetSpent(courseId: Long): Boolean = transaction {
+        Course.select(Course.aiTokenBudget, Course.aiTokensUsed)
+            .where { Course.id eq courseId }
+            .single()
+            .let { row ->
+                val budget = row[Course.aiTokenBudget] ?: return@let false
+                row[Course.aiTokensUsed] >= budget
+            }
+    }
+
+    /**
+     * The audit row, and — for an OK answer — the course's counter in the same transaction, so
+     * the two cannot disagree by a crash between them. FAILED rows carry no tokens and charge
+     * nothing; the vendor may still bill a refusal, which is a known inaccuracy in the counter's
+     * favour of the student.
+     */
     private fun insertRow(
         courseExId: Long, submissionId: Long, studentId: String, status: AiFeedbackStatus,
         provider: AiProviderType, model: String, feedbackMd: String?, feedbackHtml: String?,
         prompt: String, raw: String?, tokensIn: Int?, tokensOut: Int?,
+        chargeToCourse: Long? = null,
     ): Long = transaction {
+        val charge = (tokensIn ?: 0).toLong() + (tokensOut ?: 0).toLong()
+        if (chargeToCourse != null && charge > 0) {
+            Course.update({ Course.id eq chargeToCourse }) {
+                it.update(aiTokensUsed, aiTokensUsed + charge)
+            }
+        }
         AiFeedback.insertAndGetId {
             it[courseExercise] = EntityID(courseExId, CourseExercise)
             it[submission] = EntityID(submissionId, Submission)

@@ -317,6 +317,8 @@ object Fixtures {
         aiApiKey: String? = null,
         aiBaseUrl: String? = null,
         aiModel: String? = null,
+        aiTokenBudget: Long? = null,
+        aiTokensUsed: Long = 0,
     ): Long = Course.insertAndGetId {
         it[Course.title] = title
         it[Course.alias] = alias
@@ -332,6 +334,8 @@ object Fixtures {
         it[Course.aiApiKey] = aiApiKey
         it[Course.aiBaseUrl] = aiBaseUrl
         it[Course.aiModel] = aiModel
+        it[Course.aiTokenBudget] = aiTokenBudget
+        it[Course.aiTokensUsed] = aiTokensUsed
     }.value
 
     /**

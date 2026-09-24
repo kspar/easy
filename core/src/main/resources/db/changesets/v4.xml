@@ -876,4 +876,24 @@
         </rollback>
     </changeSet>
 
+    <!--
+        EZ-1712. A per-course token budget, compared against a counter the teacher can reset.
+
+        A counter column, not a SUM over ai_feedback: the sum would be the truth, but it can never
+        be reset without deleting the audit rows, and "reset at the start of the semester" is the
+        whole point. The counter is bumped in the same transaction as the OK row, so the two agree
+        except by a reset. `ai_token_budget` null means no limit — the state every existing course
+        is in — and `ai_tokens_reset_at` says since when the counter counts, for the teacher's
+        "used since …" line.
+    -->
+    <changeSet id="240926-3" author="kspar">
+        <addColumn tableName="course">
+            <column name="ai_token_budget" type="bigint"/>
+            <column name="ai_tokens_used" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ai_tokens_reset_at" type="timestamp"/>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

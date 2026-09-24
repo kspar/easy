@@ -34,7 +34,8 @@
     "bugReportRateLimited": "Saatsid just mitu teadet. Oota hetk, enne kui saadad järgmise.",
     "aiNotConfigured": "AI tagasiside ei ole sellel kursusel sisse lülitatud.",
     "aiFeedbackNotAvailable": "Selle esituse kohta pole midagi selgitada. Selgitada saab ainult viimast esitust, mille testid ebaõnnestusid.",
-    "aiProviderError": "AI teenus ei vastanud. See ei ole sinu lahenduse viga — proovi mõne aja pärast uuesti."
+    "aiProviderError": "AI teenus ei vastanud. See ei ole sinu lahenduse viga — proovi mõne aja pärast uuesti.",
+    "aiLimitReached": "Selle kursuse AI eelarve on otsas. Õpetaja saab seda suurendada või nullida."
   },
   "general": {
     "add": "Lisa",
@@ -173,7 +174,17 @@
     "aiDisable": "Lülita välja",
     "aiDisableConfirm": "Lülitada AI tagasiside sellel kursusel välja? Salvestatud võti kustutatakse; õpilastele juba antud selgitused jäävad alles.",
     "aiSaved": "AI sätted salvestatud",
-    "aiDisabled": "AI tagasiside on välja lülitatud"
+    "aiDisabled": "AI tagasiside on välja lülitatud",
+    "aiTokenBudget": "Tokenite eelarve",
+    "aiTokenBudgetHelp": "Sisend- ja väljundtokenid kokku, terve kursuse peale. Tühi tähendab, et piirangut pole.",
+    "aiTokenBudgetEstimate": "≈ {{cost}} {{provider}} praeguste hinnakirjahindade järgi",
+    "aiTokenBudgetNoEstimate": "Selle mudeli hinda ei tea, seega hinnangut pole.",
+    "aiUsage": "Kasutatud: {{tokens}} tokenit",
+    "aiUsageWithCost": "Kasutatud: {{tokens}} tokenit (≈ {{cost}})",
+    "aiUsageSince": "alates {{date}}",
+    "aiUsageReset": "Nulli loendur",
+    "aiUsageResetConfirm": "Nullida selle kursuse tokenite loendur? Eelarve jääb alles; juba antud selgitused säilivad.",
+    "aiUsageResetDone": "Tokenite loendur nullitud"
   },
   "exercises": {
     "title": "Ülesanded",

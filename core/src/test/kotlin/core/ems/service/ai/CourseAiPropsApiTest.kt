@@ -10,8 +10,10 @@ import core.testing.TestClock
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -149,6 +151,53 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(403, read(outsider).status)
         assertEquals(403, write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k"), outsider).status)
         assertNull(storedKey())
+    }
+
+    private fun stored(): Triple<Long?, Long, Boolean> = transaction {
+        val row = Course.select(Course.aiTokenBudget, Course.aiTokensUsed, Course.aiTokensResetAt)
+            .where { Course.id eq courseId }.single()
+        Triple(row[Course.aiTokenBudget], row[Course.aiTokensUsed], row[Course.aiTokensResetAt] != null)
+    }
+
+    @Test
+    fun `the budget is written with the props and read back with the counter`() {
+        val put = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "token_budget" to 250_000))
+        assertEquals(200, put.status) { put.body }
+
+        val props = read().jsonOrNull!!.get("ai_props")
+        assertEquals(250_000L, props.get("token_budget").asLong())
+        assertEquals(0L, props.get("tokens_used").asLong())
+        assertTrue(props.get("tokens_reset_at").isNull)
+
+        // Lifting the limit is a null, not a zero.
+        write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to null, "token_budget" to null))
+        assertTrue(read().jsonOrNull!!.get("ai_props").get("token_budget").isNull)
+
+        val zero = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to null, "token_budget" to 0))
+        assertEquals(400, zero.status) { zero.body }
+    }
+
+    @Test
+    fun `reset zeroes the counter, records when, and leaves the budget alone`() {
+        write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "token_budget" to 1000))
+        transaction { Course.update({ Course.id eq courseId }) { it[aiTokensUsed] = 800 } }
+        assertEquals(Triple<Long?, Long, Boolean>(1000, 800, false), stored())
+
+        val resp = api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asTeacher(teacher))
+        assertEquals(200, resp.status) { resp.body }
+        assertEquals(Triple<Long?, Long, Boolean>(1000, 0, true), stored())
+        assertFalse(read().jsonOrNull!!.get("ai_props").get("tokens_reset_at").isNull)
+
+        assertEquals(403, api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asTeacher(outsider)).status)
+        assertEquals(403, api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asStudent(student)).status)
+    }
+
+    @Test
+    fun `switching off drops the budget but keeps the count`() {
+        write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "token_budget" to 1000))
+        transaction { Course.update({ Course.id eq courseId }) { it[aiTokensUsed] = 800 } }
+        write(null)
+        assertEquals(Triple<Long?, Long, Boolean>(null, 800, false), stored())
     }
 
     @Test

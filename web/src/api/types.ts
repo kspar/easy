@@ -128,6 +128,11 @@ export interface CourseAiProps {
   /** The key itself never comes back; this and the last four characters are all a teacher sees. */
   api_key_configured: boolean
   api_key_hint: string | null
+  /** Tokens (in + out); null means no limit. */
+  token_budget: number | null
+  /** Spent against the budget since `tokens_reset_at` (or ever, when that is null). */
+  tokens_used: number
+  tokens_reset_at: string | null
 }
 
 /** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/activities -> teacher_activities[].teacher */

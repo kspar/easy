@@ -98,11 +98,24 @@ export function useUpdateCourseAiProps(courseId: string) {
         model: string
         base_url: string | null
         api_key: string | null
+        token_budget: number | null
       } | null
     }) => apiFetch(`/courses/${courseId}/ai`, { method: 'PUT', body }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses', courseId, 'ai'] })
       // The student page reads `ai_feedback_enabled` from the exercise details.
+      queryClient.invalidateQueries({ queryKey: ['student', 'courses', courseId, 'exercises'] })
+    },
+  })
+}
+
+/** EZ-1712. Zero the course's token counter. The budget and the audit rows stay. */
+export function useResetCourseAiUsage(courseId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => apiFetch(`/courses/${courseId}/ai/reset-usage`, { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses', courseId, 'ai'] })
       queryClient.invalidateQueries({ queryKey: ['student', 'courses', courseId, 'exercises'] })
     },
   })
