@@ -10,6 +10,7 @@ import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
 import core.ems.service.access_control.studentOnCourse
 import core.ems.service.idToLongOrInvalidReq
+import core.ems.service.selectWork
 import kotlinx.coroutines.runBlocking
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.SortOrder
@@ -59,25 +60,9 @@ class StudentAwaitLatestSubmissionController(private val autoAssessStatusObserve
         autoAssessStatusObserver.get(latestSubmissionId, ObserverCallerType.STUDENT)?.join()
     }
 
+    // EZ-1927: the summary row says which attempt is latest; nothing is ordered or guessed. The
+    // course exercise is already known to be on the course (assertCourseExerciseIsOnCourse above).
     private fun lastSubmissionId(courseId: Long, courseExId: Long, studentId: String): Long? = transaction {
-        (CourseExercise innerJoin Submission)
-            .select(Submission.id)
-            .where {
-                CourseExercise.course eq courseId and
-                        (CourseExercise.id eq courseExId) and
-                        (Submission.student eq studentId)
-            }
-            // Tiebreakers make the order total. created_at is millisecond-resolution, so two
-            // submissions can share one and `LIMIT 1` then returns an arbitrary one of them —
-            // here that means awaiting the wrong submission's grade. Same defect as the
-            // DISTINCT ON in courses.kt; see the longer note there (EZ-1763).
-            .orderBy(
-                Submission.createdAt to SortOrder.DESC,
-                Submission.number to SortOrder.DESC,
-                Submission.id to SortOrder.DESC
-            )
-            .limit(1)
-            .map { it[Submission.id].value }
-            .firstOrNull()
+        selectWork(courseExId, studentId)?.latestSubmissionId
     }
 }

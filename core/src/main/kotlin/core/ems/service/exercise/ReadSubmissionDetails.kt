@@ -65,20 +65,6 @@ class ReadSubmissionDetails {
         return selectSubmissionDetails(submissionId, courseExId, caller.id)
     }
 
-    /**
-     * Whether any of this student's attempts at this exercise carries the flag.
-     *
-     * Not the attempt on screen: the flag marks the student's work, the button that sets it only
-     * appears on the newest attempt, and the two lists that show it read the newest too. Asking the
-     * submission alone would have this page disagree with the list it was opened from as soon as
-     * the student submitted again.
-     */
-    private fun isWorkFlagged(courseExId: Long, studentId: String): Boolean =
-        Submission.select(Submission.id).where {
-            Submission.courseExercise eq courseExId and (Submission.student eq studentId) and
-                    (Submission.flagged eq true)
-        }.limit(1).any()
-
     private fun selectSubmissionDetails(submissionId: Long, courseExId: Long, callerId: String): Resp = transaction {
         // Left-joined and filtered to the caller: seen is a row per teacher, and a colleague's row
         // is not an answer to whether this teacher has read it.
@@ -90,31 +76,28 @@ class ReadSubmissionDetails {
             }
             .select(
                 Submission.id,
-                Submission.grade,
-                Submission.isAutoGrade,
                 Submission.solution,
                 Submission.createdAt,
                 Submission.autoGradeStatus,
                 callerHasSeen,
                 Submission.student,
                 Submission.number,
-                Submission.isGradedDirectly
             )
             .where { Submission.id eq submissionId and (Submission.courseExercise eq courseExId) }
             .map {
+                // EZ-1927. The flag and the grade come off the student's summary row: the flag marks
+                // the work, not the attempt, and the grade is the attempt's own unless this is the
+                // attempt on top, in which case it is the one that counts.
+                val work = selectWork(courseExId, it[Submission.student].value)
                 Resp(
                     it[Submission.id].value.toString(),
                     it[Submission.number],
                     it[Submission.solution],
                     it[callerHasSeen],
-                    isWorkFlagged(courseExId, it[Submission.student].value),
+                    work?.flagged ?: false,
                     it[Submission.createdAt],
                     it[Submission.autoGradeStatus],
-                    toGradeRespOrNull(
-                        it[Submission.grade],
-                        it[Submission.isAutoGrade],
-                        it[Submission.isGradedDirectly]
-                    ),
+                    selectAttemptGrades(work, listOf(submissionId))[submissionId],
                     getLatestAutomaticAssessmentRespOrNull(submissionId)
                 )
             }.singleOrInvalidRequest()

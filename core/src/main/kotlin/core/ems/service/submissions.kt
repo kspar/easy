@@ -82,25 +82,15 @@ data class GradeResp(
  * lands on the latest row per student, which is a documented stdlib guarantee rather than a hopeful
  * one.
  *
- * Not routed through the sibling query instead, tempting as deleting a duplicate is: that one is built
- * around a course, needs the whole student roster mapped up front, and returns grades, statuses and
- * group memberships. This caller wants submission ids for one course exercise. The duplication is the
- * two of them disagreeing, and pinning both against the same fixture is what fixes that — see
- * `ValidateSelectAllCourseExercisesLatestSubmissions`.
+ * Since EZ-1927 this and the course-wide list read the same summary row, so they cannot disagree the
+ * way they did in EZ-1763; `ValidateSelectAllCourseExercisesLatestSubmissions` still pins both against
+ * the same fixture.
  */
 fun selectLatestSubmissionsForExercise(courseExerciseId: Long): List<Long> =
-    Submission
-        .select(Submission.id, Submission.student)
-        .where { Submission.courseExercise eq courseExerciseId }
-        .orderBy(
-            Submission.student to SortOrder.ASC,
-            Submission.createdAt to SortOrder.ASC,
-            Submission.number to SortOrder.ASC,
-            Submission.id to SortOrder.ASC,
-        )
-        .associate { it[Submission.student].value to it[Submission.id].value }
-        .values
-        .toList()
+    StudentCourseExercise
+        .select(StudentCourseExercise.latestSubmission)
+        .where { StudentCourseExercise.courseExercise eq courseExerciseId }
+        .map { it[StudentCourseExercise.latestSubmission].value }
 
 suspend fun autoAssessAsync(
     courseExId: Long,
@@ -164,6 +154,11 @@ fun insertSubmission(
             return if (grade != null && isAuto != null) (Grade(grade, isAuto)) else null
         }
 
+        // EZ-1927. Two submits by one student on one exercise at once used to collide on the
+        // unique `number` and fail one of them; now they would also race the summary row's
+        // update-then-insert. The lock serialises them, and is held until commit.
+        lockWork(courseExId, studentId)
+
         val lastNumber = Submission
             .select(Submission.number)
             .where {
@@ -202,6 +197,10 @@ fun insertSubmission(
                 it[isGradedDirectly] = false
             }
         }.value
+
+        // The inheritance above is the old rule, still written to the row nobody reads any more.
+        // The summary row keeps the teacher's grade on its own and clears the auto grade.
+        recordNewSubmission(courseExId, studentId, submissionId, time)
 
         val ceRow = CourseExercise
             .select(CourseExercise.exercise, CourseExercise.course)

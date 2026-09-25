@@ -281,6 +281,35 @@ object TeacherSubmissionSeen : Table("teacher_submission_seen") {
     override val primaryKey = PrimaryKey(submission, teacher)
 }
 
+/**
+ * A student's work on one course exercise, as one row (EZ-1927): the latest attempt, how many, the
+ * grade that counts and where it came from, and the review flag.
+ *
+ * The grade rule is data rather than logic: the effective grade is [teacherGrade] if set, else
+ * [autoGrade], and it was "graded directly" when [teacherGradedSubmission] is [latestSubmission].
+ * [autoGrade] is the latest attempt's own auto grade and is cleared when a new attempt arrives;
+ * [teacherGrade] outlives resubmissions, which is the whole point. The row is created by the first
+ * submission and updated in the same transaction as every write that changes any of this — see
+ * `studentCourseExercise.kt` for the writers, and `insertSubmission` for the lock that serialises
+ * them per pair.
+ *
+ * `submission.grade`, `is_auto_grade`, `is_graded_directly` and `flagged` are still written but no
+ * longer read; they go once this has been seen to agree with them in the wild.
+ */
+object StudentCourseExercise : Table("student_course_exercise") {
+    val student = reference("student_id", Account)
+    val courseExercise = reference("course_exercise_id", CourseExercise)
+    val latestSubmission = reference("latest_submission_id", Submission)
+    val submissionCount = integer("submission_count")
+    val latestSubmissionAt = datetime("latest_submission_at")
+    val autoGrade = integer("auto_grade").nullable()
+    val teacherGrade = integer("teacher_grade").nullable()
+    val teacherGradedSubmission = reference("teacher_graded_submission_id", Submission).nullable()
+    val flagged = bool("flagged")
+
+    override val primaryKey = PrimaryKey(student, courseExercise)
+}
+
 object StatsSubmission : Table("stats_submission") {
     val submissionId = long("submission_id")
     val courseExerciseId = long("course_exercise_id")

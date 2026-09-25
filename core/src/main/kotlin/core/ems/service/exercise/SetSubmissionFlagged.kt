@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Submission
 import core.ems.service.assertAssessmentControllerChecks
+import core.ems.service.setWorkFlagged
 import jakarta.validation.Valid
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.and
@@ -79,6 +80,9 @@ class SetSubmissionFlagged {
             .distinct()
 
         work.forEach { (courseExercise, student) ->
+            // EZ-1927: the summary row is what is read now. The per-attempt column is still written
+            // until it is dropped.
+            setWorkFlagged(courseExercise.value, student.value, flagged)
             Submission.update({
                 (Submission.courseExercise eq courseExercise) and (Submission.student eq student)
             }) {

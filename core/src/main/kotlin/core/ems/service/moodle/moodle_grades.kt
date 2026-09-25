@@ -3,11 +3,13 @@ package core.ems.service.moodle
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.db.*
 import core.ems.service.selectLatestSubmissionsForExercise
+import core.ems.service.toWorkOnExercise
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.exception.ResourceLockedException
 import core.util.DBBackedLock
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -316,13 +318,33 @@ class MoodleGradesSyncService(
     }
 
 
+    /**
+     * The grade that counts for the student who made [submissionId], with their Moodle username.
+     *
+     * EZ-1927: read off the student's summary row rather than the submission's own columns, so a
+     * teacher grading an older attempt pushes the grade that the application shows, not the number
+     * that happened to be on the row they graded.
+     */
     private fun selectLatestGradeForSubmission(submissionId: Long, courseId: Long): MoodleReqGrade? =
         (Submission innerJoin Account innerJoin StudentCourseAccess)
-            .select(StudentCourseAccess.moodleUsername, Account.id, Submission.grade)
+            .join(
+                StudentCourseExercise, JoinType.LEFT,
+                additionalConstraint = {
+                    (StudentCourseExercise.student eq Submission.student) and
+                            (StudentCourseExercise.courseExercise eq Submission.courseExercise)
+                }
+            )
+            .select(
+                StudentCourseAccess.moodleUsername, Account.id,
+                StudentCourseExercise.latestSubmission, StudentCourseExercise.submissionCount,
+                StudentCourseExercise.latestSubmissionAt, StudentCourseExercise.autoGrade,
+                StudentCourseExercise.teacherGrade, StudentCourseExercise.teacherGradedSubmission,
+                StudentCourseExercise.flagged,
+            )
             .where { (Submission.id eq submissionId) and (StudentCourseAccess.course eq courseId) }
             .map {
                 val moodleUsername = it[StudentCourseAccess.moodleUsername]
-                val grade = it[Submission.grade]
+                val grade = it.getOrNull(StudentCourseExercise.latestSubmission)?.let { _ -> it.toWorkOnExercise().grade?.grade }
 
                 when {
                     moodleUsername == null -> {

@@ -118,41 +118,15 @@ class StudentReadExercisesController {
                 }
             }
 
-        data class SubmissionPartial(
-            val courseExId: Long,
-            val gradeResp: GradeResp?,
-            val createdAt: DateTime
-        )
-
-        val submissions: Map<Long, SubmissionPartial> =
-            Submission
-                .select(
-                    Submission.courseExercise,
-                    Submission.grade,
-                    Submission.isAutoGrade,
-                    Submission.createdAt,
-                    Submission.isGradedDirectly
-                )
-                .where { Submission.courseExercise inList (exercisePartials.map { it.courseExId }) and (Submission.student eq studentId) }
-                .map {
-                    SubmissionPartial(
-                        it[Submission.courseExercise].value,
-                        toGradeRespOrNull(
-                            it[Submission.grade],
-                            it[Submission.isAutoGrade],
-                            it[Submission.isGradedDirectly]
-                        ),
-                        it[Submission.createdAt]
-                    )
-                }
-                .groupBy { it.courseExId }
-                .mapValues { exToSubEntry -> exToSubEntry.value.maxBy { subPartial -> subPartial.createdAt } }
+        // EZ-1927: one summary row per exercise, instead of every attempt the student ever made
+        // on the course and a maxBy over them.
+        val work = selectWorkForStudent(studentId, exercisePartials.map { it.courseExId })
 
         Resp(
             exercisePartials.mapIndexed { i, ex ->
-                val lastSub: SubmissionPartial? = submissions[ex.courseExId]
-                val grade = lastSub?.gradeResp?.grade
-                val status = getStudentExerciseStatus(lastSub != null, grade, ex.threshold)
+                val onExercise = work[ex.courseExId]
+                val grade = onExercise?.grade
+                val status = getStudentExerciseStatus(onExercise != null, grade?.grade, ex.threshold)
 
                 ExerciseResp(
                     ex.courseExId.toString(),
@@ -161,7 +135,7 @@ class StudentReadExercisesController {
                     ex.deadline,
                     ex.isOpen,
                     status,
-                    lastSub?.gradeResp,
+                    grade,
                     i
                 )
             }

@@ -9,7 +9,8 @@ import core.ems.service.GradeResp
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.idToLongOrInvalidReq
-import core.ems.service.toGradeRespOrNull
+import core.ems.service.selectAttemptGrades
+import core.ems.service.selectWork
 import core.util.DateTimeSerializer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.SortOrder
@@ -60,31 +61,31 @@ class ReadAllSubmissionsByStudent {
     }
 
     private fun selectTeacherAllSubmissions(courseId: Long, courseExId: Long, studentId: String): Resp = transaction {
-        Resp(
-            (CourseExercise innerJoin Submission)
-                .select(
-                    CourseExercise.gradeThreshold,
-                    Submission.id,
-                    Submission.number,
-                    Submission.createdAt,
-                    Submission.grade,
-                    Submission.isAutoGrade,
-                    Submission.isGradedDirectly
-                ).where {
-                    CourseExercise.course eq courseId and (CourseExercise.id eq courseExId) and (Submission.student eq studentId)
-                }
-                .orderBy(Submission.createdAt, SortOrder.DESC).map {
-                    SubmissionResp(
-                        it[Submission.id].value.toString(),
-                        it[Submission.number],
-                        it[Submission.createdAt],
-                        getStudentExerciseStatus(true, it[Submission.grade], it[CourseExercise.gradeThreshold]),
-                        toGradeRespOrNull(
-                            it[Submission.grade],
-                            it[Submission.isAutoGrade],
-                            it[Submission.isGradedDirectly]
-                        )
-                    )
-                })
+        val rows = (CourseExercise innerJoin Submission)
+            .select(
+                CourseExercise.gradeThreshold,
+                Submission.id,
+                Submission.number,
+                Submission.createdAt,
+            ).where {
+                CourseExercise.course eq courseId and (CourseExercise.id eq courseExId) and (Submission.student eq studentId)
+            }
+            .orderBy(Submission.createdAt to SortOrder.DESC, Submission.number to SortOrder.DESC, Submission.id to SortOrder.DESC)
+            .toList()
+
+        // EZ-1927: each attempt shows its own grade; the one on top shows the grade that counts.
+        val grades = selectAttemptGrades(selectWork(courseExId, studentId), rows.map { it[Submission.id].value })
+
+        Resp(rows.map {
+            val submissionId = it[Submission.id].value
+            val grade = grades[submissionId]
+            SubmissionResp(
+                submissionId.toString(),
+                it[Submission.number],
+                it[Submission.createdAt],
+                getStudentExerciseStatus(true, grade?.grade, it[CourseExercise.gradeThreshold]),
+                grade
+            )
+        })
     }
 }

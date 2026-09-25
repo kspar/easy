@@ -143,6 +143,12 @@ class AutoGradeIntegrationTest(
         // reflects what a person actually sees.
         val details = api.get("/v2/student/courses/$courseId/exercises/$ceId", Auth.asStudent(student))
         assertEquals(200, details.status) { details.body }
+
+        // EZ-1927: the grade a teacher sees comes off the summary row, so the wire has to reach it.
+        val seen = api.get("/v2/teacher/courses/$courseId/exercises/$ceId/submissions/$submissionId", Auth.asTeacher(teacher))
+        assertEquals(200, seen.status) { seen.body }
+        assertEquals(93, json(seen.body).get("grade").get("grade").asInt())
+        assertEquals(true, json(seen.body).get("grade").get("is_autograde").asBoolean())
     }
 
     /**

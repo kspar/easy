@@ -252,106 +252,64 @@ fun selectAllCourseExercisesLatestSubmissions(
 
         // Seen is one row per teacher per submission, so it is a left join filtered to the caller
         // and read as "is there a row": another teacher having opened this says nothing about
-        // whether the caller has. The primary key makes the join at most one row, which is what
-        // keeps it out of the way of the DISTINCT ON below.
+        // whether the caller has.
         val callerHasSeen = TeacherSubmissionSeen.submission.isNotNull()
 
-        /**
-         * Which (course exercise, student) pairs carry a flag on any attempt.
-         *
-         * Read that way rather than off the latest submission because a flag is a note about the
-         * student's work, and this list only ever shows their newest attempt: a flag set on attempt
-         * 2 would vanish when they submit attempt 3, with no way left to see or clear it. The write
-         * side sets every attempt of the student to match (SetSubmissionFlagged).
-         */
-        val flaggedWork: Set<Pair<Long, String>> = Submission
-            .select(Submission.courseExercise, Submission.student)
-            .where {
-                Submission.flagged eq true and (Submission.student inList courseStudents.keys) and
-                        (Submission.courseExercise inSubQuery
-                                CourseExercise.select(CourseExercise.id).where { CourseExercise.course eq courseId })
-            }
-            .map { it[Submission.courseExercise].value to it[Submission.student].value }
-            .toSet()
-
-        val studentsWithSubmissions = (ExerciseVer innerJoin Exercise innerJoin CourseExercise leftJoin Submission)
+        // EZ-1927. One summary row per student per exercise, with the latest attempt joined for
+        // its number and time. This used to be a DISTINCT ON over every submission on the course
+        // with a five-column total ordering (EZ-1763); which attempt is latest, which grade counts
+        // and whether the work is flagged are now written once, at write time.
+        val studentsWithSubmissions = (StudentCourseExercise innerJoin CourseExercise)
+            .join(Submission, JoinType.INNER, StudentCourseExercise.latestSubmission, Submission.id)
             .join(TeacherSubmissionSeen, JoinType.LEFT, Submission.id, TeacherSubmissionSeen.submission) {
                 TeacherSubmissionSeen.teacher eq callerId
             }
             .select(
-                DistinctOn<Any>(listOf(CourseExercise.id, Submission.student)),
                 CourseExercise.id,
                 CourseExercise.gradeThreshold,
-                Submission.student,
-                Submission.id,
+                StudentCourseExercise.student,
+                StudentCourseExercise.latestSubmission,
+                StudentCourseExercise.submissionCount,
+                StudentCourseExercise.latestSubmissionAt,
+                StudentCourseExercise.autoGrade,
+                StudentCourseExercise.teacherGrade,
+                StudentCourseExercise.teacherGradedSubmission,
+                StudentCourseExercise.flagged,
                 Submission.number,
-                Submission.createdAt,
                 callerHasSeen,
-                Submission.grade,
-                Submission.isAutoGrade,
-                Submission.isGradedDirectly
             ).where {
-                CourseExercise.course eq courseId and ExerciseVer.validTo.isNull() and Submission.student.inList(
-                    courseStudents.keys
-                )
+                CourseExercise.course eq courseId and StudentCourseExercise.student.inList(courseStudents.keys)
             }.also {
                 if (courseExId != null) {
                     it.andWhere { CourseExercise.id eq courseExId }
                 }
-            }.orderBy(
-                CourseExercise.id to SortOrder.DESC,
-                Submission.student to SortOrder.DESC,
-                Submission.createdAt to SortOrder.DESC,
-                // Tiebreakers, and they are not cosmetic. DISTINCT ON keeps the first row of each
-                // group under this ordering, so the ordering has to be *total* or which row
-                // survives is whatever the query plan happens to produce — and Postgres is free to
-                // change that between versions, statistics or a parallel plan.
-                //
-                // created_at is millisecond-resolution, and two submissions can share one: a
-                // double-click, a retry, an autograde write landing next to a manual grade. The
-                // student then sees a grade that changes on refresh. It was found as a flaky test
-                // (EZ-1763, grade 71 vs 81, 4 failures in 5 runs) but the test was right and the
-                // query was wrong.
-                //
-                // `number` is the per-student submission sequence and is the intended meaning of
-                // "latest"; `id` is a final backstop so the order is total even if `number` is
-                // ever wrong.
-                Submission.number to SortOrder.DESC,
-                Submission.id to SortOrder.DESC
-            ).mapNotNull {
-                val submissionId = it[Submission.id]?.value
+            }.associate {
+                val work = it.toWorkOnExercise()
+                val studentId = it[StudentCourseExercise.student].value
+                val student = courseStudents[studentId] ?: throw IllegalStateException()
 
-                if (submissionId == null) null else {
-                    val studentId = it[Submission.student].value
-                    val student = courseStudents[studentId] ?: throw IllegalStateException()
+                val grade = work.grade
+                val submission = LatestSubmissionResp(
+                    work.latestSubmissionId.toString(),
+                    it[Submission.number],
+                    work.latestSubmissionAt,
+                    grade,
+                    it[callerHasSeen],
+                    work.flagged,
+                )
 
-                    val grade = toGradeRespOrNull(
-                        it[Submission.grade],
-                        it[Submission.isAutoGrade],
-                        it[Submission.isGradedDirectly]
-                    )
-                    val submission = LatestSubmissionResp(
-                        submissionId.toString(),
-                        it[Submission.number],
-                        it[Submission.createdAt],
-                        grade,
-                        it[callerHasSeen],
-                        flaggedWork.contains(it[CourseExercise.id].value to studentId),
-                    )
+                val submissionStatus =
+                    getStudentExerciseStatus(true, grade?.grade, it[CourseExercise.gradeThreshold])
 
-                    val submissionStatus =
-                        getStudentExerciseStatus(true, grade?.grade, it[CourseExercise.gradeThreshold])
-
-                    (studentId to it[CourseExercise.id].value.toString()) to SubmissionRow(
-                        submission,
-                        submissionStatus,
-                        studentId,
-                        student.givenName,
-                        student.familyName,
-                        student.groups
-                    )
-                }
-            }.toMap()
+                (studentId to it[CourseExercise.id].value.toString()) to SubmissionRow(
+                    submission,
+                    submissionStatus,
+                    studentId,
+                    student.givenName,
+                    student.familyName,
+                    student.groups
+                )
+            }
 
 
         exercises.map { ex ->

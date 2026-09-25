@@ -1170,4 +1170,42 @@ function that tries to modify it.
         </sql>
     </changeSet>
 
+    <!-- EZ-1927. The seeded submissions above are inserted after 250926-1 in v4.xml has run its
+         backfill over an empty table, so the pair rows for them are derived here, the same way. -->
+    <changeSet id="testdata-student-course-exercise" author="kspar" context="testdata">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM student_course_exercise
+                WHERE course_exercise_id IN (SELECT id FROM course_exercise WHERE course_id = 9001)
+            </sqlCheck>
+        </preConditions>
+        <comment>Derive student_course_exercise rows for the seeded submissions</comment>
+        <sql>
+            INSERT INTO student_course_exercise
+                (student_id, course_exercise_id, latest_submission_id, submission_count, latest_submission_at,
+                 auto_grade, teacher_grade, teacher_graded_submission_id, flagged)
+            SELECT l.student_id, l.course_exercise_id, l.id, c.n, l.created_at,
+                   ag.grade, tg.grade, tg.submission_id, c.flagged
+            FROM (SELECT DISTINCT ON (course_exercise_id, student_id)
+                         id, course_exercise_id, student_id, created_at
+                  FROM submission
+                  ORDER BY course_exercise_id, student_id, number DESC, id DESC) l
+            JOIN (SELECT course_exercise_id, student_id, count(*) AS n, bool_or(flagged) AS flagged
+                  FROM submission
+                  GROUP BY course_exercise_id, student_id) c
+              ON c.course_exercise_id = l.course_exercise_id AND c.student_id = l.student_id
+            LEFT JOIN (SELECT DISTINCT ON (submission_id) submission_id, grade
+                       FROM autograde_activity
+                       ORDER BY submission_id, created_at DESC, id DESC) ag
+              ON ag.submission_id = l.id
+            LEFT JOIN (SELECT DISTINCT ON (course_exercise_id, student_id)
+                              course_exercise_id, student_id, grade, submission_id
+                       FROM teacher_activity
+                       WHERE grade IS NOT NULL
+                       ORDER BY course_exercise_id, student_id, merge_window_start DESC, id DESC) tg
+              ON tg.course_exercise_id = l.course_exercise_id AND tg.student_id = l.student_id
+            ON CONFLICT (student_id, course_exercise_id) DO NOTHING;
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>

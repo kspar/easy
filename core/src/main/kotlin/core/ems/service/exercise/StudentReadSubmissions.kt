@@ -80,7 +80,7 @@ class StudentReadSubmissionsController {
         limit: Int?,
         offset: Long?
     ): List<SubmissionResp> = transaction {
-        (CourseExercise innerJoin Submission)
+        val rows = (CourseExercise innerJoin Submission)
             .select(
                 CourseExercise.gradeThreshold,
                 Submission.id,
@@ -88,9 +88,6 @@ class StudentReadSubmissionsController {
                 Submission.solution,
                 Submission.createdAt,
                 Submission.autoGradeStatus,
-                Submission.isAutoGrade,
-                Submission.grade,
-                Submission.isGradedDirectly
             )
             .where {
                 CourseExercise.course eq courseId and
@@ -100,8 +97,7 @@ class StudentReadSubmissionsController {
             // Tiebreakers make the order total, which matters more here than anywhere else this
             // pattern appears: this query is paged, and LIMIT/OFFSET over a non-total order lets
             // rows be skipped or repeated *between pages* rather than merely appearing in a
-            // surprising order. created_at is millisecond-resolution and ties do happen — see the
-            // note on the DISTINCT ON in courses.kt (EZ-1763).
+            // surprising order. created_at is millisecond-resolution and ties do happen (EZ-1763).
             .orderBy(
                 Submission.createdAt to SortOrder.DESC,
                 Submission.number to SortOrder.DESC,
@@ -109,22 +105,26 @@ class StudentReadSubmissionsController {
             )
             .limit(limit ?: Int.MAX_VALUE)
             .offset(offset ?: 0)
-            .mapIndexed { _, it ->
-                val submissionId = it[Submission.id].value
+            .toList()
 
-                SubmissionResp(
-                    submissionId.toString(),
-                    it[Submission.number],
-                    it[Submission.solution],
-                    it[Submission.createdAt],
-                    it[Submission.autoGradeStatus],
-                    toGradeRespOrNull(
-                        it[Submission.grade], it[Submission.isAutoGrade], it[Submission.isGradedDirectly]
-                    ),
-                    getStudentExerciseStatus(true, it[Submission.grade], it[CourseExercise.gradeThreshold]),
-                    getLatestAutomaticAssessmentRespOrNull(submissionId)
-                )
-            }
+        // EZ-1927: each attempt shows its own grade; the one on top shows the grade that counts.
+        val grades = selectAttemptGrades(selectWork(courseExId, studentId), rows.map { it[Submission.id].value })
+
+        rows.map {
+            val submissionId = it[Submission.id].value
+            val grade = grades[submissionId]
+
+            SubmissionResp(
+                submissionId.toString(),
+                it[Submission.number],
+                it[Submission.solution],
+                it[Submission.createdAt],
+                it[Submission.autoGradeStatus],
+                grade,
+                getStudentExerciseStatus(true, grade?.grade, it[CourseExercise.gradeThreshold]),
+                getLatestAutomaticAssessmentRespOrNull(submissionId)
+            )
+        }
     }
 }
 

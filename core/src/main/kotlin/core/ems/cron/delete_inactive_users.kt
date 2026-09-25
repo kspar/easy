@@ -190,7 +190,10 @@ class DeleteInactiveUsers(val sendMailService: SendMailService) {
                 it[TeacherInlineComment.teacher] = defaultUser
             }
 
-            // As now automatic and teacher feedback for submission is removed, delete submission
+            // As now automatic and teacher feedback for submission is removed, delete submission.
+            // The summary rows (EZ-1927) cascade from both the student and the latest submission,
+            // so this delete is belt and braces — and the line that says they were thought about.
+            StudentCourseExercise.deleteWhere { StudentCourseExercise.student inList accountsToDelete }
             Submission.deleteWhere { Submission.student inList accountsToDelete }
             TeacherSubmission.deleteWhere { TeacherSubmission.teacher inList accountsToDelete }
 

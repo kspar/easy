@@ -72,6 +72,7 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
 
     private fun insertOrUpdateGrade(teacherId: String, submissionId: Long, assessment: Req, courseExId: Long) =
         transaction {
+            val studentId = selectStudentBySubmissionId(submissionId)
             val previousId = getIdIfShouldMerge(submissionId, teacherId, mergeWindowInSeconds.toInt())
             val time = DateTime.now()
             if (previousId != null) {
@@ -81,7 +82,7 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
                 }
             } else {
                 TeacherActivity.insert {
-                    it[student] = selectStudentBySubmissionId(submissionId)
+                    it[student] = studentId
                     it[courseExercise] = courseExId
                     it[submission] = submissionId
                     it[teacher] = teacherId
@@ -89,6 +90,10 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
                     it[mergeWindowStart] = time
                 }
             }
+
+            // EZ-1927. The summary row is what every reader shows; the row below is the old rule,
+            // still written until the columns go.
+            recordTeacherGrade(courseExId, studentId.value, submissionId, assessment.grade)
 
             Submission.update({ Submission.id eq submissionId }) {
                 it[grade] = assessment.grade

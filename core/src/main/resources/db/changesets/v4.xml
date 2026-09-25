@@ -926,4 +926,107 @@
         </addColumn>
     </changeSet>
 
+    <!--
+        EZ-1927. One row per student per course exercise: their latest attempt, how many, the grade
+        that counts and where it came from, and the review flag.
+
+        The effective grade used to live on every submission row as three columns with three
+        writers, each applying a different rule (insertSubmission copied the previous row's teacher
+        grade, insertAutogradeActivity consulted teacher_activity, TeacherPostGrade wrote one row),
+        and every reader recomputed "latest" its own way (EZ-1763). Here the rule is data:
+        effective = teacher_grade ?: auto_grade, and "graded directly" is
+        teacher_graded_submission_id = latest_submission_id. The flag moves here because it was
+        always a fact about the student's work, not about one attempt (EZ-1249).
+
+        The backfill derives everything from the two activity tables rather than from
+        submission.grade, deliberately: 44 pairs on the dev copy showed an auto grade that had
+        displaced an earlier teacher grade under an older rule. Those resolve to the teacher's grade.
+
+        submission's own grade columns stay for now and are still written; a later changeset drops
+        them once every reader is on this table.
+    -->
+    <changeSet id="250926-1" author="kspar">
+        <createTable tableName="student_course_exercise">
+            <column name="student_id" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="course_exercise_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="latest_submission_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submission_count" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="latest_submission_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="auto_grade" type="integer"/>
+            <column name="teacher_grade" type="integer"/>
+            <column name="teacher_graded_submission_id" type="bigint"/>
+            <column name="flagged" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="student_course_exercise"
+                       columnNames="student_id, course_exercise_id"
+                       constraintName="pk_student_course_exercise"/>
+        <createIndex tableName="student_course_exercise" indexName="idx_student_course_exercise_exercise">
+            <column name="course_exercise_id"/>
+        </createIndex>
+        <!-- Both submission references cascade or null out on delete; without these, every
+             submission delete_inactive_users removes would scan this whole table once. -->
+        <createIndex tableName="student_course_exercise" indexName="idx_student_course_exercise_latest_submission">
+            <column name="latest_submission_id"/>
+        </createIndex>
+        <createIndex tableName="student_course_exercise" indexName="idx_student_course_exercise_teacher_graded_submission">
+            <column name="teacher_graded_submission_id"/>
+        </createIndex>
+
+        <addForeignKeyConstraint baseTableName="student_course_exercise" baseColumnNames="student_id"
+                                 referencedTableName="account" referencedColumnNames="username"
+                                 constraintName="fk_student_course_exercise_student"
+                                 onDelete="CASCADE" onUpdate="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="student_course_exercise" baseColumnNames="course_exercise_id"
+                                 referencedTableName="course_exercise" referencedColumnNames="id"
+                                 constraintName="fk_student_course_exercise_course_exercise"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="student_course_exercise" baseColumnNames="latest_submission_id"
+                                 referencedTableName="submission" referencedColumnNames="id"
+                                 constraintName="fk_student_course_exercise_latest_submission"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="student_course_exercise" baseColumnNames="teacher_graded_submission_id"
+                                 referencedTableName="submission" referencedColumnNames="id"
+                                 constraintName="fk_student_course_exercise_teacher_graded_submission"
+                                 onDelete="SET NULL"/>
+
+        <sql>
+            INSERT INTO student_course_exercise
+                (student_id, course_exercise_id, latest_submission_id, submission_count, latest_submission_at,
+                 auto_grade, teacher_grade, teacher_graded_submission_id, flagged)
+            SELECT l.student_id, l.course_exercise_id, l.id, c.n, l.created_at,
+                   ag.grade, tg.grade, tg.submission_id, c.flagged
+            FROM (SELECT DISTINCT ON (course_exercise_id, student_id)
+                         id, course_exercise_id, student_id, created_at
+                  FROM submission
+                  ORDER BY course_exercise_id, student_id, number DESC, id DESC) l
+            JOIN (SELECT course_exercise_id, student_id, count(*) AS n, bool_or(flagged) AS flagged
+                  FROM submission
+                  GROUP BY course_exercise_id, student_id) c
+              ON c.course_exercise_id = l.course_exercise_id AND c.student_id = l.student_id
+            LEFT JOIN (SELECT DISTINCT ON (submission_id) submission_id, grade
+                       FROM autograde_activity
+                       ORDER BY submission_id, created_at DESC, id DESC) ag
+              ON ag.submission_id = l.id
+            LEFT JOIN (SELECT DISTINCT ON (course_exercise_id, student_id)
+                              course_exercise_id, student_id, grade, submission_id
+                       FROM teacher_activity
+                       WHERE grade IS NOT NULL
+                       ORDER BY course_exercise_id, student_id, merge_window_start DESC, id DESC) tg
+              ON tg.course_exercise_id = l.course_exercise_id AND tg.student_id = l.student_id;
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>

@@ -181,6 +181,18 @@ fun insertAutogradeActivity(
             it[feedback] = newFeedback
         }
 
+        // EZ-1927. The summary row: this attempt's auto grade, if it is still the attempt on top.
+        // The teacher-grade check below is the old rule on the old columns; the row has the rule as
+        // data and needs no check.
+        //
+        // Written *before* the submission row, and that order is load-bearing: TeacherPostGrade and
+        // SetSubmissionFlagged take the summary row first and the submission row second, and a
+        // teacher grading or flagging an attempt as its grade lands would otherwise deadlock —
+        // with this side's loser recorded as a FAILED grading.
+        recordAutoGrade(courseExId, studentId, submissionId, newGrade)
+        val flagForReview = feedbackFlagsForReview(newFeedback)
+        if (flagForReview) setWorkFlagged(courseExId, studentId, true)
+
         Submission.update({ Submission.id eq submissionId }) {
             it[autoGradeStatus] = AutoGradeStatus.COMPLETED
             if (!anyPreviousTeacherActivityContainsGrade(studentId, courseExId)) {
@@ -195,12 +207,9 @@ fun insertAutogradeActivity(
             it[autoGradedAt] = time
         }
 
-        // EZ-1926. The grader asked for a teacher's eyes. Written the way SetSubmissionFlagged
-        // writes it — every attempt of this student, not just this one — so the two writers agree
-        // and clearing from the button clears the lot. The reads ask "any attempt flagged", so the
-        // mark outlives a resubmission either way. Only ever raised here: a result without the
-        // field, or with false, leaves whatever a teacher set alone.
-        if (feedbackFlagsForReview(newFeedback)) {
+        // EZ-1926. The grader asked for a teacher's eyes. Only ever raised here: a result without
+        // the field, or with false, leaves whatever a teacher set alone.
+        if (flagForReview) {
             Submission.update({ (Submission.courseExercise eq courseExId) and (Submission.student eq studentId) }) {
                 it[flagged] = true
             }
