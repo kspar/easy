@@ -6,3 +6,5 @@
 # pytest release breaking CI is a five-minute fix and a pinned-and-forgotten test runner is not.
 -r requirements.txt
 pytest>=9.1.1,<10
+# For test_ok_v3_schema.py and bin/okv3-check: the grader output format, doc/aae/ok-v3.schema.json.
+jsonschema>=4.18,<5

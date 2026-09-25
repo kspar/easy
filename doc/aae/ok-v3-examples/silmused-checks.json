@@ -1,0 +1,50 @@
+{
+  "result_type": "OK_V3",
+  "producer": "silmused 1.7.11",
+  "finished_at": "2026-08-30T10:20:00Z",
+  "pre_evaluate_error": null,
+  "points": 60,
+  "tests": [
+    {
+      "title": "Indeksid",
+      "status": "FAIL",
+      "exception_message": null,
+      "user_inputs": [],
+      "created_files": [],
+      "actual_output": null,
+      "converted_submission": null,
+      "checks": [
+        { "title": "Tabelil klient on primaarvõti", "status": "PASS", "feedback": "" },
+        {
+          "title": "Indeks veerul tellimus.kliendi_id",
+          "status": "FAIL",
+          "feedback": "Indeksit veerul kliendi_id ei leitud."
+        },
+        { "title": "Käivitasin kontrollpäringu", "status": "PASS" }
+      ]
+    },
+    {
+      "title": "Trigerid",
+      "status": "PASS",
+      "exception_message": null,
+      "user_inputs": [],
+      "created_files": [],
+      "actual_output": null,
+      "converted_submission": null,
+      "checks": [
+        { "title": "", "status": "PASS", "feedback": "Triger tellimus_log on olemas." },
+        { "title": "", "status": "PASS", "feedback": "Triger käivitub INSERT järel." }
+      ]
+    },
+    {
+      "title": "Vaated",
+      "status": "SKIP",
+      "exception_message": null,
+      "user_inputs": [],
+      "created_files": [],
+      "actual_output": null,
+      "converted_submission": null,
+      "checks": []
+    }
+  ]
+}

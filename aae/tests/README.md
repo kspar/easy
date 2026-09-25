@@ -29,6 +29,7 @@ this suite deliberately leaves.
 | `test_grade_endpoint.py` | `POST /v1/grade` validation, and the run-status → student-message mapping |
 | `test_version_and_status.py` | version reporting fallbacks, and the OOM heuristic |
 | `test_tiivad_contract.py` | **the TSL compiler's output, run by the grader that consumes it** |
+| `test_ok_v3_schema.py` | the grader output format (`doc/aae/feedback-format.md`) held against its schema: committed examples, core's test data, and tiivad's real output |
 
 ## The tiivad contract test
 

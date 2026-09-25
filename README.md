@@ -106,7 +106,8 @@ inside the app — the account menu has "Report a bug", which files it for you.
 **Maintaining one of the grading libraries?** Updating `tiivad`, `silmused` or the other graders needs
 a GitHub account and nothing else — see
 [Updating a grading library](doc/aae/bumping-a-grading-library.md). The reference for how it all works
-is [Grading images](doc/aae/grading-images.md).
+is [Grading images](doc/aae/grading-images.md), and the format a grader's output must follow is
+[The OK_V3 result format](doc/aae/feedback-format.md).
 
 ## Licence
 

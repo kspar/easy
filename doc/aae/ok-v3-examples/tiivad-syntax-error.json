@@ -1,0 +1,8 @@
+{
+  "producer": "tiivad 0.0.33",
+  "result_type": "OK_V3",
+  "finished_at": "2026-09-25T14:56:18Z",
+  "pre_evaluate_error": "  File \"lahendus.py\", line 1\n    def (:\n        ^\nSyntaxError: invalid syntax\n",
+  "points": 0,
+  "tests": []
+}

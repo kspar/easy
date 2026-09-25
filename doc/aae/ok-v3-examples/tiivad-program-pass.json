@@ -1,0 +1,41 @@
+{
+  "producer": "tiivad 0.0.33",
+  "result_type": "OK_V3",
+  "finished_at": "2026-09-25T14:56:18Z",
+  "pre_evaluate_error": null,
+  "points": 100,
+  "tests": [
+    {
+      "title": "Programm tervitab kasutajat",
+      "user_inputs": ["Mari", "18"],
+      "created_files": [
+        {
+          "name": "andmed.txt",
+          "content": "rida 1\nrida 2\n"
+        }
+      ],
+      "converted_submission": null,
+      "actual_output": "Mari\n18\nTere, Mari!\n",
+      "actual_file_output": "18",
+      "exception_message": null,
+      "status": "PASS",
+      "checks": [
+        {
+          "title": "Kontrollin, et viga ei tekiks",
+          "status": "PASS",
+          "feedback": "Viga ei tekkinud"
+        },
+        {
+          "title": "Kontrollin väljundit",
+          "status": "PASS",
+          "feedback": "Väljund on õige"
+        },
+        {
+          "title": "Kontrollin faili",
+          "status": "PASS",
+          "feedback": "Fail on õige"
+        }
+      ]
+    }
+  ]
+}

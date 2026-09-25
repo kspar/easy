@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kspar/easy/blob/master/doc/aae/ok-v3.schema.json",
+  "title": "OK_V3 automatic assessment result",
+  "description": "The JSON document a grading library prints when it has assessed a submission. Prose, examples and history are in doc/aae/feedback-format.md next to this file; this is the part a machine can check. Unknown fields are allowed everywhere and consumers ignore them, so adding an optional field is not a breaking change.",
+  "type": "object",
+  "required": ["result_type", "producer", "points", "pre_evaluate_error", "tests"],
+  "properties": {
+    "result_type": {
+      "const": "OK_V3",
+      "description": "The format's version. The executor looks for exactly this value; anything else is not an OK_V3 document."
+    },
+    "producer": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Which grading library produced this, with its version: 'tiivad 0.0.33', 'silmused 1.7.11'. Free-form, for humans reading a stored result."
+    },
+    "finished_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$",
+      "description": "When testing finished, UTC, ISO 8601 with a Z: 2023-08-26T21:56:00Z. Optional."
+    },
+    "points": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "The grade, 0 to 100. This is the only number the executor reads out of the document."
+    },
+    "pre_evaluate_error": {
+      "type": ["string", "null"],
+      "description": "Non-null when the submission could not be tested at all through the student's own fault: a syntax error, a missing required file. Shown to the student as is. When set, tests is empty."
+    },
+    "tests": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/test" },
+      "description": "Every test of the exercise, in the order they should be shown. A test that was not run has status SKIP rather than being left out."
+    }
+  },
+  "if": {
+    "properties": { "pre_evaluate_error": { "type": "string" } },
+    "required": ["pre_evaluate_error"]
+  },
+  "then": {
+    "properties": { "tests": { "maxItems": 0 } }
+  },
+  "$defs": {
+    "status": {
+      "enum": ["PASS", "FAIL", "SKIP"]
+    },
+    "test": {
+      "type": "object",
+      "required": [
+        "title", "status", "user_inputs", "created_files",
+        "actual_output", "converted_submission", "exception_message", "checks"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The test's name as the student sees it. May be empty; must be present (EZ-1528)."
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "user_inputs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The lines fed to the program on standard input, in order. Empty when there were none."
+        },
+        "created_files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/file" },
+          "description": "Text files the test placed in the working directory before running the program. Shown when non-empty."
+        },
+        "actual_output": {
+          "type": ["string", "null"],
+          "description": "Everything the program wrote to standard output, as one string. Null when the program was not run or produced nothing worth showing."
+        },
+        "converted_submission": {
+          "type": ["string", "null"],
+          "description": "When the test ran a modified copy of the submission, that copy. Null otherwise."
+        },
+        "exception_message": {
+          "type": ["string", "null"],
+          "description": "A traceback or error message when the test itself could not complete. Shown to the student in full. Null when nothing went wrong."
+        },
+        "checks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/check" },
+          "description": "The checks that make up this test, in order. May be empty."
+        }
+      }
+    },
+    "file": {
+      "type": "object",
+      "required": ["name", "content"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "content": { "type": "string" }
+      }
+    },
+    "check": {
+      "type": "object",
+      "required": ["title", "status"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "What was checked, as the student sees it. May be empty when the feedback says it all."
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "feedback": {
+          "type": ["string", "null"],
+          "description": "Why the check passed or failed. Should be non-empty for a failed check. A check with neither a title nor feedback is not shown."
+        }
+      }
+    }
+  }
+}
