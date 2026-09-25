@@ -16,6 +16,8 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import org.joda.time.DateTime
 import tools.jackson.databind.annotation.JsonSerialize
+import tools.jackson.databind.node.ObjectNode
+import tools.jackson.module.kotlin.jacksonObjectMapper
 
 data class TeacherActivityResp(
     @get:JsonProperty("id") val id: String,
@@ -193,9 +195,41 @@ fun insertAutogradeActivity(
             it[autoGradedAt] = time
         }
 
+        // EZ-1926. The grader asked for a teacher's eyes. Every attempt of this student, not just
+        // this one, for the reason SetSubmissionFlagged gives: the flag is read off the latest
+        // submission, and the next attempt would otherwise hide it. Only ever raised here — a
+        // result without the field, or with false, leaves whatever a teacher set alone.
+        if (feedbackFlagsForReview(newFeedback)) {
+            Submission.update({ (Submission.courseExercise eq courseExId) and (Submission.student eq studentId) }) {
+                it[flagged] = true
+            }
+        }
+
         cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
     }
 }
+
+/**
+ * Whether a grader's result asks for review: an OK_V3 document with a top-level `flag_for_review`
+ * that is the JSON boolean `true` (EZ-1926, `doc/aae/feedback-format.md`).
+ *
+ * Everything else is false — legacy plain text, a document that does not parse, the field absent,
+ * `false`, or a value that is not a boolean. A grader that writes `"true"` has not met the format,
+ * and the answer to that is a validator failure on its side, not a flag on a student.
+ */
+internal fun feedbackFlagsForReview(feedback: String?): Boolean {
+    if (feedback.isNullOrBlank()) return false
+    val root = try {
+        feedbackMapper.readTree(feedback)
+    } catch (_: Exception) {
+        return false
+    }
+    if (root !is ObjectNode || root.get("result_type")?.asString() != "OK_V3") return false
+    val flag = root.get("flag_for_review") ?: return false
+    return flag.isBoolean && flag.asBoolean()
+}
+
+private val feedbackMapper = jacksonObjectMapper()
 
 
 fun selectGraderType(courseExId: Long): GraderType = transaction {

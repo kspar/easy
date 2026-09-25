@@ -30,6 +30,10 @@
       "type": ["string", "null"],
       "description": "Non-null when the submission could not be tested at all through the student's own fault: a syntax error, a missing required file. Shown to the student as is. When set, tests is empty."
     },
+    "flag_for_review": {
+      "type": "boolean",
+      "description": "Optional. true asks for a teacher's eyes: core raises the course's shared review flag on this student's work on the exercise, as if a teacher had pressed the flag button. false or absent changes nothing; the flag is never cleared by a grader."
+    },
     "tests": {
       "type": "array",
       "items": { "$ref": "#/$defs/test" },

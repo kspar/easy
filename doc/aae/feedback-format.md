@@ -22,6 +22,7 @@ Consumers, all in this repository:
 | | reads | file |
 | --- | --- | --- |
 | executor (aae) | `result_type`, `points` | `aae/server.py`, `parse_v3` |
+| core | `flag_for_review`, when storing the result | `core/src/main/kotlin/core/ems/service/assessments.kt`, `feedbackFlagsForReview` |
 | core | `tests[].status` and three fields it drops from passing tests before the AI tutor sees the rest | `core/src/main/kotlin/core/ems/service/ai/AiFeedbackPrompt.kt` |
 | web app | everything, to render the student's result | `web/src/features/course-exercise/okV3.ts`, `AutoTestResults.tsx` |
 | AI tutor | the whole document, verbatim, with a prose description of the fields in its system prompt | `AiFeedbackPrompt.kt` |
@@ -72,6 +73,13 @@ There is no envelope. EZ-1509 described a `message_type` wrapper with `OK_V3`, `
   // a syntax error, a required file missing. Shown to the student as is, in full.
   // When non-null, `tests` is empty.
   "pre_evaluate_error": null,
+
+  // Optional. `true` asks for a teacher's eyes: core raises the course's shared review flag on
+  // this student's work on the exercise, exactly as if a teacher had pressed the flag button, and
+  // every teacher on the course sees it in the students list. Use it for what a grader can notice
+  // and a grade cannot say — a suspected copy, a pattern a human should look at. `false` or absent
+  // changes nothing; a grader never clears the flag, only a teacher does.
+  "flag_for_review": false,
 
   // Every test of the exercise, in display order. A test that did not run is present with
   // status SKIP rather than absent, so the student sees what they did not reach.
@@ -187,3 +195,5 @@ grade line do not matter.
 - **2026-08** — EZ-1834: check titles are rendered, and passing checks are shown. No change to the
   format; a change to what the web app made of it.
 - **2026-09** — the specification moved from EZ-1509 to this file, with a schema and a validator.
+- **2026-09** — EZ-1926: `flag_for_review` added, optional. The first field a grader writes that
+  core acts on rather than stores.

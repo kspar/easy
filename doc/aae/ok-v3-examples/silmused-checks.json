@@ -3,6 +3,7 @@
   "producer": "silmused 1.7.11",
   "finished_at": "2026-08-30T10:20:00Z",
   "pre_evaluate_error": null,
+  "flag_for_review": true,
   "points": 60,
   "tests": [
     {

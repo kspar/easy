@@ -159,6 +159,15 @@ def test_a_document_of_another_result_type_is_refused():
     assert any("result_type" in e for e in rejected(mutate))
 
 
+@pytest.mark.parametrize("value", ["true", 1, None])
+def test_flag_for_review_that_is_not_a_boolean_is_refused(value):
+    # Core reads only the JSON boolean `true` (EZ-1926), so anything else is a grader that thinks
+    # it flagged a student and did not. Better it hears so here.
+    def mutate(d):
+        d["flag_for_review"] = value
+    assert any("flag_for_review" in e for e in rejected(mutate))
+
+
 def test_a_check_without_a_title_key_is_refused():
     # Empty is fine and common; absent is not. The web app tolerates it, the contract does not.
     def mutate(d):

@@ -199,6 +199,60 @@ class AutoGradeIntegrationTest(
         assertNotNull(stats[StatsSubmission.autoGradedAt])
     }
 
+    // --- the grader asks for a teacher (EZ-1926) --------------------------------------------------
+
+    private fun okV3(points: Int, flagForReview: Boolean? = null): String {
+        val flag = when (flagForReview) {
+            null -> ""
+            else -> ""","flag_for_review":$flagForReview"""
+        }
+        return """{"result_type":"OK_V3","producer":"tiivad 0.0.33","pre_evaluate_error":null$flag,""" +
+                """"points":$points,"tests":[{"title":"t","status":"FAIL","user_inputs":[],"created_files":[],""" +
+                """"actual_output":null,"converted_submission":null,"exception_message":null,"checks":[]}]}"""
+    }
+
+    private fun flaggedOf(submissionId: Long): Boolean = transaction {
+        Submission.selectAll().where { Submission.id eq submissionId }.single()[Submission.flagged]
+    }
+
+    @Test
+    fun `a result with flag_for_review raises the shared review flag on every attempt of the student`() {
+        val first = submit("print(1)").also { awaitStatus(it, AutoGradeStatus.COMPLETED) }
+        assertEquals(false, flaggedOf(first)) { "A result without the field flagged the student" }
+
+        executor.respond(FakeExecutor.Behaviour.Grade(40, okV3(40, flagForReview = true)))
+        val second = submit("print(2)").also { awaitStatus(it, AutoGradeStatus.COMPLETED) }
+
+        assertEquals(true, flaggedOf(second))
+        // The flag is read off the latest submission, so it goes on the earlier attempt as well —
+        // the same rule the teacher's button follows.
+        assertEquals(true, flaggedOf(first))
+
+        // And the teacher sees it where the button would have put it: on the submission's details.
+        val details = api.get(
+            "/v2/teacher/courses/$courseId/exercises/$ceId/submissions/$second",
+            Auth.asTeacher(teacher),
+        )
+        assertEquals(200, details.status) { details.body }
+        assertEquals(true, json(details.body).get("flagged").asBoolean())
+    }
+
+    @Test
+    fun `a later result with the flag false does not clear one already set`() {
+        executor.respond(FakeExecutor.Behaviour.Grade(40, okV3(40, flagForReview = true)))
+        val first = submit("print(1)").also { awaitStatus(it, AutoGradeStatus.COMPLETED) }
+        assertEquals(true, flaggedOf(first))
+
+        executor.respond(FakeExecutor.Behaviour.Grade(100, okV3(100, flagForReview = false)))
+        val second = submit("print(2)").also { awaitStatus(it, AutoGradeStatus.COMPLETED) }
+
+        // `false` writes nothing: the first attempt keeps its flag. The second attempt is a new row
+        // and starts unflagged, as every new attempt does under EZ-1249 — a teacher's flag does not
+        // carry over to a resubmission either. Only a teacher clears a flag.
+        assertEquals(true, flaggedOf(first)) { "false in a result cleared a flag; only a teacher may" }
+        assertEquals(false, flaggedOf(second))
+    }
+
     // --- the failure legs -------------------------------------------------------------------------
 
     /**

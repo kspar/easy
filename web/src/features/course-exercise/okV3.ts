@@ -31,6 +31,12 @@ export interface OkV3Feedback {
   result_type: 'OK_V3'
   producer: string
   pre_evaluate_error: string | null
+  /**
+   * The grader asked for a teacher's eyes (EZ-1926). Acted on by core when it stores the result —
+   * it raises `submission.flagged` — so nothing in the browser reads this; it is here so the type
+   * matches `doc/aae/ok-v3.schema.json`.
+   */
+  flag_for_review?: boolean
   points: number
   tests: OkV3Test[]
 }
