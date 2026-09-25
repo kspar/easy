@@ -195,10 +195,11 @@ fun insertAutogradeActivity(
             it[autoGradedAt] = time
         }
 
-        // EZ-1926. The grader asked for a teacher's eyes. Every attempt of this student, not just
-        // this one, for the reason SetSubmissionFlagged gives: the flag is read off the latest
-        // submission, and the next attempt would otherwise hide it. Only ever raised here — a
-        // result without the field, or with false, leaves whatever a teacher set alone.
+        // EZ-1926. The grader asked for a teacher's eyes. Written the way SetSubmissionFlagged
+        // writes it — every attempt of this student, not just this one — so the two writers agree
+        // and clearing from the button clears the lot. The reads ask "any attempt flagged", so the
+        // mark outlives a resubmission either way. Only ever raised here: a result without the
+        // field, or with false, leaves whatever a teacher set alone.
         if (feedbackFlagsForReview(newFeedback)) {
             Submission.update({ (Submission.courseExercise eq courseExId) and (Submission.student eq studentId) }) {
                 it[flagged] = true

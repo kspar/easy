@@ -211,46 +211,53 @@ class AutoGradeIntegrationTest(
                 """"actual_output":null,"converted_submission":null,"exception_message":null,"checks":[]}]}"""
     }
 
-    private fun flaggedOf(submissionId: Long): Boolean = transaction {
+    /**
+     * What the teacher sees on this submission's page. The column on one row is not the answer:
+     * every read of the flag asks "is any attempt of this student on this exercise flagged", so a
+     * mark survives a resubmission whichever row carries it. Asserting the column here would pin
+     * a storage detail and, worse, read a fresh attempt's default false as "not flagged".
+     */
+    private fun teacherSeesFlagged(submissionId: Long): Boolean {
+        val details = api.get(
+            "/v2/teacher/courses/$courseId/exercises/$ceId/submissions/$submissionId",
+            Auth.asTeacher(teacher),
+        )
+        assertEquals(200, details.status) { details.body }
+        return json(details.body).get("flagged").asBoolean()
+    }
+
+    private fun columnOf(submissionId: Long): Boolean = transaction {
         Submission.selectAll().where { Submission.id eq submissionId }.single()[Submission.flagged]
     }
 
     @Test
-    fun `a result with flag_for_review raises the shared review flag on every attempt of the student`() {
+    fun `a result with flag_for_review raises the shared review flag on the student's work`() {
         val first = submit("print(1)").also { awaitStatus(it, AutoGradeStatus.COMPLETED) }
-        assertEquals(false, flaggedOf(first)) { "A result without the field flagged the student" }
+        assertEquals(false, teacherSeesFlagged(first)) { "A result without the field flagged the student" }
 
         executor.respond(FakeExecutor.Behaviour.Grade(40, okV3(40, flagForReview = true)))
         val second = submit("print(2)").also { awaitStatus(it, AutoGradeStatus.COMPLETED) }
 
-        assertEquals(true, flaggedOf(second))
-        // The flag is read off the latest submission, so it goes on the earlier attempt as well —
-        // the same rule the teacher's button follows.
-        assertEquals(true, flaggedOf(first))
-
-        // And the teacher sees it where the button would have put it: on the submission's details.
-        val details = api.get(
-            "/v2/teacher/courses/$courseId/exercises/$ceId/submissions/$second",
-            Auth.asTeacher(teacher),
-        )
-        assertEquals(200, details.status) { details.body }
-        assertEquals(true, json(details.body).get("flagged").asBoolean())
+        assertEquals(true, teacherSeesFlagged(second))
+        assertEquals(true, teacherSeesFlagged(first))
+        // Written the way the teacher's button writes it: on every attempt, not just the graded one.
+        assertEquals(true, columnOf(first))
+        assertEquals(true, columnOf(second))
     }
 
     @Test
     fun `a later result with the flag false does not clear one already set`() {
         executor.respond(FakeExecutor.Behaviour.Grade(40, okV3(40, flagForReview = true)))
         val first = submit("print(1)").also { awaitStatus(it, AutoGradeStatus.COMPLETED) }
-        assertEquals(true, flaggedOf(first))
+        assertEquals(true, teacherSeesFlagged(first))
 
         executor.respond(FakeExecutor.Behaviour.Grade(100, okV3(100, flagForReview = false)))
         val second = submit("print(2)").also { awaitStatus(it, AutoGradeStatus.COMPLETED) }
 
-        // `false` writes nothing: the first attempt keeps its flag. The second attempt is a new row
-        // and starts unflagged, as every new attempt does under EZ-1249 — a teacher's flag does not
-        // carry over to a resubmission either. Only a teacher clears a flag.
-        assertEquals(true, flaggedOf(first)) { "false in a result cleared a flag; only a teacher may" }
-        assertEquals(false, flaggedOf(second))
+        // `false` writes nothing, so the mark is still there on the new attempt's page — the same
+        // way a teacher's flag outlives a resubmission. Only a teacher clears it.
+        assertEquals(true, teacherSeesFlagged(second)) { "false in a result cleared a flag; only a teacher may" }
+        assertEquals(true, teacherSeesFlagged(first))
     }
 
     // --- the failure legs -------------------------------------------------------------------------
