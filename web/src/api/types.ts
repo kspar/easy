@@ -128,17 +128,31 @@ export interface ActivitiesResp {
 export interface CourseAiProps {
   provider: 'ANTHROPIC'
   model: string
-  base_url: string | null
   /** The key itself never comes back; this and the last four characters are all a teacher sees. */
   api_key_configured: boolean
   api_key_hint: string | null
+}
+
+/**
+ * The provider block is null when AI is off; everything else is the course's own and survives a
+ * switch-off, so the dialog can show it either way.
+ *
+ * @endpoint GET /v2/courses/{courseId}/ai -> (root)
+ */
+export interface CourseAiSettings {
+  ai_props: CourseAiProps | null
   /** Tokens (in + out); null means no limit. */
   token_budget: number | null
   /** Spent against the budget since `tokens_reset_at` (or ever, when that is null). */
   tokens_used: number
   tokens_reset_at: string | null
+  /** The same spend split by direction, from the audit rows. Output costs several times input. */
+  tokens_in_used: number
+  tokens_out_used: number
   /** Longest solution, in characters, that gets an explanation. */
   max_solution_chars: number
+  /** Admin-set; kept across a switch-off. */
+  base_url: string | null
 }
 
 /** @endpoint GET /v2/student/courses/{courseId}/exercises/{courseExerciseId}/activities -> teacher_activities[].teacher */

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client.ts'
-import type { CourseAiProps, StudentCourse, TeacherCourse } from './types.ts'
+import type { CourseAiSettings, StudentCourse, TeacherCourse } from './types.ts'
 
 export function useStudentCourses(enabled = true) {
   return useQuery({
@@ -71,15 +71,15 @@ export function useUpdateCourse(courseId: string) {
   })
 }
 
-/** EZ-1711. What the course has configured, key withheld — see `CourseAiProps`. */
+/** EZ-1711. What the course has configured, key withheld — see `CourseAiSettings`. */
 export function useCourseAiProps(courseId: string, enabled = true) {
   return useQuery({
     queryKey: ['courses', courseId, 'ai'],
     queryFn: () =>
-      // `?? null`, because react-query treats `undefined` as "the query function forgot to return"
-      // and throws — which is what a `{}` body from a stub, or from a proxy that ate the response,
-      // would otherwise produce.
-      apiFetch<{ ai_props: CourseAiProps | null }>(`/courses/${courseId}/ai`).then((r) => r.ai_props ?? null),
+      // `ai_props ?? null`, because react-query treats `undefined` as "the query function forgot
+      // to return" and a `{}` body from a stub, or from a proxy that ate the response, would
+      // otherwise produce exactly that one level down.
+      apiFetch<CourseAiSettings>(`/courses/${courseId}/ai`).then((r) => ({ ...r, ai_props: r.ai_props ?? null })),
     enabled,
   })
 }
@@ -96,7 +96,8 @@ export function useUpdateCourseAiProps(courseId: string) {
       ai_props: {
         provider: 'ANTHROPIC'
         model: string
-        base_url: string | null
+        /** Absent keeps the stored URL, `''` clears it, anything else sets it. Admin-only either way. */
+        base_url?: string
         api_key: string | null
         token_budget: number | null
         max_solution_chars: number

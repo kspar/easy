@@ -115,8 +115,10 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(200, cleared.status) { cleared.body }
 
         assertNull(storedKey())
-        assertNull(storedBaseUrl())
         assertNull(read().jsonOrNull?.get("ai_props")?.takeUnless { it.isNull })
+        // The admin's URL survives a teacher's switch-off, and is still visible to them.
+        assertEquals("http://localhost:9", storedBaseUrl())
+        assertEquals("http://localhost:9", read().jsonOrNull!!.get("base_url").asString())
     }
 
     // The base URL is where core sends a key and a student's code. A teacher on the course is
@@ -136,13 +138,19 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(200, ok.status) { ok.body }
         assertEquals("https://proxy.example/v1", storedBaseUrl())
 
-        // A teacher's later save, with no URL in it, leaves the admin's in place.
+        // A save with no URL in it leaves the admin's in place — whoever sends it. An admin acting
+        // as a teacher in the web sends exactly this, and core cannot tell them apart by role.
         val teacherEdit = write(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null, "base_url" to null))
         assertEquals(200, teacherEdit.status) { teacherEdit.body }
         assertEquals("https://proxy.example/v1", storedBaseUrl())
-
-        // An admin's save with no URL clears it.
         writeAsAdmin(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null, "base_url" to null))
+        assertEquals("https://proxy.example/v1", storedBaseUrl())
+
+        // Clearing is explicit: an empty string, and admin-only like setting.
+        val teacherClear = write(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null, "base_url" to ""))
+        assertEquals("INVALID_PARAMETER_VALUE", teacherClear.errorCode) { teacherClear.body }
+        assertEquals("https://proxy.example/v1", storedBaseUrl())
+        writeAsAdmin(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null, "base_url" to ""))
         assertNull(storedBaseUrl())
     }
 
@@ -164,14 +172,16 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
         val put = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "token_budget" to 250_000))
         assertEquals(200, put.status) { put.body }
 
-        val props = read().jsonOrNull!!.get("ai_props")
-        assertEquals(250_000L, props.get("token_budget").asLong())
-        assertEquals(0L, props.get("tokens_used").asLong())
-        assertTrue(props.get("tokens_reset_at").isNull)
+        val resp = read().jsonOrNull!!
+        assertEquals(250_000L, resp.get("token_budget").asLong())
+        assertEquals(0L, resp.get("tokens_used").asLong())
+        assertEquals(0L, resp.get("tokens_in_used").asLong())
+        assertEquals(0L, resp.get("tokens_out_used").asLong())
+        assertTrue(resp.get("tokens_reset_at").isNull)
 
         // Lifting the limit is a null, not a zero.
         write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to null, "token_budget" to null))
-        assertTrue(read().jsonOrNull!!.get("ai_props").get("token_budget").isNull)
+        assertTrue(read().jsonOrNull!!.get("token_budget").isNull)
 
         val zero = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to null, "token_budget" to 0))
         assertEquals(400, zero.status) { zero.body }
@@ -179,17 +189,26 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
 
     @Test
     fun `the solution length limit has a default, is written with the props, and kept when absent`() {
+        // Course-level, so it reads even before AI is switched on.
+        assertEquals(6000L, read().jsonOrNull!!.get("max_solution_chars").asLong())
         write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k"))
-        assertEquals(6000L, read().jsonOrNull!!.get("ai_props").get("max_solution_chars").asLong())
+        assertEquals(6000L, read().jsonOrNull!!.get("max_solution_chars").asLong())
 
         write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to null, "max_solution_chars" to 2500))
-        assertEquals(2500L, read().jsonOrNull!!.get("ai_props").get("max_solution_chars").asLong())
+        assertEquals(2500L, read().jsonOrNull!!.get("max_solution_chars").asLong())
 
         write(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null))
-        assertEquals(2500L, read().jsonOrNull!!.get("ai_props").get("max_solution_chars").asLong())
+        assertEquals(2500L, read().jsonOrNull!!.get("max_solution_chars").asLong())
 
-        val zero = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to null, "max_solution_chars" to 0))
+        // Survives a switch-off, so a switch-on does not quietly go back to the default.
+        write(null)
+        assertEquals(2500L, read().jsonOrNull!!.get("max_solution_chars").asLong())
+
+        val zero = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "max_solution_chars" to 0))
         assertEquals(400, zero.status) { zero.body }
+        // And not above what the prompt carries whole.
+        val huge = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "max_solution_chars" to 10_001))
+        assertEquals(400, huge.status) { huge.body }
     }
 
     @Test
@@ -201,7 +220,7 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
         val resp = api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asTeacher(teacher))
         assertEquals(200, resp.status) { resp.body }
         assertEquals(Triple<Long?, Long, Boolean>(1000, 0, true), stored())
-        assertFalse(read().jsonOrNull!!.get("ai_props").get("tokens_reset_at").isNull)
+        assertFalse(read().jsonOrNull!!.get("tokens_reset_at").isNull)
 
         assertEquals(403, api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asTeacher(outsider)).status)
         assertEquals(403, api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asStudent(student)).status)

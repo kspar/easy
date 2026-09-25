@@ -5,7 +5,10 @@ import core.db.Course
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.springframework.boot.restclient.RestTemplateBuilder
 import org.springframework.stereotype.Service
+import org.springframework.web.client.RestTemplate
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Turns a course's stored AI config into a provider, or into nothing.
@@ -15,7 +18,15 @@ import org.springframework.stereotype.Service
  * the single place that grows when a second provider type arrives (EZ-1711).
  */
 @Service
-class AiProviderFactory {
+class AiProviderFactory(private val restTemplateBuilder: RestTemplateBuilder) {
+
+    // One RestTemplate per base URL, kept for the life of the process: a client is connection
+    // pooling and converters, and building one per click is the cold-handshake tax on every
+    // student. The provider object itself is still per request — it carries the course's key.
+    private val clients = ConcurrentHashMap<String, RestTemplate>()
+
+    private fun clientFor(baseUrl: String?): RestTemplate =
+        clients.computeIfAbsent(baseUrl ?: "") { AnthropicProvider.buildClient(restTemplateBuilder) }
 
     fun configForCourse(courseId: Long): AiProviderConfig? = transaction {
         Course.select(Course.aiProvider, Course.aiApiKey, Course.aiBaseUrl, Course.aiModel)
@@ -38,10 +49,12 @@ class AiProviderFactory {
     fun forCourse(courseId: Long): AiProvider? = configForCourse(courseId)?.let { create(it) }
 
     fun create(config: AiProviderConfig): AiProvider = when (config.type) {
-        AiProviderType.ANTHROPIC -> AnthropicProvider(config)
+        AiProviderType.ANTHROPIC -> AnthropicProvider(config, clientFor(config.baseUrl))
     }
 
     companion object {
-        const val DEFAULT_MODEL = "claude-opus-5"
+        // Sonnet, not Opus: a five-sentence explanation of a failed test does not need the top
+        // tier, and Sonnet is less than half the price per token. A teacher can type any model id.
+        const val DEFAULT_MODEL = "claude-sonnet-5"
     }
 }

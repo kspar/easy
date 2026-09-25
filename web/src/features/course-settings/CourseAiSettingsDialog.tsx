@@ -23,7 +23,10 @@ import ConfirmDialog from '../../components/ConfirmDialog.tsx'
 import { formatDateTime, useDateLocale } from '../../i18n/dateLocale.ts'
 import { estimateUsd, formatUsd } from './aiPricing.ts'
 
-const DEFAULT_MODEL = 'claude-opus-5'
+// Mirrors AiProviderFactory.DEFAULT_MODEL in core.
+const DEFAULT_MODEL = 'claude-sonnet-5'
+// Mirrors AiFeedbackPrompt.SOLUTION_CAP in core.
+const MAX_SOLUTION_CHARS_CAP = 10_000
 
 /**
  * Per-course AI provider settings (EZ-1711): which vendor, which model, whose key.
@@ -47,7 +50,8 @@ export default function CourseAiSettingsDialog({
   // Core only lets an admin set the base URL (it is where a key and a student's code get sent), so
   // the field is not offered to a teacher at all rather than offered and refused.
   const isAdmin = activeRole === 'admin'
-  const { data: props, isLoading } = useCourseAiProps(courseId, open)
+  const { data: settings, isLoading } = useCourseAiProps(courseId, open)
+  const props = settings?.ai_props ?? null
   const update = useUpdateCourseAiProps(courseId)
   const resetUsage = useResetCourseAiUsage(courseId)
   const dateLocale = useDateLocale()
@@ -65,14 +69,14 @@ export default function CourseAiSettingsDialog({
   useEffect(() => {
     if (!open) return
     setModel(props?.model ?? DEFAULT_MODEL)
-    setBaseUrl(props?.base_url ?? '')
-    setTokenBudget(props?.token_budget != null ? String(props.token_budget) : '')
-    setMaxSolutionChars(String(props?.max_solution_chars ?? 6000))
-    setAdvancedOpen(!!props?.base_url)
+    setBaseUrl(settings?.base_url ?? '')
+    setTokenBudget(settings?.token_budget != null ? String(settings.token_budget) : '')
+    setMaxSolutionChars(String(settings?.max_solution_chars ?? 6000))
+    setAdvancedOpen(!!settings?.base_url)
     // Never pre-filled: the server does not have it to give, and a field that looks full would
     // invite "save" to overwrite a working key with the placeholder.
     setApiKey('')
-  }, [props, open])
+  }, [settings, props, open])
 
   const configured = props?.api_key_configured === true
 
@@ -82,16 +86,23 @@ export default function CourseAiSettingsDialog({
   const budgetValid = budgetDigits === '' || /^[1-9]\d*$/.test(budgetDigits)
   const budgetNumber = budgetValid && budgetDigits !== '' ? Number(budgetDigits) : null
   const maxCharsNumber = parseInt(maxSolutionChars.replace(/[\s,]/g, ''), 10)
-  const maxCharsValid = Number.isFinite(maxCharsNumber) && maxCharsNumber >= 1 && maxCharsNumber <= 1_000_000
+  // Core caps this at what the prompt carries whole; the same number here, so Save is not offered
+  // for a value core will refuse.
+  const maxCharsValid = Number.isFinite(maxCharsNumber) && maxCharsNumber >= 1 && maxCharsNumber <= MAX_SOLUTION_CHARS_CAP
   const canSave = model.trim().length > 0 && budgetValid && maxCharsValid &&
     (configured || apiKey.trim().length > 0) && !update.isPending
 
   // The estimate follows the model field as it is typed, so a teacher weighing two models sees
-  // the price move. What has been spent is priced at the same rate — a course that changed model
-  // mid-way gets an approximation, which is what the "≈" is for.
-  const budgetEstimate = budgetNumber != null ? estimateUsd(model, budgetNumber) : null
-  const usedTokens = props?.tokens_used ?? 0
-  const usedEstimate = usedTokens > 0 ? estimateUsd(model, usedTokens) : null
+  // the price move. The input/output split is the course's own once it has any usage — output
+  // costs several times input, so a guessed split is the difference between $1 and $3 — and a
+  // stock guess before that. What has been spent is priced at the current model's rate, which
+  // for a course that changed model mid-way is an approximation; hence the "≈".
+  const inUsed = settings?.tokens_in_used ?? 0
+  const outUsed = settings?.tokens_out_used ?? 0
+  const measuredShare = inUsed + outUsed > 0 ? inUsed / (inUsed + outUsed) : undefined
+  const budgetEstimate = budgetNumber != null ? estimateUsd(model, budgetNumber, measuredShare) : null
+  const usedTokens = settings?.tokens_used ?? 0
+  const usedEstimate = usedTokens > 0 ? estimateUsd(model, usedTokens, measuredShare) : null
   const tokensFmt = (n: number) => n.toLocaleString(dateLocale.code === 'et' ? 'et-EE' : 'en-GB')
 
   function handleSave() {
@@ -100,8 +111,9 @@ export default function CourseAiSettingsDialog({
         ai_props: {
           provider: 'ANTHROPIC',
           model: model.trim(),
-          // A teacher's write never carries a URL; core keeps the stored one for them.
-          base_url: isAdmin ? baseUrl.trim() || null : null,
+          // Only an admin's write carries the URL at all: absent means keep, '' means clear. A
+          // teacher's — or an admin's while acting as a teacher — leaves it out, and core keeps it.
+          ...(isAdmin ? { base_url: baseUrl.trim() } : {}),
           api_key: apiKey.trim() || null,
           token_budget: budgetNumber,
           max_solution_chars: maxCharsNumber,
@@ -208,16 +220,16 @@ export default function CourseAiSettingsDialog({
             helperText={t('courses.aiMaxSolutionCharsHelp')}
           />
 
-          {configured && (
+          {settings != null && (configured || usedTokens > 0) && (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
               <Typography variant="body2" color="text.secondary">
                 {usedEstimate != null
                   ? t('courses.aiUsageWithCost', { tokens: tokensFmt(usedTokens), cost: formatUsd(usedEstimate) })
                   : t('courses.aiUsage', { tokens: tokensFmt(usedTokens) })}
-                {props?.tokens_reset_at && (
+                {settings.tokens_reset_at && (
                   <>
                     {' · '}
-                    {t('courses.aiUsageSince', { date: formatDateTime(new Date(props.tokens_reset_at), dateLocale) })}
+                    {t('courses.aiUsageSince', { date: formatDateTime(new Date(settings.tokens_reset_at), dateLocale) })}
                   </>
                 )}
               </Typography>

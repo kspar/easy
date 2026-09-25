@@ -33,10 +33,37 @@ class AiFeedbackPromptTest {
     )
 
     @Test
-    fun `the whole feedback string goes in verbatim, passing tests included`() {
+    fun `every test goes in, and the failing ones go in whole`() {
         val built = AiFeedbackPrompt.build(context())
-        assertTrue(built.user.contains(okV3)) { "The grader feedback was altered on its way into the prompt:\n${built.user}" }
         assertTrue(built.user.contains("Sums two numbers")) { "Passing tests are context and belong in the prompt" }
+        assertTrue(built.user.contains("\"status\":\"PASS\""))
+        // The failing test keeps everything the model needs to explain it.
+        for (needle in listOf("Handles negatives", "\"user_inputs\":[\"-1\",\"2\"]", "\"actual_output\":\"3\"", "Expected 1")) {
+            assertTrue(built.user.contains(needle)) { "Missing '$needle' in:\n${built.user}" }
+        }
+    }
+
+    @Test
+    fun `passing tests lose their output, the rest is untouched`() {
+        val trimmed = AiFeedbackPrompt.trimPassingTests(okV3)
+        // The passing test's output is gone, the failing test's output is not.
+        assertFalse(trimmed.contains("\"actual_output\":\"3\",\"checks\":[]")) { trimmed }
+        assertTrue(trimmed.contains("\"title\":\"Sums two numbers\",\"status\":\"PASS\",\"user_inputs\":[\"1\",\"2\"],\"checks\":[]")) { trimmed }
+        assertTrue(trimmed.contains("\"status\":\"FAIL\",\"user_inputs\":[\"-1\",\"2\"],\"actual_output\":\"3\"")) { trimmed }
+        assertTrue(trimmed.contains("\"points\":40"))
+
+        // A passing test with the large fields present loses all three.
+        val heavy = """{"result_type":"OK_V3","tests":[{"title":"t","status":"PASS","actual_output":"OUT","converted_submission":"CONV","created_files":[{"name":"f","content":"FILE"}]}]}"""
+        val light = AiFeedbackPrompt.trimPassingTests(heavy)
+        for (gone in listOf("OUT", "CONV", "FILE")) assertFalse(light.contains(gone)) { light }
+        assertTrue(light.contains("\"title\":\"t\",\"status\":\"PASS\""))
+    }
+
+    @Test
+    fun `anything that is not OK_V3 goes in as it is`() {
+        for (raw in listOf("Test 1: FAIL\nExpected 1, got 3\n", "{not json", """{"result_type":"OTHER","tests":[{"status":"PASS","actual_output":"x"}]}""", """{"result_type":"OK_V3"}""")) {
+            assertEquals(raw, AiFeedbackPrompt.trimPassingTests(raw))
+        }
     }
 
     @Test

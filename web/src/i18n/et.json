@@ -189,7 +189,7 @@
     "aiUsageResetConfirm": "Nullida selle kursuse tokenite loendur? Eelarve jääb alles; juba antud selgitused säilivad.",
     "aiUsageResetDone": "Tokenite loendur nullitud",
     "aiMaxSolutionChars": "Pikim selgitatav lahendus",
-    "aiMaxSolutionCharsHelp": "Märkides. Pikemad lahendused AI selgitust ei saa. 6 000 on umbes sada rida Pythonit.",
+    "aiMaxSolutionCharsHelp": "Märkides, kuni 10 000. Pikemad lahendused AI selgitust ei saa. 6 000 on umbes sada rida Pythonit.",
     "aiSolutionTooLong": "See lahendus on AI selgituse jaoks liiga pikk."
   },
   "exercises": {
@@ -352,6 +352,8 @@
     "explainWithAi": "Selgita AI abil",
     "explainWithAiHint": "Palub AI-l paari lausega selgitada, miks testid ebaõnnestusid. Lahendust see ei ütle.",
     "aiLabel": "AI",
+    "aiExplanationsLeft_one": "Sul on sellel ülesandel {{count}} selgitus alles.",
+    "aiExplanationsLeft_other": "Sul on sellel ülesandel {{count}} selgitust alles.",
     "aiFeedbackTitle": "AI selgitus",
     "aiFeedbackDisclaimer": "Loodud automaatselt testitulemuste põhjal, mitte õpetaja kirjutatud. See võib eksida.",
     "feedbackHeading": "Tagasiside",

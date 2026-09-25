@@ -745,7 +745,12 @@ function StudentExerciseView() {
   const canExplain = explainable && !solutionTooLong
 
   const explainButton = canExplain ? (
-    <Tooltip title={t('submission.explainWithAiHint')}>
+    <Tooltip
+      title={
+        `${t('submission.explainWithAiHint')} ` +
+        t('submission.aiExplanationsLeft', { count: exercise.ai_explanations_left })
+      }
+    >
       <span>
         <Button
           size="small"

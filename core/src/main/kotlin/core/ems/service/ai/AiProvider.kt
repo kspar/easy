@@ -37,12 +37,11 @@ data class AiCompletionRequest(
     val system: String,
     val user: String,
     /**
-     * Generous on purpose. Current Anthropic models think before answering by default and the
-     * thinking counts against this ceiling; a budget sized for the five-sentence answer would be
-     * spent on the thinking, and the request would end with no text block at all — billed, and
-     * recorded as a failure. The vendor's own guidance for a non-streaming call is around this.
+     * A backstop, not a budget: a ceiling is free until it is hit. Thinking counts against it,
+     * which is why it is well above the five sentences asked for — at low effort the thinking is
+     * short, and a request that still runs into this is a runaway, better cut than paid for.
      */
-    val maxTokens: Int = 16_000,
+    val maxTokens: Int = 4_000,
 )
 
 data class AiCompletionResult(
@@ -64,4 +63,11 @@ class AiProviderException(
     message: String,
     cause: Throwable? = null,
     val rawResponse: String? = null,
+    /**
+     * What the vendor billed for a request that produced no answer — a refusal, a ceiling hit by
+     * thinking alone. Null when there was no body to read it from. Charged like a success, or the
+     * budget would have a hole exactly the shape of a retry loop.
+     */
+    val tokensIn: Int? = null,
+    val tokensOut: Int? = null,
 ) : RuntimeException(message, cause)

@@ -239,11 +239,14 @@ class StudentAiFeedbackApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
-    fun `a refusal is a provider failure too`() {
+    fun `a refusal is a provider failure too, and is charged like an answer`() {
         anthropic.respond(FakeAnthropic.Behaviour.Refusal)
         val resp = explain()
         assertEquals("AI_PROVIDER_ERROR", resp.errorCode) { resp.body }
-        assertEquals(AiFeedbackStatus.FAILED, rows().single()[AiFeedback.status])
+        val row = rows().single()
+        assertEquals(AiFeedbackStatus.FAILED, row[AiFeedback.status])
+        assertEquals(10, row[AiFeedback.tokensIn])
+        assertEquals(10L, tokensUsed()) { "The vendor billed the refusal; so must the counter" }
     }
 
     @Test
@@ -286,7 +289,7 @@ class StudentAiFeedbackApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
-    fun `a failed answer is not charged`() {
+    fun `an HTTP failure, which the vendor does not bill, is not charged`() {
         anthropic.respond(FakeAnthropic.Behaviour.Fail(500))
         explain()
         assertEquals(0L, tokensUsed())

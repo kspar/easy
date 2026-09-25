@@ -89,19 +89,36 @@ class AiFeedbackService(
             // The log line carries the cause; the response does not. What the provider said may
             // name the configured host, and that is the teacher's or an operator's to read, not
             // the student's. `notify = false`: a revoked key is the course's problem, and one mail
-            // per click would be sixty mails per lecture.
+            // per click would be sixty mails per lecture. Tokens, when the vendor reported any,
+            // are charged: a refusal is billed like an answer.
             log.warn(e) { "AI feedback failed for submission $submissionId (provider ${provider.type})" }
             insertRow(
                 courseExId, submissionId, studentId, AiFeedbackStatus.FAILED, provider.type,
                 provider.model, feedbackMd = null, feedbackHtml = null, prompt = audit,
-                raw = e.rawResponse, tokensIn = null, tokensOut = null,
+                raw = e.rawResponse, tokensIn = e.tokensIn, tokensOut = e.tokensOut,
+                chargeToCourse = courseId,
             )
             throw InvalidRequestException(
                 "AI provider error for submission $submissionId", ReqError.AI_PROVIDER_ERROR, notify = false
             )
         }
 
-        val html = markdownService.mdToHtml(result.text)
+        // Rendering the model's markdown is the last thing that can fail on a paid-for answer,
+        // and an answer that was paid for is recorded and charged whether or not it renders.
+        val html = try {
+            markdownService.mdToHtml(result.text)
+        } catch (e: Exception) {
+            log.error(e) { "AI feedback for submission $submissionId could not be rendered" }
+            insertRow(
+                courseExId, submissionId, studentId, AiFeedbackStatus.FAILED, provider.type,
+                result.model, feedbackMd = result.text, feedbackHtml = null, prompt = audit,
+                raw = result.rawResponse, tokensIn = result.tokensIn, tokensOut = result.tokensOut,
+                chargeToCourse = courseId,
+            )
+            throw InvalidRequestException(
+                "AI feedback for submission $submissionId could not be rendered", ReqError.AI_PROVIDER_ERROR
+            )
+        }
         return try {
             val id = insertRow(
                 courseExId, submissionId, studentId, AiFeedbackStatus.OK, provider.type, result.model,

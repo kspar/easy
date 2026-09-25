@@ -49,8 +49,11 @@ class UpdateCourseAiPropsController {
         // resetting it is its own action (ResetCourseAiUsage), so that raising a budget is not
         // also, silently, a reset.
         @param:JsonProperty("token_budget") @field:Min(1) val tokenBudget: Long?,
-        // Characters. Absent keeps the stored value; there is no "unlimited", the column is not null.
-        @param:JsonProperty("max_solution_chars") @field:Min(1) @field:Max(1_000_000) val maxSolutionChars: Int?,
+        // Characters. Absent keeps the stored value; there is no "unlimited", the column is not
+        // null. Capped at what the prompt will carry whole (AiFeedbackPrompt.SOLUTION_CAP): a limit
+        // above that would admit solutions the model then sees truncated.
+        @param:JsonProperty("max_solution_chars") @field:Min(1) @field:Max(AiFeedbackPrompt.SOLUTION_CAP.toLong())
+        val maxSolutionChars: Int?,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -70,7 +73,8 @@ class UpdateCourseAiPropsController {
                 Course.update({ Course.id eq courseId }) {
                     it[aiProvider] = null
                     it[aiApiKey] = null
-                    it[aiBaseUrl] = null
+                    // Not the base URL: an admin set it, a teacher switching AI off for exam week
+                    // must not be the one to lose it, and could not put it back.
                     it[aiModel] = null
                     // The budget goes with the config; the counter and its reset date stay, so that
                     // switching AI off and on again does not also forget what it has cost so far.
@@ -81,26 +85,34 @@ class UpdateCourseAiPropsController {
         }
 
         val newKey = props.apiKey?.takeIf { it.isNotBlank() }
-        val newBaseUrl = props.baseUrl?.trim()?.takeIf { it.isNotBlank() }
+        // Three states for the URL: absent (null) keeps what is stored, an empty string clears it,
+        // anything else sets it. Absent is what a teacher's dialog sends, and also what an admin's
+        // sends while acting as a teacher — the web decides by the active role, core sees every
+        // role the account has, so "keep" cannot depend on who the caller is.
+        val baseUrlField = props.baseUrl?.trim()
+        val clearBaseUrl = baseUrlField == ""
+        val newBaseUrl = baseUrlField?.takeIf { it.isNotBlank() }
         // Logged as a fact about the request, never as a value.
         log.info {
             "Updating AI props for course $courseId by ${caller.id} " +
                     "(provider: ${props.provider}, model: ${props.model}, key changed: ${newKey != null}, " +
-                    "base url set: ${newBaseUrl != null})"
+                    "base url: ${if (newBaseUrl != null) "set" else if (clearBaseUrl) "cleared" else "kept"})"
         }
 
         // The base URL is where core will POST a key and a student's code, from inside the
-        // network. That is not a per-course decision a teacher gets to make: an admin sets it (a
-        // proxy, a self-hosted endpoint), a teacher's save leaves whatever is there alone. And it
-        // has to be a web address — RestTemplate's reaction to anything else is an exception on
-        // the student's request, not a validation error on this one.
-        if (newBaseUrl != null) {
+        // network. That is not a per-course decision a teacher gets to make: an admin sets or
+        // clears it (a proxy, a self-hosted endpoint), a teacher's save leaves whatever is there
+        // alone. And it has to be a web address — RestTemplate's reaction to anything else is an
+        // exception on the student's request, not a validation error on this one.
+        if (newBaseUrl != null || clearBaseUrl) {
             if (!caller.isAdmin()) {
                 throw InvalidRequestException(
-                    "Only an admin can set the AI base URL", ReqError.INVALID_PARAMETER_VALUE,
+                    "Only an admin can change the AI base URL", ReqError.INVALID_PARAMETER_VALUE,
                     "field" to "base_url", notify = false
                 )
             }
+        }
+        if (newBaseUrl != null) {
             if (!isWebUrl(newBaseUrl)) {
                 throw InvalidRequestException(
                     "AI base URL must be an http(s) address", ReqError.INVALID_PARAMETER_VALUE,
@@ -127,8 +139,7 @@ class UpdateCourseAiPropsController {
                 it[aiModel] = props.model.trim()
                 it[aiTokenBudget] = props.tokenBudget
                 if (props.maxSolutionChars != null) it[aiMaxSolutionChars] = props.maxSolutionChars
-                // An admin's write is authoritative for the URL, blank included; a teacher's keeps it.
-                if (caller.isAdmin()) it[aiBaseUrl] = newBaseUrl
+                if (newBaseUrl != null || clearBaseUrl) it[aiBaseUrl] = newBaseUrl
                 if (newKey != null) it[aiApiKey] = newKey.trim()
             }
         }

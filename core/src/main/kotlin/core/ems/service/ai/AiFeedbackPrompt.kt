@@ -1,5 +1,9 @@
 package core.ems.service.ai
 
+import tools.jackson.databind.node.ArrayNode
+import tools.jackson.databind.node.ObjectNode
+import tools.jackson.module.kotlin.jacksonObjectMapper
+
 /**
  * EZ-1712. The prompt that turns a failed submission into a short explanation.
  *
@@ -74,8 +78,40 @@ object AiFeedbackPrompt {
         appendLine()
         appendLine("## Test results")
         appendLine()
-        appendLine(ctx.autogradeFeedback?.let { truncateMiddle(it, FEEDBACK_CAP) } ?: "(the grader produced no feedback)")
+        appendLine(ctx.autogradeFeedback?.let { truncateMiddle(trimPassingTests(it), FEEDBACK_CAP) } ?: "(the grader produced no feedback)")
     }.trimEnd()
+
+    /**
+     * The one edit made to the grader's output before it goes in: on tests that passed, the
+     * program's output, the converted submission and any files it wrote are dropped. Those fields
+     * are the bulk of a long OK_V3 log and say nothing about why the *failing* tests failed — the
+     * passing test's title and status stay, which is the context the model uses. Anything that is
+     * not OK_V3 JSON with a `tests` array goes in untouched.
+     */
+    internal fun trimPassingTests(feedback: String): String {
+        val root = try {
+            mapper.readTree(feedback)
+        } catch (_: Exception) {
+            return feedback
+        }
+        if (root !is ObjectNode || root.get("result_type")?.asString() != "OK_V3") return feedback
+        val tests = root.get("tests") as? ArrayNode ?: return feedback
+
+        var trimmed = false
+        for (test in tests) {
+            if (test !is ObjectNode || test.get("status")?.asString() != "PASS") continue
+            for (field in PASSING_TEST_FIELDS_DROPPED) {
+                if (test.has(field)) {
+                    test.remove(field)
+                    trimmed = true
+                }
+            }
+        }
+        return if (trimmed) mapper.writeValueAsString(root) else feedback
+    }
+
+    private val mapper = jacksonObjectMapper()
+    private val PASSING_TEST_FIELDS_DROPPED = listOf("actual_output", "converted_submission", "created_files")
 
     internal fun truncateEnd(s: String, cap: Int): String =
         if (s.length <= cap) s else s.take(cap) + "\n$TRUNCATED_MARKER"

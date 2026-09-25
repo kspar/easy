@@ -189,7 +189,7 @@
     "aiUsageResetConfirm": "Reset this course's token counter to zero? The budget stays; the explanations already given are kept.",
     "aiUsageResetDone": "Token counter reset",
     "aiMaxSolutionChars": "Longest solution to explain",
-    "aiMaxSolutionCharsHelp": "In characters. Longer solutions get no AI explanation. 6 000 is about a hundred lines of Python.",
+    "aiMaxSolutionCharsHelp": "In characters, up to 10 000. Longer solutions get no AI explanation. 6 000 is about a hundred lines of Python.",
     "aiSolutionTooLong": "This solution is too long for an AI explanation."
   },
   "exercises": {
@@ -352,6 +352,8 @@
     "explainWithAi": "Explain with AI",
     "explainWithAiHint": "Asks an AI to explain, in a few sentences, why the tests failed. It will not give you the solution.",
     "aiLabel": "AI",
+    "aiExplanationsLeft_one": "You have {{count}} explanation left on this exercise.",
+    "aiExplanationsLeft_other": "You have {{count}} explanations left on this exercise.",
     "aiFeedbackTitle": "AI explanation",
     "aiFeedbackDisclaimer": "Generated automatically from the test results, not written by your teacher. It can be wrong.",
     "feedbackHeading": "Feedback",

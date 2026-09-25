@@ -5,6 +5,7 @@ import core.testing.FakeAnthropic
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -39,7 +40,8 @@ class AnthropicProviderTest {
 
         val body = mapper.readTree(sent.body)
         assertEquals("claude-opus-5", body.get("model").asString())
-        assertEquals(16_000, body.get("max_tokens").asInt())
+        assertEquals(4_000, body.get("max_tokens").asInt())
+        assertEquals("low", body.get("output_config").get("effort").asString())
         assertEquals("You are a tutor.", body.get("system").asString())
         val messages = body.get("messages").toList()
         assertEquals(1, messages.size)
@@ -72,13 +74,29 @@ class AnthropicProviderTest {
     }
 
     @Test
-    fun `a refusal is not an answer`() {
+    fun `a refusal is not an answer, but it is a bill`() {
         server.respond(FakeAnthropic.Behaviour.Refusal)
 
         val e = assertThrows<AiProviderException> { provider().complete(request) }
 
         assertTrue(e.message!!.contains("refused")) { e.message }
         assertTrue(e.rawResponse!!.contains("\"refusal\""))
+        assertEquals(10, e.tokensIn)
+        assertEquals(0, e.tokensOut)
+    }
+
+    @Test
+    fun `effort goes to models that take it and not to the ones that reject it`() {
+        provider("claude-sonnet-5").complete(request)
+        provider("claude-haiku-4-5").complete(request)
+        provider("claude-sonnet-4-5").complete(request)
+        provider("claude-opus-4-5").complete(request)
+
+        val bodies = server.requests.map { mapper.readTree(it.body) }
+        assertEquals("low", bodies[0].get("output_config")?.get("effort")?.asString()) { bodies[0].toString() }
+        assertNull(bodies[1].get("output_config")) { "Haiku 4.5 rejects effort: ${bodies[1]}" }
+        assertNull(bodies[2].get("output_config")) { "Sonnet 4.5 rejects effort: ${bodies[2]}" }
+        assertEquals("low", bodies[3].get("output_config")?.get("effort")?.asString()) { bodies[3].toString() }
     }
 
     @Test

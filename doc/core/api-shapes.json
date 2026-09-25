@@ -345,16 +345,18 @@
     "core.ems.service.ai.ReadCourseAiPropsController.AiPropsResp": {
       "api_key_configured": { "kind": "boolean" },
       "api_key_hint": { "kind": "string", "nullable": true },
-      "base_url": { "kind": "string", "nullable": true },
-      "max_solution_chars": { "kind": "number" },
       "model": { "kind": "string" },
-      "provider": { "kind": "enum", "values": ["ANTHROPIC"] },
-      "token_budget": { "kind": "number", "nullable": true },
-      "tokens_reset_at": { "kind": "datetime", "nullable": true },
-      "tokens_used": { "kind": "number" }
+      "provider": { "kind": "enum", "values": ["ANTHROPIC"] }
     },
     "core.ems.service.ai.ReadCourseAiPropsController.Resp": {
-      "ai_props": { "kind": "object", "nullable": true, "type": "core.ems.service.ai.ReadCourseAiPropsController.AiPropsResp" }
+      "ai_props": { "kind": "object", "nullable": true, "type": "core.ems.service.ai.ReadCourseAiPropsController.AiPropsResp" },
+      "base_url": { "kind": "string", "nullable": true },
+      "max_solution_chars": { "kind": "number" },
+      "token_budget": { "kind": "number", "nullable": true },
+      "tokens_in_used": { "kind": "number" },
+      "tokens_out_used": { "kind": "number" },
+      "tokens_reset_at": { "kind": "datetime", "nullable": true },
+      "tokens_used": { "kind": "number" }
     },
     "core.ems.service.ai.UpdateCourseAiPropsController.AiPropsReq": {
       "api_key": { "kind": "string", "nullable": true },

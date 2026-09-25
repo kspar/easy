@@ -40,11 +40,16 @@ test('course-ai-settings', async ({ launch, check }) => {
       }
       return {
         ai_props: configured
-          ? {
-            provider: 'ANTHROPIC', model: 'claude-opus-5', base_url: null, api_key_configured: true, api_key_hint: '9876',
-            token_budget: 1000000, tokens_used: tokensUsed, tokens_reset_at: null, max_solution_chars: 6000,
-          }
+          ? { provider: 'ANTHROPIC', model: 'claude-opus-5', api_key_configured: true, api_key_hint: '9876' }
           : null,
+        token_budget: 1000000,
+        tokens_used: tokensUsed,
+        tokens_reset_at: null,
+        // Zero, so the estimate falls back to the stock split the numbers below are computed with.
+        tokens_in_used: 0,
+        tokens_out_used: 0,
+        max_solution_chars: 6000,
+        base_url: null,
       }
     }],
     [`/courses/${COURSE_ID}/basic`, () => ({
@@ -108,6 +113,10 @@ test('course-ai-settings', async ({ launch, check }) => {
   check('with the new model', puts[0]?.ai_props?.model === 'claude-sonnet-5')
   check('and the new budget as a number', puts[0]?.ai_props?.token_budget === 2500000)
   check('and api_key null, meaning keep the stored one', puts[0]?.ai_props?.api_key === null)
+  // The account is an admin but the active role is teacher, and that is the case that used to
+  // wipe an admin's proxy URL on every save: core sees the admin role, the web sent null, null
+  // meant clear. Now a teacher-mode save carries no base_url at all, which core reads as keep.
+  check('and no base_url at all, since the active role is teacher', !('base_url' in (puts[0]?.ai_props ?? {})))
   check('the dialog closes', await waitUntil(async () => (await page.getByRole('dialog').count()) === 0))
 
   // --- reset the counter ------------------------------------------------------------------------
