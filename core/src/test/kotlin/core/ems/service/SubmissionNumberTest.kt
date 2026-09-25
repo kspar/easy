@@ -33,10 +33,10 @@ import java.util.concurrent.TimeUnit
  * apart, consecutive ids, the same solution, the same grade, both autograded. A double-click.
  *
  * Nothing throws when it happens, which is why it survived: the consequences are ordering
- * ambiguities. `previousTeacherGrade` takes `orderBy(number DESC).limit(1)` and ties, so the grade
- * carried onto a resubmission becomes arbitrary, and two of a student's attempts are labelled the
- * same in the UI. The grade table is already defended, because its ordering falls through `number` to
- * `id` — and its comment says that tiebreaker is there in case `number` is ever wrong, which it was.
+ * ambiguities. Two of a student's attempts are labelled the same in the UI, and at the time the
+ * grade carried onto a resubmission was read off `orderBy(number DESC).limit(1)`, so a tie made it
+ * arbitrary. (Since EZ-1927 the summary row carries the grade and the lock in `insertSubmission`
+ * serialises the two submits, so the second of them now simply gets the next number.)
  *
  * The fix is a unique constraint on `(course_exercise_id, student_id, number)`, so the race becomes a
  * failed insert rather than silent corruption. The loser of a double-click gets an error while the
@@ -165,8 +165,7 @@ class SubmissionNumberTest(@Autowired private val caching: CachingService) {
         assertEquals(succeeded, stored.size) { "stored rows must match successful calls" }
         assertEquals(stored.distinct(), stored) {
             "Two of one student's submissions share a number: $stored. The number is shown to the " +
-                    "student and `previousTeacherGrade` orders by it, so a tie makes the grade " +
-                    "carried onto a resubmission arbitrary."
+                    "student and is what 'latest' means, so a tie makes the history ambiguous."
         }
     }
 }

@@ -80,14 +80,7 @@ class SetSubmissionFlagged {
             .distinct()
 
         work.forEach { (courseExercise, student) ->
-            // EZ-1927: the summary row is what is read now. The per-attempt column is still written
-            // until it is dropped.
             setWorkFlagged(courseExercise.value, student.value, flagged)
-            Submission.update({
-                (Submission.courseExercise eq courseExercise) and (Submission.student eq student)
-            }) {
-                it[Submission.flagged] = flagged
-            }
         }
     }
 }

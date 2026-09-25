@@ -1029,4 +1029,17 @@
         </sql>
     </changeSet>
 
+    <!--
+        EZ-1927, step 3. The four columns that student_course_exercise replaced. They were written
+        beside the summary row through one release and read by nothing; dev agreed with the
+        derivation on every pair, so they go. Each attempt's own grade is in autograde_activity and
+        teacher_activity, where it always was.
+    -->
+    <changeSet id="250926-2" author="kspar">
+        <dropColumn tableName="submission" columnName="grade"/>
+        <dropColumn tableName="submission" columnName="is_auto_grade"/>
+        <dropColumn tableName="submission" columnName="is_graded_directly"/>
+        <dropColumn tableName="submission" columnName="flagged"/>
+    </changeSet>
+
 </databaseChangeLog>

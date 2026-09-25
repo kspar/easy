@@ -181,38 +181,26 @@ fun insertAutogradeActivity(
             it[feedback] = newFeedback
         }
 
-        // EZ-1927. The summary row: this attempt's auto grade, if it is still the attempt on top.
-        // The teacher-grade check below is the old rule on the old columns; the row has the rule as
-        // data and needs no check.
+        // EZ-1927. The summary row: this attempt's auto grade, if it is still the attempt on top. A
+        // teacher's grade, if there is one, wins there without a check here — the rule is data.
         //
-        // Written *before* the submission row, and that order is load-bearing: TeacherPostGrade and
-        // SetSubmissionFlagged take the summary row first and the submission row second, and a
-        // teacher grading or flagging an attempt as its grade lands would otherwise deadlock —
-        // with this side's loser recorded as a FAILED grading.
+        // Written *before* the submission row, and that order is load-bearing: TeacherPostGrade
+        // takes the summary row first and touches nothing else on the submission, but a teacher
+        // grading or flagging an attempt as its grade lands must never wait on this transaction
+        // while it waits on theirs — with this side's loser recorded as a FAILED grading.
         recordAutoGrade(courseExId, studentId, submissionId, newGrade)
-        val flagForReview = feedbackFlagsForReview(newFeedback)
-        if (flagForReview) setWorkFlagged(courseExId, studentId, true)
+
+        // EZ-1926. The grader asked for a teacher's eyes. Only ever raised here: a result without
+        // the field, or with false, leaves whatever a teacher set alone.
+        if (feedbackFlagsForReview(newFeedback)) setWorkFlagged(courseExId, studentId, true)
 
         Submission.update({ Submission.id eq submissionId }) {
             it[autoGradeStatus] = AutoGradeStatus.COMPLETED
-            if (!anyPreviousTeacherActivityContainsGrade(studentId, courseExId)) {
-                it[grade] = newGrade
-                it[isAutoGrade] = true
-                it[isGradedDirectly] = true
-            }
         }
 
         StatsSubmission.update({ StatsSubmission.submissionId eq submissionId }) {
             it[autoPoints] = newGrade
             it[autoGradedAt] = time
-        }
-
-        // EZ-1926. The grader asked for a teacher's eyes. Only ever raised here: a result without
-        // the field, or with false, leaves whatever a teacher set alone.
-        if (flagForReview) {
-            Submission.update({ (Submission.courseExercise eq courseExId) and (Submission.student eq studentId) }) {
-                it[flagged] = true
-            }
         }
 
         cachingService.invalidate(countSubmissionsInAutoAssessmentCache)
@@ -257,11 +245,3 @@ fun selectAutoExId(courseExId: Long): Long? = transaction {
         .map { it[ExerciseVer.autoExerciseId] }
         .single()?.value
 }
-
-private fun anyPreviousTeacherActivityContainsGrade(studentId: String, courseExercise: Long): Boolean =
-    transaction {
-        TeacherActivity
-            .selectAll()
-            .where { (TeacherActivity.student eq studentId) and (TeacherActivity.courseExercise eq courseExercise) and TeacherActivity.grade.isNotNull() }
-            .count() > 0
-    }

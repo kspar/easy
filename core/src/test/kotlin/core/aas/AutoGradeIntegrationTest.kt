@@ -8,6 +8,7 @@ import core.db.StatsSubmission
 import core.db.Submission
 import core.db.Executor as ExecutorTable
 import core.aas.EXECUTOR_REQUEST_TIMEOUT_SECONDS_KEY
+import core.ems.service.selectWork
 import core.testing.Auth
 import core.testing.FakeExecutor
 import core.testing.Fixtures
@@ -126,12 +127,10 @@ class AutoGradeIntegrationTest(
         val submissionId = submit("print(1 + 1)")
         awaitStatus(submissionId, AutoGradeStatus.COMPLETED)
 
-        val row = transaction {
-            Submission.selectAll().where { Submission.id eq submissionId }.single()
-        }
-        assertEquals(93, row[Submission.grade])
-        assertEquals(true, row[Submission.isAutoGrade])
-        assertEquals(true, row[Submission.isGradedDirectly])
+        val work = transaction { selectWork(ceId, student) }!!
+        assertEquals(93, work.grade!!.grade)
+        assertEquals(true, work.grade!!.isAutograde)
+        assertEquals(true, work.grade!!.isGradedDirectly)
 
         val activity = transaction {
             AutogradeActivity.selectAll().where { AutogradeActivity.submission eq submissionId }.single()
@@ -186,8 +185,7 @@ class AutoGradeIntegrationTest(
         val submissionId = submit("nonsense")
         awaitStatus(submissionId, AutoGradeStatus.COMPLETED)
 
-        assertEquals(0, transaction { Submission.selectAll().where { Submission.id eq submissionId }.single() }
-            .let { it[Submission.grade] })
+        assertEquals(0, transaction { selectWork(ceId, student) }!!.grade!!.grade)
     }
 
     @Test
@@ -232,10 +230,6 @@ class AutoGradeIntegrationTest(
         return json(details.body).get("flagged").asBoolean()
     }
 
-    private fun columnOf(submissionId: Long): Boolean = transaction {
-        Submission.selectAll().where { Submission.id eq submissionId }.single()[Submission.flagged]
-    }
-
     @Test
     fun `a result with flag_for_review raises the shared review flag on the student's work`() {
         val first = submit("print(1)").also { awaitStatus(it, AutoGradeStatus.COMPLETED) }
@@ -246,9 +240,7 @@ class AutoGradeIntegrationTest(
 
         assertEquals(true, teacherSeesFlagged(second))
         assertEquals(true, teacherSeesFlagged(first))
-        // Written the way the teacher's button writes it: on every attempt, not just the graded one.
-        assertEquals(true, columnOf(first))
-        assertEquals(true, columnOf(second))
+        assertEquals(true, transaction { selectWork(ceId, student) }!!.flagged)
     }
 
     @Test
@@ -283,8 +275,7 @@ class AutoGradeIntegrationTest(
         awaitStatus(submissionId, AutoGradeStatus.FAILED)
 
         assertEquals(2, executor.requests.size) { "Expected one call and one retry, got ${executor.requests.size}" }
-        assertNull(transaction { Submission.selectAll().where { Submission.id eq submissionId }.single() }
-            .let { it[Submission.grade] })
+        assertNull(transaction { selectWork(ceId, student) }!!.grade)
         assertTrue(transaction {
             AutogradeActivity.selectAll().where { AutogradeActivity.submission eq submissionId }.empty()
         }) { "A failed grading wrote an autograde activity" }
@@ -299,8 +290,7 @@ class AutoGradeIntegrationTest(
 
         val submissionId = submit("print(1)")
         awaitStatus(submissionId, AutoGradeStatus.FAILED)
-        assertNull(transaction { Submission.selectAll().where { Submission.id eq submissionId }.single() }
-            .let { it[Submission.grade] })
+        assertNull(transaction { selectWork(ceId, student) }!!.grade)
     }
 
     /**

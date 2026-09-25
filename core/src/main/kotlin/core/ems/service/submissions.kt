@@ -146,14 +146,6 @@ fun insertSubmission(
     caching: CachingService
 ): Long =
     transaction {
-        data class Grade(val grade: Int, val isAutograde: Boolean)
-
-        fun ResultRow.extractGradeOrNull(): Grade? {
-            val grade = this[Submission.grade]
-            val isAuto = this[Submission.isAutoGrade]
-            return if (grade != null && isAuto != null) (Grade(grade, isAuto)) else null
-        }
-
         // EZ-1927. Two submits by one student on one exercise at once used to collide on the
         // unique `number` and fail one of them; now they would also race the summary row's
         // update-then-insert. The lock serialises them, and is held until commit.
@@ -168,21 +160,6 @@ fun insertSubmission(
             .map { it[Submission.number] }
             .firstOrNull() ?: 0
 
-
-        val previousTeacherGrade = Submission
-            .select(Submission.isAutoGrade, Submission.grade)
-            .where {
-                (Submission.courseExercise eq courseExId) and
-                        (Submission.student eq studentId) and
-                        (Submission.isAutoGrade.eq(false)) and
-                        (Submission.grade.isNotNull())
-            }
-            .orderBy(Submission.number, SortOrder.DESC)
-            .limit(1)
-            .map { it.extractGradeOrNull() }
-            .firstOrNull()
-
-
         val time = DateTime.now()
         val submissionId = Submission.insertAndGetId {
             it[courseExercise] = courseExId
@@ -191,15 +168,10 @@ fun insertSubmission(
             it[solution] = submission
             it[autoGradeStatus] = autoAss
             it[number] = lastNumber + 1
-            if (previousTeacherGrade != null) {
-                it[grade] = previousTeacherGrade.grade
-                it[isAutoGrade] = false
-                it[isGradedDirectly] = false
-            }
         }.value
 
-        // The inheritance above is the old rule, still written to the row nobody reads any more.
-        // The summary row keeps the teacher's grade on its own and clears the auto grade.
+        // The summary row keeps the teacher's grade on its own and clears the auto grade: that is
+        // the whole of the inheritance rule, and it lives there.
         recordNewSubmission(courseExId, studentId, submissionId, time)
 
         val ceRow = CourseExercise

@@ -540,18 +540,13 @@ object Fixtures {
             it[Submission.createdAt] = createdAt
             it[Submission.solution] = solution
             it[Submission.autoGradeStatus] = autoGradeStatus
-            it[Submission.grade] = grade
-            it[Submission.isAutoGrade] = if (grade == null) null else isAutoGrade
-            it[Submission.isGradedDirectly] = if (grade == null) null else isGradedDirectly
-            it[Submission.flagged] = flagged
             it[Submission.number] = number
         }.value
 
-        // EZ-1927. The summary row, kept the way production keeps it: this attempt becomes the
-        // latest, and the grade the fixture asks for lands where the rule says it lives — an auto
-        // grade on the attempt, a direct teacher grade on the work with this attempt as its source,
-        // an indirect one left as whatever an earlier attempt's fixture set. A flag is a flag on the
-        // work.
+        // EZ-1927. The grade a fixture asks for lands where the rule says it lives: this attempt
+        // becomes the latest; an auto grade goes on the attempt, a direct teacher grade on the work
+        // with this attempt as its source, an indirect one is left as whatever an earlier attempt's
+        // fixture set. A flag is a flag on the work.
         recordNewSubmission(courseExerciseId, studentId, submissionId, createdAt)
         if (grade != null) {
             if (isAutoGrade) recordAutoGrade(courseExerciseId, studentId, submissionId, grade)

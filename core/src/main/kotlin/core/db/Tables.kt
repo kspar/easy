@@ -252,17 +252,11 @@ object Submission : LongIdTable("submission") {
     val student = reference("student_id", Account)
     val createdAt = datetime("created_at")
     val solution = text("solution")
-    val grade = integer("grade").nullable()
-    val isAutoGrade = bool("is_auto_grade").nullable()
     val autoGradeStatus = enumerationByName("auto_grade_status", 20, AutoGradeStatus::class)
-
-    /**
-     * Marked for the teaching team's attention, by any of them, for any of them. Shared on purpose —
-     * unlike [TeacherSubmissionSeen], which is the same submission seen through one person's eyes.
-     */
-    val flagged = bool("flagged")
     val number = integer("number")
-    val isGradedDirectly = bool("is_graded_directly").nullable()
+    // No grade and no flag here (EZ-1927). What an attempt earned is in AutogradeActivity and
+    // TeacherActivity; what counts for the student's work, and whether it is flagged, is in
+    // StudentCourseExercise.
 }
 
 /**
@@ -293,8 +287,8 @@ object TeacherSubmissionSeen : Table("teacher_submission_seen") {
  * `studentCourseExercise.kt` for the writers, and `insertSubmission` for the lock that serialises
  * them per pair.
  *
- * `submission.grade`, `is_auto_grade`, `is_graded_directly` and `flagged` are still written but no
- * longer read; they go once this has been seen to agree with them in the wild.
+ * [flagged] is the teaching team's "come back to this", by any of them for any of them — shared on
+ * purpose, unlike [TeacherSubmissionSeen], which is one attempt seen through one person's eyes.
  */
 object StudentCourseExercise : Table("student_course_exercise") {
     val student = reference("student_id", Account)

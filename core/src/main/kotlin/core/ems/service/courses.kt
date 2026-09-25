@@ -153,12 +153,6 @@ fun assertExerciseIsAutoGradable(exerciseId: Long) {
     )
 }
 
-fun toGradeRespOrNull(grade: Int?, isAuto: Boolean?, isGradedDirectly: Boolean?) =
-    if (grade != null && isAuto != null && isGradedDirectly != null) {
-        (GradeResp(grade, isAuto, isGradedDirectly))
-    } else null
-
-
 data class ExercisesResp(
     @get:JsonProperty("course_exercise_id") val courseExerciseId: String,
     @get:JsonProperty("exercise_id") val exerciseId: String,

@@ -266,12 +266,12 @@ class StudentCourseExerciseTest(@Autowired mockMvc: MockMvc) {
 
     /**
      * What every pair's row *should* say, derived from the three history tables the same way the
-     * Liquibase backfill (250926-1) derives it. Independent of the writers, on purpose: it is the
+     * Liquibase backfill (250926-1) derived it. Independent of the writers, on purpose: it is the
      * writers being checked.
      */
     private fun deriveFromHistory(): Map<Pair<String, Long>, WorkOnExercise> = transaction {
         val attempts = Submission
-            .select(Submission.id, Submission.student, Submission.courseExercise, Submission.number, Submission.createdAt, Submission.flagged)
+            .select(Submission.id, Submission.student, Submission.courseExercise, Submission.number, Submission.createdAt)
             .orderBy(Submission.number to SortOrder.ASC, Submission.id to SortOrder.ASC)
             .groupBy { it[Submission.student].value to it[Submission.courseExercise].value }
 
@@ -303,7 +303,9 @@ class StudentCourseExerciseTest(@Autowired mockMvc: MockMvc) {
                 autoGrade = newestAuto?.get(AutogradeActivity.grade),
                 teacherGrade = newestTeacher?.get(TeacherActivity.grade),
                 teacherGradedSubmissionId = newestTeacher?.get(TeacherActivity.submission)?.value,
-                flagged = rows.any { it[Submission.flagged] },
+                // The flag has no history behind it since submission.flagged went; the summary row
+                // is its only home, so it is carried over and not compared.
+                flagged = stored()[pair]?.flagged ?: false,
             )
         }
     }

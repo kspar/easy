@@ -91,15 +91,8 @@ class TeacherGradeController(val moodleGradesSyncService: MoodleGradesSyncServic
                 }
             }
 
-            // EZ-1927. The summary row is what every reader shows; the row below is the old rule,
-            // still written until the columns go.
+            // EZ-1927. The summary row is what every reader shows.
             recordTeacherGrade(courseExId, studentId.value, submissionId, assessment.grade)
-
-            Submission.update({ Submission.id eq submissionId }) {
-                it[grade] = assessment.grade
-                it[isAutoGrade] = false
-                it[isGradedDirectly] = true
-            }
 
             StatsSubmission.update({ StatsSubmission.submissionId eq submissionId }) {
                 it[latestTeacherPseudonym] = selectPseudonym(teacherId)
