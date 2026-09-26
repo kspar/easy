@@ -83,6 +83,7 @@ class TeacherDownloadCourseExerciseSubmissionsController {
                 Submission.solution,
                 Submission.student,
                 Submission.courseExercise,
+                Submission.createdAt,
                 Account.givenName,
                 Account.familyName
             )
@@ -97,7 +98,8 @@ class TeacherDownloadCourseExerciseSubmissionsController {
                         it[Account.familyName],
                         it[Submission.id].value,
                         solutionFileName
-                    )
+                    ),
+                    it[Submission.createdAt]
                 )
             }
     }

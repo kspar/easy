@@ -87,6 +87,7 @@ class TeacherDownloadSubmissionsController {
                 .select(
                     Submission.solution,
                     Submission.student,
+                    Submission.createdAt,
                     Account.givenName,
                     Account.familyName,
                     CourseGroup.name
@@ -111,7 +112,8 @@ class TeacherDownloadSubmissionsController {
                             it[Account.familyName],
                             courseId,
                             it[CourseGroup.name]
-                        )
+                        ),
+                        it[Submission.createdAt]
                     )
                 }
         }

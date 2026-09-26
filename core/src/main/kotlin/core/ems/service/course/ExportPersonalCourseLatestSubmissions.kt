@@ -5,6 +5,7 @@ import core.db.*
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.studentOnCourse
 import core.ems.service.idToLongOrInvalidReq
+import core.util.zipEntry
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
@@ -22,8 +23,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.io.ByteArrayOutputStream
-import java.nio.file.attribute.FileTime
-import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 @RestController
@@ -87,9 +86,7 @@ class ExportPersonalCourseLatestSubmissions {
                 val count = nameCount.getOrDefault(baseName, 0)
                 nameCount[baseName] = count + 1
                 val fileName = if (count == 0) "$baseName.py" else "$baseName ($count).py"
-                val entry = ZipEntry(fileName)
-                entry.lastModifiedTime = FileTime.fromMillis(it.createdAt.millis)
-                zipStream.putNextEntry(entry)
+                zipStream.putNextEntry(zipEntry(fileName, it.createdAt))
                 zipStream.write(it.submission.toByteArray(Charsets.UTF_8))
                 zipStream.closeEntry()
             }
