@@ -130,3 +130,8 @@ doc/env-audit/
 # that doc/core/tsl-migration/.gitignore already keeps out of git for exactly the same reason:
 # dev is production's data, and this repository is public.
 doc/beta-feedback-2026-08-exercises.md
+
+# Correspondence with the university's data protection officer (EZ-1930). A letter is not project
+# documentation: it is addressed to a person, is a draft until it is sent, and its answer is theirs
+# to publish or not.
+doc/dpo-letter-ai-feedback.md
