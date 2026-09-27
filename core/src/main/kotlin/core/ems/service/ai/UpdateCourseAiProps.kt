@@ -27,7 +27,10 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * EZ-1711. Set, change or clear a course's AI provider. Teachers on the course and admins.
+ * EZ-1711. Set, change or clear a course's AI provider. Admins only, for now (EZ-1930): the key
+ * decides whose contract a student's code is sent under, and until the legal side is settled that
+ * has to be the university's, not whatever key a teacher has. The base URL logic below still tells
+ * admin from teacher, so that lifting this is a matter of the annotation.
  *
  * The key is optional on every write after the first: the read endpoint never returns it, so a
  * teacher editing the model has nothing to paste back, and an absent key means "keep what is
@@ -56,7 +59,7 @@ class UpdateCourseAiPropsController {
         val maxSolutionChars: Int?,
     )
 
-    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
+    @Secured("ROLE_ADMIN")
     @PutMapping("/courses/{courseId}/ai")
     fun controller(
         @PathVariable("courseId") courseIdStr: String,

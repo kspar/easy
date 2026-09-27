@@ -63,7 +63,8 @@ class ReadCourseAiPropsController {
         @get:JsonProperty("api_key_hint") val apiKeyHint: String?,
     )
 
-    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
+    // Admins only, with the writes (EZ-1930). Nothing else in the web reads this.
+    @Secured("ROLE_ADMIN")
     @GetMapping("/courses/{courseId}/ai")
     fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser): Resp {
         log.info { "Getting AI props for course $courseIdStr by ${caller.id}" }

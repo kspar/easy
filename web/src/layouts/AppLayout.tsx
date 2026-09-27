@@ -700,6 +700,8 @@ export default function AppLayout() {
                 <ListItemText primary={t('courses.courseSettings')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
               </ListItemButton>
             </ListItem>
+            {/* Admin-only for now (EZ-1930): core refuses a teacher, so a teacher is not shown it. */}
+            {activeRole === 'admin' && (
             <ListItem disablePadding>
               <ListItemButton
                 onClick={() => { setAiSettingsOpen(true); if (isMobile) setDrawerOpen(false) }}
@@ -711,6 +713,7 @@ export default function AppLayout() {
                 <ListItemText primary={t('courses.aiSettings')} primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }} />
               </ListItemButton>
             </ListItem>
+            )}
             {moodleCourseItem}
           </List>
         )}
@@ -1198,7 +1201,7 @@ export default function AppLayout() {
           onClose={() => setSettingsOpen(false)}
         />
       )}
-      {isTeacherOrAdmin && loadableCourseId && (
+      {activeRole === 'admin' && loadableCourseId && (
         <CourseAiSettingsDialog
           courseId={loadableCourseId}
           open={aiSettingsOpen}

@@ -7,6 +7,9 @@
  * `ai_props: null` (clear). A dialog that sent an empty string in the first case would wipe a
  * working key on every edit.
  *
+ * Admin-only for now (EZ-1930): a teacher is not offered the entry at all, and the rest runs as an
+ * admin.
+ *
  *   cd web && npx playwright test course-ai-settings
  */
 import { test } from '../support/spec.mjs'
@@ -14,8 +17,39 @@ import { fakeApi, waitUntil, BASE_URL } from '../support/harness.mjs'
 
 const COURSE_ID = '9074'
 
+const courseFixtures = () => [
+  ['/account/checkin', () => ({})],
+  [`/courses/${COURSE_ID}/basic`, () => ({
+    title: 'Programming 101',
+    alias: null,
+    archived: false,
+    color: 'blue',
+    course_code: 'LTAT.03.001',
+    moodle_course_url: null,
+  })],
+  [`/student/courses/${COURSE_ID}/exercises`, () => ({ exercises: [] })],
+  [`/courses/${COURSE_ID}/exercises`, () => ({ exercises: [] })],
+  [`/courses/${COURSE_ID}/groups`, () => ({ groups: [] })],
+  ['/courses/teacher', () => ({ courses: [] })],
+  ['/management/common/notifications', () => ({ messages: [] })],
+]
+
 test('course-ai-settings', async ({ launch, check }) => {
+  // --- a teacher does not see it --------------------------------------------------------------------
+  const asTeacher = await launch({ role: 'teacher', language: 'en', shotPrefix: 'course-ai-settings-teacher-' })
+  await fakeApi(asTeacher.page, courseFixtures(), { log: false })
+  await asTeacher.page.goto(`${BASE_URL}/courses/${COURSE_ID}/exercises`)
+  // The positive control: the course section is there, so the entry's absence means something.
+  check(
+    'a teacher gets the course section of the sidebar',
+    await waitUntil(async () => (await asTeacher.page.locator('nav').getByText('Course settings').count()) > 0),
+  )
+  check('but no AI feedback entry in it', (await asTeacher.page.locator('nav').getByText('AI feedback').count()) === 0)
+  await asTeacher.close()
+
+  // --- the rest as an admin ---------------------------------------------------------------------------
   const { page, shot, close } = await launch({ role: 'teacher,admin', language: 'en', shotPrefix: 'course-ai-settings-' })
+  await page.addInitScript(() => localStorage.setItem('activeRole', 'admin'))
 
   let configured = true
   let tokensUsed = 123456
@@ -52,30 +86,19 @@ test('course-ai-settings', async ({ launch, check }) => {
         base_url: null,
       }
     }],
-    [`/courses/${COURSE_ID}/basic`, () => ({
-      title: 'Programming 101',
-      alias: null,
-      archived: false,
-      color: 'blue',
-      course_code: 'LTAT.03.001',
-      moodle_course_url: null,
-    })],
-    [`/student/courses/${COURSE_ID}/exercises`, () => ({ exercises: [] })],
-    [`/courses/${COURSE_ID}/exercises`, () => ({ exercises: [] })],
-    [`/courses/${COURSE_ID}/groups`, () => ({ groups: [] })],
-    ['/courses/teacher', () => ({ courses: [] })],
-    ['/management/common/notifications', () => ({ messages: [] })],
+    ...courseFixtures(),
   ], { log: false })
 
   await page.goto(`${BASE_URL}/courses/${COURSE_ID}/exercises`)
   await waitUntil(async () => (await page.locator('nav').getByText('Programming 101').count()) > 0)
 
   const entry = page.locator('nav').getByText('AI feedback')
-  check('the sidebar offers AI feedback settings to a teacher', await waitUntil(() => entry.isVisible()))
+  check('the sidebar offers AI feedback settings to an admin', await waitUntil(() => entry.isVisible()))
   await entry.click()
 
   const dialog = page.getByRole('dialog')
   check('the dialog opens', await waitUntil(() => dialog.isVisible()))
+  check('and says what is sent where', (await dialog.getByText(/sent to Anthropic under this key/).count()) > 0)
   check(
     'a configured key shows as configured, by its tail, never its value',
     await waitUntil(async () => (await dialog.getByPlaceholder(/ends in 9876/).count()) > 0),
@@ -113,10 +136,9 @@ test('course-ai-settings', async ({ launch, check }) => {
   check('with the new model', puts[0]?.ai_props?.model === 'claude-sonnet-5')
   check('and the new budget as a number', puts[0]?.ai_props?.token_budget === 2500000)
   check('and api_key null, meaning keep the stored one', puts[0]?.ai_props?.api_key === null)
-  // The account is an admin but the active role is teacher, and that is the case that used to
-  // wipe an admin's proxy URL on every save: core sees the admin role, the web sent null, null
-  // meant clear. Now a teacher-mode save carries no base_url at all, which core reads as keep.
-  check('and no base_url at all, since the active role is teacher', !('base_url' in (puts[0]?.ai_props ?? {})))
+  // An admin's save carries the URL field as it stands: empty here, which with nothing stored
+  // changes nothing. (A teacher-mode save used to leave it out; there is no teacher mode now.)
+  check('and base_url as the field stands, empty', puts[0]?.ai_props?.base_url === '')
   check('the dialog closes', await waitUntil(async () => (await page.getByRole('dialog').count()) === 0))
 
   // --- reset the counter ------------------------------------------------------------------------

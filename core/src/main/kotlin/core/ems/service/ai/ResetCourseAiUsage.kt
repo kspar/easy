@@ -30,7 +30,8 @@ import org.springframework.web.bind.annotation.RestController
 class ResetCourseAiUsageController {
     private val log = KotlinLogging.logger {}
 
-    @Secured("ROLE_TEACHER", "ROLE_ADMIN")
+    // Admins only, with the rest of the AI settings (EZ-1930): a reset hands out a fresh budget.
+    @Secured("ROLE_ADMIN")
     @PostMapping("/courses/{courseId}/ai/reset-usage")
     fun controller(@PathVariable("courseId") courseIdStr: String, caller: EasyUser) {
         val courseId = courseIdStr.idToLongOrInvalidReq()

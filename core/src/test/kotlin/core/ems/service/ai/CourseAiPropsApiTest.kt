@@ -48,14 +48,17 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
         }
     }
 
-    private fun read(caller: String = teacher) = api.get("/v2/courses/$courseId/ai", Auth.asTeacher(caller))
+    // Admin by default: every read and write is admin-only for now (EZ-1930).
+    private fun read() = api.get("/v2/courses/$courseId/ai", Auth.asAdmin())
 
-    private fun write(props: Map<String, Any?>?, caller: String = teacher) = api.put(
-        "/v2/courses/$courseId/ai", api.body("ai_props" to props), Auth.asTeacher(caller)
+    private fun write(props: Map<String, Any?>?) = api.put(
+        "/v2/courses/$courseId/ai", api.body("ai_props" to props), Auth.asAdmin()
     )
 
-    private fun writeAsAdmin(props: Map<String, Any?>?) = api.put(
-        "/v2/courses/$courseId/ai", api.body("ai_props" to props), Auth.asAdmin()
+    private fun readAsTeacher(caller: String = teacher) = api.get("/v2/courses/$courseId/ai", Auth.asTeacher(caller))
+
+    private fun writeAsTeacher(props: Map<String, Any?>?, caller: String = teacher) = api.put(
+        "/v2/courses/$courseId/ai", api.body("ai_props" to props), Auth.asTeacher(caller)
     )
 
     private fun storedKey(): String? = transaction {
@@ -108,7 +111,7 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
 
     @Test
     fun `null clears everything`() {
-        writeAsAdmin(mapOf("provider" to "ANTHROPIC", "model" to "claude-opus-5", "api_key" to "sk-ant-first", "base_url" to "http://localhost:9"))
+        write(mapOf("provider" to "ANTHROPIC", "model" to "claude-opus-5", "api_key" to "sk-ant-first", "base_url" to "http://localhost:9"))
         assertEquals("http://localhost:9", storedBaseUrl())
 
         val cleared = write(null)
@@ -116,49 +119,45 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
 
         assertNull(storedKey())
         assertNull(read().jsonOrNull?.get("ai_props")?.takeUnless { it.isNull })
-        // The admin's URL survives a teacher's switch-off, and is still visible to them.
+        // The URL survives a switch-off, and is still shown.
         assertEquals("http://localhost:9", storedBaseUrl())
         assertEquals("http://localhost:9", read().jsonOrNull!!.get("base_url").asString())
     }
 
-    // The base URL is where core sends a key and a student's code. A teacher on the course is
-    // trusted with the key, not with pointing core at an arbitrary host from inside the network.
+    // The base URL is where core sends a key and a student's code, so it has to be a web address.
     @Test
-    fun `only an admin can set the base URL, and only to a web address`() {
-        val asTeacher = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "base_url" to "http://localhost:9"))
-        assertEquals("INVALID_PARAMETER_VALUE", asTeacher.errorCode) { asTeacher.body }
-        assertNull(storedKey()) { "The whole write must be refused, not just the URL dropped" }
-
+    fun `the base URL must be a web address, is kept when absent and cleared by an empty string`() {
         for (bad in listOf("ftp://x.example", "https://proxy.example/{env}", "not a url", "localhost:9")) {
-            val resp = writeAsAdmin(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "base_url" to bad))
+            val resp = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "base_url" to bad))
             assertEquals("INVALID_PARAMETER_VALUE", resp.errorCode) { "'$bad' was accepted: ${resp.body}" }
         }
 
-        val ok = writeAsAdmin(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "base_url" to "https://proxy.example/v1"))
+        val ok = write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k", "base_url" to "https://proxy.example/v1"))
         assertEquals(200, ok.status) { ok.body }
         assertEquals("https://proxy.example/v1", storedBaseUrl())
 
-        // A save with no URL in it leaves the admin's in place — whoever sends it. An admin acting
-        // as a teacher in the web sends exactly this, and core cannot tell them apart by role.
-        val teacherEdit = write(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null, "base_url" to null))
-        assertEquals(200, teacherEdit.status) { teacherEdit.body }
-        assertEquals("https://proxy.example/v1", storedBaseUrl())
-        writeAsAdmin(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null, "base_url" to null))
+        write(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null, "base_url" to null))
         assertEquals("https://proxy.example/v1", storedBaseUrl())
 
-        // Clearing is explicit: an empty string, and admin-only like setting.
-        val teacherClear = write(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null, "base_url" to ""))
-        assertEquals("INVALID_PARAMETER_VALUE", teacherClear.errorCode) { teacherClear.body }
-        assertEquals("https://proxy.example/v1", storedBaseUrl())
-        writeAsAdmin(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null, "base_url" to ""))
+        write(mapOf("provider" to "ANTHROPIC", "model" to "m2", "api_key" to null, "base_url" to ""))
         assertNull(storedBaseUrl())
     }
 
+    // EZ-1930: until the data-protection side is settled, the key has to be one the university
+    // put there. A teacher on the course can neither read, set, switch off nor reset.
     @Test
-    fun `a teacher on another course is refused`() {
-        assertEquals(403, read(outsider).status)
-        assertEquals(403, write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "k"), outsider).status)
-        assertNull(storedKey())
+    fun `a teacher, even on the course, is refused everything`() {
+        write(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "sk-ant-uni", "token_budget" to 1000))
+        transaction { Course.update({ Course.id eq courseId }) { it[aiTokensUsed] = 800 } }
+
+        for (caller in listOf(teacher, outsider)) {
+            assertEquals(403, readAsTeacher(caller).status)
+            assertEquals(403, writeAsTeacher(mapOf("provider" to "ANTHROPIC", "model" to "m", "api_key" to "sk-ant-own"), caller).status)
+            assertEquals(403, writeAsTeacher(null, caller).status)
+            assertEquals(403, api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asTeacher(caller)).status)
+        }
+        assertEquals("sk-ant-uni", storedKey())
+        assertEquals(Triple<Long?, Long, Boolean>(1000, 800, false), stored())
     }
 
     private fun stored(): Triple<Long?, Long, Boolean> = transaction {
@@ -217,12 +216,11 @@ class CourseAiPropsApiTest(@Autowired mockMvc: MockMvc) {
         transaction { Course.update({ Course.id eq courseId }) { it[aiTokensUsed] = 800 } }
         assertEquals(Triple<Long?, Long, Boolean>(1000, 800, false), stored())
 
-        val resp = api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asTeacher(teacher))
+        val resp = api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asAdmin())
         assertEquals(200, resp.status) { resp.body }
         assertEquals(Triple<Long?, Long, Boolean>(1000, 0, true), stored())
         assertFalse(read().jsonOrNull!!.get("tokens_reset_at").isNull)
 
-        assertEquals(403, api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asTeacher(outsider)).status)
         assertEquals(403, api.post("/v2/courses/$courseId/ai/reset-usage", caller = Auth.asStudent(student)).status)
     }
 

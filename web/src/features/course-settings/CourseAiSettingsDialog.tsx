@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  Alert,
   Box,
   Button,
   Collapse,
@@ -48,7 +49,8 @@ export default function CourseAiSettingsDialog({
   const { t } = useTranslation()
   const { activeRole } = useAuth()
   // Core only lets an admin set the base URL (it is where a key and a student's code get sent), so
-  // the field is not offered to a teacher at all rather than offered and refused.
+  // the field is not offered to a teacher at all rather than offered and refused. While the whole
+  // dialog is admin-only (EZ-1930) this is always true; it stays so that lifting that is one line.
   const isAdmin = activeRole === 'admin'
   const { data: settings, isLoading } = useCourseAiProps(courseId, open)
   const props = settings?.ai_props ?? null
@@ -154,6 +156,8 @@ export default function CourseAiSettingsDialog({
           <Typography variant="body2" color="text.secondary">
             {t('courses.aiHelp')}
           </Typography>
+          {/* What leaves the platform, said where it is switched on (EZ-1930). */}
+          <Alert severity="info">{t('courses.aiDataNotice')}</Alert>
 
           {/* Both ids, or MUI never wires the label to the control — see doc/web/browser-testing.md. */}
           <FormControl fullWidth size="small">
