@@ -264,6 +264,18 @@ server {
 
     client_max_body_size {{ easy_nginx_max_body_size }};
 
+    # JSON only. The largest response in the app is the teacher exercise list, one row per student
+    # per exercise with the student's name and groups repeated on each, and that repetition is what
+    # gzip is best at (EZ-1931). File downloads are left alone: they keep their own types, and most of
+    # them are already compressed. BREACH needs a credential the browser attaches by itself, and this
+    # API takes a bearer token in a header, not a cookie. `gzip_proxied any` because without it a
+    # request that arrives with a `Via` header, i.e. through a proxy, is not compressed at all.
+    gzip on;
+    gzip_types application/json;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_vary on;
+
     # File uploads, and the only endpoint allowed to be large. The ceiling stays low everywhere else
     # deliberately: raising the global limit to accommodate one endpoint hands every other endpoint
     # the same allowance. Core enforces the real, per-role limits (20 MB teacher / 1 GB admin) after
