@@ -6,6 +6,10 @@
  * `editor: 'TSL'` means the spec is authored by the visual TSL builder rather than by editing
  * script files directly.
  */
+import imgrecKontroll from './imgrec/kontroll.py?raw'
+import imgrecTester from './imgrec/tester.py?raw'
+import imgrecTester2 from './imgrec/tester_2.py?raw'
+
 export interface AutoEvalType {
   name: string
   container: string
@@ -97,14 +101,22 @@ export const AUTO_EVAL_TYPES: AutoEvalType[] = [
     allowedTime: 20,
     allowedMemory: 50,
     editor: 'CODE',
+    helpTextKey: 'library.autoEvalHelpImgrec',
+    // `-a` picks a free display: containers share the host network namespace, so two
+    // submissions grading at once would otherwise both claim :99 and one would fail (EZ-1936).
     evaluateScript: [
       'cd student-submission',
       'python3 kontroll.py',
-      'xvfb-run python3 modified_student_submission.py',
+      'xvfb-run -a python3 modified_student_submission.py',
       '',
       'python3 -m grader.easy --assets screenshot.jpg tester_2.py --no-solution-file',
     ].join('\n'),
-    assets: {},
+    // The teacher edits RUBRIC in tester.py and puts the API key into tester_2.py (EZ-1934).
+    assets: {
+      'kontroll.py': imgrecKontroll,
+      'tester.py': imgrecTester,
+      'tester_2.py': imgrecTester2,
+    },
   },
 ]
 

@@ -479,6 +479,7 @@
     "executionLimits": "Aja- ja mälupiirang",
     "noAutoAssess": "Sellel ülesandel pole teste — seda hindab õpetaja.",
     "autoEvalHelpPygrader": "Uute testide koostamist Python Graderiga ei soovita, aga teegi leiab siit: https://github.com/kspar/python-grader",
+    "autoEvalHelpImgrec": "Tkinteri lõuendi pilti hindab Claude. Muuda failis tester.py rida RUBRIC (üks lause, mis pildil peaks olema) ja pane faili tester_2.py API võti.",
     "evalScript": "evaluate.sh",
     "addAssetFile": "Lisa fail",
     "removeAssetFile": "Eemalda fail",

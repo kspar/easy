@@ -479,6 +479,7 @@
     "executionLimits": "Time and memory limits",
     "noAutoAssess": "This exercise has no tests — it is graded by a teacher.",
     "autoEvalHelpPygrader": "Python Grader is not recommended for new tests, but the library is available here: https://github.com/kspar/python-grader",
+    "autoEvalHelpImgrec": "The tkinter canvas image is judged by Claude. Edit the RUBRIC line in tester.py (one sentence saying what the picture should show) and put the API key into tester_2.py.",
     "evalScript": "evaluate.sh",
     "addAssetFile": "Add file",
     "removeAssetFile": "Remove file",
