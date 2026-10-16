@@ -23,9 +23,11 @@ Everything is in `core/ems/service/code/similarity/`, one concern per file; the 
 | `SqlFrontend.kt` | SQL: a lexer of core's own, since JPlag has none. |
 | `TextFrontend.kt` | Anything else: one token type per distinct word. |
 | `SimilarityWorkers.kt` | The pool a comparison's work runs on, and every rule about running it in parallel. |
-| `PairRanking.kt` | Compares the pairs and keeps the best. |
+| `PairRanking.kt` | Compares the pairs and keeps the best, through whichever provider measures them. |
+| `SimilarityProvider.kt` | What a way of measuring similarity owes the engine: prepare a cohort, score a pair, give a returned pair's details. |
+| `JPlagProvider.kt` | The JPlag provider: tokens from the frontends, JPlag's submission set, one tiling per pair. |
 | `SimilarityModel.kt` | What the service takes and returns, and the refusals it throws: too many submissions, busy, timed out. |
-| `SimilarityService.kt` | One comparison at a time, the bounds, and the handover to JPlag. |
+| `SimilarityService.kt` | The engine, the same for every provider: one comparison at a time, the bounds, identical submissions grouped, the outcome assembled. |
 
 The contract, in `SimilarityFrontend`, is what lets the rest be language-blind: tokens end in
 `FILE_END`; at most `max-solution-tokens` *lexical* tokens are tokenised, counted before anything
@@ -57,7 +59,7 @@ Instead, JPlag's pipeline is left intact and only the *source of tokens* is repl
 | `de/jplag/antlr/InMemoryTokenCollectorAccess.kt` | `TokenCollector` and `InternalListener` are package-private, so this is declared in JPlag's package. A split package, legal on a plain classpath. |
 | `JavaFrontend.kt` | Parses with javac from an in-memory `JavaFileObject`. JPlag's own Java parse (`JavacAdapter.parseFiles`) takes files, and also cannot run on the production JRE; see Language selection. |
 | `de/jplag/java/InMemoryJavacAccess.kt` | JPlag's `TokenGeneratingTreeScanner` is package-private, and so is `Parser.add`, which it hands each token to. The same split package, for the Java scanner. |
-| `SimilarityService.PretokenisedLanguage` | A `de.jplag.Language` whose `parse()` returns the already-computed tokens. `Submission.parse()` then succeeds normally, so JPlag assigns the submission states itself. |
+| `JPlagProvider.PretokenisedLanguage` | A `de.jplag.Language` whose `parse()` returns the already-computed tokens. `Submission.parse()` then succeeds normally, so JPlag assigns the submission states itself. |
 
 The `File` objects the service builds are identifiers, not paths — they are the keys
 `PretokenisedLanguage` looks tokens up by, and nothing ever opens them. `SimilarityServiceTest` plants

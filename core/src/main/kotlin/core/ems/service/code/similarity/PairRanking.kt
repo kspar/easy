@@ -1,19 +1,13 @@
 package core.ems.service.code.similarity
 
-import de.jplag.JPlagComparison
-import de.jplag.Submission
-import de.jplag.SubmissionSet
-import de.jplag.comparison.GreedyStringTiling
-import de.jplag.comparison.TokenSequenceMapper
-import de.jplag.options.JPlagOptions
 import java.util.PriorityQueue
 
 /**
  * What one pair is compared as: a submission, or a group of identical ones compared once (see
- * `SimilarityService.comparands`). [submission] is the one compared for them all; [members] are their
- * ids and [owners] their authors, a group's in id order, the first of them [submission]'s.
+ * `SimilarityService.comparands`). [representative] is the one compared for them all; [members] are
+ * their ids and [owners] their authors, a group's in id order, the first of them [representative].
  */
-internal class Comparand(val submission: Submission, val members: List<Long>, val owners: List<String?>) {
+internal class Comparand(val representative: Long, val members: List<Long>, val owners: List<String?>) {
     /**
      * Whether this and [other] are worth comparing: whether some member of each has a different author
      * from some member of the other. A student's own attempts are never reported against each other (see
@@ -22,16 +16,8 @@ internal class Comparand(val submission: Submission, val members: List<Long>, va
     fun apartFrom(other: Comparand): Boolean = owners.any { mine -> other.owners.any { theirs -> mine == null || theirs == null || mine != theirs } }
 }
 
-/** One compared pair, with the sort keys computed once: each streams over the match list per call. */
-internal class Ranked(
-    val comparison: JPlagComparison,
-    val maximum: Double,
-    val average: Double,
-    /** Matched tokens: how much code the two share, rather than what share of either it is. */
-    val shared: Int,
-    val lowId: Long,
-    val highId: Long,
-)
+/** One compared pair, and the ids its order ends on: the lower and higher of its two representatives. */
+internal class Ranked(val pair: PairScore, val lowId: Long, val highId: Long)
 
 internal class Ranking(val top: List<Ranked>, val scoring: Int, val compared: Int)
 
@@ -39,7 +25,7 @@ internal class Ranking(val top: List<Ranked>, val scoring: Int, val compared: In
  * Compares every pair of a cohort that is worth comparing, and keeps the best: the top N by
  * [BEST_FIRST] and the top N by [HIGHEST_FIRST], together, in [BEST_FIRST]'s order.
  *
- * JPlag's algorithm, not its driver. `LongestCommonSubsequenceSearch` submits every pair up front as a
+ * The provider's measure, not its driver. JPlag's `LongestCommonSubsequenceSearch` submits every pair up front as a
  * virtual thread - 124,750 at max-submissions: 500, on all cores - keeps every comparison however low,
  * and sorts them all by average similarity, recomputing it from the match list on both sides of every
  * step of the sort. Over the same 124,750 pairs of generated solutions that took 6-9 s on eight cores,
@@ -50,16 +36,13 @@ internal class Ranking(val top: List<Ranked>, val scoring: Int, val compared: In
  *    SimilaritySource.owner for why they are never reported);
  *  - keep only the best per worker instead of every comparison ever made.
  *
- * Ranked by how much code a pair shares - matched tokens - and only then by the higher of the two
- * percentages. By the percentage alone, the size of what is shared did not count: a twenty-token stub,
+ * Ranked by how much code a pair shares - [PairScore.rank]; for JPlag, matched tokens - and only then by
+ * the score, the higher of the two percentages. By the percentage alone, the size of what is shared did not count: a twenty-token stub,
  * the starter code handed in unchanged, is 100% of itself inside every solution that grew from it, so
  * identical stubs outranked every real copy that was not also 100% on both scores. Twelve of them among
  * twenty students pushed a copy from first to 67th, out of the page's top N entirely on a larger class.
  * By what is shared the copy was first again. It keeps the case the higher percentage was chosen for: a
  * short solution pasted whole into a long one shares all of itself, and a real solution is not small.
- * maximalSimilarity is max(similarityOfFirst, similarityOfSecond) and similarity their mediant, so the
- * maximum is always the larger of the two - a maxOf() here would read as even-handed and never pick the
- * average.
  *
  * Kept by that order alone, though, the cut and the page's threshold would disagree: the threshold
  * filters on the percentage, and a short copy at 95% sharing few tokens could fall below a hundred long
@@ -78,23 +61,12 @@ internal class PairRanking(
     private val workers: SimilarityWorkers,
     private val deadline: Deadline,
     private val budgetSec: Long,
-    private val compare: (GreedyStringTiling, Submission, Submission) -> JPlagComparison,
 ) {
 
-    /** [comparands] are the set's submissions, identical ones as one; see [Comparand]. */
-    fun rank(set: SubmissionSet, options: JPlagOptions, comparands: List<Comparand>, topN: Int): Ranking {
-        val gst = GreedyStringTiling(options, TokenSequenceMapper(set))
-        if (set.hasBaseCode()) {
-            // One submission at a time, and before any pair: JPlag documents generateBaseCodeMarking as
-            // not thread-safe, and every comparison reads the markings it leaves. Each is a tiling of its
-            // own, against the template, so the deadline is read before each as it is before each pair.
-            comparands.forEach {
-                if (deadline.passed()) throw SimilarityTimedOut(budgetSec)
-                it.submission.baseCodeComparison = gst.generateBaseCodeMarking(it.submission, set.baseCode)
-            }
-        }
+    /** [comparands] are the cohort's usable submissions, identical ones as one; see [Comparand]. */
+    fun rank(session: ProviderSession, comparands: List<Comparand>, topN: Int): Ranking {
         val stripes = workers.all(
-            (0 until workers.threads).map { stripe -> { stripe(stripe, gst, comparands, topN) } },
+            (0 until workers.threads).map { stripe -> { stripe(stripe, session, comparands, topN) } },
         )
         val byShared = stripes.flatMap { it.byShared }.sortedWith(BEST_FIRST).take(topN)
         val byPercent = stripes.flatMap { it.byPercent }.sortedWith(HIGHEST_FIRST).take(topN)
@@ -113,7 +85,7 @@ internal class PairRanking(
      * Keeps its own [topN] by each order, which is enough: every pair of either global top N is in that
      * order's top N of the stripe it was compared in.
      */
-    private fun stripe(first: Int, gst: GreedyStringTiling, comparands: List<Comparand>, topN: Int): Stripe {
+    private fun stripe(first: Int, session: ProviderSession, comparands: List<Comparand>, topN: Int): Stripe {
         val byShared = PriorityQueue(BEST_FIRST.reversed())
         val byPercent = PriorityQueue(HIGHEST_FIRST.reversed())
         var compared = 0
@@ -124,14 +96,13 @@ internal class PairRanking(
                 // Another worker failed: this stripe's answer will be thrown away, so stop making it.
                 if (workers.stopped) return Stripe(emptyList(), emptyList(), compared, scoring)
                 if (deadline.passed()) throw SimilarityTimedOut(budgetSec)
-                val comparison = compare(gst, comparands[i].submission, comparands[j].submission)
+                val a = comparands[i].representative
+                val b = comparands[j].representative
+                val pair = session.score(a, b)
                 compared++
-                val maximum = comparison.maximalSimilarity()
-                if (maximum < MIN_REPORTED_SIMILARITY) continue
+                if (pair == null || pair.score < MIN_REPORTED_SIMILARITY) continue
                 scoring++
-                val a = comparands[i].members.first()
-                val b = comparands[j].members.first()
-                val ranked = Ranked(comparison, maximum, comparison.similarity(), comparison.matches().sumOf { it.minimumLength() }, minOf(a, b), maxOf(a, b))
+                val ranked = Ranked(pair, minOf(a, b), maxOf(a, b))
                 byShared += ranked
                 if (byShared.size > topN) byShared.poll()
                 byPercent += ranked
@@ -142,25 +113,25 @@ internal class PairRanking(
     }
 
     companion object {
-        /** The smallest maximum the page shows as 1% rather than 0%: it rounds to whole percents. */
+        /** The smallest score the page shows as 1% rather than 0%: it rounds to whole percents. */
         private const val MIN_REPORTED_SIMILARITY = 0.005
 
         /**
-         * The ranking the page shows: most code shared first, then highest maximum, then highest average,
+         * The ranking the page shows: most shared first, then highest score, then highest similarity,
          * then by id. Total on purpose - pairs are split across workers, and with ties left open that split
          * would decide which of two equal pairs made the top N, so the answer would depend on the thread
          * count.
          */
-        internal val BEST_FIRST: Comparator<Ranked> = compareByDescending<Ranked> { it.shared }
-            .thenByDescending { it.maximum }
-            .thenByDescending { it.average }
+        internal val BEST_FIRST: Comparator<Ranked> = compareByDescending<Ranked> { it.pair.rank }
+            .thenByDescending { it.pair.score }
+            .thenByDescending { it.pair.similarity }
             .thenBy { it.lowId }
             .thenBy { it.highId }
 
-        /** The order the page's threshold filters in: highest maximum first, then average, shared tokens and ids. Total too. */
-        internal val HIGHEST_FIRST: Comparator<Ranked> = compareByDescending<Ranked> { it.maximum }
-            .thenByDescending { it.average }
-            .thenByDescending { it.shared }
+        /** The order the page's threshold filters in: highest score first, then similarity, what is shared and ids. Total too. */
+        internal val HIGHEST_FIRST: Comparator<Ranked> = compareByDescending<Ranked> { it.pair.score }
+            .thenByDescending { it.pair.similarity }
+            .thenByDescending { it.pair.rank }
             .thenBy { it.lowId }
             .thenBy { it.highId }
     }
