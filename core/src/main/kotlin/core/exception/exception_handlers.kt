@@ -20,6 +20,16 @@ import tools.jackson.databind.exc.InvalidNullException
 import tools.jackson.databind.exc.MismatchedInputException
 import java.util.*
 
+/**
+ * A message that may carry request text, made safe to end a log line with.
+ *
+ * `idToLongOrInvalidReq` puts the raw id into its message, and a validation failure puts the rejected
+ * value into its own, so a teacher could send an id like `1\n<timestamp> ERROR ...` and the entry
+ * logged here would end at `1` and be followed by a forged line attributed to another component.
+ * Escaping CR and LF keeps each exception on the one line it belongs to.
+ */
+private fun Any?.oneLine(): String = toString().replace("\r", "\\r").replace("\n", "\\n")
+
 // TODO: check that exception handlers do not leak system information
 @ControllerAdvice
 class EasyExceptionHandler(private val mailService: SendMailService) : ResponseEntityExceptionHandler() {
@@ -39,7 +49,7 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     fun handleForbiddenException(ex: ForbiddenException, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
 
-        log.warn { "Forbidden error: ${ex.message}, id: $id" }
+        log.warn { "Forbidden error: ${ex.message.oneLine()}, id: $id" }
         log.warn { "Request info: ${request.getDescription(true)}" }
 
         if (ex.notify) {
@@ -54,7 +64,7 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     fun handleInvalidReqException(ex: InvalidRequestException, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
 
-        log.warn { "Invalid request, message: ${ex.message}, id: $id" }
+        log.warn { "Invalid request, message: ${ex.message.oneLine()}, id: $id" }
         log.warn { "Request info: ${request.getDescription(true)}" }
 
         if (ex.notify) {
@@ -68,7 +78,7 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
     @ExceptionHandler(value = [Exception::class])
     fun handleGenericException(ex: Exception, request: WebRequest): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
-        log.error { "Caught a big one $ex" }
+        log.error { "Caught a big one ${ex.oneLine()}" }
         log.error { "Request info: ${request.getDescription(true)}" }
         mailService.sendSystemNotification(ex.stackTraceString, id)
         return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -102,7 +112,7 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         request: WebRequest
     ): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
-        log.info { "MethodArgumentNotValidException: ${ex.message}" }
+        log.info { "MethodArgumentNotValidException: ${ex.message.oneLine()}" }
         log.info { "Request info: ${request.getDescription(true)}" }
 
         val msg = ex.bindingResult.allErrors
@@ -120,7 +130,7 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         request: WebRequest
     ): ResponseEntity<Any> {
         val id = UUID.randomUUID().toString()
-        log.info { "HttpMessageNotReadableException: ${ex.message}" }
+        log.info { "HttpMessageNotReadableException: ${ex.message.oneLine()}" }
         log.info { "Request info: ${request.getDescription(true)}" }
 
         val msg = when (ex.cause) {
