@@ -135,3 +135,22 @@ doc/beta-feedback-2026-08-exercises.md
 # documentation: it is addressed to a person, is a draft until it is sent, and its answer is theirs
 # to publish or not.
 doc/dpo-letter-ai-feedback.md
+
+# Compose auto-loads all four of these names, so committing any one silently changes what
+# `docker compose up` does for everybody who pulls. Local stack tweaks stay local; the tracked
+# template is docker-compose.override.yml.sample.
+docker-compose.override.yml
+docker-compose.override.yaml
+compose.override.yml
+compose.override.yaml
+
+# The ignores above name each config file exactly, which leaves siblings like a hand-made
+# application.yaml.bak uncovered — and anything under src/main/resources is copied into the Boot jar,
+# so a backup of a credentials file ships inside core-<sha>.jar as well as being one `git add -A`
+# from a public repository. The negations keep the tracked .sample files tracked.
+core/src/main/resources/application.yaml.*
+!core/src/main/resources/application.yaml.sample
+core/src/main/resources/db/database.properties.*
+!core/src/main/resources/db/database.properties.sample
+aae/gunicorn-conf.py.*
+!aae/gunicorn-conf.py.sample

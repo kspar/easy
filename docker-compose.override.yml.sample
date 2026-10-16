@@ -1,0 +1,32 @@
+# Template. **Copy this to `docker-compose.override.yml`** to run the web container against the
+# Keycloak stub, so the whole stack needs no IdP. Compose auto-loads that name (and three variants,
+# all gitignored); it does not load this `.sample`. Delete your copy to get the normal setup back,
+# where the SPA signs into the real Lahendus IdP.
+#
+# You also need `EASY_DEV_AS` in `web/.env.local` — see the notes in `web/.env`.
+#
+# Why it exists: `web/public/config.json` points at the *production* IdP, so testing locally
+# otherwise means logging in with a real university account — and getting whatever role that
+# account really has, which for a teacher-only page like similarity analysis may be none.
+# `vite.stub.config.ts` swaps `keycloak-js` for `tests/support/keycloak-stub.js`, which reports a
+# signed-in user without any network call. That is the same stub the Playwright suite uses.
+#
+# The stub's token is the fixed string `stub-token`, not a JWT, so the dev proxy can decode no
+# claims from it. `web/.env.local` supplies them instead — see `devIdentityFallback` in
+# vite.config.ts. Both halves are local-only and neither exists in a production build.
+#
+# Change who you are by editing `web/.env.local`. The role is set in two places that must agree,
+# because each side reads its own: the SPA reads the stub's role, set with
+# `localStorage.setItem('stubRole', 'student')` in the browser console, and core reads the header
+# the proxy sends, set with `EASY_DEV_ROLE=student` in `web/.env.local` (teacher,admin by default).
+# Change one without the other and the UI renders for one role while core refuses it with a 403.
+
+services:
+  web:
+    command: >
+      sh -c '
+        if ! cmp -s package-lock.json node_modules/.installed-lock; then
+          npm ci --no-audit --no-fund && cp package-lock.json node_modules/.installed-lock
+        fi
+        exec npx vite --config vite.stub.config.ts --host 0.0.0.0 --strictPort
+      '

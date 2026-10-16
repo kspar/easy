@@ -76,6 +76,84 @@ function versionManifest(): Plugin {
   }
 }
 
+/**
+ * Dev-only role override, read from the gitignored `web/.env.local`.
+ *
+ * Local dev signs into the *production* IdP (`public/config.json`), so the role that arrives in the
+ * token is whatever that account really has. Core is running with `auth-enabled: false` and already
+ * believes whatever the proxy tells it, so overriding the role header here grants nothing that
+ * sending the header by hand would not (`doc/core/api-testing.md`).
+ *
+ * It changes what *core* sees, and only that. The SPA takes its own roles from the token
+ * (`AuthContext`), so a developer who is a plain student at the IdP still sees the student UI and is
+ * still turned away from teacher-only pages; what the override buys is API calls through the proxy
+ * made with the given role. To use the teacher pages without a teacher account, run against the
+ * Keycloak stub instead (`docker-compose.override.yml.sample`), whose role the SPA does read.
+ *
+ * Identity is deliberately left alone: you stay yourself, with different rights. Swapping the
+ * username too would silently attribute your clicks to somebody else's account.
+ *
+ * Put `EASY_DEV_ROLE=teacher,admin` in `web/.env.local` to use it. Absent, this is inert, and it
+ * cannot reach a deployed environment at all: a production build has no dev server and no proxy.
+ */
+function devLocalSetting(key: string): string | null {
+  try {
+    const raw = readFileSync(new URL('./.env.local', import.meta.url), 'utf8')
+    // Parsed rather than matched with a regex. The regex version was built in a template literal,
+    // where `\s` is not an escape sequence and collapses to a literal 's' — so every whitespace
+    // class silently became "zero or more letter s", and an indented line, or one with spaces round
+    // the `=`, failed to match with no diagnostic anywhere. Splitting on the first `=` has no
+    // escaping to get wrong, skips comments, and `trim()` handles both indentation and a CRLF `\r`.
+    for (const line of raw.split('\n')) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const separator = trimmed.indexOf('=')
+      // `export KEY=value` is an ordinary .env spelling, and Vite's own dotenv reads it from this
+      // same file; compared whole, the key was 'export KEY' and the line was silently skipped.
+      const name = trimmed.slice(0, separator).trim().replace(/^export\s+/, '')
+      if (separator < 0 || name !== key) continue
+      // A trailing `# comment` and matched surrounding quotes are both ordinary .env spellings, and
+      // either sent verbatim becomes a header value core answers with a 401 about an unmappable
+      // role, with nothing pointing back here. Quotes come off first: inside them a `#` is data,
+      // not the start of a comment, so stripping comments first would truncate `KEY="a#b"` to `"a`.
+      // The closing quote is looked for rather than required at the end, so `KEY="a" # note` keeps
+      // `a` — anchoring it to the end sent `"a"` with its quotes whenever a comment followed.
+      const rest = trimmed.slice(separator + 1).trim()
+      const quote = rest[0]
+      const close = quote === '"' || quote === "'" ? rest.indexOf(quote, 1) : -1
+      return (close > 0 ? rest.slice(1, close) : rest.split('#')[0].trim()) || null
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+const devRoleOverride = () => devLocalSetting('EASY_DEV_ROLE')
+
+/**
+ * Identity to fall back on when the bearer token carries none.
+ *
+ * Only reachable with the Keycloak stub (`vite.stub.config.ts`), whose token is the fixed string
+ * `stub-token` — not a JWT, so `decodeJwt` returns `{}` and every `oidc_claim_*` header would go out
+ * empty. Core refuses an incomplete set with a 401 by design, so without this the stub gives a
+ * signed-in UI whose every request fails. With it, `npx vite --config vite.stub.config.ts` is a
+ * complete local stack that never touches an IdP.
+ *
+ * `EASY_DEV_AS=username,email` in `web/.env.local`. A real token is never overridden.
+ *
+ * A role comes with it. The stub's token carries no `easy_role` either, so supplying only the
+ * identity sent an empty role header - and core refuses a present-but-incomplete claim set with a
+ * 401, which is the signed-in-UI-whose-requests-all-fail state this exists to prevent.
+ * `EASY_DEV_ROLE` still wins when set; this is only the default for the stub path.
+ */
+function devIdentityFallback(): { username: string; email: string; role: string } | null {
+  const raw = devLocalSetting('EASY_DEV_AS')
+  const [username, email] = raw?.split(',').map((s) => s.trim()) ?? []
+  if (!username || !email) return null
+  return { username, email, role: devRoleOverride() ?? 'teacher,admin' }
+}
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(BUILD.version),
@@ -146,14 +224,16 @@ export default defineConfig({
             const token = authHeader.slice(7)
             try {
               const claims = decodeJwt(token)
-              proxyReq.setHeader('oidc_claim_preferred_username', claims.preferred_username ?? '')
-              proxyReq.setHeader('oidc_claim_email', claims.email ?? '')
+              const fallback = claims.preferred_username ? null : devIdentityFallback()
+              proxyReq.setHeader('oidc_claim_preferred_username', fallback?.username ?? claims.preferred_username ?? '')
+              proxyReq.setHeader('oidc_claim_email', fallback?.email ?? claims.email ?? '')
               proxyReq.setHeader('oidc_claim_given_name', claims.given_name ?? '')
               proxyReq.setHeader('oidc_claim_family_name', claims.family_name ?? '')
               const easyRole = Array.isArray(claims.easy_role)
                 ? claims.easy_role.join(',')
                 : (claims.easy_role ?? '')
-              proxyReq.setHeader('oidc_claim_easy_role', easyRole)
+              // A local override wins over the token's own claim; see devRoleOverride above.
+              proxyReq.setHeader('oidc_claim_easy_role', devRoleOverride() ?? fallback?.role ?? easyRole)
               proxyReq.setHeader('OIDC_access_token', token)
             } catch {
               // invalid token, let backend handle it

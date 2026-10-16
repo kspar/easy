@@ -9,7 +9,10 @@ needs 17+) and **Node 20+**; if your default `JAVA_HOME` is older, prefix Gradle
 ## 1. Everything in Docker
 
 Copy `core/src/main/resources/application.yaml.sample` to `application.yaml` beside it (gitignored),
-set `auth-enabled: false` and `jdbc-url: jdbc:postgresql://localhost:5432/easyems`. Then:
+set `auth-enabled: false` and `jdbc-url: jdbc:postgresql://localhost:5432/easyems`. A copy made
+before a pull does not grow the keys the pull added, and core then refuses to start naming the one it
+could not resolve: `doc/release-procedure.md` lists them, most recently the four
+`easy.core.similarity.*` keys. Then:
 
 ```sh
 docker compose up
@@ -28,6 +31,12 @@ a worktree's first start only compiles.
 - `docker compose exec core ./gradlew ...` / `exec web npm ...` run tools in the containers. Tests: §5.
 - `EASY_WEB_PORT`, `EASY_DB_PORT`, `EASY_EXECUTOR_PORT` move the published ports, e.g. for a second
   checkout.
+- **Signing in without an IdP.** The SPA logs into the *production* Keycloak by default, so you get
+  whatever role your real account has — which for the teacher-only pages may be none. Copy
+  `docker-compose.override.yml.sample` to `docker-compose.override.yml` (Compose loads it
+  automatically) to run the web container against the Keycloak stub instead, and set `EASY_DEV_AS`
+  in `web/.env.local` to say who you are; `web/.env` documents both keys. Both are gitignored, and
+  neither exists in a production build — there is no dev server and no proxy there.
 
 ## 2. Backend, natively
 
