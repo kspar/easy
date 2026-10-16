@@ -1,0 +1,24 @@
+# Line endings, decided by the repository rather than by each developer's git config.
+#
+# Everything here was committed with LF except gradlew.bat, whose index copy is CRLF; the `*.bat`
+# rule below stores it as LF, so the commit that adds this file must carry that rewrite too
+# (`git add --renormalize gradlew.bat`), or it lands in whichever later commit next touches the
+# file. What differs for everything else is the *checkout*: a Windows
+# clone with the common `core.autocrlf=true` rewrites text files to CRLF on the way out, and that
+# is enough to break `docker compose up` (DEVELOPMENT.md §1). The core container bind-mounts this
+# tree and runs `./gradlew`, whose shebang becomes `#!/bin/sh\r`; Linux then looks for an
+# interpreter literally named `/bin/sh\r` and reports
+#
+#     exec ./gradlew: no such file or directory
+#
+# which names neither the file that is missing nor the reason. Every `*.sh` in the tree has the
+# same problem the moment it is run inside a container.
+#
+# `eol=lf` overrides autocrlf for the working tree, so the checkout matches what is committed on
+# every platform and a Windows developer gets the same container behaviour as everyone else.
+* text=auto eol=lf
+
+# The exception, and the only one: a Windows batch file is parsed line by line by cmd.exe, which
+# expects CRLF. `gradlew.bat` is the one in this repo that a developer actually runs.
+*.bat text eol=crlf
+*.cmd text eol=crlf
