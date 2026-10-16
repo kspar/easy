@@ -31,9 +31,9 @@ export default function ReadOnlyCodeSnippet({
     if (!containerRef.current) return
     let cancelled = false
 
-    const langPromise = fileName
-      ? languageFromFilename(fileName)
-      : Promise.resolve([])
+    // A grammar chunk that fails to load - a tab left on the previous build after a deploy - leaves the
+    // code unhighlighted rather than not shown at all.
+    const langPromise = (fileName ? languageFromFilename(fileName) : Promise.resolve([])).catch(() => [])
 
     langPromise.then((lang) => {
       if (cancelled || !containerRef.current) return

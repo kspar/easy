@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch, apiFetchKeepalive } from './client.ts'
 import type {
   ActivitiesResp,
@@ -1145,6 +1145,16 @@ export function useMarkdownPreview(markdownText: string, debounceMs = 400): stri
   return html
 }
 
+const SIMILARITY_MUTATION_KEY = ['checkSimilarity']
+
+/**
+ * How long this tab waits for a comparison before giving up on it: nginx's own limit on `/v2`.
+ * Core bounds its side (30 s for the permit, 120 s of budget), but a stalled connection — a laptop
+ * that slept, a dropped VPN — never settles, and while it has not, `useSimilarityRunning` keeps Find
+ * disabled on every similarity page in the tab.
+ */
+const SIMILARITY_REQUEST_TIMEOUT_MS = 300_000
+
 /**
  * Compare submissions of one library exercise for similarity.
  *
@@ -1160,6 +1170,7 @@ export function useMarkdownPreview(markdownText: string, debounceMs = 400): stri
  */
 export function useCheckSimilarity(exerciseId: string | undefined) {
   return useMutation({
+    mutationKey: SIMILARITY_MUTATION_KEY,
     mutationFn: ({ courseIds, submissionIds }: { courseIds: string[]; submissionIds: string[] }) =>
       apiFetch<SimilarityResp>(`/exercises/${exerciseId}/similarity`, {
         method: 'POST',
@@ -1167,6 +1178,20 @@ export function useCheckSimilarity(exerciseId: string | undefined) {
           courses: courseIds.map((id) => ({ id })),
           submissions: submissionIds.map((id) => ({ id })),
         },
+        signal: AbortSignal.timeout(SIMILARITY_REQUEST_TIMEOUT_MS),
       }),
   })
+}
+
+/**
+ * Whether a comparison this tab started is still running on core — including one the page stopped
+ * listening to.
+ *
+ * Changing the group or exercise calls the mutation's `reset()`, which only detaches the observer:
+ * the POST keeps running and holds core's single permit. Offering Find again at that moment set the
+ * teacher's next run waiting 30 s on the permit and failing with SIMILARITY_BUSY against their own
+ * abandoned run. The mutation cache still counts that request as pending, so this sees it.
+ */
+export function useSimilarityRunning(): boolean {
+  return useIsMutating({ mutationKey: SIMILARITY_MUTATION_KEY }) > 0
 }

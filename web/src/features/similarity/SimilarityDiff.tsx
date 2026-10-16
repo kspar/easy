@@ -8,7 +8,8 @@ import { Box } from '@mui/material'
 import { languageFromFilename } from '../course-exercise/editorLanguage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
 import { readOnlyEditor } from '../../components/editorReadOnly.ts'
-import { sharedCodeHighlighting } from './similarityHighlight.ts'
+import { tokenMatchHighlighting } from './similarityHighlight.ts'
+import type { MatchedLines } from './similarityHighlight.ts'
 
 /**
  * Two solutions side by side, with the matching regions marked.
@@ -24,10 +25,21 @@ export default function SimilarityDiff({
   left,
   right,
   fileName,
+  matchedLeft,
+  matchedRight,
 }: {
   left: string
   right: string
   fileName?: string
+  /**
+   * The regions the comparison matched, per side, from `scores[].matches`.
+   *
+   * An empty list is a real answer — the pair matched nothing — and renders as no highlight. Omitted
+   * behaves the same way; there is no character-diff fallback, because a character diff disagrees
+   * with a token score hardest on the renamed-copy case the whole comparison exists to catch.
+   */
+  matchedLeft?: MatchedLines[]
+  matchedRight?: MatchedLines[]
 }) {
   const host = useRef<HTMLDivElement>(null)
   const theme = useTheme()
@@ -44,24 +56,29 @@ export default function SimilarityDiff({
     // The language modes are code-split, so this resolves a tick later — the same shape
     // ReadOnlyCodeSnippet uses. Without the cancelled flag, a fast re-render leaves an orphaned
     // MergeView attached to a host the effect has already cleaned up.
-    const langPromise = fileName ? languageFromFilename(fileName) : Promise.resolve([])
+    //
+    // A grammar that fails to load is no grammar, not no diff. After a deploy, a tab still on the old
+    // bundle asks for chunks the new release no longer has, and a rejected import built nothing: the
+    // teacher got the names and the legend over an empty box.
+    const langPromise = (fileName ? languageFromFilename(fileName) : Promise.resolve([])).catch(() => [])
 
     langPromise.then((lang) => {
       if (cancelled || !host.current) return
 
-      const extensions = [
+      const base = [
         lineNumbers(),
         readOnlyEditor,
         wrapExtension(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         lang,
         ...(dark ? [oneDark] : []),
-        ...sharedCodeHighlighting(dark),
       ]
+      // Each side gets its own ranges, so the two editors cannot share one extension list.
+      const sided = (matched?: MatchedLines[]) => tokenMatchHighlighting(dark, matched ?? [])
 
       view = new MergeView({
-        a: { doc: left, extensions },
-        b: { doc: right, extensions },
+        a: { doc: left, extensions: [...base, ...sided(matchedLeft)] },
+        b: { doc: right, extensions: [...base, ...sided(matchedRight)] },
         parent: host.current,
         // `revertControls` is deliberately absent rather than false: the option's type is
         // "a-to-b" | "b-to-a", so omitting it is how you get no revert arrows. Passing false type-errors
@@ -77,7 +94,7 @@ export default function SimilarityDiff({
       cancelled = true
       view?.destroy()
     }
-  }, [left, right, fileName, dark, wrap, wrapExtension])
+  }, [left, right, fileName, dark, wrap, wrapExtension, matchedLeft, matchedRight])
 
   return (
     <Box

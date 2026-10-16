@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import {
   Accordion,
   AccordionDetails,
@@ -33,10 +33,20 @@ import useSavedGroup from '../../hooks/useSavedGroup.ts'
 import {
   useCheckSimilarity,
   useCourseGroups,
+  useSimilarityRunning,
   useTeacherCourseExercises,
   useTeacherSubmissionSummaries,
 } from '../../api/exercises.ts'
 import SimilarityDiff from './SimilarityDiff.tsx'
+import ReadOnlyCodeSnippet from '../course-exercise/ReadOnlyCodeSnippet.tsx'
+import type { MatchedLines } from './similarityHighlight.ts'
+import { groupAuthors, identicalOthers } from './similarityGroups.ts'
+import { isSimilarityRefusal } from './similarityError.ts'
+import { emptyReason, hasUnreadableScores } from './similarityEmptyState.ts'
+import { skippedByReason } from './similaritySkipped.ts'
+import type { SkippedReason } from './similaritySkipped.ts'
+import { highlightFileName, languageNote } from './similarityLanguage.ts'
+import { errorMessage } from '../../api/errorMessage.ts'
 import { SHARED_LIGHT, SHARED_DARK } from './similarityHighlight.ts'
 import { spaLinkProps } from '../../components/spaLink.ts'
 
@@ -49,7 +59,10 @@ import { spaLinkProps } from '../../components/spaLink.ts'
  */
 const PAIR_WARNING_THRESHOLD = 120
 
-/** How many pairs core returns at most. Its answer is truncated to this, highest score first. */
+/**
+ * How many pairs core keeps by each of its two orders — most code shared, and highest score — so it
+ * returns at most twice this, and the threshold always has the highest-scoring ones to filter.
+ */
 const MAX_PAIRS = 100
 
 export default function SimilarityPage() {
@@ -84,25 +97,36 @@ export default function SimilarityPage() {
   // Which submissions to compare. Fetched as soon as an exercise is chosen rather than inside the
   // click handler, so the pair count — and any warning about it — is on screen *before* committing
   // to the wait.
-  const { data: rows, isLoading: rowsLoading } = useTeacherSubmissionSummaries(
-    courseId!,
-    selected?.course_exercise_id ?? '',
-    group || undefined,
-  )
+  const {
+    data: rows,
+    isLoading: rowsLoading,
+    isError: rowsFailed,
+    error: rowsError,
+  } = useTeacherSubmissionSummaries(courseId!, selected?.course_exercise_id ?? '', group || undefined)
 
   const submitted = useMemo(() => (rows ?? []).filter((r) => r.submission), [rows])
   const pairCount = (submitted.length * (submitted.length - 1)) / 2
+
+  const check = useCheckSimilarity(exerciseId || undefined)
+  // What the last run was over, taken when it was asked for. The result belongs to that selection and
+  // is shown only under it: a reset on the selects' onChange was the only guard, and navigation changes
+  // the selection without one - the sidebar link left the result under an empty select, and Back after
+  // running another exercise put that one's pairs under this one's name. The rows are its own too, so a
+  // refetch of the summaries (focus, after 30 s) cannot take the names and links out from under it.
+  const [ranOver, setRanOver] = useState<{ exerciseId: string; group: string; submitted: typeof submitted }>()
+  const current = ranOver !== undefined && ranOver.exerciseId === exerciseId && ranOver.group === group
+  const result = current ? check.data : undefined
+  // Also true for a run the page has left behind (a group or exercise change mid-run): core is still
+  // computing it under its one permit, so a new run now would only wait and fail as busy.
+  const running = useSimilarityRunning()
 
   // submission id -> student id, so each side of a pair can link to that student's grading view.
   // The similarity response carries names but no ids, and this is the only place both are known.
   const studentBySubmission = useMemo(() => {
     const map = new Map<string, string>()
-    for (const r of submitted) if (r.submission) map.set(r.submission.id, r.student_id)
+    for (const r of ranOver?.submitted ?? []) if (r.submission) map.set(r.submission.id, r.student_id)
     return map
-  }, [submitted])
-
-  const check = useCheckSimilarity(exerciseId || undefined)
-  const result = check.data
+  }, [ranOver])
 
   const submissionsById = useMemo(() => {
     const map = new Map<string, NonNullable<typeof result>['submissions'][number]>()
@@ -110,13 +134,79 @@ export default function SimilarityPage() {
     return map
   }, [result])
 
-  const pairs = useMemo(
-    () => (result?.scores ?? []).filter((s) => Math.max(s.score_a, s.score_b) >= minScore),
+  // Filtered on the maximum, not the average: JPlag's maximalSimilarity is the max of the two
+  // one-sided scores and its similarity is their weighted mean, so the max is always the higher
+  // of the pair. A `Math.max` of the two would read as even-handed and be a no-op. The slider is
+  // labelled for the maximum to match.
+  // Split in two on purpose. `aboveThreshold` answers the slider's question alone; `pairs` then drops
+  // scores whose submissions are missing from the response, which the map below would drop anyway —
+  // so the heading counts only rows that will exist. Keeping both is what lets the empty state say
+  // *which* emptiness it is rather than blaming a threshold that may be zero.
+  const aboveThreshold = useMemo(
+    () => (result?.scores ?? []).filter((s) => s.max_similarity >= minScore),
     [result, minScore],
   )
 
+  const pairs = useMemo(
+    () => aboveThreshold.filter((s) => submissionsById.has(s.sub_1) && submissionsById.has(s.sub_2)),
+    [aboveThreshold, submissionsById],
+  )
+
+  // Memoised per score, because these arrays are props of SimilarityDiff and sit in its effect's
+  // dependency list. Built inline they were a new identity on every parent render, so every open
+  // accordion destroyed and rebuilt two CodeMirror editors — and the threshold slider fires per
+  // mousemove, with up to MAX_PAIRS accordions mounted at once.
+  const matchedByPair = useMemo(() => {
+    const byPair = new Map<string, { left: MatchedLines[]; right: MatchedLines[] }>()
+    for (const score of result?.scores ?? []) {
+      // Guarded like `skipped` below, for the same response: an older core, which a deploy keeps
+      // answering for minutes after the new page is live, sends scores without `matches`. Unguarded,
+      // this memo threw during render and took the whole page down rather than only the highlight.
+      const matches = score.matches ?? []
+      byPair.set(`${score.sub_1}-${score.sub_2}`, {
+        left: matches.map((m) => ({ startLine: m.start_line_1, endLine: m.end_line_1 })),
+        right: matches.map((m) => ({ startLine: m.start_line_2, endLine: m.end_line_2 })),
+      })
+    }
+    return byPair
+  }, [result])
+
+  const skipped = result?.skipped ?? []
+  const unreadable = hasUnreadableScores(result?.scores ?? [])
+  // Identical submissions by three or more authors, which core reports once each rather than as every
+  // pair among them - twelve untouched copies of the starter code were 66 rows at 100%, ahead of any real
+  // copy. A pair side that is one of them stands for them all, and says so.
+  const identicalGroups = result?.groups ?? []
+  const studentOf = (submissionId: string) => studentBySubmission.get(submissionId)
+  const othersBySubmission = useMemo(
+    () => identicalOthers(result?.groups, (id) => studentBySubmission.get(id)),
+    [result, studentBySubmission],
+  )
+  const emptyNow = result ? emptyReason(result.scores.length, aboveThreshold.length, identicalGroups.length) : null
+  // Named, per reason, from the rows the run was over rather than whatever the summaries now say.
+  const skippedGroups = useMemo(() => skippedByReason(result?.skipped ?? [], ranOver?.submitted ?? []), [result, ranOver])
+
+  // A switch of literal keys rather than a lookup table, so the i18n test can see every one of them.
+  const skippedLabel = (reason: SkippedReason, count: number) => {
+    switch (reason) {
+      case 'CANNOT_PARSE':
+        return t('similarity.skippedParse', { count })
+      case 'TOO_LARGE':
+        return t('similarity.skippedLarge', { count })
+      case 'TOO_COMPLEX':
+        return t('similarity.skippedComplex', { count })
+      case 'TOO_REPETITIVE':
+        return t('similarity.skippedRepetitive', { count })
+      case 'TOO_SMALL':
+        return t('similarity.skippedSmall', { count })
+      case 'OTHER':
+        return t('similarity.skippedOther', { count })
+    }
+  }
+
   const run = () => {
     if (!selected) return
+    setRanOver({ exerciseId, group, submitted })
     check.mutate({
       courseIds: [courseId!],
       submissionIds: submitted.map((r) => r.submission!.id),
@@ -190,12 +280,16 @@ export default function SimilarityPage() {
         <Button
           variant="contained"
           startIcon={
-            check.isPending ? <CircularProgress size={16} color="inherit" /> : <CompareArrowsOutlined />
+            running ? <CircularProgress size={16} color="inherit" /> : <CompareArrowsOutlined />
           }
-          disabled={!selected || check.isPending || rowsLoading || submitted.length < 2}
+          disabled={!selected || running || rowsLoading || submitted.length < 2}
           onClick={run}
         >
-          {check.isPending ? t('similarity.searching') : t('similarity.find')}
+          {/* Named apart from an ordinary run: after a group or exercise change this is the run the
+              page left behind, still holding core's one permit, and its result will not be shown. */}
+          {running
+            ? check.isPending && current ? t('similarity.searching') : t('similarity.waitingPrevious')
+            : t('similarity.find')}
         </Button>
       </Box>
 
@@ -206,7 +300,12 @@ export default function SimilarityPage() {
         </Typography>
       )}
 
-      {selected && submitted.length < 2 && !rowsLoading && (
+      {/* A failed load is said as one: empty, it read as "fewer than two submissions" and disabled Find. */}
+      {selected && rowsFailed && (
+        <Alert severity="error" sx={{ mb: 2 }}>{errorMessage(rowsError, t)}</Alert>
+      )}
+
+      {selected && submitted.length < 2 && !rowsLoading && !rowsFailed && (
         <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.tooFewSubmissions')}</Alert>
       )}
 
@@ -216,7 +315,13 @@ export default function SimilarityPage() {
         </Alert>
       )}
 
-      {check.isError && <Alert severity="error" sx={{ mb: 2 }}>{t('similarity.failed')}</Alert>}
+      {check.isError && current && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {/* A named refusal gets its own sentence; anything else keeps the timeout advice, which is
+              the right guess for a comparison that simply did not come back. */}
+          {isSimilarityRefusal(check.error) ? errorMessage(check.error, t) : t('similarity.failed')}
+        </Alert>
+      )}
 
       {result && (
         <>
@@ -230,6 +335,10 @@ export default function SimilarityPage() {
                 <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
                   {t('similarity.minScore')}
                 </Typography>
+                {/* The caption beside it is a sibling, not a label, so without this the control
+                    announces as "0, slider" with no indication of what it filters — measured in the
+                    browser, where the input carried aria-valuenow/min/max and no name at all.
+                    a11y-baseline.json is empty by policy, so this is a new finding, not a known one. */}
                 <Slider
                   size="small"
                   value={minScore}
@@ -237,20 +346,112 @@ export default function SimilarityPage() {
                   valueLabelDisplay="auto"
                   min={0}
                   max={100}
+                  aria-label={t('similarity.minScore')}
                   sx={{ maxWidth: 160 }}
                 />
               </Box>
             )}
           </Box>
 
-          {/* Core caps its answer at the highest MAX_PAIRS. Silently showing 100 of 45,000 would
-              read as "there are 100 suspicious pairs", so say which it is. */}
-          {result.scores.length >= MAX_PAIRS && (
+          {/* Core caps its answer at MAX_PAIRS by each of its two orders. Silently showing 200 of
+              45,000 would read as "there are 200 suspicious pairs", so say which it is. */}
+          {/* Instead of an emptiness sentence, which would blame a threshold of zero. */}
+          {unreadable && <Alert severity="warning" sx={{ mb: 2 }}>{t('similarity.unreadable')}</Alert>}
+
+          {result.truncated && (
             <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.capped', { limit: MAX_PAIRS })}</Alert>
           )}
 
-          {result.scores.length === 0 && (
-            <Typography color="text.secondary">{t('similarity.noPairs')}</Typography>
+          {/* Which tokeniser ran. A text-mode result is a weaker answer than a token one, and
+              saying so is the difference between "nothing similar" and "we could not read this as
+              code"; an SQL one reads differently, and says how. */}
+          {languageNote(result.language) === 'text' && (
+            <Alert severity="warning" sx={{ mb: 2 }}>{t('similarity.languageTextNote')}</Alert>
+          )}
+          {languageNote(result.language) === 'sql' && (
+            <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.languageSqlNote')}</Alert>
+          )}
+
+          {/* JPlag drops what it cannot parse or what is too short. Silently comparing 4 of 40 and
+              reporting "no similar pairs" would read as a clean result, which is the one thing it
+              is not. */}
+          {skipped.length > 0 && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {t('similarity.skippedNote', { count: skipped.length, total: result.compared })}
+              {/* One line per reason, each naming who, and linking to them like a pair does: a
+                  submission that runs but could not be compared is itself a thing to look at. */}
+              {skippedGroups.map((group) => (
+                <Box key={group.reason} component="span" sx={{ display: 'block', mt: 0.5 }}>
+                  {skippedLabel(group.reason, group.students.length)}:{' '}
+                  {group.students.map((student, index) => {
+                    const link = studentLink(student.submissionId)
+                    const name = student.name ?? `#${student.submissionId}`
+                    return (
+                      <Fragment key={student.submissionId}>
+                        {index > 0 && ', '}
+                        {link ? <Link {...spaLinkProps(link, navigate)}>{name}</Link> : name}
+                      </Fragment>
+                    )
+                  })}
+                </Box>
+              ))}
+            </Alert>
+          )}
+
+          {identicalGroups.map((group) => {
+            const first = submissionsById.get(group.submissions[0])
+            return (
+              // Names and links in the details, not the summary: the summary is a button, and a link
+              // inside one is two controls in one place for keyboard and screen-reader users alike.
+              <Accordion
+                key={group.submissions[0]}
+                disableGutters
+                variant="outlined"
+                slotProps={{ transition: { unmountOnExit: true } }}
+              >
+                <AccordionSummary expandIcon={<ExpandMoreOutlined />}>
+                  <Typography sx={{ fontWeight: 500 }}>
+                    {t('similarity.identicalGroup', { count: groupAuthors(group, studentOf) })}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography variant="body2" sx={{ mb: 1.5 }}>
+                    {group.submissions.map((id, index) => {
+                      const sub = submissionsById.get(id)
+                      const name = sub ? `${sub.given_name} ${sub.family_name}` : `#${id}`
+                      const link = studentLink(id)
+                      return (
+                        <Fragment key={id}>
+                          {index > 0 && ', '}
+                          {link ? <Link {...spaLinkProps(link, navigate)}>{name}</Link> : name}
+                        </Fragment>
+                      )
+                    })}
+                  </Typography>
+                  {first && (
+                    <>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+                        {t('similarity.identicalGroupCode', { name: `${first.given_name} ${first.family_name}` })}
+                      </Typography>
+                      <ReadOnlyCodeSnippet code={first.solution ?? ''} fileName={highlightFileName(result.language)} maxHeight={460} />
+                    </>
+                  )}
+                </AccordionDetails>
+              </Accordion>
+            )
+          })}
+
+          {pairs.length === 0 && !unreadable && emptyNow && (
+            <Typography color="text.secondary">
+              {/* Two different emptinesses, and only one of them is the slider's doing. The threshold
+                  is the explanation exactly when something scored and nothing survived the filter;
+                  if nothing scored at all, saying "no pair is above the threshold" blames a control
+                  the teacher may never have touched, which at the default of zero is nonsense.
+                  These two were the wrong way round: the threshold sentence was shown when pairs
+                  *were* above it but had no renderable submissions, and the "nothing found" sentence
+                  when the slider had hidden everything. */}
+              {t(`similarity.${emptyNow}`)}
+            </Typography>
           )}
 
           {pairs.map((score) => {
@@ -263,8 +464,20 @@ export default function SimilarityPage() {
             ]
             // Outlined like every other surface: with the bespoke shadow scale gone (X-014), a
             // bare Accordion would be the app's only elevated element.
+            //
+            // `unmountOnExit` is load-bearing rather than tidiness. MUI keeps AccordionDetails
+            // mounted inside a collapsed Collapse by default, so at the 100-pair cap every
+            // SimilarityDiff built its editors whether or not the teacher opened it. Measured on a
+            // 100-student cohort: 200 CodeMirror instances and 100 merge views with *zero* rows
+            // expanded, each doing an async language load and a full diff, which locks the tab up
+            // for seconds on a result nobody has started reading yet.
             return (
-              <Accordion key={`${score.sub_1}-${score.sub_2}`} disableGutters variant="outlined">
+              <Accordion
+                key={`${score.sub_1}-${score.sub_2}`}
+                disableGutters
+                variant="outlined"
+                slotProps={{ transition: { unmountOnExit: true } }}
+              >
                 <AccordionSummary expandIcon={<ExpandMoreOutlined />}>
                   <Box
                     sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%', pr: 2, flexWrap: 'wrap' }}
@@ -272,19 +485,32 @@ export default function SimilarityPage() {
                     <Typography sx={{ fontWeight: 500 }}>
                       {a.given_name} {a.family_name} — {b.given_name} {b.family_name}
                     </Typography>
+                    {/* A side that stands for a group of identical submissions says how many more it is, and
+                        whose: after "A — B", an unnamed chip read as B's whichever side it belonged to. */}
+                    {[{ id: score.sub_1, side: a }, { id: score.sub_2, side: b }].map(({ id, side }) => {
+                      const others = othersBySubmission.get(id)
+                      return others ? (
+                        <Chip
+                          key={id}
+                          size="small"
+                          variant="outlined"
+                          label={t('similarity.identicalOthers', { count: others, name: `${side.given_name} ${side.family_name}` })}
+                        />
+                      ) : null
+                    })}
                     <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
                       {/* Labelled, because "84% · 61%" invites the question of which is which — and
                           the two answer different questions. Named for what they measure rather
                           than for the algorithm; the algorithm is in the tooltip, for the reader
                           who wants to know how the number was arrived at. */}
-                      <Tooltip title={t('similarity.diceTooltip')}>
-                        <Chip size="small" label={t('similarity.diceShort', { score: score.score_a })} />
+                      <Tooltip title={t('similarity.similarityTooltip')}>
+                        <Chip size="small" label={t('similarity.similarityShort', { score: score.similarity })} />
                       </Tooltip>
-                      <Tooltip title={t('similarity.levenshteinTooltip')}>
+                      <Tooltip title={t('similarity.maxSimilarityTooltip')}>
                         <Chip
                           size="small"
                           variant="outlined"
-                          label={t('similarity.levenshteinShort', { score: score.score_b })}
+                          label={t('similarity.maxSimilarityShort', { score: score.max_similarity })}
                         />
                       </Tooltip>
                     </Box>
@@ -351,7 +577,16 @@ export default function SimilarityPage() {
                     />
                     {t('similarity.sharedLegend')}
                   </Box>
-                  <SimilarityDiff left={a.solution} right={b.solution} fileName="lahendus.py" />
+                  {/* CodeMirror picks its grammar from the extension. The exercise list does not
+                      carry solution_file_name, but the comparison already resolved a language and
+                      that is the same decision, so derive it rather than add an API field. */}
+                  <SimilarityDiff
+                    left={a.solution ?? ''}
+                    right={b.solution ?? ''}
+                    fileName={highlightFileName(result.language)}
+                    matchedLeft={matchedByPair.get(`${score.sub_1}-${score.sub_2}`)?.left}
+                    matchedRight={matchedByPair.get(`${score.sub_1}-${score.sub_2}`)?.right}
+                  />
                 </AccordionDetails>
               </Accordion>
             )

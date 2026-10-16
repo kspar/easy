@@ -78,6 +78,22 @@ easy:
     ## oidc_claim_* request headers verbatim. The role asserts this.
     auth-enabled: {{ easy_core_auth_enabled | bool | lower }}
 
+    similarity:
+      ## Plagiarism detection holds the whole cohort and its token streams on the heap for the
+      ## duration of one comparison, and the comparison cannot be interrupted. A cohort larger than
+      ## this is refused outright rather than attempted and lost to an OutOfMemoryError.
+      max-submissions: {{ easy_core_similarity_max_submissions }}
+      ## (The shortest run of tokens that counts as a match is set per language in code, where each
+      ## frontend's calibrated value lives - see SimilarityFrontend - not here.)
+      ##
+      ## Tokenising and comparing both cost more per solution than max-submissions can see. A solution
+      ## above max-solution-tokens (lexical tokens: comments do not count) is skipped as TOO_LARGE; one
+      ## repeating itself past max-repetition, which is what makes a single pair slow, as
+      ## TOO_REPETITIVE; and a run past timeout-sec is refused. See SimilarityService for the measurements.
+      max-solution-tokens: {{ easy_core_similarity_max_solution_tokens }}
+      max-repetition: {{ easy_core_similarity_max_repetition }}
+      timeout-sec: {{ easy_core_similarity_timeout_sec }}
+
     cors:
       ## Empty is the tighter setting, and correct when one proxy fronts both web and API on the same
       ## origin — the browser sends no preflight at all in that case.

@@ -236,3 +236,9 @@ easy_core_activity_merge_window_s: 300
 # CORS: empty is the tighter setting and correct when one reverse proxy fronts web and API on the same
 # origin, because the browser sends no preflight at all.
 easy_core_cors_allowed_origins: ""
+
+# Similarity (plagiarism detection). See the notes in templates/application.yaml.j2.
+easy_core_similarity_max_submissions: 500
+easy_core_similarity_max_solution_tokens: 10000
+easy_core_similarity_max_repetition: 1000000
+easy_core_similarity_timeout_sec: 120

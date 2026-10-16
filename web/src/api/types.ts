@@ -556,33 +556,101 @@ export interface DirAccessesResp {
 
 // --- similarity ---------------------------------------------------------------------------------
 // `POST /exercises/{exerciseId}/similarity` compares submissions of the same *library* exercise,
-// optionally across several courses. Both scores are percentages of a whole-text comparison: a Dice
-// coefficient over character bigrams, and a Levenshtein-based FuzzyWuzzy ratio. Neither understands
-// code, so renaming variables lowers both — worth knowing before reading a low score as innocence.
+// optionally across several courses. Both scores are percentages from JPlag, which compares language
+// tokens rather than text: `similarity` is its average and `max_similarity` the higher of the two
+// one-sided scores, so a high max over a low average means a short solution was pasted into a longer
+// one. Renaming variables does not lower either — except on an exercise core has no tokeniser for,
+// where `language` comes back as "text" and the comparison is word-level.
 
 /** @endpoint POST /v2/exercises/{exerciseId}/similarity -> submissions[] */
 export interface SimilarSubmissionResp {
   id: string
   created_at: string
-  solution: string
+  /**
+   * Null for a member of an identical group that no pair names and that is not the group's first: its
+   * code is that one's but for layout, and only that one is shown.
+   */
+  solution: string | null
   given_name: string
   family_name: string
   course_title: string
+}
+
+/** @endpoint POST /v2/exercises/{exerciseId}/similarity -> scores[].matches[] */
+export interface SimilarityMatchResp {
+  start_line_1: number
+  end_line_1: number
+  start_line_2: number
+  end_line_2: number
+  /** How many tokens this region covers — the length JPlag actually matched on. */
+  tokens: number
 }
 
 /** @endpoint POST /v2/exercises/{exerciseId}/similarity -> scores[] */
 export interface SimilarityScoreResp {
   sub_1: string
   sub_2: string
-  /** Dice coefficient, 0–100. */
-  score_a: number
-  /** Levenshtein-based ratio, 0–100. */
-  score_b: number
+  /**
+   * JPlag average similarity, 0–100. For Python it is token-based, so renaming variables does not
+   * lower it; in text mode every word is its own token, so renaming does.
+   */
+  similarity: number
+  /** JPlag maximum similarity, 0–100 — the shorter submission's share of matched tokens. */
+  max_similarity: number
+  matches: SimilarityMatchResp[]
+}
+
+/**
+ * A submission the comparison could not use: CANNOT_PARSE (tokenisation failed), TOO_SMALL (fewer
+ * tokens than the shortest match it will look for), TOO_LARGE (above core's token cap, so never
+ * parsed), TOO_COMPLEX (nested so deeply the parser would take minutes) or TOO_REPETITIVE (repeats
+ * itself past the point where one pair could be compared in bounded time). Core also maps EMPTY and
+ * UNUSABLE, which cannot occur today.
+ *
+ * @endpoint POST /v2/exercises/{exerciseId}/similarity -> skipped[]
+ */
+export interface SimilaritySkippedResp {
+  id: string
+  reason: string
 }
 
 /** @endpoint POST /v2/exercises/{exerciseId}/similarity -> (root) */
 export interface SimilarityResp {
   submissions: SimilarSubmissionResp[]
-  /** Core returns at most the 100 highest-scoring pairs, ordered by score_a + score_b. */
+  /** How many submissions were compared, including ones no pair references. */
+  compared: number
+  /**
+   * Core returns the 100 pairs sharing the most code together with the 100 highest by `max_similarity`,
+   * so up to 200, listed most shared code first — not by `similarity`, which would bury a short solution
+   * pasted whole into a long one, and not by the percentage alone, by which a short stub inside every
+   * solution outranked real copies.
+   */
   scores: SimilarityScoreResp[]
+  /**
+   * Which tokeniser ran: "python", "java", "sql", or "text" where the exercise mapped to none. A string
+   * rather than a union, since a newer core may add one; see similarityLanguage.ts for what the page
+   * makes of each, including one it does not know.
+   */
+  language: string
+  /** Submissions that were dropped before comparison, so an empty result cannot mislead. */
+  skipped: SimilaritySkippedResp[]
+  /** True when more pairs existed than were returned. */
+  truncated: boolean
+  /**
+   * Identical submissions by three or more authors, one entry each instead of every pair among them.
+   * `scores` holds none between a group's members, and names one member for the group against anyone
+   * else. Optional because a core older than groups, which a deploy keeps answering for a while, sends
+   * none.
+   */
+  groups?: SimilarityGroupResp[]
+}
+
+/**
+ * Submissions that are the same text but for layout, and so the same tokens — each group's ids in id
+ * order.
+ *
+ * @endpoint POST /v2/exercises/{exerciseId}/similarity -> groups[]
+ */
+export interface SimilarityGroupResp {
+  submissions: string[]
 }

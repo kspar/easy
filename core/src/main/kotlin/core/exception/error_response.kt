@@ -44,7 +44,11 @@ enum class ReqError(val errorCodeStr: String) {
     AI_FEEDBACK_NOT_AVAILABLE("AI_FEEDBACK_NOT_AVAILABLE"),
     AI_PROVIDER_ERROR("AI_PROVIDER_ERROR"),
     // The course's token budget is spent. Attribute `limit` names which limit, for when there are more.
-    AI_LIMIT_REACHED("AI_LIMIT_REACHED")
+    AI_LIMIT_REACHED("AI_LIMIT_REACHED"),
+
+    TOO_MANY_SUBMISSIONS("TOO_MANY_SUBMISSIONS"),
+    SIMILARITY_BUSY("SIMILARITY_BUSY"),
+    SIMILARITY_TIMEOUT("SIMILARITY_TIMEOUT")
 }
 
 

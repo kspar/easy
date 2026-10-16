@@ -31,7 +31,7 @@ plugins {
 extra["tomcat.version"] = libs.versions.tomcat.get()
 
 /**
- * Coverage: **report everywhere, gate in four places.**
+ * Coverage: **report everywhere, gate in six places.**
  *
  * A global threshold is a trap in this codebase and would be worse than none. A large fraction of
  * these 17,000 lines is DTO declaration, so a global percentage measures the ratio of boilerplate to
@@ -48,6 +48,9 @@ extra["tomcat.version"] = libs.versions.tomcat.get()
  *   somebody else's data and throws nothing.
  * - **conf.security** — the filter chain, the JWT converter, the permitAll list.
  * - **ems.service.storage** and **ems.cron** — the only code that deletes a teacher's file.
+ * - **ems.service.code** and the **de.jplag.antlr** and **de.jplag.java** shims — plagiarism scoring.
+ *   Wrong here is a score that looks right, and the shims reach JPlag's package-private internals,
+ *   whose behaviour an upgrade can change without any compile error on this side.
  *
  * Run `./gradlew :core:koverHtmlReport` and open the result; `koverVerify` is what fails the build.
  */
@@ -125,6 +128,21 @@ val coverageTargets = listOf(
 
     // The only code in this application that removes an object from storage.
     CoverageTarget("core.ems.service.storage.", 90, "object storage"),
+
+    // Plagiarism detection. It reaches into JPlag's protected and package-private internals to keep
+    // student code off disk, so the things that break on an upgrade break quietly: a token stream
+    // assembled slightly differently still produces numbers, just wrong ones. A teacher acts on
+    // those numbers. The threshold is a ratchet just under today's measurement (96% of 971 lines), not a
+    // derived figure. At the 80% it was, 190 lines could leave the suite unnoticed - all of the Python
+    // frontend, or all of the Java one.
+    CoverageTarget("core.ems.service.code.", 90, "source similarity"),
+
+    // The split-package shims that reach JPlag's package-private internals: TokenCollector for Python,
+    // the javac tree scanner for Java. Each is a file whose breakage on a JPlag bump is silent, and they
+    // sit outside every `core.*` prefix, so without targets of their own nothing would notice one
+    // falling out of the suite.
+    CoverageTarget("de.jplag.antlr.InMemoryTokenCollectorAccess", 80, "the in-memory JPlag shim"),
+    CoverageTarget("de.jplag.java.InMemoryJavacAccess", 80, "the in-memory javac shim"),
     CoverageTarget("core.ems.cron.StoredFileSweep", 90, "the stored-file sweep"),
     CoverageTarget("core.ems.cron.Stored_file_sweepKt", 90, "the sweep's scanned-column list"),
 )
@@ -195,8 +213,9 @@ tasks.register("koverVerifyTargets") {
 
         if (failures.isNotEmpty()) throw GradleException(
             "Coverage below target:\n" + failures.joinToString("\n") +
-                    "\n\nThese four packages carry a number because being untested in them is a " +
-                    "specific harm — somebody else's data, or a teacher's file. Everything else is " +
+                    "\n\nThese six areas carry a number because being untested in them is a " +
+                    "specific harm — somebody else's data, a teacher's file, or a plagiarism " +
+                    "score that is wrong without looking wrong. Everything else is " +
                     "reported, not gated: see the note above coverageTargets in core/build.gradle.kts." +
                     "\n\nRead the detail with: ./gradlew :core:koverHtmlReport"
         )
@@ -320,6 +339,7 @@ dependencies {
     // Kotlin support
     implementation(libs.jackson.module.kotlin)
     implementation(libs.kotlin.reflect)
+    implementation(libs.kotlinx.coroutines.core)
 
     // Testing
     testImplementation(libs.spring.boot.starter.test)
@@ -340,8 +360,24 @@ dependencies {
     // StoredFile type detection
     implementation(libs.tika.core)
 
-    // Source code similarity
-    implementation(libs.fuzzywuzzy)
+
+    // JPlag, replacing the text-similarity scorers above. See doc/jplag-integration.md.
+    //
+    // Excluded: JPlag's language-api declares ICU4J (charset detection for its file reader) and the
+    // AutoService and MetaInfServices annotation processors at compile scope, and AutoService brings
+    // Guava — about 21 MB of every release jar, and processors on the compile classpath. Nothing on
+    // the in-memory path loads any of it: ICU is imported only by de.jplag.util.FileUtils, which JPlag
+    // reaches only when it reads a file, and this integration never lets it.
+    listOf(libs.jplag.core, libs.jplag.python, libs.jplag.java, libs.jplag.antlrUtils).forEach { jplag ->
+        implementation(jplag) {
+            exclude(group = "com.ibm.icu")
+            exclude(group = "com.google.auto.service")
+            exclude(group = "org.kohsuke.metainf-services")
+        }
+    }
+    // Back on the test classpath alone, for the one test that runs JPlag's file-based Java parse as an
+    // oracle for the in-memory one: that path reads files, and reading files is where ICU is used.
+    testImplementation(libs.jplag.icuTestOnly)
 
     // TSL
     implementation(project(":tsl"))

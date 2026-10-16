@@ -63,6 +63,13 @@ const CODE_KEYS: Record<string, string> = {
   AI_FEEDBACK_NOT_AVAILABLE: 'errors.aiFeedbackNotAvailable',
   AI_PROVIDER_ERROR: 'errors.aiProviderError',
   AI_LIMIT_REACHED: 'errors.aiLimitReached',
+  // Similarity refuses two ways, and both need saying rather than a generic failure. The busy one
+  // especially: the semaphore is global, so the page's usual "try a single group" advice is
+  // guaranteed not to help and would send the teacher round the same loop.
+  SIMILARITY_BUSY: 'errors.similarityBusy',
+  SIMILARITY_TIMEOUT: 'errors.similarityTimeout',
+  // The fallback only: with attrs.limit present the branch below names the actual number.
+  TOO_MANY_SUBMISSIONS: 'errors.tooManySubmissions',
 
   // TSL_COMPILE_FAILED is deliberately absent: X-018 gives it a fuller treatment, with the
   // compiler's own diagnostic behind a disclosure. A one-liner here would be a downgrade.
@@ -159,6 +166,10 @@ export function errorMessage(err: unknown, t: TFunction): string {
   if (body.code === 'AI_LIMIT_REACHED' && body.attrs?.limit === 'solution_length') {
     const allowed = Number(body.attrs.allowed)
     if (Number.isFinite(allowed) && allowed > 0) return t('errors.aiLimitReachedSolutionLength', { count: allowed })
+  }
+  // Core attaches the cap and the requested count; a number the teacher can act on beats "too many".
+  if (body.code === 'TOO_MANY_SUBMISSIONS' && body.attrs?.limit) {
+    return t('errors.tooManySubmissionsLimit', { value: body.attrs.limit })
   }
 
   if (EMAIL_CODES.has(body.code)) {

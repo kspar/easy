@@ -37,12 +37,17 @@ test('similarity-page', async ({ launch, check }) => {
       return {
         submissions: [
           { id: '101', created_at: '2026-08-01T10:00:00.000Z', solution: '# loeb kaks arvu ja liidab\na = int(input())\nb = int(input())\nsumma = a + b\nprint(summa)\n', given_name: 'Mari', family_name: 'Maasikas', course_title: 'Programmeerimise alused' },
-          { id: '102', created_at: '2026-08-01T11:00:00.000Z', solution: '# loeb kaks arvu ja liidab\nx = int(input())\ny = int(input())\ntulemus = x + y\nprint(tulemus)\n', given_name: 'Jaan', family_name: 'Tamm', course_title: 'Programmeerimise alused' },
+          { id: '102', created_at: '2026-08-01T11:00:00.000Z', solution: '# loeb kaks arvu ja liidab\n# teine lahendus\nx = int(input())\ny = int(input())\ntulemus = x + y\nprint(tulemus)\n', given_name: 'Jaan', family_name: 'Tamm', course_title: 'Programmeerimise alused' },
         ],
         scores: [
-          { sub_1: '101', sub_2: '102', score_a: 91, score_b: 78 },
-          { sub_1: '101', sub_2: '104', score_a: 20, score_b: 15 },
+          { sub_1: '101', sub_2: '102', similarity: 91, max_similarity: 94, matches: [{ start_line_1: 2, end_line_1: 5, start_line_2: 3, end_line_2: 6, tokens: 12 }], score_a: 91, score_b: 94 },
+          { sub_1: '101', sub_2: '104', similarity: 20, max_similarity: 22, matches: [], score_a: 20, score_b: 22 },
         ],
+        compared: 3,
+        language: 'python',
+        skipped: [],
+        truncated: false,
+        groups: [],
       }
     }],
 
@@ -108,16 +113,17 @@ test('similarity-page', async ({ launch, check }) => {
   check(
     'the pair is listed with both scores labelled',
     await waitUntil(async () =>
-      (await page.getByText('Shared text 91%').count()) > 0 && (await page.getByText('Edit distance 78%').count()) > 0),
+      (await page.getByText('Similarity 91%').count()) > 0 && (await page.getByText('Max 94%').count()) > 0),
   )
 
   // --- the diff, and the link to the student -----------------------------------------------------------
-  // Visibility, not presence. MUI keeps AccordionDetails mounted inside a collapsed Collapse, so the
-  // merge view is in the DOM before anything is clicked — counting elements here passed without a click
-  // at all, which is a check that cannot fail. Asserting it starts hidden is what makes the next line
-  // mean something.
+  // Absent, not merely hidden. MUI keeps AccordionDetails mounted inside a collapsed Collapse unless
+  // told otherwise, and the page tells it otherwise (`unmountOnExit`) because at the 100-pair cap the
+  // mounted editors locked the tab. Collapsed content is `visibility: hidden` either way, so asserting
+  // it is not visible passed with the option deleted; counting is what pins it, and what makes the
+  // next line mean something.
   const mergeView = page.locator('.cm-mergeView')
-  check('the diff is not rendered visibly until the pair is opened', !(await mergeView.isVisible()))
+  check('the diff is not built until the pair is opened', (await mergeView.count()) === 0)
 
   await page.getByText('Mari Maasikas — Jaan Tamm').click()
   check(
@@ -139,7 +145,7 @@ test('similarity-page', async ({ launch, check }) => {
   // the ink, so assert both halves: shared runs are marked, and the library's red/green is gone.
   // Asserting only the first would still pass with the default theme layered underneath.
   const marks = await page.evaluate(() => ({
-    shared: document.querySelectorAll('.cm-mergeView .cm-commonSpan, .cm-mergeView .cm-commonLine').length,
+    shared: document.querySelectorAll('.cm-mergeView .cm-commonLine').length,
     litUnderlines: [...document.querySelectorAll('.cm-mergeView .cm-changedText')].filter((el) => {
       const bg = getComputedStyle(el).background
       return bg.includes('gradient') || bg.includes('rgb(')
@@ -155,42 +161,51 @@ test('similarity-page', async ({ launch, check }) => {
     await page.getByText('Highlighted code appears in both solutions.').isVisible(),
   )
 
-  // Two shapes, and they mean different things. A line that is identical end to end keeps its
-  // full-width band, indent included — the solid run down the pane is the message. A *fragment*
-  // matching inside a line that differs is a word-shaped mark, and must not swallow the indent:
-  // in Python the indent is shared by construction, so marking it draws a column saying only "this
-  // code is indented" and turns the marks into blocks.
-  const bandedLines = await page.locator('.cm-mergeView .cm-line.cm-commonLine').count()
-  check(`an identical line is banded in full (${bandedLines} lines)`, bandedLines > 0)
-
-  // Walks text nodes tracking column, rather than reading CSS: the offence is a range boundary.
-  const indentOffenders = await page.evaluate(() => {
-    const bad = []
-    for (const lineEl of document.querySelectorAll('.cm-mergeView .cm-line')) {
-      const text = lineEl.textContent ?? ''
-      const indent = text.length - text.trimStart().length
-      if (indent === 0) continue
-      let col = 0
-      const walk = (node) => {
-        if (node.nodeType === 3) {
-          col += node.textContent.length
-          return
-        }
-        for (const child of node.childNodes) {
-          const start = col
-          walk(child)
-          if (child.nodeType === 1 && child.classList?.contains('cm-commonSpan') && start < indent) {
-            bad.push(text.slice(0, 40))
-          }
-        }
+  // Banded per matched line, and only where core said there was a match, on each side. The stub's
+  // one match covers lines 2-5 on the left and 3-6 on the right — deliberately not the same, so a
+  // page that built the right side from the left's numbers, swapped the two, or dropped the right
+  // side's ranges cannot pass. Exact lines rather than "something is banded", which would pass just
+  // as well against a version that painted the whole file.
+  //
+  // The *colour* is asserted, not just the class, because that distinction is what let a real bug
+  // ship: `cm-commonLine` was on every matched line while the band was invisible underneath it.
+  // The merge package's own `.cm-merge-a .cm-changedLine` rule at (0,3,0) outranked a bare
+  // `.cm-commonLine` at (0,2,0), so every line the character diff called changed was painted the
+  // library's colour or nothing at all — on a renamed copy, which is the case this page exists for,
+  // that was all but the blank lines. A class-membership check passed throughout.
+  //
+  // The colour is compared with the legend's swatch, which is painted with the band colour itself,
+  // rather than merely checked for being one non-transparent value. Every banded fixture line is also
+  // one the character diff calls changed, so a band that lost the cascade shows the library's colours
+  // — tan on the left, green on the right, which "one colour" across both sides already catches —
+  // and a band that is not painted at all is transparent on both, which only the swatch comparison
+  // catches. The swatch is right in either theme.
+  const banded = await page.evaluate(() => {
+    const side = (name) => {
+      const lines = [...document.querySelectorAll(`.cm-mergeView .${name} .cm-line`)]
+      const marked = lines.filter((l) => l.classList.contains('cm-commonLine'))
+      return {
+        numbers: lines.map((l, i) => (marked.includes(l) ? i + 1 : null)).filter(Boolean),
+        colours: marked.map((l) => getComputedStyle(l).backgroundColor),
       }
-      walk(lineEl)
     }
-    return bad
+    const legend = [...document.querySelectorAll('div')]
+      .find((d) => d.textContent === 'Highlighted code appears in both solutions.')
+    const swatch = legend?.querySelector('[aria-hidden="true"]')
+    const a = side('cm-merge-a')
+    const b = side('cm-merge-b')
+    return {
+      a: a.numbers,
+      b: b.numbers,
+      colours: [...new Set([...a.colours, ...b.colours])],
+      legend: swatch ? getComputedStyle(swatch).backgroundColor : null,
+    }
   })
+  check(`the left side is banded on exactly its matched lines (${banded.a.join(', ')})`, banded.a.join() === '2,3,4,5')
+  check(`and the right side on exactly its own (${banded.b.join(', ')})`, banded.b.join() === '3,4,5,6')
   check(
-    `a fragment mark never covers the indent (${indentOffenders.length} offenders)`,
-    indentOffenders.length === 0,
+    `and every banded line is painted the legend's colour (${banded.colours.join(' / ')} vs ${banded.legend})`,
+    banded.legend !== null && banded.colours.length === 1 && banded.colours[0] === banded.legend,
   )
 
   const link = page.getByRole('link', { name: /Mari Maasikas/ })
@@ -229,14 +244,15 @@ test('similarity-page', async ({ launch, check }) => {
   // real endpoint does when a pair falls outside the returned set — it must not crash the page.
   check(
     'a pair whose submissions are missing from the response is skipped rather than crashing',
-    (await page.getByText('Shared text 20%').count()) === 0,
+    (await page.getByText('Similarity 20%').count()) === 0,
   )
 
   // --- the group filter narrows what gets sent ----------------------------------------------------------
   requests.length = 0
   await page.getByRole('combobox', { name: 'Group' }).click()
   await page.getByRole('option', { name: 'Rühm A' }).click()
-  await waitUntil(() => page.getByText('2 submissions, 1 pairs to compare').isVisible())
+  // `scope_one`'s text: '1 pairs' never renders, so this waited out its 8 s and asserted nothing.
+  await waitUntil(() => page.getByText('2 submissions, 1 pair to compare').isVisible())
   await page.getByRole('button', { name: /Find similarities/i }).click()
   check(
     'picking a group sends only that group\'s submissions',

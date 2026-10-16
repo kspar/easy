@@ -55,6 +55,33 @@ easy:
     # oidc_claim_* request headers verbatim. See doc/core/api-testing.md.
     auth-enabled: true
 
+    similarity:
+      # The whole corpus and every token stream sits on core's heap for the duration of a
+      # comparison, and the comparison is not interruptible. A cohort larger than this is refused
+      # outright, which is a better failure than an OutOfMemoryError halfway through. The scaling
+      # question itself is EZ-1667's; this is only the bound that keeps it from taking core with it.
+      max-submissions: 500
+      # (The shortest run of tokens that counts as a match is not set here: it is a property of each
+      # language's tokens, so each frontend carries its own, calibrated - see SimilarityFrontend.)
+      #
+      # Largest solution this will tokenise, in lexical tokens: names, literals and symbols, not
+      # comments or whitespace, counted before anything costlier runs. Parsing is where a submission's
+      # cost is, and it can go superlinear - one 250 KB Python solution that was a single enormous
+      # expression once took 156s, and 50,000 chained calls in Java ten minutes. Tokens rather than
+      # characters because comments never reach a parser: under a character cap, padding a copy with
+      # one long comment took it out of the comparison. Above it a solution is skipped as TOO_LARGE.
+      max-solution-tokens: 10000
+      # How repetitive a solution may be and still be compared: the sum of c*c over the count c of
+      # each distinct run of as many tokens as the language's shortest match. An ordinary solution
+      # scores about its length, a statement repeated a thousand times about a million. This is what
+      # bounds the cost of one pair, which cannot be interrupted once started: two solutions of
+      # repeated statements took 19s for their one pair at 16 KB each, and 4-5 minutes at 32 KB.
+      # Above it: skipped as TOO_REPETITIVE.
+      max-repetition: 1000000
+      # Wall-clock budget for one run, read before each submission is tokenised and before each pair
+      # is compared. Past it the run is refused as SIMILARITY_TIMEOUT.
+      timeout-sec: 120
+
     db:
       # Apply changesets/testdata.xml — accounts, courses and exercises at fixed ids in the 9000s,
       # for local development. True here because this sample is what a local database is set up
