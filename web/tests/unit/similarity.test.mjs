@@ -16,7 +16,10 @@
 import { expect, test, describe } from 'vitest'
 import { isSimilarityRefusal } from '../../src/features/similarity/similarityError.ts'
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
-import { matchedLineNumbers } from '../../src/features/similarity/similarityHighlight.ts'
+import { matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
+import { comparedBy, pairMetrics, providerName, resultNotes, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
+import { Chunk } from '@codemirror/merge'
+import { Text } from '@codemirror/state'
 import { skippedByReason } from '../../src/features/similarity/similaritySkipped.ts'
 import { highlightFileName, languageNote } from '../../src/features/similarity/similarityLanguage.ts'
 import { ApiResponseError } from '../../src/api/client.ts'
@@ -252,5 +255,118 @@ describe('the compared language', () => {
   test('a newer core comparing a language this bundle does not know is not told it compared text', () => {
     // It compared code. Warning that it did not would be the page contradicting core.
     expect(languageNote('cobol')).toBeNull()
+  })
+})
+
+/**
+ * What the page owes the teacher about the provider that measured a result (EZ-1667). Each wrong
+ * answer here reads as a fact: a token-language note under an edit-distance result says renaming does
+ * not lower a score that renaming lowers, and a pinned provider passed over in silence reads as the
+ * course's own choice having run.
+ */
+describe('the provider', () => {
+  test('a pinned provider passed over is said, whichever provider ran instead', () => {
+    expect(resultNotes({ provider: 'edit-distance', provider_fallback: 'PINNED_UNAVAILABLE', language: 'python' }))
+      .toEqual(['pinnedUnavailable'])
+    // And JPlag's own note on what SQL means still follows it.
+    expect(resultNotes({ provider: 'jplag', provider_fallback: 'PINNED_UNAVAILABLE', language: 'sql' }))
+      .toEqual(['pinnedUnavailable', 'languageSql'])
+  })
+
+  test('a language no provider may compare is said once, as that, not also as the generic text note', () => {
+    expect(resultNotes({ provider: 'jplag', provider_fallback: 'LANGUAGE_UNAVAILABLE', language: 'text' }))
+      .toEqual(['languageUnavailable'])
+  })
+
+  test('the language notes are about tokens, so edit distance and providers the page does not know get none', () => {
+    expect(resultNotes({ provider: 'jplag', provider_fallback: null, language: 'sql' })).toEqual(['languageSql'])
+    expect(resultNotes({ provider: 'jplag', provider_fallback: null, language: 'text' })).toEqual(['languageText'])
+    expect(resultNotes({ provider: 'edit-distance', provider_fallback: null, language: 'sql' })).toEqual([])
+    expect(resultNotes({ provider: 'edit-distance', provider_fallback: null, language: 'text' })).toEqual([])
+    expect(resultNotes({ provider: 'moss', provider_fallback: null, language: 'sql' })).toEqual([])
+    // A core older than providers sends none, and its scores were JPlag's.
+    expect(resultNotes({ language: 'sql' })).toEqual(['languageSql'])
+  })
+
+  test('only an explicit false sends the page to a character diff', () => {
+    expect(usesMatchRanges({ match_ranges: false })).toBe(false)
+    expect(usesMatchRanges({ match_ranges: true })).toBe(true)
+    // An older core sent JPlag's matches and no flag.
+    expect(usesMatchRanges({})).toBe(true)
+  })
+
+  test('a pair shows what its provider measured, and the two scores stand in when it sent nothing', () => {
+    const metrics = [{ id: 'levenshtein', value: 64, unit: 'percent' }, { id: 'dice', value: 81, unit: 'percent' }]
+    expect(pairMetrics({ similarity: 72, max_similarity: 81, metrics })).toBe(metrics)
+    const legacy = [{ id: 'similarity', value: 72, unit: 'percent' }, { id: 'max_similarity', value: 81, unit: 'percent' }]
+    expect(pairMetrics({ similarity: 72, max_similarity: 81 })).toEqual(legacy)
+    expect(pairMetrics({ similarity: 72, max_similarity: 81, metrics: [] })).toEqual(legacy)
+  })
+
+  test('a provider the page has no words for is named by its id, not passed off as a known one', () => {
+    const t = (key, options) => (options ? `${key} ${JSON.stringify(options)}` : key)
+    expect(providerName('jplag', t)).toBe('similarity.providerJplag')
+    expect(providerName('edit-distance', t)).toBe('similarity.providerEditDistance')
+    expect(providerName('moss', t)).toBe('moss')
+    expect(comparedBy('edit-distance', t)).toBe('similarity.comparedByEditDistance')
+    expect(comparedBy('moss', t)).toBe('similarity.comparedByOther {"provider":"moss"}')
+  })
+})
+
+/**
+ * The shared code a character diff finds, for a provider that says how alike two texts are but not
+ * where. Built from the merge package's own chunks, so a change in how it reports them shows up here
+ * rather than as a pair painted wrong.
+ */
+describe('shared code from the diff', () => {
+  const sides = (a, b) => {
+    const docA = Text.of(a.split('\n'))
+    const docB = Text.of(b.split('\n'))
+    const chunks = Chunk.build(docA, docB)
+    return {
+      a: { doc: docA, chunks: sideChunks(chunks, 'a') },
+      b: { doc: docB, chunks: sideChunks(chunks, 'b') },
+    }
+  }
+  const spanTexts = ({ doc, chunks }) => unchangedSpans(doc, chunks).map(([from, to]) => doc.sliceString(from, to))
+
+  test('identical lines are banded on both sides, and a blank line is not', () => {
+    const { a, b } = sides('# sum\n\nx = 1\nprint(x)\n', '# sum\n\ny = 1\nprint(y)\n')
+    expect(unchangedLineNumbers(a.doc, a.chunks)).toEqual([1])
+    expect(unchangedLineNumbers(b.doc, b.chunks)).toEqual([1])
+  })
+
+  test('each side reads its own half of a chunk, and lines only the other side has do not cost it a band', () => {
+    // Lopsided on purpose: with both sides the same shape, reading a's half as b's changed nothing.
+    const { a, b } = sides('print(1)\nprint(2)\n', '# one\n# two\nprint(1)\nprint(2)\n')
+    expect(unchangedLineNumbers(a.doc, a.chunks)).toEqual([1, 2])
+    expect(unchangedLineNumbers(b.doc, b.chunks)).toEqual([3, 4])
+  })
+
+  test('inside renamed lines the skeleton is marked and the renamed names are not', () => {
+    const { a, b } = sides('x = int(input())\nprint(x + 1)\n', 'n = int(input())\nprint(n + 1)\n')
+    for (const side of [a, b]) {
+      const texts = spanTexts(side)
+      expect(texts.join('|')).toContain('= int(input())')
+      expect(texts.join('|')).toContain(' + 1)')
+      for (const text of texts) expect(text).not.toMatch(/\b[xn]\b/)
+    }
+  })
+
+  test('a mark never starts in the indent, and never runs across a line', () => {
+    const { a } = sides('def f():\n    return 1\n', 'def g():\n    return 2\n')
+    const spans = unchangedSpans(a.doc, a.chunks)
+    expect(spans.length).toBeGreaterThan(0)
+    for (const [from, to] of spans) expect(to).toBeLessThanOrEqual(a.doc.lineAt(from).to)
+    // The unchanged run on the second line begins at the line's start; the mark begins at `return`.
+    const indented = a.doc.line(2)
+    const onIt = spans.filter(([from]) => from >= indented.from && from <= indented.to)
+    expect(onIt).toEqual([[indented.from + 4, indented.from + 'return '.length + 4]])
+  })
+
+  test('identical solutions are banded throughout, with nothing left to mark', () => {
+    const { a } = sides('a = 1\nb = 2\n', 'a = 1\nb = 2\n')
+    expect(unchangedLineNumbers(a.doc, a.chunks)).toEqual([1, 2])
+    expect(unchangedSpans(a.doc, a.chunks)).toEqual([])
   })
 })

@@ -29,9 +29,6 @@ abstract class SimilarityProviderContractTest {
     abstract val copy: String
     abstract val unrelated: String
 
-    /** Whether this provider reports where a pair matches, rather than only how much. */
-    open val matchRanges: Boolean = true
-
     private fun <R> session(sources: List<SimilaritySource>, budgetSec: Long = 120, block: (ProviderSession) -> R): R =
         SimilarityWorkers(2, 64L shl 20).use { workers ->
             val run = RunContext(workers, Deadline.after(TimeUnit.SECONDS.toNanos(budgetSec)), budgetSec)
@@ -72,6 +69,10 @@ abstract class SimilarityProviderContractTest {
         }
     }
 
+    /**
+     * What the provider declares is what it does: the page paints a provider's matches as the whole
+     * answer only when it says they are, and works out the shared code itself when it says they are not.
+     */
     @Test
     fun `details are read from the submissions shown, oriented as the pair is`() {
         // Moved down three lines, so that a side read from the other submission lands outside its own.
@@ -80,7 +81,7 @@ abstract class SimilarityProviderContractTest {
             session.ready(session.prepare().usable)
             val pair = session.score(1, 2)!!
             val matches = session.details(pair, pair.first, pair.second)
-            if (!matchRanges) {
+            if (!provider().matchRanges) {
                 assertEquals(emptyList<SimilarityMatch>(), matches)
                 return@session
             }

@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client.ts'
-import type { CourseAiSettings, StudentCourse, TeacherCourse } from './types.ts'
+import type {
+  CourseAiSettings,
+  CourseSimilaritySettings,
+  CourseSimilaritySettingsReq,
+  StudentCourse,
+  TeacherCourse,
+} from './types.ts'
 
 export function useStudentCourses(enabled = true) {
   return useQuery({
@@ -120,6 +126,34 @@ export function useResetCourseAiUsage(courseId: string) {
       queryClient.invalidateQueries({ queryKey: ['courses', courseId, 'ai'] })
       queryClient.invalidateQueries({ queryKey: ['student', 'courses', courseId, 'exercises'] })
     },
+  })
+}
+
+/**
+ * EZ-1667. Which similarity provider the course pinned, if any, and the providers it may pin. Only
+ * fetched while the dialog is open: a teacher who never opens it has no reason to ask.
+ *
+ * Read afresh on every opening, not within the app's 30 s: a save sends the stored mode back as it
+ * read it, so a copy from before another teacher's change - or an admin switching a provider off -
+ * would quietly undo that change. Measured: reopened within the window, the dialog offered a pin
+ * the course no longer had.
+ */
+export function useCourseSimilaritySettings(courseId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['courses', courseId, 'similarity-settings'],
+    queryFn: () => apiFetch<CourseSimilaritySettings>(`/courses/${courseId}/similarity-settings`),
+    enabled,
+    staleTime: 0,
+  })
+}
+
+/** EZ-1667. `provider: null` unpins, and the admin's order decides again. */
+export function useUpdateCourseSimilaritySettings(courseId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CourseSimilaritySettingsReq) =>
+      apiFetch(`/courses/${courseId}/similarity-settings`, { method: 'PUT', body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['courses', courseId, 'similarity-settings'] }),
   })
 }
 

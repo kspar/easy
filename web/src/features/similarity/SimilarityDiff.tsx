@@ -8,7 +8,7 @@ import { Box } from '@mui/material'
 import { languageFromFilename } from '../course-exercise/editorLanguage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
 import { readOnlyEditor } from '../../components/editorReadOnly.ts'
-import { tokenMatchHighlighting } from './similarityHighlight.ts'
+import { chunkHighlighting, tokenMatchHighlighting } from './similarityHighlight.ts'
 import type { MatchedLines } from './similarityHighlight.ts'
 
 /**
@@ -27,19 +27,26 @@ export default function SimilarityDiff({
   fileName,
   matchedLeft,
   matchedRight,
+  matchRanges = true,
 }: {
   left: string
   right: string
   fileName?: string
   /**
-   * The regions the comparison matched, per side, from `scores[].matches`.
+   * The regions the comparison matched, per side, from `scores[].matches`, read when [matchRanges].
    *
    * An empty list is a real answer — the pair matched nothing — and renders as no highlight. Omitted
-   * behaves the same way; there is no character-diff fallback, because a character diff disagrees
-   * with a token score hardest on the renamed-copy case the whole comparison exists to catch.
+   * behaves the same way.
    */
   matchedLeft?: MatchedLines[]
   matchedRight?: MatchedLines[]
+  /**
+   * Whether the provider says where a pair matches (`match_ranges`). When it does not — edit distance,
+   * which says only how alike two texts are — the shared code is what the merge view's own character
+   * diff leaves unchanged, which is also what that score measured. Never the other way round: a
+   * character diff disagrees with a token score hardest on the renamed copy the tokens exist to catch.
+   */
+  matchRanges?: boolean
 }) {
   const host = useRef<HTMLDivElement>(null)
   const theme = useTheme()
@@ -73,8 +80,10 @@ export default function SimilarityDiff({
         lang,
         ...(dark ? [oneDark] : []),
       ]
-      // Each side gets its own ranges, so the two editors cannot share one extension list.
-      const sided = (matched?: MatchedLines[]) => tokenMatchHighlighting(dark, matched ?? [])
+      // Each side gets its own ranges, so the two editors cannot share one extension list. The chunk
+      // version reads which side it is on from the merge view itself.
+      const sided = (matched?: MatchedLines[]) =>
+        matchRanges ? tokenMatchHighlighting(dark, matched ?? []) : chunkHighlighting(dark)
 
       view = new MergeView({
         a: { doc: left, extensions: [...base, ...sided(matchedLeft)] },
@@ -94,7 +103,7 @@ export default function SimilarityDiff({
       cancelled = true
       view?.destroy()
     }
-  }, [left, right, fileName, dark, wrap, wrapExtension, matchedLeft, matchedRight])
+  }, [left, right, fileName, dark, wrap, wrapExtension, matchedLeft, matchedRight, matchRanges])
 
   return (
     <Box

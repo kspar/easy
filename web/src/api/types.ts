@@ -670,6 +670,39 @@ export interface SimilarityResp {
    * pinned provider may not compare this language now) or `LANGUAGE_UNAVAILABLE` (compared as text).
    */
   provider_fallback?: string | null
+  /**
+   * Whether `scores[].matches` says where each pair matches. True, an empty list means the pair shares
+   * nothing; false (edit distance), matches are never sent and the page finds the shared code itself.
+   * Optional because a core older than providers sends none, and its matches were JPlag's.
+   */
+  match_ranges?: boolean
+}
+
+/**
+ * A course's similarity settings: the provider it pinned, or null for the admin's order, and the mode.
+ * `providers` are those an admin has on, in the order a language is offered to them.
+ *
+ * @endpoint GET /v2/courses/{courseId}/similarity-settings -> (root)
+ */
+export interface CourseSimilaritySettings {
+  provider: string | null
+  mode: string
+  providers: SimilarityProviderOption[]
+}
+
+/**
+ * A provider a course may pin, with the languages it compares there now.
+ * @endpoint GET /v2/courses/{courseId}/similarity-settings -> providers[]
+ */
+export interface SimilarityProviderOption {
+  id: string
+  languages: string[]
+}
+
+/** @requestBody PUT /v2/courses/{courseId}/similarity-settings */
+export interface CourseSimilaritySettingsReq {
+  provider: string | null
+  mode: string
 }
 
 /**

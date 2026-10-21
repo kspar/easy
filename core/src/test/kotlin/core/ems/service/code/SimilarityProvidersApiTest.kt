@@ -148,12 +148,15 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         val response = check()
         assertEquals("edit-distance", response.field("provider"))
         assertEquals("full", response.field("mode"))
+        // Edit distance says how alike, not where: the page is told to find the shared code itself.
+        assertEquals(false, response.jsonOrNull!!.get("match_ranges").asBoolean())
         assertTrue(response.jsonOrNull!!.get("provider_fallback").isNull)
         assertEquals(listOf("levenshtein", "dice"), response.elements("scores").single().get("metrics").toList().map { it.get("id").asString() })
 
         assertEquals(200, putSettings(null).status)
         val byOrder = check()
         assertEquals("jplag", byOrder.field("provider"))
+        assertEquals(true, byOrder.jsonOrNull!!.get("match_ranges").asBoolean())
         val metrics = byOrder.elements("scores").single().get("metrics").toList().associate { it.get("id").asString() to it.get("unit").asString() }
         assertEquals(mapOf("similarity" to "percent", "max_similarity" to "percent", "shared_tokens" to "count"), metrics)
     }

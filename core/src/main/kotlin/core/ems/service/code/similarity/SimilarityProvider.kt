@@ -29,6 +29,14 @@ internal interface SimilarityProvider {
     val defaultPriority: Int
 
     /**
+     * Whether [ProviderSession.details] says where two submissions match. When it does, no matches is an
+     * answer - the pair shares nothing - and the page paints exactly what it is told; when it does not,
+     * no matches says nothing, and the page has to work out what the two have in common itself. Without
+     * this the page could not tell the two apart: edit distance at 95% and JPlag at 0% both send none.
+     */
+    val matchRanges: Boolean
+
+    /**
      * The language this provider compares [language] as in this JVM: [language] itself, or the fallback
      * it uses when it cannot read that language here. Asked before the permit is taken, so a comparison
      * that cannot run as asked is known not to before anybody waits for it.

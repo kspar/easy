@@ -24,6 +24,7 @@ import {
   CompareArrowsOutlined,
   ExpandMoreOutlined,
   OpenInNewOutlined,
+  TuneOutlined,
 } from '@mui/icons-material'
 import { useNavigate, useParams, useSearchParams, Link as RouterLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -45,7 +46,11 @@ import { isSimilarityRefusal } from './similarityError.ts'
 import { emptyReason, hasUnreadableScores } from './similarityEmptyState.ts'
 import { skippedByReason } from './similaritySkipped.ts'
 import type { SkippedReason } from './similaritySkipped.ts'
-import { highlightFileName, languageNote } from './similarityLanguage.ts'
+import { highlightFileName } from './similarityLanguage.ts'
+import { comparedBy, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
+import type { ResultNote } from './similarityProvider.ts'
+import type { SimilarityMetricResp } from '../../api/types.ts'
+import CourseSimilaritySettingsDialog from '../course-settings/CourseSimilaritySettingsDialog.tsx'
 import { errorMessage } from '../../api/errorMessage.ts'
 import { SHARED_LIGHT, SHARED_DARK } from './similarityHighlight.ts'
 import { spaLinkProps } from '../../components/spaLink.ts'
@@ -88,6 +93,7 @@ export default function SimilarityPage() {
 
   const [group, setGroup] = useSavedGroup(courseId!)
   const [minScore, setMinScore] = useState(0)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const { data: exercises, isLoading: exercisesLoading } = useTeacherCourseExercises(courseId)
   const { data: groups } = useCourseGroups(courseId!)
@@ -204,6 +210,56 @@ export default function SimilarityPage() {
     }
   }
 
+  // Switches of literal keys, like skippedLabel, so the i18n test can see every one.
+  const noteText = (note: ResultNote) => {
+    switch (note) {
+      case 'pinnedUnavailable':
+        return t('similarity.pinnedUnavailable')
+      case 'languageUnavailable':
+        return t('similarity.languageUnavailable')
+      case 'languageText':
+        return t('similarity.languageTextNote')
+      case 'languageSql':
+        return t('similarity.languageSqlNote')
+    }
+  }
+
+  // A metric the page has no words for is still shown, by the name core gave it: hiding it would hide
+  // what the provider measured, and the score the slider filters on is there besides.
+  const metricLabel = (metric: SimilarityMetricResp) => {
+    switch (metric.id) {
+      case 'similarity':
+        return t('similarity.similarityShort', { score: metric.value })
+      case 'max_similarity':
+        return t('similarity.maxSimilarityShort', { score: metric.value })
+      case 'shared_tokens':
+        return t('similarity.sharedTokensShort', { count: metric.value })
+      case 'levenshtein':
+        return t('similarity.levenshteinShort', { score: metric.value })
+      case 'dice':
+        return t('similarity.diceShort', { score: metric.value })
+      default:
+        return t('similarity.metricOther', { name: metric.id, value: metric.unit === 'percent' ? `${metric.value}%` : metric.value })
+    }
+  }
+
+  const metricTooltip = (id: string) => {
+    switch (id) {
+      case 'similarity':
+        return t('similarity.similarityTooltip')
+      case 'max_similarity':
+        return t('similarity.maxSimilarityTooltip')
+      case 'shared_tokens':
+        return t('similarity.sharedTokensTooltip')
+      case 'levenshtein':
+        return t('similarity.levenshteinTooltip')
+      case 'dice':
+        return t('similarity.diceTooltip')
+      default:
+        return ''
+    }
+  }
+
   const run = () => {
     if (!selected) return
     setRanOver({ exerciseId, group, submitted })
@@ -291,7 +347,13 @@ export default function SimilarityPage() {
             ? check.isPending && current ? t('similarity.searching') : t('similarity.waitingPrevious')
             : t('similarity.find')}
         </Button>
+
+        <Button variant="text" startIcon={<TuneOutlined />} onClick={() => setSettingsOpen(true)}>
+          {t('similarity.settingsButton')}
+        </Button>
       </Box>
+
+      <CourseSimilaritySettingsDialog courseId={courseId!} open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       {/* What is about to be compared, before committing to the wait. */}
       {selected && !rowsLoading && (
@@ -353,6 +415,14 @@ export default function SimilarityPage() {
             )}
           </Box>
 
+          {/* Which provider measured these, and what that means for reading them: a renamed copy scores
+              high on JPlag and low on edit distance, and the teacher has to know which this was. */}
+          {result.provider && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: '70ch' }}>
+              {comparedBy(result.provider, t)}
+            </Typography>
+          )}
+
           {/* Core caps its answer at MAX_PAIRS by each of its two orders. Silently showing 200 of
               45,000 would read as "there are 200 suspicious pairs", so say which it is. */}
           {/* Instead of an emptiness sentence, which would blame a threshold of zero. */}
@@ -362,15 +432,15 @@ export default function SimilarityPage() {
             <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.capped', { limit: MAX_PAIRS })}</Alert>
           )}
 
-          {/* Which tokeniser ran. A text-mode result is a weaker answer than a token one, and
-              saying so is the difference between "nothing similar" and "we could not read this as
-              code"; an SQL one reads differently, and says how. */}
-          {languageNote(result.language) === 'text' && (
-            <Alert severity="warning" sx={{ mb: 2 }}>{t('similarity.languageTextNote')}</Alert>
-          )}
-          {languageNote(result.language) === 'sql' && (
-            <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.languageSqlNote')}</Alert>
-          )}
+          {/* The course's pinned provider passed over, or the language compared as text; otherwise
+              which tokeniser ran. A text-mode result is a weaker answer than a token one, and saying
+              so is the difference between "nothing similar" and "we could not read this as code";
+              an SQL one reads differently, and says how. resultNotes says which applies when. */}
+          {resultNotes(result).map((note) => (
+            <Alert key={note} severity={note === 'languageSql' || note === 'pinnedUnavailable' ? 'info' : 'warning'} sx={{ mb: 2 }}>
+              {noteText(note)}
+            </Alert>
+          ))}
 
           {/* JPlag drops what it cannot parse or what is too short. Silently comparing 4 of 40 and
               reporting "no similar pairs" would read as a clean result, which is the one thing it
@@ -502,17 +572,13 @@ export default function SimilarityPage() {
                       {/* Labelled, because "84% · 61%" invites the question of which is which — and
                           the two answer different questions. Named for what they measure rather
                           than for the algorithm; the algorithm is in the tooltip, for the reader
-                          who wants to know how the number was arrived at. */}
-                      <Tooltip title={t('similarity.similarityTooltip')}>
-                        <Chip size="small" label={t('similarity.similarityShort', { score: score.similarity })} />
-                      </Tooltip>
-                      <Tooltip title={t('similarity.maxSimilarityTooltip')}>
-                        <Chip
-                          size="small"
-                          variant="outlined"
-                          label={t('similarity.maxSimilarityShort', { score: score.max_similarity })}
-                        />
-                      </Tooltip>
+                          who wants to know how the number was arrived at. Whatever the provider
+                          measured, in the order it sent them, the first filled. */}
+                      {pairMetrics(score).map((metric, index) => (
+                        <Tooltip key={metric.id} title={metricTooltip(metric.id)}>
+                          <Chip size="small" variant={index === 0 ? 'filled' : 'outlined'} label={metricLabel(metric)} />
+                        </Tooltip>
+                      ))}
                     </Box>
                   </Box>
                 </AccordionSummary>
@@ -586,6 +652,7 @@ export default function SimilarityPage() {
                     fileName={highlightFileName(result.language)}
                     matchedLeft={matchedByPair.get(`${score.sub_1}-${score.sub_2}`)?.left}
                     matchedRight={matchedByPair.get(`${score.sub_1}-${score.sub_2}`)?.right}
+                    matchRanges={usesMatchRanges(result)}
                   />
                 </AccordionDetails>
               </Accordion>

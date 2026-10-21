@@ -485,6 +485,7 @@
       "compared": { "kind": "number" },
       "groups": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespGroup" },
       "language": { "kind": "string" },
+      "match_ranges": { "kind": "boolean" },
       "mode": { "kind": "string" },
       "provider": { "kind": "string" },
       "provider_fallback": { "kind": "string", "nullable": true },

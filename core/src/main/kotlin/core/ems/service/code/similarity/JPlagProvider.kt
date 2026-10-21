@@ -69,6 +69,9 @@ internal class JPlagProvider(
     /** Below edit distance until an admin raises it: deploying this changes no course's scores by itself. */
     override val defaultPriority = 50
 
+    /** The tiling's matched token runs, as line ranges. */
+    override val matchRanges = true
+
     /**
      * The tokeniser, replaceable only by a test. The catches that turn a tokeniser that *throws* into
      * a CANNOT_PARSE skip need an input that makes a frontend throw, and none does reliably: the case

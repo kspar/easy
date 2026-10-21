@@ -99,8 +99,6 @@ class EditDistanceProviderContractTest : SimilarityProviderContractTest() {
 
     override val language = SimilarityLanguage.PYTHON
 
-    override val matchRanges = false
-
     override val original = """
         def count_words(text):
             words = text.split()

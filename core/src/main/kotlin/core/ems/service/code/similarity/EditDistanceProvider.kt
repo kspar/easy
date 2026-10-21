@@ -28,6 +28,9 @@ internal class EditDistanceProvider(
     /** First by default: it is what similarity measured before there were providers. */
     override val defaultPriority = 100
 
+    /** A ratio over whole texts says how alike they are, not where. */
+    override val matchRanges = false
+
     /** Characters are characters in every language, so every language is compared as itself. */
     override fun comparesAs(language: SimilarityLanguage): SimilarityLanguage = language
 

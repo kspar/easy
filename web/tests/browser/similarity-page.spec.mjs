@@ -16,6 +16,10 @@ const EX = '77'          // library exercise id — what similarity is keyed on
 const GROUP = 'g1'
 
 const requests = []
+const settingsWrites = []
+// Which provider the stubbed check answers as. JPlag first, as the rest of the spec reads; edit distance
+// at the end, for what changes when a provider says how alike two texts are but not where (EZ-1667).
+let provider = 'jplag'
 
 const rowsAll = [
   { student_id: 's1', given_name: 'Mari', family_name: 'Maasikas', status: 'COMPLETED', groups: [{ id: GROUP, name: 'Rühm A' }], submission: { id: '101', submission_number: 1, time: '2026-08-01T10:00:00.000Z', grade: null, seen: true, flagged: false } },
@@ -32,15 +36,53 @@ test('similarity-page', async ({ launch, check }) => {
   await fakeApi(page, [
     ['/account/checkin', () => ({})],
 
+    // Before '/similarity', which it also contains: the first needle that matches answers.
+    [`/courses/${COURSE}/similarity-settings`, ({ method, body }) => {
+      if (method === 'PUT') {
+        settingsWrites.push(body)
+        return {}
+      }
+      return {
+        provider: 'jplag',
+        mode: 'full',
+        providers: [
+          { id: 'edit-distance', languages: ['java', 'python', 'sql', 'text'] },
+          { id: 'jplag', languages: ['java', 'python', 'text'] },
+        ],
+      }
+    }],
+
     ['/similarity', ({ method, url, body }) => {
       if (method === 'POST') requests.push({ url, body })
+      if (provider === 'edit-distance') return {
+        submissions: [
+          { id: '101', created_at: '2026-08-01T10:00:00.000Z', solution: '# loeb kaks arvu ja liidab\na = int(input())\nb = int(input())\nsumma = a + b\nprint(summa)\n', given_name: 'Mari', family_name: 'Maasikas', course_title: 'Programmeerimise alused' },
+          { id: '102', created_at: '2026-08-01T11:00:00.000Z', solution: '# loeb kaks arvu ja liidab\nx = int(input())\ny = int(input())\ntulemus = x + y\nprint(tulemus)\n', given_name: 'Jaan', family_name: 'Tamm', course_title: 'Programmeerimise alused' },
+        ],
+        // Edit distance sends no matches, and says so with match_ranges: false.
+        scores: [
+          { sub_1: '101', sub_2: '102', similarity: 72, max_similarity: 81, matches: [], score_a: 72, score_b: 81,
+            metrics: [{ id: 'levenshtein', value: 64, unit: 'percent' }, { id: 'dice', value: 81, unit: 'percent' }] },
+        ],
+        compared: 2,
+        language: 'python',
+        skipped: [],
+        truncated: false,
+        groups: [],
+        provider: 'edit-distance',
+        mode: 'full',
+        // The course pinned JPlag; this stands for a check JPlag could not take.
+        provider_fallback: 'PINNED_UNAVAILABLE',
+        match_ranges: false,
+      }
       return {
         submissions: [
           { id: '101', created_at: '2026-08-01T10:00:00.000Z', solution: '# loeb kaks arvu ja liidab\na = int(input())\nb = int(input())\nsumma = a + b\nprint(summa)\n', given_name: 'Mari', family_name: 'Maasikas', course_title: 'Programmeerimise alused' },
           { id: '102', created_at: '2026-08-01T11:00:00.000Z', solution: '# loeb kaks arvu ja liidab\n# teine lahendus\nx = int(input())\ny = int(input())\ntulemus = x + y\nprint(tulemus)\n', given_name: 'Jaan', family_name: 'Tamm', course_title: 'Programmeerimise alused' },
         ],
         scores: [
-          { sub_1: '101', sub_2: '102', similarity: 91, max_similarity: 94, matches: [{ start_line_1: 2, end_line_1: 5, start_line_2: 3, end_line_2: 6, tokens: 12 }], score_a: 91, score_b: 94 },
+          { sub_1: '101', sub_2: '102', similarity: 91, max_similarity: 94, matches: [{ start_line_1: 2, end_line_1: 5, start_line_2: 3, end_line_2: 6, tokens: 12 }], score_a: 91, score_b: 94,
+            metrics: [{ id: 'similarity', value: 91, unit: 'percent' }, { id: 'max_similarity', value: 94, unit: 'percent' }, { id: 'shared_tokens', value: 12, unit: 'count' }] },
           { sub_1: '101', sub_2: '104', similarity: 20, max_similarity: 22, matches: [], score_a: 20, score_b: 22 },
         ],
         compared: 3,
@@ -48,6 +90,10 @@ test('similarity-page', async ({ launch, check }) => {
         skipped: [],
         truncated: false,
         groups: [],
+        provider: 'jplag',
+        mode: 'full',
+        provider_fallback: null,
+        match_ranges: true,
       }
     }],
 
@@ -114,6 +160,11 @@ test('similarity-page', async ({ launch, check }) => {
     'the pair is listed with both scores labelled',
     await waitUntil(async () =>
       (await page.getByText('Similarity 91%').count()) > 0 && (await page.getByText('Max 94%').count()) > 0),
+  )
+  check('and with what else the provider measured, by name', await page.getByText('12 shared tokens').isVisible())
+  check(
+    'the result says which provider compared it, and what that means for renamed code',
+    await page.getByText(/^Compared by JPlag/).isVisible(),
   )
 
   // --- the diff, and the link to the student -----------------------------------------------------------
@@ -259,6 +310,56 @@ test('similarity-page', async ({ launch, check }) => {
     await waitUntil(() =>
       requests.length === 1 &&
       JSON.stringify(requests[0].body.submissions) === JSON.stringify([{ id: '101' }, { id: '102' }])),
+  )
+
+  // --- the course's comparison method (EZ-1667) ---------------------------------------------------------
+  await page.getByRole('button', { name: 'Comparison method' }).click()
+  const dialog = page.getByRole('dialog')
+  check(
+    'the dialog opens on what the course stored, a pinned JPlag',
+    await waitUntil(() => dialog.getByRole('radio', { name: /^JPlag/ }).isChecked()),
+  )
+  await dialog.getByRole('radio', { name: /^Automatic/ }).check()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  // The mode is not offered yet, so it must go back as it came - 'full' - rather than as a default.
+  check(
+    'saving Automatic unpins, and leaves the stored mode as it was',
+    await waitUntil(() => settingsWrites.length === 1 &&
+      JSON.stringify(settingsWrites[0]) === JSON.stringify({ provider: null, mode: 'full' })),
+  )
+
+  // --- a provider that says how alike, not where -------------------------------------------------------
+  provider = 'edit-distance'
+  requests.length = 0
+  await page.getByRole('button', { name: /Find similarities/i }).click()
+  check(
+    'an edit-distance pair shows its own two numbers, named',
+    await waitUntil(async () =>
+      (await page.getByText('Edit distance 64%').isVisible()) && (await page.getByText('Shared text 81%').isVisible())),
+  )
+  check(
+    'a pinned provider passed over is said rather than shown as the course\'s choice',
+    await page.getByText(/^The method chosen for this course cannot compare/).isVisible(),
+  )
+  check(
+    'and the JPlag reading of renamed code is not claimed for edit distance',
+    (await page.getByText(/^Compared by edit distance/).isVisible()) && (await page.getByText(/^Compared by JPlag/).count()) === 0,
+  )
+
+  // With no matches to paint, the shared code is what the character diff leaves unchanged: the identical
+  // first line is banded, and inside the renamed lines the skeleton is marked and the names are not.
+  await page.getByText('Mari Maasikas — Jaan Tamm').click()
+  check(
+    'the shared code is found by the diff: the identical comment line banded on both sides',
+    await waitUntil(() => page.evaluate(() =>
+      ['cm-merge-a', 'cm-merge-b'].every((side) =>
+        document.querySelector(`.cm-mergeView .${side} .cm-line`)?.classList.contains('cm-commonLine')))),
+  )
+  const spans = await page.evaluate(() =>
+    [...document.querySelectorAll('.cm-mergeView .cm-merge-a .cm-commonSpan')].map((el) => el.textContent))
+  check(
+    `and the renamed lines marked on their shared skeleton, not their names (${spans.join(' | ')})`,
+    spans.some((text) => text.includes('= int(input())')) && !spans.some((text) => /\b[ab]\b/.test(text)),
   )
 
   await close()

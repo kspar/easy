@@ -128,6 +128,11 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
          * so it was compared as text).
          */
         @get:JsonProperty("provider_fallback") val providerFallback: String?,
+        /**
+         * Whether `scores[].matches` says where each pair matches. When true, an empty list means the pair
+         * shares nothing; when false, matches are never sent and the page finds the shared code itself.
+         */
+        @get:JsonProperty("match_ranges") val matchRanges: Boolean,
     )
 
     data class RespGroup(
@@ -355,6 +360,7 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
             outcome.provider,
             mode.name.lowercase(),
             binding.fallback,
+            similarityService.registry.provider(outcome.provider)?.matchRanges ?: false,
         )
     }
 
