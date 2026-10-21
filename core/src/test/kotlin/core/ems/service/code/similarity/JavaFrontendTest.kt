@@ -1,13 +1,11 @@
 package core.ems.service.code.similarity
 
 import de.jplag.Token
-import de.jplag.java.JavaLanguage
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.util.concurrent.FutureTask
 
@@ -15,9 +13,9 @@ import java.util.concurrent.FutureTask
  * The Java frontend: JPlag's own Java tokens, from a parse core does itself, in memory.
  *
  * The first test is the one the frontend stands on. Everything that decides what a Java token is lives
- * in JPlag's tree scanner, and core only changes how the tree gets to it - so JPlag's own Java module is
- * run beside it on the same sources, from files as it insists, and the two token streams must be the
- * same. A javac or JPlag upgrade that changes what the in-memory route sees then fails here.
+ * in JPlag's tree scanner, and core only changes how the tree gets to it - so what JPlag's own Java
+ * module made of the same sources, from files as it insists, is recorded, and the two token streams must
+ * be the same. A javac or JPlag upgrade that changes what the in-memory route sees then fails here.
  */
 @Timeout(value = 120, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
 class JavaFrontendTest {
@@ -100,12 +98,19 @@ class JavaFrontendTest {
         """,
     ).map { it.trimIndent() }
 
+    /**
+     * JPlag's own Java module, run on each program from a file, recorded in `similarity/java-tokens/`.
+     * Recorded rather than run here because JPlag reads a file through ICU's charset detection, and a
+     * library on the test classpath only for that is one more dependency to keep. A javac or JPlag
+     * upgrade that changes what the in-memory route sees still fails here; whether JPlag's own tokens
+     * changed with it is then checked by re-recording - run `JavaLanguage().parse(setOf(file), false)`
+     * on each program with `com.ibm.icu:icu4j-charset` on the classpath once, and diff the files.
+     */
     @Test
-    fun `the in-memory parse gives exactly JPlag's own Java tokens`(@TempDir dir: File) {
+    fun `the in-memory parse gives exactly JPlag's own Java tokens`() {
         programs.forEachIndexed { index, program ->
-            val file = File(dir, "Main$index.java").apply { writeText(program) }
-            val theirs = JavaLanguage().parse(setOf(file), false)
-            assertEquals(signature(theirs), signature(tokens(program)), "program $index tokenised differently")
+            val recorded = javaClass.getResource("/similarity/java-tokens/program$index.txt")!!.readText().lines().filter { it.isNotEmpty() }
+            assertEquals(recorded, signature(tokens(program)), "program $index tokenised differently")
         }
     }
 

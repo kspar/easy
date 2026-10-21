@@ -375,10 +375,6 @@ dependencies {
             exclude(group = "org.kohsuke.metainf-services")
         }
     }
-    // Back on the test classpath alone, for the one test that runs JPlag's file-based Java parse as an
-    // oracle for the in-memory one: that path reads files, and reading files is where ICU is used.
-    testImplementation(libs.jplag.icuTestOnly)
-    testImplementation(libs.fuzzywuzzy)
 
     // TSL
     implementation(project(":tsl"))

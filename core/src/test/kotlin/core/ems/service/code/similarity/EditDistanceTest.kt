@@ -1,6 +1,5 @@
 package core.ems.service.code.similarity
 
-import me.xdrop.fuzzywuzzy.FuzzySearch
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -42,11 +41,33 @@ class EditDistanceTest {
         return row[b.length]
     }
 
+    /**
+     * fuzzywuzzy's `FuzzySearch.ratio` for each pair - the old check's "Levenshtein" score - recorded
+     * from fuzzywuzzy 1.4.0 itself, so the library need not be a dependency to hold the new code to it.
+     * The ratio is 2·LCS/(L1+L2), and [lcs] is held to a plain table below; these pin what is left: the
+     * rounding, the empty texts, and what a character is. Each pair is here for one of those.
+     */
+    private val recordedRatios = listOf(
+        Triple("", "", 0),                      // 0/0 rounds to 0, not to 100
+        Triple("", "abc", 0),
+        Triple("abc", "abc", 100),
+        Triple("kitten", "sitting", 62),
+        Triple("x", "x" + "y".repeat(14), 13),  // 12.5: half rounds up
+        Triple(emoji, emoji + "a", 80),         // UTF-16 units, 4/5, not code points (2/3)
+        Triple("a" + Char(0x308), Char(0xE4).toString(), 0), // no Unicode normalisation
+        Triple("Abc", "abc", 67),               // no case folding
+        Triple("a = 1", "a=1", 75),             // layout counts
+        Triple("def f(x):\n    return x + 1\n", "def g(y):\n    return y + 1\n", 89),
+        Triple("SELECT name FROM people WHERE age > 18;", "select name from people where age>18", 56),
+    )
+
+    private val emoji get() = String(Character.toChars(0x1F600))
+
     @Test
     fun `the ratio is fuzzywuzzy's, as the old check reported it`() {
-        for (a in texts) for (b in texts) {
-            val expected = FuzzySearch.ratio(a, b)
-            assertEquals(expected, Math.round(100 * EditDistance.ratio(a, b)).toInt(), "'${a.take(20)}…' (${a.length}) vs '${b.take(20)}…' (${b.length})")
+        for ((a, b, expected) in recordedRatios) {
+            assertEquals(expected, Math.round(100 * EditDistance.ratio(a, b)).toInt(), "'$a' vs '$b'")
+            assertEquals(expected, Math.round(100 * EditDistance.ratio(b, a)).toInt(), "'$b' vs '$a'")
         }
     }
 
