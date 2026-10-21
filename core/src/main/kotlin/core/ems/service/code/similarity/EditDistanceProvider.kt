@@ -1,5 +1,7 @@
 package core.ems.service.code.similarity
 
+import java.util.concurrent.ConcurrentHashMap
+
 /**
  * Similarity as the check measured it before JPlag: whole texts, character by character.
  *
@@ -56,7 +58,26 @@ internal class EditDistanceProvider(
     private inner class Session(private val request: ProviderRequest, private val run: RunContext) : ProviderSession {
         private val solutionById = request.sources.associate { it.id to it.solution }
         private lateinit var bigramsById: Map<Long, LongArray>
-        private lateinit var profileById: Map<Long, EditDistance.Profile>
+
+        /**
+         * Built on a pair's first [bound], not in [prepare]: only the optimised mode reads them, and at the
+         * cap they are some 60 MB - two bytes a character and four a bigram - that a full run held for nothing.
+         */
+        private val profileById = ConcurrentHashMap<Long, EditDistance.Profile>()
+
+        private fun profile(id: Long) = profileById.computeIfAbsent(id) { EditDistance.profile(solutionById.getValue(it)) }
+
+        /**
+         * The Dice the last [bound] on this thread computed, and for which pair: the engine scores a pair on
+         * the thread that bounded it, right after, so [score] takes it from here rather than merging again.
+         */
+        private val lastDice = ThreadLocal<Triple<Long, Long, Double>>()
+
+        private fun dice(a: Long, b: Long): Double {
+            val cached = lastDice.get()
+            if (cached != null && cached.first == a && cached.second == b) return cached.third
+            return EditDistance.dice(bigramsById.getValue(a), bigramsById.getValue(b))
+        }
 
         override fun prepare(): PreparedCohort {
             if (run.deadline.passed()) throw SimilarityTimedOut(run.budgetSec)
@@ -74,7 +95,6 @@ internal class EditDistanceProvider(
                 }
             }
             bigramsById = run.workers.all(usable.map { id -> { id to EditDistance.bigrams(solutionById.getValue(id)) } }).toMap()
-            profileById = run.workers.all(usable.map { id -> { id to EditDistance.profile(solutionById.getValue(id)) } }).toMap()
             if (run.deadline.passed()) throw SimilarityTimedOut(run.budgetSec)
             return PreparedCohort(
                 language = request.language,
@@ -93,7 +113,7 @@ internal class EditDistanceProvider(
             val levenshtein = EditDistance.ratio(solutionById.getValue(a), solutionById.getValue(b)) {
                 if (run.deadline.passed()) throw SimilarityTimedOut(run.budgetSec)
             }
-            val dice = EditDistance.dice(bigramsById.getValue(a), bigramsById.getValue(b))
+            val dice = dice(a, b)
             val mean = (levenshtein + dice) / 2
             // Both measures are symmetric, so the pair is oriented by id: the same whichever way it is asked.
             return PairScore(minOf(a, b), maxOf(a, b), score = maxOf(levenshtein, dice), rank = mean, similarity = mean, handle = doubleArrayOf(levenshtein, dice))
@@ -105,8 +125,29 @@ internal class EditDistanceProvider(
          * as [score] combines the real values, so that each is at least the real one.
          */
         override fun bound(a: Long, b: Long): PairBound {
-            val levenshtein = EditDistance.ratioBound(profileById.getValue(a), profileById.getValue(b))
+            val levenshtein = EditDistance.ratioBound(profile(a), profile(b))
             val dice = EditDistance.dice(bigramsById.getValue(a), bigramsById.getValue(b))
+            lastDice.set(Triple(a, b, dice))
+            return combined(levenshtein, dice)
+        }
+
+        /**
+         * From lengths and bigram counts alone: a common subsequence is no longer than the shorter text, and
+         * two sets share no more than the smaller has - each in the same arithmetic as the real measure, so
+         * never below it, nor below [bound].
+         */
+        override fun quickBound(a: Long, b: Long): PairBound {
+            val lengthA = solutionById.getValue(a).length
+            val lengthB = solutionById.getValue(b).length
+            val levenshtein = if (lengthA + lengthB == 0) 0.0 else (2 * minOf(lengthA, lengthB)) / (lengthA + lengthB).toDouble()
+            val bigramsA = bigramsById.getValue(a).size
+            val bigramsB = bigramsById.getValue(b).size
+            val dice = (2.0 * minOf(bigramsA, bigramsB)) / (bigramsA + bigramsB)
+            return combined(levenshtein, dice)
+        }
+
+        /** The score's and the mean's bounds from the two measures' bounds, exactly as [score] combines the real values. */
+        private fun combined(levenshtein: Double, dice: Double): PairBound {
             val mean = (levenshtein + dice) / 2
             return PairBound(score = maxOf(levenshtein, dice), rank = mean, similarity = mean)
         }

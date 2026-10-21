@@ -92,16 +92,18 @@ internal class PairRanking(
      * The optimised mode (EZ-1667): the same two top N as [rank], from the pairs [ProviderSession.bound]
      * cannot rule out, scored likeliest first.
      *
-     * Every pair worth comparing is bounded - cheaply, in parallel - and the pairs are taken in order of
-     * their bounds, highest first, in batches across the workers. Once N pairs are kept in an order, its
-     * N-th is a floor: a pair whose bound is below the floor in both orders cannot enter either top N,
-     * then or later, since floors only rise, and is not scored. A bound is never below the real value
-     * (see [ProviderSession.bound]), so the pairs kept are exactly the pairs [rank] keeps.
+     * Every pair worth comparing is ordered by its [ProviderSession.quickBound], highest first, and taken in
+     * batches across the workers, each of which bounds its pairs exactly ([ProviderSession.bound]) before
+     * scoring them. Once N pairs are kept in an order, its N-th is a floor: a pair whose bound is below the
+     * floor in both orders cannot enter either top N, then or later, since floors only rise, and is not
+     * scored. No bound is below the real value, so the pairs kept are exactly the pairs [rank] keeps.
      *
      * With [partial], the deadline ends the run with what it has, flagged incomplete, instead of refusing
      * it: the likeliest pairs having gone first, what is kept by then is the best the budget could find.
      */
     fun rankBounded(session: ProviderSession, comparands: List<Comparand>, topN: Int, partial: Boolean): Ranking {
+        // Ordered by the quick bounds, which cost nothing; the exact ones are computed by the workers, pair by
+        // pair, just before scoring - in parallel, and stopped by the deadline like the scoring is.
         val candidates = workers.all(
             (0 until workers.threads).map { stripe -> { bounded(stripe, session, comparands) } },
         ).flatten().sortedWith(
@@ -126,28 +128,34 @@ internal class PairRanking(
                 break
             }
             // The floors as they stand: a pair below both cannot be kept by either order.
-            val rankFloor = if (byShared.size >= topN) byShared.peek().pair.rank else Double.NEGATIVE_INFINITY
-            val scoreFloor = if (byPercent.size >= topN) byPercent.peek().pair.score else Double.NEGATIVE_INFINITY
+            val floors = Floors(
+                rank = if (byShared.size >= topN) byShared.peek().pair.rank else Double.NEGATIVE_INFINITY,
+                score = if (byPercent.size >= topN) byPercent.peek().pair.score else Double.NEGATIVE_INFINITY,
+            )
             val batch = mutableListOf<Candidate>()
             while (next < candidates.size && batch.size < batchSize) {
                 val candidate = candidates[next++]
-                val bound = candidate.bound
                 when {
-                    bound.score < MIN_REPORTED_SIMILARITY -> Unit
-                    bound.rank < rankFloor && bound.score < scoreFloor -> mayHaveMore = true
+                    candidate.bound.score < MIN_REPORTED_SIMILARITY -> Unit
+                    floors.rulesOut(candidate.bound) -> mayHaveMore = true
                     else -> batch += candidate
                 }
             }
             if (batch.isEmpty()) continue
             val chunks = batch.chunked((batch.size + workers.threads - 1) / workers.threads)
-            val scored = workers.all(chunks.map { chunk -> { scoreUntilDeadline(session, chunk, partial) } })
+            val worked = workers.all(chunks.map { chunk -> { scoreUntilDeadline(session, chunk, floors, partial) } })
             // A worker that stopped at the deadline keeps the pairs it finished; the rest of its chunk is lost.
-            if (scored.zip(chunks).any { (done, chunk) -> done.size < chunk.size }) complete = false
-            for ((candidate, pair) in scored.flatten()) {
+            if (worked.zip(chunks).any { (done, chunk) -> done.size < chunk.size }) complete = false
+            for (result in worked.flatten()) {
+                if (result.ruledOut) {
+                    mayHaveMore = true
+                    continue
+                }
                 compared++
+                val pair = result.pair
                 if (pair == null || pair.score < MIN_REPORTED_SIMILARITY) continue
                 scoring++
-                val ranked = Ranked(pair, minOf(candidate.a, candidate.b), maxOf(candidate.a, candidate.b))
+                val ranked = Ranked(pair, minOf(result.candidate.a, result.candidate.b), maxOf(result.candidate.a, result.candidate.b))
                 byShared += ranked
                 if (byShared.size > topN) byShared.poll()
                 byPercent += ranked
@@ -160,17 +168,32 @@ internal class PairRanking(
         return Ranking(top, scoring, compared, candidates.size, complete, mayHaveMore)
     }
 
+    /** The N-th kept in each order: a pair bounded below both cannot be kept by either, then or later. */
+    private class Floors(val rank: Double, val score: Double) {
+        fun rulesOut(bound: PairBound): Boolean = bound.rank < rank && bound.score < score
+    }
+
+    /** A pair a worker reached: ruled out by its exact bound, or scored. */
+    private class Worked(val candidate: Candidate, val pair: PairScore?, val ruledOut: Boolean)
+
     /**
-     * [chunk]'s pairs scored in order. With [partial], it stops at the deadline - before a pair, or in the
-     * middle of one, which the provider ends by throwing - and returns those it finished: thrown, the
-     * timeout lost the whole batch, and on a cold JVM, whose first pairs are slow, that was every pair.
+     * [chunk]'s pairs in order: each bounded exactly, and scored unless that rules it out against [floors] -
+     * the floors at the batch's start, which only rise, so a pair ruled out by them is out for good. With
+     * [partial], it stops at the deadline - before a pair, or in the middle of one, which the provider ends
+     * by throwing - and returns those it finished: thrown, the timeout lost the whole batch, and on a cold
+     * JVM, whose first pairs are slow, that was every pair.
      */
-    private fun scoreUntilDeadline(session: ProviderSession, chunk: List<Candidate>, partial: Boolean): List<Pair<Candidate, PairScore?>> {
-        val done = mutableListOf<Pair<Candidate, PairScore?>>()
+    private fun scoreUntilDeadline(session: ProviderSession, chunk: List<Candidate>, floors: Floors, partial: Boolean): List<Worked> {
+        val done = mutableListOf<Worked>()
         for (candidate in chunk) {
             if (deadline.passed()) {
                 if (partial) break
                 throw SimilarityTimedOut(budgetSec)
+            }
+            val exact = session.bound(candidate.a, candidate.b) ?: candidate.bound
+            if (exact.score < MIN_REPORTED_SIMILARITY || floors.rulesOut(exact)) {
+                done += Worked(candidate, null, ruledOut = exact.score >= MIN_REPORTED_SIMILARITY)
+                continue
             }
             val pair = try {
                 session.score(candidate.a, candidate.b)
@@ -178,25 +201,24 @@ internal class PairRanking(
                 if (partial) break
                 throw e
             }
-            done += candidate to pair
+            done += Worked(candidate, pair, ruledOut = false)
         }
         return done
     }
 
-    /** A pair worth comparing, and how high it could score. */
+    /** A pair worth comparing, and how high it could score, by [ProviderSession.quickBound]. */
     private class Candidate(val a: Long, val b: Long, val bound: PairBound)
 
-    /** Rows [first], first + threads, … of the pair triangle, bounded: [stripe]'s rows, for [rankBounded]. */
+    /** Rows [first], first + threads, … of the pair triangle, quickly bounded, for [rankBounded]. */
     private fun bounded(first: Int, session: ProviderSession, comparands: List<Comparand>): List<Candidate> {
         val mine = mutableListOf<Candidate>()
         for (i in first until comparands.size step workers.threads) {
             for (j in i + 1 until comparands.size) {
                 if (!comparands[i].apartFrom(comparands[j])) continue
                 if (workers.stopped) return emptyList()
-                if (deadline.passed()) throw SimilarityTimedOut(budgetSec)
                 val a = comparands[i].representative
                 val b = comparands[j].representative
-                mine += Candidate(a, b, checkNotNull(session.bound(a, b)) { "A bounded provider gave no bound" })
+                mine += Candidate(a, b, checkNotNull(session.quickBound(a, b)) { "A bounded provider gave no bound" })
             }
         }
         return mine

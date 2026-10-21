@@ -129,8 +129,9 @@ internal class JPlagProvider(
      * page says so, but it is an answer; refusing would leave the teacher with none.
      */
     override fun comparesAs(language: SimilarityLanguage): SimilarityLanguage {
+        // Not logged here: this is asked on every bind and every settings read, and the startup warning
+        // already names each language this JVM cannot tokenise.
         if (available(language)) return language
-        log.warn { "Similarity cannot tokenise ${language.wireName} in this JVM; comparing as text" }
         return SimilarityLanguage.TEXT
     }
 

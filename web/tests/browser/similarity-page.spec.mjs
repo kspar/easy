@@ -42,7 +42,7 @@ test('similarity-page', async ({ launch, check }) => {
       const n = body?.submissions?.length ?? 0
       return {
         submissions: n, pairs: (n * (n - 1)) / 2, provider, language: 'python', mode: 'full',
-        provider_fallback: null, estimated_sec: 2, budget_sec: 120, within_budget: true,
+        provider_fallback: null, estimated_sec: 2, budget_sec: 120, within_budget: true, optimised: false,
       }
     }],
 
@@ -83,6 +83,7 @@ test('similarity-page', async ({ launch, check }) => {
         // The course pinned JPlag; this stands for a check JPlag could not take.
         provider_fallback: 'PINNED_UNAVAILABLE',
         match_ranges: false,
+        pairs_total: 1, pairs_compared: 1, complete: true,
       }
       return {
         submissions: [
@@ -103,6 +104,7 @@ test('similarity-page', async ({ launch, check }) => {
         mode: 'full',
         provider_fallback: null,
         match_ranges: true,
+        pairs_total: 3, pairs_compared: 3, complete: true,
       }
     }],
 

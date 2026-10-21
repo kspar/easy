@@ -93,6 +93,49 @@ class EditDistanceTest {
     }
 
     @Test
+    fun `the quick bound is never below the exact one, nor the exact one below the score`() {
+        // The optimised mode orders by the quick bound and rules out by both: either one too low drops a
+        // pair that could have ranked.
+        val sources = texts.filter { it.isNotBlank() }.distinct().mapIndexed { i, text -> SimilaritySource(i + 1L, text) }
+        SimilarityWorkers(1, 1L shl 20).use { workers ->
+            val run = RunContext(workers, Deadline.after(TimeUnit.SECONDS.toNanos(60)), 60)
+            EditDistanceProvider().open(ProviderRequest(SimilarityLanguage.TEXT, sources, null), run).use { session ->
+                val ids = session.prepare().usable
+                for (a in ids) for (b in ids) {
+                    if (a == b) continue
+                    val quick = session.quickBound(a, b)!!
+                    val exact = session.bound(a, b)!!
+                    val real = session.score(a, b)!!
+                    for ((name, values) in mapOf("score" to listOf(quick.score, exact.score, real.score), "rank" to listOf(quick.rank, exact.rank, real.rank))) {
+                        assertTrue(values[0] >= values[1] && values[1] >= values[2], "$name for $a-$b: quick, exact, real = $values")
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `a pair scored after another was bounded gets its own Dice, not the one kept from the bound`() {
+        // The optimised mode scores a pair right after bounding it, on the same thread, and the score takes
+        // that bound's Dice; any other pair must not.
+        // 1-2 share every bigram but one, 1-3 three of seven: two Dice values far apart.
+        val sources = listOf(SimilaritySource(1, "abcdefgh"), SimilaritySource(2, "abcdefgx"), SimilaritySource(3, "qrstabcd"))
+        SimilarityWorkers(1, 1L shl 20).use { workers ->
+            val run = RunContext(workers, Deadline.after(TimeUnit.SECONDS.toNanos(60)), 60)
+            val fresh = EditDistanceProvider().open(ProviderRequest(SimilarityLanguage.TEXT, sources, null), run).use { session ->
+                session.prepare()
+                session.score(1, 3)!!.similarity
+            }
+            EditDistanceProvider().open(ProviderRequest(SimilarityLanguage.TEXT, sources, null), run).use { session ->
+                session.prepare()
+                session.bound(1, 2)
+                // The mean of the two measures, which a wrong Dice moves whichever measure is the higher.
+                assertEquals(fresh, session.score(1, 3)!!.similarity)
+            }
+        }
+    }
+
+    @Test
     fun `the bound tells reordered text from a copy, which counting characters cannot`() {
         val code = "def f(x):\n    return x * 2 + 1\n\nprint(f(3))\n".repeat(4)
         val reordered = code.toList().sorted().joinToString("")

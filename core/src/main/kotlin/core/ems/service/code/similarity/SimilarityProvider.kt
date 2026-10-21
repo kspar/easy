@@ -116,6 +116,14 @@ internal interface ProviderSession : AutoCloseable {
     fun bound(a: Long, b: Long): PairBound? = null
 
     /**
+     * Looser bounds than [bound], in constant time - from sizes alone - for ordering every pair before any
+     * is looked at: the optimised mode sorts by these, and computes [bound] only for the pairs it reaches,
+     * in parallel and under the deadline. Never below [bound]. Bounding every pair exactly up front was a
+     * phase of its own that one worker could not finish inside the budget at the cap.
+     */
+    fun quickBound(a: Long, b: Long): PairBound? = bound(a, b)
+
+    /**
      * Where [pair]'s two sides match, as line ranges, read from [shownFirst] and [shownSecond]: the
      * submissions the outcome names for [PairScore.first] and [PairScore.second], which for a group can
      * be another member than the one compared. Called only for pairs that are returned.
