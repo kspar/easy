@@ -22,6 +22,9 @@ liquibaseGradle = "3.1.0"
 commonmark = "0.30.0"
 commonsLang3 = "3.20.0"
 exposed = "1.5.0"
+# The old similarity check's Levenshtein ratio. Test-only: EditDistanceTest holds the edit-distance
+# provider's own implementation to the very numbers it reported.
+fuzzywuzzy = "1.4.0"
 jplag = "6.3.0"
 # The ICU JPlag 6.3.0 declares, for its file reader. Test-only here; see jplag-icuTestOnly.
 icu4j = "78.1"
@@ -90,6 +93,7 @@ commonmark-ext-gfm-strikethrough = { module = "org.commonmark:commonmark-ext-gfm
 commonmark-ext-gfm-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
 commonmark-ext-image-attributes = { module = "org.commonmark:commonmark-ext-image-attributes", version.ref = "commonmark" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang3" }
+fuzzywuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzywuzzy" }
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
 exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
