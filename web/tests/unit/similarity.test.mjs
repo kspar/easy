@@ -17,7 +17,7 @@ import { expect, test, describe } from 'vitest'
 import { isSimilarityRefusal } from '../../src/features/similarity/similarityError.ts'
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
-import { comparedBy, pairMetrics, providerName, resultNotes, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
+import { comparedBy, coverage, pairMetrics, providerName, resultNotes, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
 import { estimateView, formatDuration } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
@@ -386,6 +386,21 @@ describe('the estimate', () => {
     expect(estimateView(fits)).toEqual({ kind: 'fits', submissions: 30, pairs: 435, seconds: 12 })
     expect(estimateView({ ...fits, estimated_sec: 540, within_budget: false }))
       .toEqual({ kind: 'tooCostly', submissions: 30, pairs: 435, seconds: 540, budget: 120 })
+  })
+
+  test('optimised, a cohort over the budget is not refused: it stops at the budget with the likeliest pairs', () => {
+    expect(estimateView({ ...fits, estimated_sec: 540, within_budget: false, optimised: true }))
+      .toEqual({ kind: 'partial', submissions: 30, pairs: 435, seconds: 540, budget: 120 })
+    // Within the budget it is a duration like any other, an upper bound though it is.
+    expect(estimateView({ ...fits, optimised: true })).toEqual({ kind: 'fits', submissions: 30, pairs: 435, seconds: 12 })
+  })
+
+  test('a result that did not compare every pair says how many it did, and why', () => {
+    expect(coverage({ complete: false, pairs_compared: 900, pairs_total: 4950 })).toEqual({ kind: 'incomplete', compared: 900, total: 4950 })
+    expect(coverage({ complete: true, pairs_compared: 2100, pairs_total: 4950 })).toEqual({ kind: 'ruledOut', compared: 2100, total: 4950 })
+    expect(coverage({ complete: true, pairs_compared: 4950, pairs_total: 4950 })).toBeNull()
+    // An older core says nothing of it, and nothing is claimed.
+    expect(coverage({})).toBeNull()
   })
 
   test('a cohort with no pair to compare says so, rather than "about 0 s"', () => {

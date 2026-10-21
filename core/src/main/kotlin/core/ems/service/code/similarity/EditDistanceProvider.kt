@@ -31,6 +31,9 @@ internal class EditDistanceProvider(
     /** A ratio over whole texts says how alike they are, not where. */
     override val matchRanges = false
 
+    /** Dice exactly and the ratio from above, both linear in the texts' lengths: see [Session.bound]. */
+    override val bounds = true
+
     /** Its bigrams, sorted: measured at about 100 ns a character. */
     override fun prepareNanos(chars: Int): Long = 100L * chars
 
@@ -53,6 +56,7 @@ internal class EditDistanceProvider(
     private inner class Session(private val request: ProviderRequest, private val run: RunContext) : ProviderSession {
         private val solutionById = request.sources.associate { it.id to it.solution }
         private lateinit var bigramsById: Map<Long, LongArray>
+        private lateinit var profileById: Map<Long, EditDistance.Profile>
 
         override fun prepare(): PreparedCohort {
             if (run.deadline.passed()) throw SimilarityTimedOut(run.budgetSec)
@@ -70,6 +74,7 @@ internal class EditDistanceProvider(
                 }
             }
             bigramsById = run.workers.all(usable.map { id -> { id to EditDistance.bigrams(solutionById.getValue(id)) } }).toMap()
+            profileById = run.workers.all(usable.map { id -> { id to EditDistance.profile(solutionById.getValue(id)) } }).toMap()
             if (run.deadline.passed()) throw SimilarityTimedOut(run.budgetSec)
             return PreparedCohort(
                 language = request.language,
@@ -92,6 +97,18 @@ internal class EditDistanceProvider(
             val mean = (levenshtein + dice) / 2
             // Both measures are symmetric, so the pair is oriented by id: the same whichever way it is asked.
             return PairScore(minOf(a, b), maxOf(a, b), score = maxOf(levenshtein, dice), rank = mean, similarity = mean, handle = doubleArrayOf(levenshtein, dice))
+        }
+
+        /**
+         * Dice itself - a merge of two sorted bigram sets, some hundred times cheaper than the ratio - and
+         * the ratio's [EditDistance.ratioBound]; then the score's and the mean's bounds from those exactly
+         * as [score] combines the real values, so that each is at least the real one.
+         */
+        override fun bound(a: Long, b: Long): PairBound {
+            val levenshtein = EditDistance.ratioBound(profileById.getValue(a), profileById.getValue(b))
+            val dice = EditDistance.dice(bigramsById.getValue(a), bigramsById.getValue(b))
+            val mean = (levenshtein + dice) / 2
+            return PairBound(score = maxOf(levenshtein, dice), rank = mean, similarity = mean)
         }
 
         override fun details(pair: PairScore, shownFirst: Long, shownSecond: Long): List<SimilarityMatch> = emptyList()

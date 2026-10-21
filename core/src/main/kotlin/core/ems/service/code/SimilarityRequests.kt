@@ -51,6 +51,7 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         val submissionIds: List<Long>,
         val language: SimilarityLanguage,
         val mode: SimilarityMode,
+        /** With the course's mode in it: [SimilarityBinding.optimised]. */
         val binding: SimilarityBinding,
     )
 
@@ -117,7 +118,8 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
                 notify = false,
             )
         }
-        return Resolved(exerciseId, courses, ids, language, courseSettings?.mode ?: SimilarityMode.OPTIMISED, binding)
+        val mode = courseSettings?.mode ?: SimilarityMode.OPTIMISED
+        return Resolved(exerciseId, courses, ids, language, mode, binding.copy(optimised = mode == SimilarityMode.OPTIMISED))
     }
 
     /** What running [resolved] would take, from the submissions' sizes; no text leaves the database. */

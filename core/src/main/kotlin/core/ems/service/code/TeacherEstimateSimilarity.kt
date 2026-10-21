@@ -44,8 +44,13 @@ class TeacherEstimateSimilarityController(
         @get:JsonProperty("estimated_sec") val estimatedSec: Long,
         /** How long one check may run. */
         @get:JsonProperty("budget_sec") val budgetSec: Long,
-        /** False when the check would be refused as SIMILARITY_TOO_COSTLY. */
+        /** False when every pair would take longer than the budget: refused, unless [optimised]. */
         @get:JsonProperty("within_budget") val withinBudget: Boolean,
+        /**
+         * Whether it would run optimised: [estimatedSec] is then the most it can take, and over the budget
+         * it is not refused but stops there with the likeliest pairs found.
+         */
+        @get:JsonProperty("optimised") val optimised: Boolean,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -73,6 +78,7 @@ class TeacherEstimateSimilarityController(
             estimate.seconds,
             estimate.budgetSec,
             estimate.withinBudget,
+            estimate.optimised,
         )
     }
 }

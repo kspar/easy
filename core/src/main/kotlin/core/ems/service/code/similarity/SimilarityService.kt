@@ -167,12 +167,15 @@ class SimilarityService(
             nanos += provider.pairNanos(charsA, charsB)
         }
         val threads = threadsFor(sources.size)
-        return SimilarityEstimate(sources.size, pairs, threads, nanos / threads, timeoutSec)
+        return SimilarityEstimate(sources.size, pairs, threads, nanos / threads, timeoutSec, binding.optimised && provider.bounds)
     }
 
-    /** [estimate], refused with [SimilarityTooCostly] when it is over the budget. */
+    /**
+     * [estimate], refused with [SimilarityTooCostly] when it is over the budget - unless it would run
+     * optimised, which stops at the budget with the likeliest pairs instead of timing out.
+     */
     fun assertAffordable(binding: SimilarityBinding, sources: List<SizedSource>): SimilarityEstimate =
-        estimate(binding, sources).also { if (!it.withinBudget) throw SimilarityTooCostly(it) }
+        estimate(binding, sources).also { if (!it.withinBudget && !it.optimised) throw SimilarityTooCostly(it) }
 
     /**
      * Takes a *loader* rather than the loaded solutions, so the permit covers the memory it claims to.
@@ -201,7 +204,10 @@ class SimilarityService(
             if (rows.size < 2) {
                 return SimilarityRun(rows, SimilarityOutcome(emptyList(), emptyList(), compared, false, provider = provider.id))
             }
-            return SimilarityRun(rows, run(provider, rows.map(asSource), compared, baseCode, topN))
+            // Optimised - [SimilarityBinding.optimised] - rules out the pairs that cannot be among the top N,
+            // and stops at the deadline with the likeliest found rather than refuse, where the provider can
+            // bound its pairs ([SimilarityProvider.bounds]); one that cannot compares every pair either way.
+            return SimilarityRun(rows, run(provider, rows.map(asSource), compared, baseCode, topN, binding.optimised && provider.bounds))
         } finally {
             oneAtATime.release()
         }
@@ -260,6 +266,7 @@ class SimilarityService(
         language: SimilarityLanguage,
         baseCode: String?,
         topN: Int,
+        bounded: Boolean,
     ): SimilarityOutcome {
         val deadline = Deadline.after(TimeUnit.SECONDS.toNanos(timeoutSec))
         val ownerById = sources.mapNotNull { source -> source.owner?.let { source.id to it } }.toMap()
@@ -280,7 +287,9 @@ class SimilarityService(
                 val comparands = comparands(cohort, ownerById)
                 val groups = comparands.filter { it.members.size > 1 }.map { it.members }
                 session.ready(comparands.map { it.representative })
-                val ranking = PairRanking(workers, deadline, timeoutSec).rank(session, comparands, topN)
+                val ranking = PairRanking(workers, deadline, timeoutSec).let {
+                    if (bounded) it.rankBounded(session, comparands, topN, partial = true) else it.rank(session, comparands, topN)
+                }
                 val compareMs = (System.nanoTime() - compareStart) / 1_000_000
 
                 val comparandById = comparands.associateBy { it.representative }
@@ -290,9 +299,14 @@ class SimilarityService(
                     "Compared ${cohort.usable.size} submissions (${cohort.language.wireName}, ${provider.id}) " +
                             "in ${prepareMs}ms preparing + ${compareMs}ms comparing on $threads thread(s), " +
                             "${cohort.skipped.size} skipped, ${groups.size} identical group(s), ${ranking.scoring} scoring " +
-                            "pairs of ${ranking.compared} compared, returning ${pairs.size}"
+                            "pairs of ${ranking.compared} compared of ${ranking.total}" +
+                            "${if (bounded) " (optimised)" else ""}${if (ranking.complete) "" else ", stopped at the deadline"}, " +
+                            "returning ${pairs.size}"
                 }
-                return SimilarityOutcome(pairs, cohort.skipped, cohort.language, ranking.scoring > pairs.size, groups, provider.id)
+                return SimilarityOutcome(
+                    pairs, cohort.skipped, cohort.language, ranking.scoring > pairs.size || ranking.mayHaveMore, groups, provider.id,
+                    pairsTotal = ranking.total, pairsCompared = ranking.compared, complete = ranking.complete,
+                )
             }
         }
     }

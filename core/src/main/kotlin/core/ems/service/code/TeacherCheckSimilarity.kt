@@ -121,6 +121,14 @@ class TeacherCheckSimilarityController(
          * shares nothing; when false, matches are never sent and the page finds the shared code itself.
          */
         @get:JsonProperty("match_ranges") val matchRanges: Boolean,
+        /** Pairs worth comparing - a student's own left out, identical submissions once - and how many were scored. */
+        @get:JsonProperty("pairs_total") val pairsTotal: Int,
+        @get:JsonProperty("pairs_compared") val pairsCompared: Int,
+        /**
+         * False when an optimised run stopped at the budget with pairs left: [scores] are the best of the
+         * pairs it reached, the likeliest first, and a more similar pair may be among the rest.
+         */
+        @get:JsonProperty("complete") val complete: Boolean,
     )
 
     data class RespGroup(
@@ -298,6 +306,9 @@ class TeacherCheckSimilarityController(
             resolved.mode.name.lowercase(),
             binding.fallback,
             similarityService.registry.provider(outcome.provider)?.matchRanges ?: false,
+            outcome.pairsTotal,
+            outcome.pairsCompared,
+            outcome.complete,
         )
     }
 

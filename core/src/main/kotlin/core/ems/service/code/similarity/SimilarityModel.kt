@@ -51,7 +51,17 @@ data class SkippedSubmission(val id: Long, val reason: String)
  * Which provider compares a cohort, and in which language: [language] is the exercise's, or text when no
  * provider that may run takes the exercise's language - and then [fallback] says so.
  */
-data class SimilarityBinding(val provider: String, val language: SimilarityLanguage, val fallback: String? = null)
+data class SimilarityBinding(
+    val provider: String,
+    val language: SimilarityLanguage,
+    val fallback: String? = null,
+    /**
+     * Whether the course asked for the optimised mode. Carried here, with the provider it applies to, so
+     * the estimate and the run read one value: passed beside the binding, the run could be left without it
+     * while the estimate, admitting the cohort as optimised, had it.
+     */
+    val optimised: Boolean = false,
+)
 
 data class SimilarityOutcome(
     val pairs: List<SimilarityPair>,
@@ -67,6 +77,14 @@ data class SimilarityOutcome(
     val groups: List<List<Long>> = emptyList(),
     /** The provider that measured it; see [SimilarityProvider.id]. */
     val provider: String = "",
+    /** Pairs worth comparing - one per pair of comparands, a student's own left out - and how many were scored. */
+    val pairsTotal: Int = 0,
+    val pairsCompared: Int = 0,
+    /**
+     * False when an optimised run stopped at its deadline with pairs left, and returned the best of what
+     * it had scored, the likeliest first, rather than nothing.
+     */
+    val complete: Boolean = true,
 )
 
 /**
@@ -100,6 +118,12 @@ data class SimilarityEstimate(
     val threads: Int,
     val wallNanos: Long,
     val budgetSec: Long,
+    /**
+     * Whether it would run optimised: then [wallNanos] is the most it can take - pairs the provider can
+     * rule out are not scored - and over the budget it stops with the likeliest pairs found, so it is not
+     * refused for being over.
+     */
+    val optimised: Boolean = false,
 ) {
     val withinBudget: Boolean get() = wallNanos <= budgetSec * 1_000_000_000L
 

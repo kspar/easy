@@ -48,7 +48,7 @@ import { emptyReason, hasUnreadableScores } from './similarityEmptyState.ts'
 import { skippedByReason } from './similaritySkipped.ts'
 import type { SkippedReason } from './similaritySkipped.ts'
 import { highlightFileName } from './similarityLanguage.ts'
-import { comparedBy, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
+import { comparedBy, coverage, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
 import { estimateView, formatDuration } from './similarityEstimate.ts'
 import type { ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
@@ -188,6 +188,7 @@ export default function SimilarityPage() {
   }, [result])
 
   const skipped = result?.skipped ?? []
+  const covered = result ? coverage(result) : null
   const unreadable = hasUnreadableScores(result?.scores ?? [])
   // Identical submissions by three or more authors, which core reports once each rather than as every
   // pair among them - twelve untouched copies of the starter code were 66 rows at 100%, ahead of any real
@@ -381,6 +382,15 @@ export default function SimilarityPage() {
         </Typography>
       )}
 
+      {estimate.kind === 'partial' && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          {t('similarity.partialAhead', {
+            duration: formatDuration(estimate.seconds, t),
+            budget: formatDuration(estimate.budget, t),
+          })}
+        </Alert>
+      )}
+
       {estimate.kind === 'tooCostly' && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           {t('similarity.tooCostly', {
@@ -448,6 +458,18 @@ export default function SimilarityPage() {
           {result.provider && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: '70ch' }}>
               {comparedBy(result.provider, t)}
+            </Typography>
+          )}
+
+          {/* Not every pair was compared: stopped at the time limit, or ruled out as unable to rank. */}
+          {covered?.kind === 'incomplete' && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {t('similarity.incomplete', { compared: covered.compared, total: covered.total })}
+            </Alert>
+          )}
+          {covered?.kind === 'ruledOut' && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              {t('similarity.ruledOut', { compared: covered.compared, total: covered.total })}
             </Typography>
           )}
 

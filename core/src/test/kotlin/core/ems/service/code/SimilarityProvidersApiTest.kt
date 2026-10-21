@@ -1,5 +1,9 @@
 package core.ems.service.code
 
+import core.conf.security.EasyRole
+import core.ems.service.code.similarity.SimilarityService
+import core.exception.InvalidRequestException
+import core.exception.ReqError
 import core.testing.Auth
 import core.testing.Fixtures
 import core.testing.HttpApi
@@ -10,6 +14,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.web.servlet.MockMvc
 
@@ -84,6 +89,27 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(200, response.status)
         assertEquals("edit-distance", response.field("provider"))
         assertEquals(100, response.elements("scores").single().get("max_similarity").asInt())
+        // Optimised by default, and with one pair there is nothing to rule out.
+        val json = response.jsonOrNull!!
+        assertEquals(1, json.get("pairs_total").asInt())
+        assertEquals(1, json.get("pairs_compared").asInt())
+        assertTrue(json.get("complete").asBoolean())
+    }
+
+    @Test
+    fun `optimised, a cohort over the budget is not refused up front, since it stops at the budget instead`() {
+        // With no budget at all, the full mode is refused as too costly before it runs; the optimised mode
+        // - the default, on edit distance - is let run, and here meets the deadline preparing.
+        val service = SimilarityService(maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = 0)
+        val controller = TeacherCheckSimilarityController(service, SimilarityRequests(service))
+        val request = TeacherCheckSimilarityController.Req(
+            listOf(TeacherCheckSimilarityController.ReqCourse(course.toString())),
+            submissions.map { TeacherCheckSimilarityController.ReqSubmission(it.toString()) },
+        )
+        val caller = Auth.easyUser(teacher, EasyRole.TEACHER)
+        assertEquals(ReqError.SIMILARITY_TIMEOUT, assertThrows<InvalidRequestException> { controller.controller(exercise.toString(), request, caller) }.code)
+        assertEquals(200, putSettings(null, mode = "full").status)
+        assertEquals(ReqError.SIMILARITY_TOO_COSTLY, assertThrows<InvalidRequestException> { controller.controller(exercise.toString(), request, caller) }.code)
     }
 
     @Test

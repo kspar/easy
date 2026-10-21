@@ -113,6 +113,22 @@ export function resultNotes(result: Pick<SimilarityResp, 'provider' | 'provider_
 }
 
 /**
+ * How much of the cohort a result covers, when it is not all of it: an optimised run that stopped at the
+ * time limit (`incomplete`, a warning - a more similar pair may be among the rest), or one that ruled pairs
+ * out because they could not be among the most similar (`ruledOut`, a note). Null for a result that
+ * compared every pair, and for an older core that does not say.
+ */
+export type Coverage = { kind: 'incomplete' | 'ruledOut'; compared: number; total: number }
+
+export function coverage(result: Pick<SimilarityResp, 'complete' | 'pairs_compared' | 'pairs_total'>): Coverage | null {
+  const { complete, pairs_compared: compared, pairs_total: total } = result
+  if (typeof compared !== 'number' || typeof total !== 'number') return null
+  if (complete === false) return { kind: 'incomplete', compared, total }
+  if (compared < total) return { kind: 'ruledOut', compared, total }
+  return null
+}
+
+/**
  * The numbers to show for a pair, in the order the provider sent them. A core older than metrics sends
  * none, and the two scores every response carries stand in, as JPlag's two similarities.
  */

@@ -19,7 +19,20 @@ internal class Comparand(val representative: Long, val members: List<Long>, val 
 /** One compared pair, and the ids its order ends on: the lower and higher of its two representatives. */
 internal class Ranked(val pair: PairScore, val lowId: Long, val highId: Long)
 
-internal class Ranking(val top: List<Ranked>, val scoring: Int, val compared: Int)
+/**
+ * The kept pairs, with the counts behind them: [scoring] of the [compared] pairs scored a reportable
+ * percentage, out of [total] worth comparing. [complete] is false when the run stopped at its deadline
+ * with pairs left; [mayHaveMore] is true when pairs left uncompared - ruled out, or never reached - could
+ * still have scored, so more scoring pairs may exist than [scoring] says.
+ */
+internal class Ranking(
+    val top: List<Ranked>,
+    val scoring: Int,
+    val compared: Int,
+    val total: Int = compared,
+    val complete: Boolean = true,
+    val mayHaveMore: Boolean = false,
+)
 
 /**
  * Compares every pair of a cohort that is worth comparing, and keeps the best: the top N by
@@ -75,6 +88,120 @@ internal class PairRanking(
         return Ranking(top, stripes.sumOf { it.scoring }, stripes.sumOf { it.compared })
     }
 
+    /**
+     * The optimised mode (EZ-1667): the same two top N as [rank], from the pairs [ProviderSession.bound]
+     * cannot rule out, scored likeliest first.
+     *
+     * Every pair worth comparing is bounded - cheaply, in parallel - and the pairs are taken in order of
+     * their bounds, highest first, in batches across the workers. Once N pairs are kept in an order, its
+     * N-th is a floor: a pair whose bound is below the floor in both orders cannot enter either top N,
+     * then or later, since floors only rise, and is not scored. A bound is never below the real value
+     * (see [ProviderSession.bound]), so the pairs kept are exactly the pairs [rank] keeps.
+     *
+     * With [partial], the deadline ends the run with what it has, flagged incomplete, instead of refusing
+     * it: the likeliest pairs having gone first, what is kept by then is the best the budget could find.
+     */
+    fun rankBounded(session: ProviderSession, comparands: List<Comparand>, topN: Int, partial: Boolean): Ranking {
+        val candidates = workers.all(
+            (0 until workers.threads).map { stripe -> { bounded(stripe, session, comparands) } },
+        ).flatten().sortedWith(
+            // Total, so the order - and with it which pairs a cut-short run reached - is the same on any number of threads.
+            compareByDescending<Candidate> { it.bound.score }.thenByDescending { it.bound.rank }
+                .thenBy { minOf(it.a, it.b) }.thenBy { maxOf(it.a, it.b) },
+        )
+
+        val byShared = PriorityQueue(BEST_FIRST.reversed())
+        val byPercent = PriorityQueue(HIGHEST_FIRST.reversed())
+        var compared = 0
+        var scoring = 0
+        var mayHaveMore = false
+        var complete = true
+        var next = 0
+        val batchSize = workers.threads * BATCH_PER_THREAD
+
+        while (next < candidates.size) {
+            if (deadline.passed()) {
+                if (!partial) throw SimilarityTimedOut(budgetSec)
+                complete = false
+                break
+            }
+            // The floors as they stand: a pair below both cannot be kept by either order.
+            val rankFloor = if (byShared.size >= topN) byShared.peek().pair.rank else Double.NEGATIVE_INFINITY
+            val scoreFloor = if (byPercent.size >= topN) byPercent.peek().pair.score else Double.NEGATIVE_INFINITY
+            val batch = mutableListOf<Candidate>()
+            while (next < candidates.size && batch.size < batchSize) {
+                val candidate = candidates[next++]
+                val bound = candidate.bound
+                when {
+                    bound.score < MIN_REPORTED_SIMILARITY -> Unit
+                    bound.rank < rankFloor && bound.score < scoreFloor -> mayHaveMore = true
+                    else -> batch += candidate
+                }
+            }
+            if (batch.isEmpty()) continue
+            val chunks = batch.chunked((batch.size + workers.threads - 1) / workers.threads)
+            val scored = workers.all(chunks.map { chunk -> { scoreUntilDeadline(session, chunk, partial) } })
+            // A worker that stopped at the deadline keeps the pairs it finished; the rest of its chunk is lost.
+            if (scored.zip(chunks).any { (done, chunk) -> done.size < chunk.size }) complete = false
+            for ((candidate, pair) in scored.flatten()) {
+                compared++
+                if (pair == null || pair.score < MIN_REPORTED_SIMILARITY) continue
+                scoring++
+                val ranked = Ranked(pair, minOf(candidate.a, candidate.b), maxOf(candidate.a, candidate.b))
+                byShared += ranked
+                if (byShared.size > topN) byShared.poll()
+                byPercent += ranked
+                if (byPercent.size > topN) byPercent.poll()
+            }
+        }
+        if (!complete) mayHaveMore = true
+
+        val top = (byShared.toList() + byPercent.toList()).distinct().sortedWith(BEST_FIRST)
+        return Ranking(top, scoring, compared, candidates.size, complete, mayHaveMore)
+    }
+
+    /**
+     * [chunk]'s pairs scored in order. With [partial], it stops at the deadline - before a pair, or in the
+     * middle of one, which the provider ends by throwing - and returns those it finished: thrown, the
+     * timeout lost the whole batch, and on a cold JVM, whose first pairs are slow, that was every pair.
+     */
+    private fun scoreUntilDeadline(session: ProviderSession, chunk: List<Candidate>, partial: Boolean): List<Pair<Candidate, PairScore?>> {
+        val done = mutableListOf<Pair<Candidate, PairScore?>>()
+        for (candidate in chunk) {
+            if (deadline.passed()) {
+                if (partial) break
+                throw SimilarityTimedOut(budgetSec)
+            }
+            val pair = try {
+                session.score(candidate.a, candidate.b)
+            } catch (e: SimilarityTimedOut) {
+                if (partial) break
+                throw e
+            }
+            done += candidate to pair
+        }
+        return done
+    }
+
+    /** A pair worth comparing, and how high it could score. */
+    private class Candidate(val a: Long, val b: Long, val bound: PairBound)
+
+    /** Rows [first], first + threads, … of the pair triangle, bounded: [stripe]'s rows, for [rankBounded]. */
+    private fun bounded(first: Int, session: ProviderSession, comparands: List<Comparand>): List<Candidate> {
+        val mine = mutableListOf<Candidate>()
+        for (i in first until comparands.size step workers.threads) {
+            for (j in i + 1 until comparands.size) {
+                if (!comparands[i].apartFrom(comparands[j])) continue
+                if (workers.stopped) return emptyList()
+                if (deadline.passed()) throw SimilarityTimedOut(budgetSec)
+                val a = comparands[i].representative
+                val b = comparands[j].representative
+                mine += Candidate(a, b, checkNotNull(session.bound(a, b)) { "A bounded provider gave no bound" })
+            }
+        }
+        return mine
+    }
+
     /** One worker's share of the pairs, with its own counts: the workers share nothing but the stop. */
     private class Stripe(val byShared: List<Ranked>, val byPercent: List<Ranked>, val compared: Int, val scoring: Int)
 
@@ -115,6 +242,13 @@ internal class PairRanking(
     companion object {
         /** The smallest score the page shows as 1% rather than 0%: it rounds to whole percents. */
         private const val MIN_REPORTED_SIMILARITY = 0.005
+
+        /**
+         * Pairs per worker in one batch of [rankBounded]. The floors are read between batches, so a smaller
+         * batch rules out more pairs and a larger one waits less on the slowest worker; 32 keeps the wait
+         * to a few pairs while the floors are seldom more than a batch out of date.
+         */
+        private const val BATCH_PER_THREAD = 32
 
         /**
          * The ranking the page shows: most shared first, then highest score, then highest similarity,

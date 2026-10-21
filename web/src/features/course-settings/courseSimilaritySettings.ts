@@ -1,17 +1,18 @@
 import type { CourseSimilaritySettings, CourseSimilaritySettingsReq } from '../../api/types.ts'
 
 /**
- * The choices in the course's similarity settings dialog (EZ-1667), and what saving one sends.
+ * The choices in the course's similarity settings dialog (EZ-1667), and what saving them sends.
  *
  * Here rather than in the dialog because both go wrong invisibly. A pin the admin has since switched
  * off is still stored, and still passed over on every check; left out of the choices, the dialog would
  * open on "Automatic" and say nothing, and the teacher would believe that was what they had chosen.
- * And the mode is not offered yet, so a save that sent a default instead of the stored mode would
- * quietly change a setting the teacher cannot see.
  */
 
 /** The value of the "Automatic" choice: no pin, so the admin's order decides. */
 export const AUTOMATIC = ''
+
+/** The two modes, as core names them: the likeliest pairs first, or every pair. */
+export type Mode = 'optimised' | 'full'
 
 export interface ProviderChoice {
   /** The control's value: a provider id, or [AUTOMATIC]. */
@@ -38,13 +39,20 @@ export function initialChoice(settings: CourseSimilaritySettings): string {
   return settings.provider ?? AUTOMATIC
 }
 
-/** Saving is offered for an available choice other than what is stored. */
-export function canSave(settings: CourseSimilaritySettings, choice: string): boolean {
-  const available = providerChoices(settings).some((c) => c.value === choice && c.available)
-  return available && choice !== initialChoice(settings)
+/** The stored mode, read as one of the two; anything else core might send is the default. */
+export function initialMode(settings: CourseSimilaritySettings): Mode {
+  return settings.mode === 'full' ? 'full' : 'optimised'
 }
 
-/** The stored mode goes back as it came: the dialog does not offer it yet, so it must not change it. */
-export function settingsRequest(settings: CourseSimilaritySettings, choice: string): CourseSimilaritySettingsReq {
-  return { provider: choice === AUTOMATIC ? null : choice, mode: settings.mode }
+/** Saving is offered when something changed, and the provider chosen can be chosen. */
+export function canSave(settings: CourseSimilaritySettings, choice: string, mode: Mode): boolean {
+  const available = providerChoices(settings).some((c) => c.value === choice && c.available)
+  const changed = choice !== initialChoice(settings) || mode !== initialMode(settings)
+  // Not with a pin switched off since, even to change the mode alone: core refuses to store a provider
+  // that is off, so the teacher moves off it first.
+  return changed && available
+}
+
+export function settingsRequest(choice: string, mode: Mode): CourseSimilaritySettingsReq {
+  return { provider: choice === AUTOMATIC ? null : choice, mode }
 }

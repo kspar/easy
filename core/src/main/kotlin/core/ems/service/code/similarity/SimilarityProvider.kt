@@ -55,6 +55,12 @@ internal interface SimilarityProvider {
 
     fun pairNanos(charsA: Int, charsB: Int): Long
 
+    /**
+     * Whether its sessions give a [ProviderSession.bound] for every pair: what lets the optimised mode
+     * rule pairs out, and compare the likeliest first. Known before any text is read, for the estimate.
+     */
+    val bounds: Boolean get() = false
+
     /** Whether a solution of [chars] characters is compared at all, rather than skipped by size. */
     fun compares(chars: Int): Boolean = chars > 0
 
@@ -103,6 +109,13 @@ internal interface ProviderSession : AutoCloseable {
     fun score(a: Long, b: Long): PairScore?
 
     /**
+     * Upper bounds on what [score] would answer for [a] and [b], computed without scoring them - or null
+     * for a provider that has none ([SimilarityProvider.bounds] false). Never below the real values, for
+     * a pair ruled out by them is never scored. Thread-safe, like [score].
+     */
+    fun bound(a: Long, b: Long): PairBound? = null
+
+    /**
      * Where [pair]'s two sides match, as line ranges, read from [shownFirst] and [shownSecond]: the
      * submissions the outcome names for [PairScore.first] and [PairScore.second], which for a group can
      * be another member than the one compared. Called only for pairs that are returned.
@@ -149,6 +162,9 @@ internal class PreparedCohort(
  * [handle] is the provider's own record of the comparison, kept only for pairs that are returned, so
  * that their details need not be computed again.
  */
+/** At least as high as a pair's [PairScore.score], [PairScore.rank] and [PairScore.similarity]. */
+internal class PairBound(val score: Double, val rank: Double, val similarity: Double)
+
 internal class PairScore(
     val first: Long,
     val second: Long,

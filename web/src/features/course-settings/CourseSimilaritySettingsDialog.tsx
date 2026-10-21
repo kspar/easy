@@ -18,14 +18,13 @@ import { useTranslation } from 'react-i18next'
 import { useCourseSimilaritySettings, useUpdateCourseSimilaritySettings } from '../../api/courses.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
 import { languageName, providerHelp, providerName } from '../similarity/similarityProvider.ts'
-import { AUTOMATIC, canSave, initialChoice, providerChoices, settingsRequest } from './courseSimilaritySettings.ts'
+import { AUTOMATIC, canSave, initialChoice, initialMode, providerChoices, settingsRequest } from './courseSimilaritySettings.ts'
+import type { Mode } from './courseSimilaritySettings.ts'
 
 /**
- * Which similarity provider compares a course's checks (EZ-1667): Automatic, which follows the order
- * an administrator set for each language, or one provider pinned for the whole course.
- *
- * Only the provider for now. The course also stores a mode - every pair, or likely pairs first - but
- * both compare every pair until the second exists, and a choice that changes nothing is not offered.
+ * How a course's similarity checks are compared (EZ-1667): by which provider - Automatic, which follows
+ * the order an administrator set for each language, or one pinned for the whole course - and how many of
+ * the pairs: the likeliest first, stopping at the time limit with what it found, or every one of them.
  */
 export default function CourseSimilaritySettingsDialog({
   courseId,
@@ -42,18 +41,21 @@ export default function CourseSimilaritySettingsDialog({
   // Null until the teacher picks: until then the dialog shows what is stored, read fresh each time it
   // opens, rather than a copy taken once and left behind by a save from another tab.
   const [picked, setPicked] = useState<string | null>(null)
+  const [pickedMode, setPickedMode] = useState<Mode | null>(null)
   const [saved, setSaved] = useState(false)
   const choice = picked ?? (settings ? initialChoice(settings) : AUTOMATIC)
+  const mode = pickedMode ?? (settings ? initialMode(settings) : 'optimised')
   const choices = settings ? providerChoices(settings) : []
 
   function close() {
     setPicked(null)
+    setPickedMode(null)
     onClose()
   }
 
   function handleSave() {
     if (!settings) return
-    update.mutate(settingsRequest(settings, choice), {
+    update.mutate(settingsRequest(choice, mode), {
       onSuccess: () => {
         close()
         setSaved(true)
@@ -120,6 +122,37 @@ export default function CourseSimilaritySettingsDialog({
             </RadioGroup>
           )}
 
+          {settings && (
+            <>
+              <Typography variant="subtitle2" sx={{ mt: 1 }}>{t('similarity.settingsModeTitle')}</Typography>
+              <RadioGroup
+                aria-label={t('similarity.settingsModeTitle')}
+                value={mode}
+                onChange={(e) => setPickedMode(e.target.value === 'full' ? 'full' : 'optimised')}
+                sx={{ gap: 1 }}
+              >
+                {(['optimised', 'full'] as const).map((value) => (
+                  <FormControlLabel
+                    key={value}
+                    value={value}
+                    control={<Radio size="small" />}
+                    sx={{ alignItems: 'flex-start', '& .MuiRadio-root': { pt: 0.25 } }}
+                    label={
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {value === 'optimised' ? t('similarity.settingsModeOptimised') : t('similarity.settingsModeFull')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          {value === 'optimised' ? t('similarity.settingsModeOptimisedHelp') : t('similarity.settingsModeFullHelp')}
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                ))}
+              </RadioGroup>
+            </>
+          )}
+
           {update.isError && (
             <Typography variant="caption" color="error">
               {errorMessage(update.error, t)}
@@ -132,7 +165,7 @@ export default function CourseSimilaritySettingsDialog({
             onClick={handleSave}
             variant="contained"
             // Not until the fresh read is in: a save sends the stored mode back as read.
-            disabled={!settings || isFetching || !canSave(settings, choice) || update.isPending}
+            disabled={!settings || isFetching || !canSave(settings, choice, mode) || update.isPending}
           >
             {update.isPending ? t('general.saving') : t('general.save')}
           </Button>

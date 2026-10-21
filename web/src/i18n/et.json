@@ -731,7 +731,15 @@
     "durationSeconds": "{{value}} s",
     "durationMinutes": "{{value}} min",
     "tooCostly": "See võtaks umbes {{duration}}, kauem kui üks kontroll tohib kesta ({{budget}}), seega see lükataks tagasi. Vali rühm, et võrrelda vähem lahendusi.",
-    "estimateNothing": "{{submissions}} esitust, kuid see meetod ei saa neist ühtegi võrrelda: kõik on tühjad või selle jaoks liiga pikad. Otsing loetleb need."
+    "estimateNothing": "{{submissions}} esitust, kuid see meetod ei saa neist ühtegi võrrelda: kõik on tühjad või selle jaoks liiga pikad. Otsing loetleb need.",
+    "settingsModeTitle": "Võrreldavad paarid",
+    "settingsModeOptimised": "Tõenäolisemad paarid enne (soovitatav)",
+    "settingsModeOptimisedHelp": "Võrdleb kõigepealt tõenäolisemaid paare ja jätab vahele paarid, mis ei saa olla kõige sarnasemate seas. Kui aeg saab otsa, näitab selleks ajaks leitud kõige sarnasemaid paare ja ütleb seda. Seda oskab ainult muudatuste kaugus; teised meetodid võrdlevad kõiki paare.",
+    "settingsModeFull": "Kõik paarid",
+    "settingsModeFullHelp": "Võrdleb kõiki paare. Kontroll, mis võtaks lubatust kauem, lükatakse tagasi; vali siis rühm.",
+    "partialAhead": "Kõigi paaride võrdlemine võib võtta kuni umbes {{duration}}, kauem kui üks kontroll tohib kesta ({{budget}}). Kõigepealt võrreldakse tõenäolisemaid paare ja kontroll lõpeb {{budget}} järel leitud kõige sarnasemate paaridega.",
+    "incomplete": "Peatus ajapiirangu tõttu pärast {{compared}} paari võrdlemist {{total}}-st, tõenäolisemad enne. Ülejäänute seas võib olla sarnane paar: kõigi võrdlemiseks vali rühm.",
+    "ruledOut": "Võrreldi {{compared}} paari {{total}}-st: ülejäänud ei saanud olla kõige sarnasemate seas."
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",

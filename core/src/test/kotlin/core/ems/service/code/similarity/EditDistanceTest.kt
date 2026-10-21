@@ -79,6 +79,30 @@ class EditDistanceTest {
     }
 
     @Test
+    fun `the bound is never below the real subsequence, so no pair it rules out could have ranked`() {
+        // Every pair of the texts above, in both directions, plus texts made of the same characters in
+        // another order - where the q-gram part of the bound has to do the work the character count cannot.
+        val shuffled = texts.filter { it.length > 3 }.map { it.toList().shuffled(Random(1667)).joinToString("") }
+        val all = texts + shuffled
+        for (a in all) for (b in all) {
+            val bound = EditDistance.lcsBound(EditDistance.profile(a), EditDistance.profile(b))
+            val real = EditDistance.lcs(a, b)
+            assertTrue(bound >= real, "bound $bound below lcs $real for ${a.length} vs ${b.length}")
+            assertTrue(EditDistance.ratioBound(EditDistance.profile(a), EditDistance.profile(b)) >= EditDistance.ratio(a, b))
+        }
+    }
+
+    @Test
+    fun `the bound tells reordered text from a copy, which counting characters cannot`() {
+        val code = "def f(x):\n    return x * 2 + 1\n\nprint(f(3))\n".repeat(4)
+        val reordered = code.toList().sorted().joinToString("")
+        val bound = EditDistance.ratioBound(EditDistance.profile(code), EditDistance.profile(reordered))
+        assertEquals(1.0, EditDistance.ratioBound(EditDistance.profile(code), EditDistance.profile(code)))
+        // Counting characters alone bounds it at 1.0: the same characters, every one of them shared.
+        assertTrue(bound < 0.75, "the same characters sorted are bounded at $bound")
+    }
+
+    @Test
     fun `dice is the coefficient itself, the same either way round`() {
         // The old check shrank the first set to the intersection and divided by its new size, so this
         // pair scored 100 one way round and 67 the other.

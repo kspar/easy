@@ -15,17 +15,20 @@ export type EstimateView =
   | { kind: 'nothing'; submissions: number }
   | { kind: 'fits'; submissions: number; pairs: number; seconds: number }
   | { kind: 'tooCostly'; submissions: number; pairs: number; seconds: number; budget: number }
+  | { kind: 'partial'; submissions: number; pairs: number; seconds: number; budget: number }
 
 const isCount = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0
 
 export function estimateView(estimate: Partial<SimilarityEstimateResp> | undefined): EstimateView {
   if (!estimate) return { kind: 'unknown' }
-  const { submissions, pairs, estimated_sec: seconds, budget_sec: budget, within_budget: fits } = estimate
+  const { submissions, pairs, estimated_sec: seconds, budget_sec: budget, within_budget: fits, optimised } = estimate
   if (!isCount(submissions) || !isCount(pairs) || !isCount(seconds) || typeof fits !== 'boolean') return { kind: 'unknown' }
   // No pair at all - every solution blank, or too long for this provider - is not "about 0 s". Find still
   // runs it: the result names who could not be compared, and why.
   if (pairs === 0) return { kind: 'nothing', submissions }
   if (fits) return { kind: 'fits', submissions, pairs, seconds }
+  // Over the budget, optimised is not refused: it stops at the budget with the likeliest pairs found.
+  if (optimised === true) return { kind: 'partial', submissions, pairs, seconds, budget: isCount(budget) ? budget : 0 }
   return { kind: 'tooCostly', submissions, pairs, seconds, budget: isCount(budget) ? budget : 0 }
 }
 

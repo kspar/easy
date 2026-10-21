@@ -676,6 +676,17 @@ export interface SimilarityResp {
    * Optional because a core older than providers sends none, and its matches were JPlag's.
    */
   match_ranges?: boolean
+  /**
+   * Pairs worth comparing - a student's own left out, identical submissions once - and how many were
+   * scored: fewer when an optimised run ruled some out. Optional, as an older core sends neither.
+   */
+  pairs_total?: number
+  pairs_compared?: number
+  /**
+   * False when an optimised run stopped at the time limit with pairs left: `scores` are the best of the
+   * pairs it reached, the likeliest first, and a more similar pair may be among the rest.
+   */
+  complete?: boolean
 }
 
 /**
@@ -696,6 +707,11 @@ export interface SimilarityEstimateResp {
   estimated_sec: number
   budget_sec: number
   within_budget: boolean
+  /**
+   * Whether it would run optimised: `estimated_sec` is then the most it can take, and over the budget it
+   * is not refused but stops there with the likeliest pairs found.
+   */
+  optimised: boolean
 }
 
 /**
