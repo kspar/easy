@@ -73,6 +73,16 @@ internal class JPlagProvider(
     override val matchRanges = true
 
     /**
+     * Tokenising: about 20 ms a solution whatever its size, and 2 µs a character on top, measured on
+     * Python of 2 to 20 KB on one core. Tokens are not known before it, so the cost is read from
+     * characters.
+     */
+    override fun prepareNanos(chars: Int): Long = 20_000_000L + 2_000L * chars
+
+    /** One tiling: about 70 µs, and a few nanoseconds a character, at the same sizes. */
+    override fun pairNanos(charsA: Int, charsB: Int): Long = 70_000L + 4L * (charsA + charsB)
+
+    /**
      * The tokeniser, replaceable only by a test. The catches that turn a tokeniser that *throws* into
      * a CANNOT_PARSE skip need an input that makes a frontend throw, and none does reliably: the case
      * JPlag's own Python code names, an empty TrailerContext, needs error recovery to enter a rule it

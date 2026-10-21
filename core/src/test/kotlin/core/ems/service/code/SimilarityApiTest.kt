@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.web.servlet.MockMvc
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 /**
@@ -283,12 +284,11 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
                 number = 1, solution = renamed,
             )
         }
-        val controller = TeacherCheckSimilarityController(
-            SimilarityService(
-                maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000,
-                timeoutSec = 120,
-            ),
+        val service = SimilarityService(
+            maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000,
+            timeoutSec = 120,
         )
+        val controller = TeacherCheckSimilarityController(service, SimilarityRequests(service))
         val request = TeacherCheckSimilarityController.Req(
             listOf(TeacherCheckSimilarityController.ReqCourse(myCourse.toString())),
             listOf(studentSubmission, theirs).map { TeacherCheckSimilarityController.ReqSubmission(it.toString()) },
@@ -369,13 +369,44 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
     @Test
     fun `a run past its budget is refused as SIMILARITY_TIMEOUT with the budget, not a 500`() {
         // The context's service has the test config's 120 s, which no fixture here can spend, so the
-        // controller is driven directly over a service with none. The mapping is what is under test.
-        val noBudget = TeacherCheckSimilarityController(
-            SimilarityService(
-                maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000,
-                timeoutSec = 0,
-            ),
+        // controller is driven directly over a service with one second, and a tokeniser slower than
+        // that. Not a budget of none: that is now priced and refused before the run (see below), and the
+        // timeout is still what an estimate that came out too low ends in. The mapping is under test.
+        val service = SimilarityService(
+            maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000,
+            timeoutSec = 1,
         )
+        service.tokenise = { language, id, source, maxTokens ->
+            val until = System.nanoTime() + 1_200_000_000L
+            while (System.nanoTime() - until < 0) Thread.onSpinWait()
+            language.read(id, source, maxTokens)
+        }
+        val slow = TeacherCheckSimilarityController(service, SimilarityRequests(service))
+        val request = TeacherCheckSimilarityController.Req(
+            listOf(TeacherCheckSimilarityController.ReqCourse(myCourse.toString())), null,
+        )
+
+        val refused = assertThrows<InvalidRequestException> {
+            slow.controller(myExercise.toString(), request, Auth.easyUser(teacher, EasyRole.TEACHER))
+        }
+        assertEquals(ReqError.SIMILARITY_TIMEOUT, refused.code)
+        assertEquals("1", refused.attributes.toMap()["budget_sec"])
+    }
+
+    @Test
+    fun `a cohort priced over the budget is refused before it runs, saying how long it would take`() {
+        // Priced from sizes, before the permit: with no budget at all any cohort is over it, and the
+        // refusal must come without one solution being tokenised - a run would only time out.
+        val tokenised = AtomicInteger()
+        val service = SimilarityService(
+            maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000,
+            timeoutSec = 0,
+        )
+        service.tokenise = { language, id, source, maxTokens ->
+            tokenised.incrementAndGet()
+            language.read(id, source, maxTokens)
+        }
+        val noBudget = TeacherCheckSimilarityController(service, SimilarityRequests(service))
         val request = TeacherCheckSimilarityController.Req(
             listOf(TeacherCheckSimilarityController.ReqCourse(myCourse.toString())), null,
         )
@@ -383,8 +414,43 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
         val refused = assertThrows<InvalidRequestException> {
             noBudget.controller(myExercise.toString(), request, Auth.easyUser(teacher, EasyRole.TEACHER))
         }
-        assertEquals(ReqError.SIMILARITY_TIMEOUT, refused.code)
-        assertEquals("0", refused.attributes.toMap()["budget_sec"])
+        assertEquals(ReqError.SIMILARITY_TOO_COSTLY, refused.code)
+        assertFalse(refused.notify, "a cohort too large for one check would be mailed to ops")
+        val attributes = refused.attributes.toMap()
+        assertEquals("0", attributes["budget_sec"])
+        assertEquals("1", attributes["estimated_sec"])
+        assertEquals(0, tokenised.get(), "the refused cohort was tokenised anyway")
+    }
+
+    @Test
+    fun `the estimate prices the cohort the check would run, without running it`() {
+        val response = api.post(
+            "/v2/exercises/$myExercise/similarity/estimate",
+            api.body("courses" to listOf(mapOf("id" to myCourse.toString()))),
+            Auth.asTeacher(teacher),
+        )
+        assertEquals(200, response.status)
+        val json = response.jsonOrNull!!
+        assertEquals(2, json.get("submissions").asInt())
+        assertEquals(1, json.get("pairs").asInt())
+        assertEquals("jplag", json.get("provider").asString())
+        assertEquals("python", json.get("language").asString())
+        assertEquals("optimised", json.get("mode").asString())
+        assertTrue(json.get("provider_fallback").isNull)
+        assertEquals(120, json.get("budget_sec").asInt())
+        assertTrue(json.get("within_budget").asBoolean())
+        assertTrue(json.get("estimated_sec").asInt() in 1..120, "estimated ${json.get("estimated_sec")}")
+    }
+
+    @Test
+    fun `the estimate is refused as the check is, for a course the caller does not teach`() {
+        val notMine = transaction { Fixtures.course("Not mine") }
+        val response = api.post(
+            "/v2/exercises/$myExercise/similarity/estimate",
+            api.body("courses" to listOf(mapOf("id" to notMine.toString()))),
+            Auth.asTeacher(teacher),
+        )
+        assertEquals(403, response.status)
     }
 
     @Test
@@ -476,9 +542,8 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
         // The id parser is shared by every endpoint, and refused with an operator alert: each request with
         // a non-numeric id also mailed ops a stack trace.
         val request = TeacherCheckSimilarityController.Req(listOf(TeacherCheckSimilarityController.ReqCourse("x")), null)
-        val controller = TeacherCheckSimilarityController(
-            SimilarityService(maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = 120),
-        )
+        val service = SimilarityService(maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = 120)
+        val controller = TeacherCheckSimilarityController(service, SimilarityRequests(service))
         for ((exercise, body) in listOf("abc" to request, myExercise.toString() to request)) {
             val refused = assertThrows<InvalidRequestException> {
                 controller.controller(exercise, body, Auth.easyUser(teacher, EasyRole.TEACHER))
@@ -515,7 +580,7 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
             release.await(30, TimeUnit.SECONDS)
             language.read(id, source, maxTokens)
         }
-        val controller = TeacherCheckSimilarityController(service)
+        val controller = TeacherCheckSimilarityController(service, SimilarityRequests(service))
         val request = TeacherCheckSimilarityController.Req(
             listOf(TeacherCheckSimilarityController.ReqCourse(myCourse.toString())),
             listOf(studentSubmission, teacherSubmission).map { TeacherCheckSimilarityController.ReqSubmission(it.toString()) },

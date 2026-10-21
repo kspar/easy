@@ -3,25 +3,14 @@ package core.ems.service.code
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.Account
-import core.db.AutoExercise
 import core.db.Course
 import core.db.CourseExercise
-import core.db.Exercise
-import core.db.ExerciseVer
 import core.db.Submission
-import core.ems.service.access_control.assertAccess
-import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.code.similarity.MetricUnit
 import core.ems.service.code.similarity.SimilarityBusy
-import core.ems.service.code.similarity.SimilarityLanguage
 import core.ems.service.code.similarity.SimilarityService
 import core.ems.service.code.similarity.SimilaritySource
 import core.ems.service.code.similarity.SimilarityTimedOut
-import core.ems.service.code.similarity.SimilarityUnavailable
-import core.db.CourseSimilaritySettings
-import core.db.SimilarityMode
-import core.ems.service.code.similarity.TooManySubmissions
-import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeSerializer
@@ -29,14 +18,10 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
-import org.jetbrains.exposed.v1.core.JoinType
-import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
-import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -47,7 +32,10 @@ import kotlin.math.roundToInt
 
 @RestController
 @RequestMapping("/v2")
-class TeacherCheckSimilarityController(private val similarityService: SimilarityService) {
+class TeacherCheckSimilarityController(
+    private val similarityService: SimilarityService,
+    private val requests: SimilarityRequests,
+) {
     private val log = KotlinLogging.logger {}
 
     /**
@@ -222,65 +210,11 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
             "Calculate similarity for exercise '$exIdString' by ${caller.id} over " +
                     "${body.courses.size} course(s), ${body.submissions?.size ?: 0} explicit submission(s)"
         }
-        val exerciseId = exIdString.idToLongOrInvalidReq()
-        val courses = body.courses.map { it.id.idToLongOrInvalidReq() }
-
-        // An empty list would register zero access checks and assert nothing. The submissions query
-        // survives that (an empty IN matches no rows), but selectExerciseMeta would then run entirely
-        // unauthorised, turning this endpoint into an existence oracle over the whole exercise table.
-        if (courses.isEmpty()) throw InvalidRequestException(
-            "At least one course must be given.", ReqError.INVALID_PARAMETER_VALUE, notify = false
-        )
-
-        caller.assertAccess {
-            courses.forEach { teacherOnCourse(it) }
-        }
-
-        // Resolved to concrete ids before anything else happens, which is what lets the cap be
-        // checked without a COUNT and without a window in which rows can appear between counting and
-        // selecting. Without explicit ids this now means the *latest* submission per student, not
-        // every attempt ever made: comparing all of them let one student's resubmissions pair with
-        // each other at ~100% and, at fifteen attempts, fill the whole top-N cap with self-pairs and
-        // push every real finding out of the response. The page always sent explicit ids and so
-        // never saw this; the endpoint is documented as callable without them.
-        //
-        // Distinct, because the query below answers a repeated id with one row: counted twice, it
-        // failed the found-count check and was reported as not found although it plainly exists, and
-        // the cap counted it twice as well.
-        val submissionIds = body.submissions?.map { it.id.idToLongOrInvalidReq() }?.distinct()
-            ?: selectLatestSubmissionIds(exerciseId, courses)
-
-        // The cap exists to stop a huge cohort reaching the heap at all, so it is checked before any
-        // solution text is read — and only here: the loader below selects exactly these ids, so a
-        // second check after loading could never fire. Mapped here, because an unmapped
-        // TooManySubmissions would leave as a bare RuntimeException and reach the generic handler — a
-        // 500 with an empty body and a system-notification email, for a condition the API has a
-        // named 400 for.
-        try {
-            similarityService.assertWithinLimit(submissionIds.size)
-        } catch (e: TooManySubmissions) {
-            throw tooManySubmissions(e)
-        }
-
-        // One cheap row, and it decides the tokeniser, so it is read before the permit is asked for.
-        val exercise = selectExerciseMeta(exerciseId, courses)
-        val language = SimilarityLanguage.of(exercise.solutionFileName, exercise.containerImage)
-        // Which provider compares it is the admin's to say (see SimilarityRegistry), and known before the
-        // permit is asked for, so a language nobody may compare is refused without anybody waiting.
-        // A course's own settings apply when the check is about that course alone - which the page always
-        // asks; across several courses there is no one course's choice to follow, so the defaults do.
-        val courseSettings = courses.singleOrNull()?.let(::selectCourseSettings)
-        val mode = courseSettings?.mode ?: SimilarityMode.OPTIMISED
-        val binding = try {
-            similarityService.bind(language, courseSettings?.provider)
-        } catch (e: SimilarityUnavailable) {
-            throw InvalidRequestException(
-                "Similarity is not available for ${e.language.wireName} here.",
-                ReqError.SIMILARITY_UNAVAILABLE,
-                "language" to e.language.wireName,
-                notify = false,
-            )
-        }
+        val resolved = requests.resolve(exIdString, body.courses.map { it.id }, body.submissions?.map { it.id }, caller)
+        val binding = resolved.binding
+        // Priced before the permit: a cohort the budget cannot cover is refused now, by name, rather
+        // than after holding the one permit for the whole budget and timing out (EZ-1667).
+        requests.assertAffordable(resolved)
 
         // The rows are selected by the loader below, which the service runs only once it holds the
         // permit. Loading them out here instead would put every queuing caller's whole cohort on the
@@ -290,7 +224,7 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
         val run = try {
             similarityService.compare(
                 loadRows = {
-                    selectSubmissions(exerciseId, courses, submissionIds).also { rows ->
+                    selectSubmissions(resolved.exerciseId, resolved.courses, resolved.submissionIds).also { rows ->
                         // Not the solution file name: it is teacher-authored text, and a newline in it
                         // would end this line and start a forged one on every run of the exercise.
                         log.info { "Analysing similarity of ${rows.size} submissions as ${binding.language.wireName} with ${binding.provider}" }
@@ -358,88 +292,20 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
             outcome.truncated,
             outcome.groups.map { group -> RespGroup(group.map { it.toString() }) },
             outcome.provider,
-            mode.name.lowercase(),
+            resolved.mode.name.lowercase(),
             binding.fallback,
             similarityService.registry.provider(outcome.provider)?.matchRanges ?: false,
         )
     }
 
-    private class CourseSettings(val provider: String?, val mode: SimilarityMode)
-
-    private fun selectCourseSettings(courseId: Long): CourseSettings? = transaction {
-        CourseSimilaritySettings.selectAll().where { CourseSimilaritySettings.course eq courseId }.singleOrNull()
-            ?.let { CourseSettings(it[CourseSimilaritySettings.provider], it[CourseSimilaritySettings.mode]) }
-    }
-
-    private fun tooManySubmissions(e: TooManySubmissions) = InvalidRequestException(
-        "Similarity can compare at most ${e.limit} submissions at once, ${e.requested} were requested.",
-        ReqError.TOO_MANY_SUBMISSIONS,
-        "limit" to e.limit.toString(), "requested" to e.requested.toString(),
-        notify = false,
-    )
-
     private fun percent(fraction: Double): Int =
         if (fraction.isNaN()) 0 else (fraction * 100).roundToInt().coerceIn(0, 100)
-
-    private data class ExerciseMeta(val solutionFileName: String, val containerImage: String?)
-
-    /**
-     * The current version's solution file name and its grader's container image, if it has one - the
-     * two language hints the schema has. [SimilarityLanguage.of] explains why it takes both: an SQL
-     * exercise's file name is often still the default `lahendus.py`.
-     *
-     * Joined through [CourseExercise] and restricted to the courses the caller was just asserted on.
-     * Keyed on `exerciseId` alone this leaked: any teacher could probe any exercise id and tell an
-     * existing one from a missing one by the status code, and read its `solution_file_name` through
-     * the response's `language`. Every other exercise read in this codebase reaches the row through a
-     * course or through the library-dir checks, and so does this one now.
-     */
-    private fun selectExerciseMeta(exerciseId: Long, courses: List<Long>): ExerciseMeta = transaction {
-        (Exercise innerJoin ExerciseVer innerJoin CourseExercise)
-            .join(AutoExercise, JoinType.LEFT, ExerciseVer.autoExerciseId, AutoExercise.id)
-            .select(ExerciseVer.solutionFileName, AutoExercise.containerImage)
-            .where {
-                Exercise.id eq exerciseId and ExerciseVer.validTo.isNull() and
-                        (CourseExercise.course inList courses)
-            }
-            .map { ExerciseMeta(it[ExerciseVer.solutionFileName], it.getOrNull(AutoExercise.containerImage)?.value) }
-            .distinct()
-            .singleOrNull()
-            // notify = false like every other refusal here, and like assertExerciseIsOnCourse, which
-            // states the same fact: a client-side id mismatch is not an operator alert.
-            ?: throw InvalidRequestException(
-                "Exercise $exerciseId not found", ReqError.ENTITY_WITH_ID_NOT_FOUND, notify = false
-            )
-    }
 
     /**
      * A row plus the author, who is not on the wire but decides which pairs are worth reporting, and the
      * solution as loaded - what is compared, whatever the response then sends of it.
      */
     private data class SubmissionRow(val resp: RespSubmission, val studentId: String, val solution: String)
-
-    /**
-     * The newest submission per student per course exercise, ids only.
-     *
-     * Deliberately selects no solution text: this runs before the cap is checked and before the
-     * permit is taken, so it must not be the thing that puts a cohort on the heap. The ordering plus
-     * `associate` is the idiom from [selectLatestSubmissionsForExercise] — last write per key wins —
-     * extended to a key of (course exercise, student) because this endpoint spans several courses
-     * and the same student can appear in more than one.
-     */
-    private fun selectLatestSubmissionIds(exerciseId: Long, courses: List<Long>): List<Long> = transaction {
-        (CourseExercise innerJoin Submission)
-            .select(Submission.id, Submission.student, Submission.courseExercise)
-            .where { CourseExercise.exercise eq exerciseId and (CourseExercise.course inList courses) }
-            .orderBy(
-                Submission.createdAt to SortOrder.ASC,
-                Submission.number to SortOrder.ASC,
-                Submission.id to SortOrder.ASC,
-            )
-            .associate { (it[Submission.courseExercise].value to it[Submission.student].value) to it[Submission.id].value }
-            .values
-            .toList()
-    }
 
     /**
      * The chosen submissions, with their solution bodies. Always given a concrete id list, so the

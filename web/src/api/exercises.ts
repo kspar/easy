@@ -12,6 +12,7 @@ import type {
   InlineCommentResp,
   MoodlePropsResp,
   ParticipantsResp,
+  SimilarityEstimateResp,
   SimilarityResp,
   SubmissionResp,
   SubmissionRow,
@@ -1180,6 +1181,31 @@ export function useCheckSimilarity(exerciseId: string | undefined) {
         },
         signal: AbortSignal.timeout(SIMILARITY_REQUEST_TIMEOUT_MS),
       }),
+  })
+}
+
+/**
+ * EZ-1667. What `useCheckSimilarity` would do with the same selection - pairs, provider, about how
+ * long, and whether core would refuse it as too costly - priced from sizes, without running anything.
+ *
+ * A query, unlike the check: it is cheap, it answers a question about the selection, and it should
+ * follow the selection as the teacher changes exercise or group. Keyed on the exact ids, so a group
+ * change is a new question. Not retried: an older core answers 404, and three retries only delay the
+ * page's fallback to the plain pair count.
+ */
+export function useSimilarityEstimate(exerciseId: string | undefined, courseId: string, submissionIds: string[]) {
+  return useQuery({
+    queryKey: ['similarity-estimate', exerciseId, courseId, submissionIds],
+    queryFn: () =>
+      apiFetch<SimilarityEstimateResp>(`/exercises/${exerciseId}/similarity/estimate`, {
+        method: 'POST',
+        body: {
+          courses: [{ id: courseId }],
+          submissions: submissionIds.map((id) => ({ id })),
+        },
+      }),
+    enabled: !!exerciseId && submissionIds.length >= 2,
+    retry: false,
   })
 }
 

@@ -92,6 +92,7 @@
     "POST /v2/executors": { "request": "core.aas.service.CreateExecutorController.Req", "response": "core.aas.service.CreateExecutorController.Resp" },
     "POST /v2/exercises": { "request": "core.ems.service.exercise.CreateExercise.Req", "response": "core.ems.service.exercise.CreateExercise.Resp" },
     "POST /v2/exercises/{exerciseId}/similarity": { "request": "core.ems.service.code.TeacherCheckSimilarityController.Req", "response": "core.ems.service.code.TeacherCheckSimilarityController.Resp" },
+    "POST /v2/exercises/{exerciseId}/similarity/estimate": { "request": "core.ems.service.code.TeacherCheckSimilarityController.Req", "response": "core.ems.service.code.TeacherEstimateSimilarityController.Resp" },
     "POST /v2/exercises/{exerciseId}/testing/autoassess": { "request": "core.ems.service.exercise.TeacherAutoassess.Req", "response": "core.ems.service.exercise.TeacherAutoassess.Resp" },
     "POST /v2/export/courses/{courseId}/exercises/{courseExerciseId}/submissions": { "request": "core.ems.service.exercise.TeacherDownloadCourseExerciseSubmissionsController.Req" },
     "POST /v2/export/exercises/{exerciseId}/submissions/latest": { "request": "core.ems.service.exercise.TeacherDownloadSubmissionsController.Req" },
@@ -530,6 +531,17 @@
       "given_name": { "kind": "string" },
       "id": { "kind": "string" },
       "solution": { "kind": "string", "nullable": true }
+    },
+    "core.ems.service.code.TeacherEstimateSimilarityController.Resp": {
+      "budget_sec": { "kind": "number" },
+      "estimated_sec": { "kind": "number" },
+      "language": { "kind": "string" },
+      "mode": { "kind": "string" },
+      "pairs": { "kind": "number" },
+      "provider": { "kind": "string" },
+      "provider_fallback": { "kind": "string", "nullable": true },
+      "submissions": { "kind": "number" },
+      "within_budget": { "kind": "boolean" }
     },
     "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.Resp": {
       "mode": { "kind": "string" },

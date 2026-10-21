@@ -69,6 +69,7 @@ const CODE_KEYS: Record<string, string> = {
   SIMILARITY_BUSY: 'errors.similarityBusy',
   SIMILARITY_TIMEOUT: 'errors.similarityTimeout',
   SIMILARITY_UNAVAILABLE: 'errors.similarityUnavailable',
+  SIMILARITY_TOO_COSTLY: 'errors.similarityTooCostly',
   // The fallback only: with attrs.limit present the branch below names the actual number.
   TOO_MANY_SUBMISSIONS: 'errors.tooManySubmissions',
 
@@ -171,6 +172,16 @@ export function errorMessage(err: unknown, t: TFunction): string {
   // Core attaches the cap and the requested count; a number the teacher can act on beats "too many".
   if (body.code === 'TOO_MANY_SUBMISSIONS' && body.attrs?.limit) {
     return t('errors.tooManySubmissionsLimit', { value: body.attrs.limit })
+  }
+  // How long it would have taken against how long a check may run, in minutes: what tells a teacher
+  // how much smaller the group has to be (EZ-1667).
+  if (body.code === 'SIMILARITY_TOO_COSTLY') {
+    const estimated = Number(body.attrs?.estimated_sec)
+    const budget = Number(body.attrs?.budget_sec)
+    if (Number.isFinite(estimated) && Number.isFinite(budget)) {
+      const minutes = (sec: number) => Math.ceil(sec / 60)
+      return t('errors.similarityTooCostlyMinutes', { estimated: minutes(estimated), budget: minutes(budget) })
+    }
   }
 
   if (EMAIL_CODES.has(body.code)) {

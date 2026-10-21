@@ -43,7 +43,9 @@
     "similarityUnavailable": "Selle ülesande keele jaoks ei ole sarnasuse kontroll saadaval. Administraator saab selle sisse lülitada.",
     "similarityTimeout": "Võrdlus ei jõudnud etteantud aja jooksul lõpuni. Proovi kogu kursuse asemel ühte rühma.",
     "tooManySubmissions": "Korraga on liiga palju esitusi võrrelda. Kitsenda valik ühele rühmale.",
-    "tooManySubmissionsLimit": "Korraga saab võrrelda kõige rohkem {{value}} esitust. Kitsenda valik ühele rühmale."
+    "tooManySubmissionsLimit": "Korraga saab võrrelda kõige rohkem {{value}} esitust. Kitsenda valik ühele rühmale.",
+    "similarityTooCostly": "Nende võrdlemine võtaks kauem, kui üks kontroll tohib kesta. Vali rühm, et võrrelda vähem lahendusi.",
+    "similarityTooCostlyMinutes": "Nende võrdlemine võtaks umbes {{estimated}} min, kauem kui üks kontroll tohib kesta ({{budget}} min). Vali rühm, et võrrelda vähem lahendusi."
   },
   "general": {
     "add": "Lisa",
@@ -723,7 +725,12 @@
     "metricOther": "{{name}} {{value}}",
     "diceTooltip": "Dice’i kordaja — kui suure osa kahest failist moodustab tekst, mis on neis mõlemas.",
     "levenshteinTooltip": "Levenshteini suhtarv — kui vähe muudatusi oleks vaja, et ühest failist saaks teine.",
-    "sharedTokensTooltip": "Ühised sümbolid — kui palju koodi on kahel lahendusel ühist, sõltumata sellest, kui suure osa see kummastki moodustab. Paarid on järjestatud enim ühist koodi jagavast alates."
+    "sharedTokensTooltip": "Ühised sümbolid — kui palju koodi on kahel lahendusel ühist, sõltumata sellest, kui suure osa see kummastki moodustab. Paarid on järjestatud enim ühist koodi jagavast alates.",
+    "estimateScope_one": "{{submissions}} esitust, {{count}} võrreldav paar, umbes {{duration}}",
+    "estimateScope_other": "{{submissions}} esitust, {{count}} võrreldavat paari, umbes {{duration}}",
+    "durationSeconds": "{{value}} s",
+    "durationMinutes": "{{value}} min",
+    "tooCostly": "See võtaks umbes {{duration}}, kauem kui üks kontroll tohib kesta ({{budget}}), seega see lükataks tagasi. Vali rühm, et võrrelda vähem lahendusi."
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",

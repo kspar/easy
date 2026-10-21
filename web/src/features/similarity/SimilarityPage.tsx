@@ -34,6 +34,7 @@ import useSavedGroup from '../../hooks/useSavedGroup.ts'
 import {
   useCheckSimilarity,
   useCourseGroups,
+  useSimilarityEstimate,
   useSimilarityRunning,
   useTeacherCourseExercises,
   useTeacherSubmissionSummaries,
@@ -48,6 +49,7 @@ import { skippedByReason } from './similaritySkipped.ts'
 import type { SkippedReason } from './similaritySkipped.ts'
 import { highlightFileName } from './similarityLanguage.ts'
 import { comparedBy, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
+import { estimateView, formatDuration } from './similarityEstimate.ts'
 import type { ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
 import CourseSimilaritySettingsDialog from '../course-settings/CourseSimilaritySettingsDialog.tsx'
@@ -56,11 +58,12 @@ import { SHARED_LIGHT, SHARED_DARK } from './similarityHighlight.ts'
 import { spaLinkProps } from '../../components/spaLink.ts'
 
 /**
- * Above this many submissions, say out loud how many comparisons that is.
+ * Above this many submissions, say out loud how many comparisons that is - when core cannot say how
+ * long they will take (an older core, with no estimate). Where it can, the estimate says it instead.
  *
  * Core compares every pair inside the request, so the work grows with the square of the class: 40
- * students is 780 comparisons, 300 is nearly 45,000. The scaling problem is EZ-1667's to solve; this
- * page's job is to not let a teacher click a button that will appear to hang.
+ * students is 780 comparisons, 300 is nearly 45,000. This page's job is to not let a teacher click a
+ * button that will appear to hang.
  */
 const PAIR_WARNING_THRESHOLD = 120
 
@@ -112,6 +115,13 @@ export default function SimilarityPage() {
 
   const submitted = useMemo(() => (rows ?? []).filter((r) => r.submission), [rows])
   const pairCount = (submitted.length * (submitted.length - 1)) / 2
+
+  // What core says the check would take, before it is asked for (EZ-1667): pairs, about how long, and
+  // whether it would be refused as too costly - so the refusal comes before the click, not after it.
+  // The ids are the ones `run` sends, memoised so the query's key holds still between renders.
+  const submittedIds = useMemo(() => submitted.map((r) => r.submission!.id), [submitted])
+  const { data: estimateData } = useSimilarityEstimate(selected ? exerciseId : undefined, courseId!, submittedIds)
+  const estimate = estimateView(estimateData)
 
   const check = useCheckSimilarity(exerciseId || undefined)
   // What the last run was over, taken when it was asked for. The result belongs to that selection and
@@ -338,7 +348,8 @@ export default function SimilarityPage() {
           startIcon={
             running ? <CircularProgress size={16} color="inherit" /> : <CompareArrowsOutlined />
           }
-          disabled={!selected || running || rowsLoading || submitted.length < 2}
+          // Not offered for a check core has already said it would refuse: the alert below says why.
+          disabled={!selected || running || rowsLoading || submitted.length < 2 || estimate.kind === 'tooCostly'}
           onClick={run}
         >
           {/* Named apart from an ordinary run: after a group or exercise change this is the run the
@@ -355,11 +366,26 @@ export default function SimilarityPage() {
 
       <CourseSimilaritySettingsDialog courseId={courseId!} open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
-      {/* What is about to be compared, before committing to the wait. */}
+      {/* What is about to be compared, before committing to the wait: and how long, once core says. */}
       {selected && !rowsLoading && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-          {t('similarity.scope', { submissions: submitted.length, count: pairCount })}
+          {estimate.kind === 'unknown'
+            ? t('similarity.scope', { submissions: submitted.length, count: pairCount })
+            : t('similarity.estimateScope', {
+              submissions: estimate.submissions,
+              count: estimate.pairs,
+              duration: formatDuration(estimate.seconds, t),
+            })}
         </Typography>
+      )}
+
+      {estimate.kind === 'tooCostly' && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {t('similarity.tooCostly', {
+            duration: formatDuration(estimate.seconds, t),
+            budget: formatDuration(estimate.budget, t),
+          })}
+        </Alert>
       )}
 
       {/* A failed load is said as one: empty, it read as "fewer than two submissions" and disabled Find. */}
@@ -371,7 +397,7 @@ export default function SimilarityPage() {
         <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.tooFewSubmissions')}</Alert>
       )}
 
-      {submitted.length > PAIR_WARNING_THRESHOLD && (
+      {estimate.kind === 'unknown' && submitted.length > PAIR_WARNING_THRESHOLD && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           {t('similarity.slowWarning', { pairs: pairCount })}
         </Alert>

@@ -43,6 +43,21 @@ internal interface SimilarityProvider {
      */
     fun comparesAs(language: SimilarityLanguage): SimilarityLanguage
 
+    /**
+     * What one solution of [chars] characters costs before any pair, in nanoseconds of one worker; and
+     * [pairNanos], what one pair costs. Measured on this provider, not derived, and only as exact as a
+     * measurement: they are what [SimilarityService.estimate] adds up to refuse a cohort that would not
+     * finish inside the budget before anybody waits for it, and to tell a teacher how long one will take.
+     * Generous rather than tight - an overestimate refuses a run that might have finished, but an
+     * underestimate is still bounded by the deadline.
+     */
+    fun prepareNanos(chars: Int): Long
+
+    fun pairNanos(charsA: Int, charsB: Int): Long
+
+    /** Whether a solution of [chars] characters is compared at all, rather than skipped by size. */
+    fun compares(chars: Int): Boolean = chars > 0
+
     fun open(request: ProviderRequest, run: RunContext): ProviderSession
 }
 

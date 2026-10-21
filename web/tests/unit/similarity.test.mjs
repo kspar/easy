@@ -18,6 +18,7 @@ import { isSimilarityRefusal } from '../../src/features/similarity/similarityErr
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
 import { comparedBy, pairMetrics, providerName, resultNotes, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
+import { estimateView, formatDuration } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
 import { skippedByReason } from '../../src/features/similarity/similaritySkipped.ts'
@@ -64,6 +65,8 @@ describe('isSimilarityRefusal', () => {
     expect(isSimilarityRefusal(apiError('SIMILARITY_TIMEOUT'))).toBe(true)
     // A language switched off is not a failure to retry: the page says so rather than "try a group".
     expect(isSimilarityRefusal(apiError('SIMILARITY_UNAVAILABLE'))).toBe(true)
+    // Nor is a cohort priced over the budget: its own sentence says how long, against how long.
+    expect(isSimilarityRefusal(apiError('SIMILARITY_TOO_COSTLY'))).toBe(true)
   })
 
   test('too many submissions names the limit core sent, and says the generic thing only without one', () => {
@@ -368,5 +371,46 @@ describe('shared code from the diff', () => {
     const { a } = sides('a = 1\nb = 2\n', 'a = 1\nb = 2\n')
     expect(unchangedLineNumbers(a.doc, a.chunks)).toEqual([1, 2])
     expect(unchangedSpans(a.doc, a.chunks)).toEqual([])
+  })
+})
+
+/**
+ * What the page says before Find, from core's estimate (EZ-1667). A misread here switches Find off for a
+ * check that would run, or offers one core is about to refuse - and an older core's missing estimate
+ * must read as "no estimate", never as "about NaN s".
+ */
+describe('the estimate', () => {
+  const fits = { submissions: 30, pairs: 435, provider: 'edit-distance', language: 'python', mode: 'optimised', provider_fallback: null, estimated_sec: 12, budget_sec: 120, within_budget: true }
+
+  test('within the budget it is a duration to show, and over it a refusal to say before the click', () => {
+    expect(estimateView(fits)).toEqual({ kind: 'fits', submissions: 30, pairs: 435, seconds: 12 })
+    expect(estimateView({ ...fits, estimated_sec: 540, within_budget: false }))
+      .toEqual({ kind: 'tooCostly', submissions: 30, pairs: 435, seconds: 540, budget: 120 })
+  })
+
+  test('no estimate, or one the page cannot read, falls back to what the page said before estimates', () => {
+    expect(estimateView(undefined)).toEqual({ kind: 'unknown' })
+    // An unstubbed request, or a proxy's empty body.
+    expect(estimateView({})).toEqual({ kind: 'unknown' })
+    expect(estimateView({ ...fits, estimated_sec: 'soon' })).toEqual({ kind: 'unknown' })
+    expect(estimateView({ ...fits, within_budget: undefined })).toEqual({ kind: 'unknown' })
+  })
+
+  test('seconds under a minute and a half, whole minutes rounded up from there, and nothing raised', () => {
+    const t = (key, options) => `${key.replace('similarity.duration', '')}:${options.value}`
+    // A budget of none is said as none: raised to one, it read "about 1 s, longer than the 1 s".
+    expect(formatDuration(0, t)).toBe('Seconds:0')
+    expect(formatDuration(0.2, t)).toBe('Seconds:1')
+    expect(formatDuration(12, t)).toBe('Seconds:12')
+    expect(formatDuration(89, t)).toBe('Seconds:89')
+    expect(formatDuration(90, t)).toBe('Minutes:2')
+    expect(formatDuration(121, t)).toBe('Minutes:3')
+  })
+
+  test('the refusal says how long against how long, in minutes, and the bare sentence without them', () => {
+    const t = (key, options) => `${key} ${JSON.stringify(options ?? {})}`
+    expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY', { estimated_sec: '540', budget_sec: '120' }), t))
+      .toBe('errors.similarityTooCostlyMinutes {"estimated":9,"budget":2}')
+    expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY'), t)).toBe('errors.similarityTooCostly {}')
   })
 })

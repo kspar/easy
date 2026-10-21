@@ -679,6 +679,26 @@ export interface SimilarityResp {
 }
 
 /**
+ * What a similarity check with the same body would do, priced from the submissions' sizes without
+ * running it. `within_budget` false means the check would be refused as SIMILARITY_TOO_COSTLY.
+ *
+ * @endpoint POST /v2/exercises/{exerciseId}/similarity/estimate -> (root)
+ */
+export interface SimilarityEstimateResp {
+  submissions: number
+  /** Pairs it would score: identical texts once, none between one student's own submissions. */
+  pairs: number
+  provider: string
+  language: string
+  mode: string
+  provider_fallback: string | null
+  /** About how long, in whole seconds rounded up. */
+  estimated_sec: number
+  budget_sec: number
+  within_budget: boolean
+}
+
+/**
  * A course's similarity settings: the provider it pinned, or null for the admin's order, and the mode.
  * `providers` are those an admin has on, in the order a language is offered to them.
  *

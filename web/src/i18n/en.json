@@ -43,7 +43,9 @@
     "similarityUnavailable": "Similarity checking is not available for this exercise's language. An administrator can switch it on.",
     "similarityTimeout": "The comparison did not finish within its time budget. Try a single group rather than the whole course.",
     "tooManySubmissions": "Too many submissions to compare at once. Narrow the selection to a single group.",
-    "tooManySubmissionsLimit": "At most {{value}} submissions can be compared at once. Narrow the selection to a single group."
+    "tooManySubmissionsLimit": "At most {{value}} submissions can be compared at once. Narrow the selection to a single group.",
+    "similarityTooCostly": "Comparing these would take longer than one check may run. Choose a group to compare fewer solutions.",
+    "similarityTooCostlyMinutes": "Comparing these would take about {{estimated}} min, longer than the {{budget}} min one check may run. Choose a group to compare fewer solutions."
   },
   "general": {
     "add": "Add",
@@ -723,7 +725,12 @@
     "metricOther": "{{name}} {{value}}",
     "diceTooltip": "Dice coefficient — how much of the two files is text they both contain.",
     "levenshteinTooltip": "Levenshtein ratio — how few edits would turn one file into the other.",
-    "sharedTokensTooltip": "Shared tokens — how much code the two have in common, whatever share of either that is. Pairs are listed most shared first."
+    "sharedTokensTooltip": "Shared tokens — how much code the two have in common, whatever share of either that is. Pairs are listed most shared first.",
+    "estimateScope_one": "{{submissions}} submissions, {{count}} pair to compare, about {{duration}}",
+    "estimateScope_other": "{{submissions}} submissions, {{count}} pairs to compare, about {{duration}}",
+    "durationSeconds": "{{value}} s",
+    "durationMinutes": "{{value}} min",
+    "tooCostly": "This would take about {{duration}}, longer than the {{budget}} one check may run, so it would be refused. Choose a group to compare fewer solutions."
   },
   "about": {
     "s1": "Lahendus is operated and developed by the",

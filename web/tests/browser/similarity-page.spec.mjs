@@ -36,7 +36,16 @@ test('similarity-page', async ({ launch, check }) => {
   await fakeApi(page, [
     ['/account/checkin', () => ({})],
 
-    // Before '/similarity', which it also contains: the first needle that matches answers.
+    // Before '/similarity', which it also contains - the first needle that matches answers. Priced from
+    // what was sent, as core does, so a group change is a new answer: n submissions, n(n-1)/2 pairs.
+    ['/similarity/estimate', ({ body }) => {
+      const n = body?.submissions?.length ?? 0
+      return {
+        submissions: n, pairs: (n * (n - 1)) / 2, provider, language: 'python', mode: 'full',
+        provider_fallback: null, estimated_sec: 2, budget_sec: 120, within_budget: true,
+      }
+    }],
+
     [`/courses/${COURSE}/similarity-settings`, ({ method, body }) => {
       if (method === 'PUT') {
         settingsWrites.push(body)
@@ -140,6 +149,10 @@ test('similarity-page', async ({ launch, check }) => {
   check(
     'the scope is shown before running: 3 submissions of 4 students, 3 pairs',
     await waitUntil(() => page.getByText('3 submissions, 3 pairs to compare').isVisible()),
+  )
+  check(
+    'and how long core says it will take, before anybody waits for it',
+    await waitUntil(() => page.getByText('3 submissions, 3 pairs to compare, about 2 s').isVisible()),
   )
 
   await shot('01-ready')

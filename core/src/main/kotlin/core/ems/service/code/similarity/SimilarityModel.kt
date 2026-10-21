@@ -83,6 +83,34 @@ data class SimilarityOutcome(
  */
 data class SimilarityRun<T>(val rows: List<T>, val outcome: SimilarityOutcome)
 
+/**
+ * A submission as the estimate sees it: its size in characters, its author, and a fingerprint of its
+ * text - never the text, so a cohort can be priced without loading it. Equal fingerprints are compared
+ * once, as identical texts are; null is a text of its own.
+ */
+data class SizedSource(val id: Long, val chars: Int, val owner: String? = null, val digest: String? = null)
+
+/**
+ * What a comparison would take: how many pairs it would score, and how long on this server's pool,
+ * against the budget it would run under. See [SimilarityService.estimate].
+ */
+data class SimilarityEstimate(
+    val submissions: Int,
+    val pairs: Long,
+    val threads: Int,
+    val wallNanos: Long,
+    val budgetSec: Long,
+) {
+    val withinBudget: Boolean get() = wallNanos <= budgetSec * 1_000_000_000L
+
+    /** Whole seconds, rounded up: "about 0 s" is not something to tell a teacher about a real run. */
+    val seconds: Long get() = (wallNanos + 999_999_999L) / 1_000_000_000L
+}
+
+/** Refused before the permit: the estimate is over the budget, so the run would only time out. */
+class SimilarityTooCostly(val estimate: SimilarityEstimate) :
+    RuntimeException("Similarity comparison would take about ${estimate.seconds}s, over the ${estimate.budgetSec}s budget")
+
 class TooManySubmissions(val requested: Int, val limit: Int) :
     RuntimeException("Similarity requested for $requested submissions, limit is $limit")
 

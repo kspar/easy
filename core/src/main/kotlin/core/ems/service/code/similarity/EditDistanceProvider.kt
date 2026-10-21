@@ -31,6 +31,20 @@ internal class EditDistanceProvider(
     /** A ratio over whole texts says how alike they are, not where. */
     override val matchRanges = false
 
+    /** Its bigrams, sorted: measured at about 100 ns a character. */
+    override fun prepareNanos(chars: Int): Long = 100L * chars
+
+    /**
+     * The bit-parallel LCS walks the longer text once per 64 characters of the shorter, measured at
+     * about 7 ns a step on one core; Dice merges two sorted bigram lists. 500 solutions of 2.7 KB come
+     * to 104 s here, against 100 s measured.
+     */
+    override fun pairNanos(charsA: Int, charsB: Int): Long =
+        7L * ((minOf(charsA, charsB) + 63) / 64) * maxOf(charsA, charsB) + 2L * (charsA + charsB) + 2_000
+
+    /** Blank solutions are too small and those above the cap too large; neither is compared. */
+    override fun compares(chars: Int): Boolean = chars in 1..maxSolutionChars
+
     /** Characters are characters in every language, so every language is compared as itself. */
     override fun comparesAs(language: SimilarityLanguage): SimilarityLanguage = language
 

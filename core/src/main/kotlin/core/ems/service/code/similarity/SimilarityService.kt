@@ -130,6 +130,44 @@ class SimilarityService(
     }
 
     /**
+     * What comparing [sources] under [binding] would take, from their sizes alone (EZ-1667): the pairs
+     * it would score and the time its provider's measured costs add up to on this server's pool.
+     *
+     * The deadline already stops a run that outlasts the budget, but only once the budget is spent:
+     * the teacher waits two minutes for a refusal, and the one permit is held for all of them. Priced
+     * up front, a cohort that cannot finish is refused at once, and one that can says how long it will
+     * take before anybody clicks.
+     *
+     * The same pairs the engine would compare, as far as sizes can tell: texts with the same digest
+     * once, as the engine compares an identical group once; none between a student's own submissions;
+     * none with a solution the provider would skip for its size. Divided by the threads the run would
+     * get, which is fixed per server, so the same cohort gets the same answer every time.
+     */
+    fun estimate(binding: SimilarityBinding, sources: List<SizedSource>): SimilarityEstimate {
+        val provider = checkNotNull(registry.provider(binding.provider)) { "No similarity provider ${binding.provider}" }
+        // One comparand per distinct text, with every author who submitted it.
+        val comparands = sources.filter { provider.compares(it.chars) }
+            .groupBy { it.digest ?: "#${it.id}" }.values
+            .map { group -> group.first().chars to group.mapTo(mutableSetOf()) { it.owner } }
+        var nanos = sources.sumOf { provider.prepareNanos(it.chars) }
+        var pairs = 0L
+        for (i in comparands.indices) for (j in i + 1 until comparands.size) {
+            val (charsA, ownersA) = comparands[i]
+            val (charsB, ownersB) = comparands[j]
+            // One author on both sides is a student against their own attempt, which is never compared.
+            if (ownersA.size == 1 && ownersA == ownersB && ownersA.single() != null) continue
+            pairs++
+            nanos += provider.pairNanos(charsA, charsB)
+        }
+        val threads = threadsFor(sources.size)
+        return SimilarityEstimate(sources.size, pairs, threads, nanos / threads, timeoutSec)
+    }
+
+    /** [estimate], refused with [SimilarityTooCostly] when it is over the budget. */
+    fun assertAffordable(binding: SimilarityBinding, sources: List<SizedSource>): SimilarityEstimate =
+        estimate(binding, sources).also { if (!it.withinBudget) throw SimilarityTooCostly(it) }
+
+    /**
      * Takes a *loader* rather than the loaded solutions, so the permit covers the memory it claims to.
      *
      * The caller's solutions are the bulk of what a comparison holds, and loading them before asking
