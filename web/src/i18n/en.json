@@ -730,7 +730,8 @@
     "estimateScope_other": "{{submissions}} submissions, {{count}} pairs to compare, about {{duration}}",
     "durationSeconds": "{{value}} s",
     "durationMinutes": "{{value}} min",
-    "tooCostly": "This would take about {{duration}}, longer than the {{budget}} one check may run, so it would be refused. Choose a group to compare fewer solutions."
+    "tooCostly": "This would take about {{duration}}, longer than the {{budget}} one check may run, so it would be refused. Choose a group to compare fewer solutions.",
+    "estimateNothing": "{{submissions}} submissions, but this method can compare none of them: each is blank or too long for it. Find lists them."
   },
   "about": {
     "s1": "Lahendus is operated and developed by the",

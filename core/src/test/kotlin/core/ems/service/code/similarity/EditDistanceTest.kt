@@ -98,6 +98,23 @@ class EditDistanceTest {
     }
 
     @Test
+    fun `the character cap counts code points, as the database the estimate reads does`() {
+        // Six emoji are twelve UTF-16 units and six characters to Postgres's char_length: counted in
+        // units, the run skipped what the estimate had priced into every pair.
+        val provider = EditDistanceProvider(maxSolutionChars = 10)
+        val emoji = String(Character.toChars(0x1F600)).repeat(6)
+        assertEquals(12, emoji.length)
+        assertTrue(provider.compares(emoji.codePointCount(0, emoji.length)))
+        SimilarityWorkers(1, 1L shl 20).use { workers ->
+            val run = RunContext(workers, Deadline.after(TimeUnit.SECONDS.toNanos(60)), 60)
+            val sources = listOf(SimilaritySource(1, emoji), SimilaritySource(2, emoji + "x"))
+            provider.open(ProviderRequest(SimilarityLanguage.TEXT, sources, null), run).use { session ->
+                assertEquals(listOf(1L, 2L), session.prepare().usable)
+            }
+        }
+    }
+
+    @Test
     fun `a solution above the character cap is skipped as too large, and a blank one as too small`() {
         val provider = EditDistanceProvider(maxSolutionChars = 10)
         SimilarityWorkers(1, 1L shl 20).use { workers ->

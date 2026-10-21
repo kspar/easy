@@ -730,7 +730,8 @@
     "estimateScope_other": "{{submissions}} esitust, {{count}} võrreldavat paari, umbes {{duration}}",
     "durationSeconds": "{{value}} s",
     "durationMinutes": "{{value}} min",
-    "tooCostly": "See võtaks umbes {{duration}}, kauem kui üks kontroll tohib kesta ({{budget}}), seega see lükataks tagasi. Vali rühm, et võrrelda vähem lahendusi."
+    "tooCostly": "See võtaks umbes {{duration}}, kauem kui üks kontroll tohib kesta ({{budget}}), seega see lükataks tagasi. Vali rühm, et võrrelda vähem lahendusi.",
+    "estimateNothing": "{{submissions}} esitust, kuid see meetod ei saa neist ühtegi võrrelda: kõik on tühjad või selle jaoks liiga pikad. Otsing loetleb need."
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",

@@ -43,6 +43,18 @@ class SimilarityEstimateTest {
     }
 
     @Test
+    fun `identical texts by fewer than three authors are each compared, as the engine compares them`() {
+        // The engine groups identical submissions only at three authors; two copies stay two comparands,
+        // each against everyone. Collapsed here, fifty such pairs priced at a quarter of their cost.
+        val sources = listOf(
+            SizedSource(1, 200, "ann", "same"), SizedSource(2, 200, "ben", "same"),
+            SizedSource(3, 300, "cid", "other"), SizedSource(4, 300, "cid", "other"),
+        )
+        // ann, ben, cid, cid: six pairs, less cid's against cid's own.
+        assertEquals(5, service().estimate(editDistance, sources).pairs)
+    }
+
+    @Test
     fun `a solution the provider skips for its size is in no pair`() {
         val sources = listOf(SizedSource(1, 0), SizedSource(2, 50_000), SizedSource(3, 100), SizedSource(4, 120))
         assertEquals(1, service().estimate(editDistance, sources).pairs)

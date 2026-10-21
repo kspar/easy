@@ -153,7 +153,12 @@ export function useUpdateCourseSimilaritySettings(courseId: string) {
   return useMutation({
     mutationFn: (body: CourseSimilaritySettingsReq) =>
       apiFetch(`/courses/${courseId}/similarity-settings`, { method: 'PUT', body }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['courses', courseId, 'similarity-settings'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses', courseId, 'similarity-settings'] })
+      // The estimate prices the check with the provider this changes: left as it was, it kept Find off
+      // for a cohort the new provider can compare, or on for one core will now refuse.
+      queryClient.invalidateQueries({ queryKey: ['similarity-estimate'] })
+    },
   })
 }
 

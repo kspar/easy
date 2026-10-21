@@ -1206,6 +1206,10 @@ export function useSimilarityEstimate(exerciseId: string | undefined, courseId: 
       }),
     enabled: !!exerciseId && submissionIds.length >= 2,
     retry: false,
+    // Each answer has the database read the cohort's lengths, so not again on every return to the tab;
+    // a changed selection is a new key, and a changed comparison method invalidates it.
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   })
 }
 

@@ -151,7 +151,13 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         // Edit distance says how alike, not where: the page is told to find the shared code itself.
         assertEquals(false, response.jsonOrNull!!.get("match_ranges").asBoolean())
         assertTrue(response.jsonOrNull!!.get("provider_fallback").isNull)
-        assertEquals(listOf("levenshtein", "dice"), response.elements("scores").single().get("metrics").toList().map { it.get("id").asString() })
+        val score = response.elements("scores").single()
+        assertEquals(listOf("levenshtein", "dice"), score.get("metrics").toList().map { it.get("id").asString() })
+        // The pre-JPlag page labels score_a "Shared text" and score_b "Edit distance": for edit distance
+        // they are Dice and Levenshtein, as they were, not the mean and the maximum.
+        val metric = score.get("metrics").toList().associate { it.get("id").asString() to it.get("value").asInt() }
+        assertEquals(metric.getValue("dice"), score.get("score_a").asInt())
+        assertEquals(metric.getValue("levenshtein"), score.get("score_b").asInt())
 
         assertEquals(200, putSettings(null).status)
         val byOrder = check()
@@ -159,6 +165,10 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(true, byOrder.jsonOrNull!!.get("match_ranges").asBoolean())
         val metrics = byOrder.elements("scores").single().get("metrics").toList().associate { it.get("id").asString() to it.get("unit").asString() }
         assertEquals(mapOf("similarity" to "percent", "max_similarity" to "percent", "shared_tokens" to "count"), metrics)
+        // With no Dice to give, the old names carry the two similarities, as they did under JPlag.
+        val jplagScore = byOrder.elements("scores").single()
+        assertEquals(jplagScore.get("similarity").asInt(), jplagScore.get("score_a").asInt())
+        assertEquals(jplagScore.get("max_similarity").asInt(), jplagScore.get("score_b").asInt())
     }
 
     @Test
@@ -170,6 +180,42 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals("PINNED_UNAVAILABLE", response.field("provider_fallback"))
         // And it cannot be pinned again while off.
         assertEquals(400, putSettings("jplag").status)
+    }
+
+    @Test
+    fun `the old page's score_a and score_b are edit distance's Dice and Levenshtein, as it labels them`() {
+        // The pre-JPlag page labels score_a "Shared text" and score_b "Edit distance". Two different
+        // solutions, so that Dice, Levenshtein, their mean and their maximum are four different numbers.
+        val ids = transaction {
+            val other = Fixtures.exercise("Two programs", teacher)
+            val courseExercise = Fixtures.courseExercise(course, other)
+            val first = Fixtures.submission(courseExercise, "student-1", number = 1, solution = solution)
+            val second = Fixtures.submission(courseExercise, "student-2", number = 1, solution = solution.replace("result", "counts").replace("    else:\n        result[word] = 1\n", ""))
+            other to listOf(first, second)
+        }
+        val response = api.post(
+            "/v2/exercises/${ids.first}/similarity",
+            api.body("courses" to listOf(mapOf("id" to course.toString())), "submissions" to ids.second.map { mapOf("id" to it.toString()) }),
+            Auth.asTeacher(teacher),
+        )
+        assertEquals("edit-distance", response.field("provider"))
+        val score = response.elements("scores").single()
+        val metric = score.get("metrics").toList().associate { it.get("id").asString() to it.get("value").asInt() }
+        assertTrue(metric.getValue("dice") != metric.getValue("levenshtein"), "the two measures agree here, so the test cannot tell them apart: $metric")
+        assertEquals(metric.getValue("dice"), score.get("score_a").asInt())
+        assertEquals(metric.getValue("levenshtein"), score.get("score_b").asInt())
+    }
+
+    @Test
+    fun `a language switched off as a whole is not listed as one a provider compares`() {
+        // Listed, the dialog offered a provider for a language every check then refused.
+        assertEquals(200, putLanguage("python", enabled = false).status)
+        val providers = api.get("/v2/courses/$course/similarity-settings", Auth.asTeacher(teacher)).elements("providers")
+        for (provider in providers) {
+            val languages = provider.get("languages").toList().map { it.asString() }
+            assertTrue("python" !in languages, "${provider.get("id").asString()} still lists python: $languages")
+            assertTrue("java" in languages)
+        }
     }
 
     @Test

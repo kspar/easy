@@ -42,7 +42,7 @@ internal class EditDistanceProvider(
     override fun pairNanos(charsA: Int, charsB: Int): Long =
         7L * ((minOf(charsA, charsB) + 63) / 64) * maxOf(charsA, charsB) + 2L * (charsA + charsB) + 2_000
 
-    /** Blank solutions are too small and those above the cap too large; neither is compared. */
+    /** Blank solutions are too small and those above the cap, in code points, too large; neither is compared. */
     override fun compares(chars: Int): Boolean = chars in 1..maxSolutionChars
 
     /** Characters are characters in every language, so every language is compared as itself. */
@@ -62,7 +62,10 @@ internal class EditDistanceProvider(
                 when {
                     // Nothing to compare: blank answers would pair with each other as identical.
                     source.solution.isBlank() -> skipped += SkippedSubmission(source.id, "TOO_SMALL")
-                    source.solution.length > maxSolutionChars -> skipped += SkippedSubmission(source.id, "TOO_LARGE")
+                    // In code points, as the database counts characters, so the estimate priced from its
+                    // count skips what this skips; in UTF-16 units, emoji counted twice and the two disagreed.
+                    source.solution.codePointCount(0, source.solution.length) > maxSolutionChars ->
+                        skipped += SkippedSubmission(source.id, "TOO_LARGE")
                     else -> usable += source.id
                 }
             }

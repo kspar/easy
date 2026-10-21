@@ -80,6 +80,23 @@ class SimilarityRegistryTest {
     }
 
     @Test
+    fun `a provider that would compare a language as text here may do so only where text is on`() {
+        // JPlag compares a language whose frontend cannot load in this JVM as text. Checking only the
+        // language asked for let it compare word by word where an admin had switched text off.
+        val noJava = JPlagProvider(maxSolutionTokens = 10_000, maxRepetition = 1_000_000).also { it.available = { language -> language != JAVA } }
+        val registry = SimilarityRegistry(listOf(noJava, editDistance))
+        val jplagFirst = mapOf(JPlagProvider.ID to this.jplagFirst)
+        assertEquals(JPlagProvider.ID, registry.bind(JAVA, RegistrySettings(providers = jplagFirst)).provider)
+        // Text off for JPlag, or as a whole: the next provider compares Java, as Java.
+        val textOffForJplag = RegistrySettings(providers = jplagFirst, providerLanguages = mapOf((JPlagProvider.ID to TEXT) to false))
+        assertEquals(SimilarityBinding(EditDistanceProvider.ID, JAVA), registry.bind(JAVA, textOffForJplag))
+        val textOff = RegistrySettings(providers = jplagFirst, languages = mapOf(TEXT to false))
+        assertEquals(SimilarityBinding(EditDistanceProvider.ID, JAVA), registry.bind(JAVA, textOff))
+        // And a pin on it does not hold either.
+        assertEquals(SimilarityRegistry.FALLBACK_PINNED_UNAVAILABLE, registry.bind(JAVA, textOff, pinned = JPlagProvider.ID).fallback)
+    }
+
+    @Test
     fun `equal priorities are ordered by id, and an override for a provider not installed changes nothing`() {
         val tied = RegistrySettings(providers = mapOf(JPlagProvider.ID to ProviderOverride(true, 100), "gone" to jplagFirst))
         assertEquals(listOf(EditDistanceProvider.ID, JPlagProvider.ID), registry.preferenceOrder(tied).map { it.id })

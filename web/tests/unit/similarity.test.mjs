@@ -388,6 +388,12 @@ describe('the estimate', () => {
       .toEqual({ kind: 'tooCostly', submissions: 30, pairs: 435, seconds: 540, budget: 120 })
   })
 
+  test('a cohort with no pair to compare says so, rather than "about 0 s"', () => {
+    // Every solution blank, or too long for the provider: Find still runs it, to name who was skipped.
+    expect(estimateView({ ...fits, pairs: 0, estimated_sec: 0 })).toEqual({ kind: 'nothing', submissions: 30 })
+    expect(estimateView({ ...fits, pairs: 0, estimated_sec: 0, within_budget: false })).toEqual({ kind: 'nothing', submissions: 30 })
+  })
+
   test('no estimate, or one the page cannot read, falls back to what the page said before estimates', () => {
     expect(estimateView(undefined)).toEqual({ kind: 'unknown' })
     // An unstubbed request, or a proxy's empty body.

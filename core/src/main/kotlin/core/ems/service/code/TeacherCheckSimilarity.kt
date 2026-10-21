@@ -151,15 +151,18 @@ class TeacherCheckSimilarityController(
         @get:JsonProperty("max_similarity") val maxSimilarity: Int,
         @get:JsonProperty("matches") val matches: List<RespMatch>,
         /**
-         * [similarity] and [maxSimilarity] again, under the names the pre-JPlag page reads. A tab stays
-         * on the bundle it loaded — for days, if it is left open (`webVersion.ts`) — and that page
-         * filters on `Math.max(score_a, score_b)`, which is NaN without these, so every pair vanished
-         * and it reported nothing similar. Transitional: remove once no pre-JPlag bundle can be open.
+         * The two scores under the names the pre-JPlag page reads, which labels `score_a` "Shared text"
+         * (Dice) and `score_b` "Edit distance" (Levenshtein). A tab stays on the bundle it loaded — for
+         * days, if it is left open (`webVersion.ts`) — and that page filters on
+         * `Math.max(score_a, score_b)`, which is NaN without these, so every pair vanished and it reported
+         * nothing similar. Where the provider measured Dice and Levenshtein - edit distance, the rollout
+         * default - they are those, so the old page's labels are true; otherwise [similarity] and
+         * [maxSimilarity]. Transitional: remove once no pre-JPlag bundle can be open.
          */
-        @get:JsonProperty("score_a") val scoreA: Int = similarity,
-        @get:JsonProperty("score_b") val scoreB: Int = maxSimilarity,
         /** What the provider measured, by name - JPlag's similarities and shared tokens, or Levenshtein and Dice. */
         @get:JsonProperty("metrics") val metrics: List<RespMetric> = emptyList(),
+        @get:JsonProperty("score_a") val scoreA: Int = metrics.firstOrNull { it.id == "dice" }?.value ?: similarity,
+        @get:JsonProperty("score_b") val scoreB: Int = metrics.firstOrNull { it.id == "levenshtein" }?.value ?: maxSimilarity,
     )
 
     data class RespMetric(

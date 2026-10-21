@@ -138,17 +138,24 @@ class SimilarityService(
      * up front, a cohort that cannot finish is refused at once, and one that can says how long it will
      * take before anybody clicks.
      *
-     * The same pairs the engine would compare, as far as sizes can tell: texts with the same digest
-     * once, as the engine compares an identical group once; none between a student's own submissions;
-     * none with a solution the provider would skip for its size. Divided by the threads the run would
-     * get, which is fixed per server, so the same cohort gets the same answer every time.
+     * The same pairs the engine would compare, as far as sizes can tell: identical texts once where
+     * [comparands] would make them a group - by [GROUP_AUTHORS] or more authors - and each on its own
+     * where it would not; none between a student's own submissions; none with a solution the provider
+     * would skip for its size. Divided by the threads the run would get, which is fixed per server, so
+     * the same cohort gets the same answer every time.
      */
     fun estimate(binding: SimilarityBinding, sources: List<SizedSource>): SimilarityEstimate {
         val provider = checkNotNull(registry.provider(binding.provider)) { "No similarity provider ${binding.provider}" }
-        // One comparand per distinct text, with every author who submitted it.
+        // Comparands as [comparands] makes them, with the authors of each. Collapsing every identical text
+        // instead priced fifty pairs of identical solutions as fifty comparands where the run compares a
+        // hundred - a quarter of the pairs, admitted to time out.
         val comparands = sources.filter { provider.compares(it.chars) }
             .groupBy { it.digest ?: "#${it.id}" }.values
-            .map { group -> group.first().chars to group.mapTo(mutableSetOf()) { it.owner } }
+            .flatMap { same ->
+                val authors = same.mapNotNull { it.owner }.distinct().size + same.count { it.owner == null }
+                if (authors >= GROUP_AUTHORS) listOf(same.first().chars to same.mapTo(mutableSetOf()) { it.owner })
+                else same.map { it.chars to setOf(it.owner) }
+            }
         var nanos = sources.sumOf { provider.prepareNanos(it.chars) }
         var pairs = 0L
         for (i in comparands.indices) for (j in i + 1 until comparands.size) {

@@ -58,7 +58,10 @@ class TeacherReadCourseSimilaritySettingsController(private val similarityServic
             row?.get(CourseSimilaritySettings.provider),
             (row?.get(CourseSimilaritySettings.mode) ?: SimilarityMode.OPTIMISED).name.lowercase(),
             registry.preferenceOrder(settings).filter { settings.enabled(it) }.map { provider ->
-                RespProvider(provider.id, provider.languages.keys.filter { settings.languageEnabled(provider, it) }.map { it.wireName }.sorted())
+                // What a check would let it compare: on for it, and not switched off as a whole - listed
+                // otherwise, the dialog offered a provider for a language every check then refused.
+                val languages = provider.languages.keys.filter { settings.languageEnabled(it) && settings.mayCompare(provider, it) }
+                RespProvider(provider.id, languages.map { it.wireName }.sorted())
             },
         )
     }

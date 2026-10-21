@@ -203,22 +203,28 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
     }
 
     /**
-     * Each chosen submission's length, author and an md5 of its text, computed by the database, so the
-     * cohort is priced without one solution reaching the heap - it runs before the permit, as often as
-     * the page asks. Restricted like the loader, to the exercise on the asserted courses; an id that is
-     * not there is left out here and refused by the loader when the check runs.
+     * Each chosen submission's length in characters and its author, and - only where another has the
+     * same length, since only those can be identical - an md5 of its text, all computed by the database,
+     * so the cohort is priced without one solution reaching the heap. It runs before the permit, as often
+     * as the page asks: hashing every text on every call made the database read and hash the whole
+     * cohort each time a teacher changed group. Restricted like the loader, to the exercise on the
+     * asserted courses; an id that is not there is left out here and refused by the loader when the
+     * check runs.
      */
     private fun selectSizes(resolved: Resolved): List<SizedSource> = transaction {
         if (resolved.submissionIds.isEmpty()) return@transaction emptyList()
         val chars = Submission.solution.charLength()
+        val chosen = (CourseExercise innerJoin Submission).select(Submission.id, Submission.student, chars).where {
+            CourseExercise.exercise eq resolved.exerciseId and
+                    (CourseExercise.course inList resolved.courses) and
+                    (Submission.id inList resolved.submissionIds)
+        }.map { Triple(it[Submission.id].value, it[Submission.student].value, it[chars] ?: 0) }
+
+        val alike = chosen.groupBy { it.third }.values.filter { it.size > 1 }.flatten().map { it.first }
         val digest = CustomFunction("md5", TextColumnType(), Submission.solution)
-        (CourseExercise innerJoin Submission)
-            .select(Submission.id, Submission.student, chars, digest)
-            .where {
-                CourseExercise.exercise eq resolved.exerciseId and
-                        (CourseExercise.course inList resolved.courses) and
-                        (Submission.id inList resolved.submissionIds)
-            }
-            .map { SizedSource(it[Submission.id].value, it[chars] ?: 0, it[Submission.student].value, it[digest]) }
+        val digests = if (alike.isEmpty()) emptyMap() else Submission.select(Submission.id, digest)
+            .where { Submission.id inList alike }
+            .associate { it[Submission.id].value to it[digest] }
+        chosen.map { (id, owner, length) -> SizedSource(id, length, owner, digests[id]) }
     }
 }

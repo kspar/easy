@@ -443,6 +443,30 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
+    fun `the estimate tells identical texts from texts that are only the same length`() {
+        // Only submissions of equal length are hashed, since only those can be identical; one that is
+        // merely the same length must not be grouped with the rest.
+        val (exercise, copies, lookalike) = transaction {
+            val exercise = Fixtures.exercise("Starter", teacher)
+            val courseExercise = Fixtures.courseExercise(myCourse, exercise)
+            val authors = (1..3).map { n -> Fixtures.student("copier-$n").also { Fixtures.enrolStudent(myCourse, it) } }
+            val copies = authors.map { Fixtures.submission(courseExercise, it, number = 1, solution = "print(1)") }
+            val lookalike = Fixtures.submission(courseExercise, authors[2], number = 2, solution = "print(2)")
+            Triple(exercise, copies, lookalike)
+        }
+        fun pairs(ids: List<Long>) = api.post(
+            "/v2/exercises/$exercise/similarity/estimate",
+            api.body("courses" to listOf(mapOf("id" to myCourse.toString())), "submissions" to ids.map { mapOf("id" to it.toString()) }),
+            Auth.asTeacher(teacher),
+        ).jsonOrNull!!.get("pairs").asInt()
+        // Three authors of one text are one comparand: nothing to compare among them.
+        assertEquals(0, pairs(copies))
+        // Two copies and a text of the same length by a third author: three comparands, three pairs. Taken
+        // for a third copy, it would make three authors of one text, and no pair at all.
+        assertEquals(3, pairs(copies.take(2) + lookalike))
+    }
+
+    @Test
     fun `the estimate is refused as the check is, for a course the caller does not teach`() {
         val notMine = transaction { Fixtures.course("Not mine") }
         val response = api.post(

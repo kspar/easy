@@ -52,12 +52,12 @@ internal class SimilarityRegistry(val providers: List<SimilarityProvider>) {
         if (!settings.languageEnabled(language)) throw SimilarityUnavailable(language)
         val usable = preferenceOrder(settings).filter { settings.enabled(it) }
         if (pinned != null) {
-            usable.firstOrNull { it.id == pinned && settings.languageEnabled(it, language) }?.let { return SimilarityBinding(it.id, language) }
+            usable.firstOrNull { it.id == pinned && settings.mayCompare(it, language) }?.let { return SimilarityBinding(it.id, language) }
         }
         val pinFailed = if (pinned != null) FALLBACK_PINNED_UNAVAILABLE else null
-        usable.firstOrNull { settings.languageEnabled(it, language) }?.let { return SimilarityBinding(it.id, language, pinFailed) }
+        usable.firstOrNull { settings.mayCompare(it, language) }?.let { return SimilarityBinding(it.id, language, pinFailed) }
         if (language != SimilarityLanguage.TEXT && settings.languageEnabled(SimilarityLanguage.TEXT)) {
-            usable.firstOrNull { settings.languageEnabled(it, SimilarityLanguage.TEXT) }?.let {
+            usable.firstOrNull { settings.mayCompare(it, SimilarityLanguage.TEXT) }?.let {
                 return SimilarityBinding(it.id, SimilarityLanguage.TEXT, fallback = FALLBACK_LANGUAGE_UNAVAILABLE)
             }
         }
@@ -96,4 +96,16 @@ internal class RegistrySettings(
     }
 
     fun languageEnabled(language: SimilarityLanguage): Boolean = languages[language] ?: true
+
+    /**
+     * Whether [provider] may compare [language] here: the language is on for it, and where it would
+     * compare it as something else in this JVM - JPlag compares a language whose frontend cannot load
+     * as text - that is on too, for it and as a whole. Checking only the language asked for let a
+     * provider compare word by word on a server where an admin had switched text off.
+     */
+    fun mayCompare(provider: SimilarityProvider, language: SimilarityLanguage): Boolean {
+        if (!languageEnabled(provider, language)) return false
+        val actual = provider.comparesAs(language)
+        return actual == language || (languageEnabled(actual) && languageEnabled(provider, actual))
+    }
 }

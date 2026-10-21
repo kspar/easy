@@ -371,7 +371,9 @@ export default function SimilarityPage() {
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
           {estimate.kind === 'unknown'
             ? t('similarity.scope', { submissions: submitted.length, count: pairCount })
-            : t('similarity.estimateScope', {
+            : estimate.kind === 'nothing'
+              ? t('similarity.estimateNothing', { submissions: estimate.submissions })
+              : t('similarity.estimateScope', {
               submissions: estimate.submissions,
               count: estimate.pairs,
               duration: formatDuration(estimate.seconds, t),
