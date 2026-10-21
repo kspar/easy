@@ -735,6 +735,62 @@ export interface SimilarityProviderOption {
   languages: string[]
 }
 
+/**
+ * Every installed similarity provider as an admin has left it, in the order a language is offered to
+ * them, and which of them compares each language now.
+ *
+ * @endpoint GET /v2/admin/similarity-providers -> (root)
+ */
+export interface AdminSimilarityProviders {
+  providers: AdminSimilarityProvider[]
+  languages: AdminSimilarityLanguage[]
+}
+
+/** @endpoint GET /v2/admin/similarity-providers -> providers[] */
+export interface AdminSimilarityProvider {
+  id: string
+  enabled: boolean
+  /** Higher is offered a language first; equal priorities go by id. */
+  priority: number
+  default_priority: number
+  /** Whether an admin has set it at all, rather than leaving the provider's own defaults. */
+  overridden: boolean
+  languages: AdminSimilarityProviderLanguage[]
+}
+
+/** @endpoint GET /v2/admin/similarity-providers -> providers[].languages[] */
+export interface AdminSimilarityProviderLanguage {
+  language: string
+  /** `stable` (on unless switched off) or `experimental` (off unless switched on). */
+  support: string
+  enabled: boolean
+  overridden: boolean
+}
+
+/** @endpoint GET /v2/admin/similarity-providers -> languages[] */
+export interface AdminSimilarityLanguage {
+  language: string
+  /** Off refuses the language outright, whatever a provider could do with it. */
+  enabled: boolean
+  /** The provider that compares it now, or null when none may. */
+  provider: string | null
+  /** What it is compared as - itself, or `text` where that provider falls back. */
+  compared_as: string | null
+}
+
+/** @requestBody PUT /v2/admin/similarity-providers/{providerId} */
+export interface AdminSimilarityProviderReq {
+  enabled: boolean
+  priority: number
+  /** The provider's language overrides, replacing the ones before; a language left out goes back to its default. */
+  languages: { language: string; enabled: boolean }[]
+}
+
+/** @requestBody PUT /v2/admin/similarity-languages/{language} */
+export interface AdminSimilarityLanguageReq {
+  enabled: boolean
+}
+
 /** @requestBody PUT /v2/courses/{courseId}/similarity-settings */
 export interface CourseSimilaritySettingsReq {
   provider: string | null

@@ -1120,6 +1120,26 @@
         "scheduled": "Scheduled",
         "expired": "Finished"
       }
+    },
+    "similarity": {
+      "title": "Similarity methods",
+      "intro": "Which method compares each language for similarity. A language goes to the first method below that is on and has the language on; a course can pin a method of its own. Changes apply to the next check.",
+      "languagesTitle": "Languages",
+      "language": "Language",
+      "comparedBy": "Compared by",
+      "languageOn": "On",
+      "languageSwitch": "Similarity for {{language}}",
+      "refused": "Switched off: checks are refused",
+      "nobody": "No method takes it: checks are refused",
+      "byAsText": "{{provider}}, as plain text",
+      "providersTitle": "Methods",
+      "providersHelp": "In the order a language is offered to them, highest priority first. An experimental language is off until switched on here.",
+      "providerOn": "On",
+      "priority": "Priority",
+      "priorityHelp": "Default {{value}}. Higher is offered languages first; 0 to {{max}}.",
+      "experimental": "experimental",
+      "restoreDefaults": "Restore defaults",
+      "saved": "Similarity method saved"
     }
   },
   "bugReport": {

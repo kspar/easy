@@ -1120,6 +1120,26 @@
         "scheduled": "Ajastatud",
         "expired": "Lõppenud"
       }
+    },
+    "similarity": {
+      "title": "Sarnasuse võrdlusmeetodid",
+      "intro": "Milline meetod võrdleb iga keele sarnasust. Keel läheb esimesele allolevale meetodile, mis on sees ja kus see keel on sees; kursus võib valida oma meetodi. Muudatused kehtivad järgmisest kontrollist.",
+      "languagesTitle": "Keeled",
+      "language": "Keel",
+      "comparedBy": "Võrdleb",
+      "languageOn": "Sees",
+      "languageSwitch": "Sarnasus keele {{language}} jaoks",
+      "refused": "Välja lülitatud: kontrollid lükatakse tagasi",
+      "nobody": "Ükski meetod seda ei võta: kontrollid lükatakse tagasi",
+      "byAsText": "{{provider}}, tavalise tekstina",
+      "providersTitle": "Meetodid",
+      "providersHelp": "Järjekorras, milles neile keeli pakutakse, kõrgeim prioriteet enne. Katseline keel on väljas, kuni see siin sisse lülitatakse.",
+      "providerOn": "Sees",
+      "priority": "Prioriteet",
+      "priorityHelp": "Vaikimisi {{value}}. Kõrgemale pakutakse keeli enne; 0 kuni {{max}}.",
+      "experimental": "katseline",
+      "restoreDefaults": "Taasta vaikeväärtused",
+      "saved": "Võrdlusmeetod salvestatud"
     }
   },
   "bugReport": {

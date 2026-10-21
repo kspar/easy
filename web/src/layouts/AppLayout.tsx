@@ -774,6 +774,27 @@ export default function AppLayout() {
               </ListItemButton>
             </ListItem>
 
+            <ListItem disablePadding>
+              <ListItemButton
+                component={RouterLink}
+                to="/admin/similarity-providers"
+                selected={isActive('/admin/similarity-providers')}
+                onClick={closeDrawerOnMobile}
+                sx={{ py: 0.5, minHeight: 36, pl: 3 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  <CompareArrowsOutlined
+                    sx={{ fontSize: 18 }}
+                    color={isActive('/admin/similarity-providers') ? 'primary' : 'action'}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={t('admin.similarity.title')}
+                  primaryTypographyProps={{ variant: 'body2', fontSize: '0.85rem' }}
+                />
+              </ListItemButton>
+            </ListItem>
+
             {config.bugReportDashboardUrl && (
               <ListItem disablePadding>
                 <ListItemButton

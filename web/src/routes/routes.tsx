@@ -19,6 +19,7 @@ import EmbedExercisePage from '../features/embed/EmbedExercisePage.tsx'
 import TermsRedirect from '../features/terms/TermsRedirect.tsx'
 import AccountSettingsPage from '../features/account/AccountSettingsPage.tsx'
 import SystemMessagesPage from '../features/admin/SystemMessagesPage.tsx'
+import SimilarityProvidersPage from '../features/admin/SimilarityProvidersPage.tsx'
 import ArticlesPage from '../features/articles/ArticlesPage.tsx'
 import ArticlePage from '../features/articles/ArticlePage.tsx'
 import { WIDE } from './routeWidth.ts'
@@ -78,6 +79,15 @@ const router = createBrowserRouter([
               element: (
                 <RequireAuth allowedRoles={['admin']}>
                   <SystemMessagesPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              // Admin-only for the same reason: every endpoint behind it is @Secured to ROLE_ADMIN.
+              path: 'admin/similarity-providers',
+              element: (
+                <RequireAuth allowedRoles={['admin']}>
+                  <SimilarityProvidersPage />
                 </RequireAuth>
               ),
             },
