@@ -643,6 +643,11 @@ export interface SimilarityResp {
    * none.
    */
   groups?: SimilarityGroupResp[]
+  /**
+   * Which provider measured the scores: `jplag` compares tokens, so renaming does not hide a copy;
+   * `edit-distance` compares whole texts. Optional because a core older than providers sends none.
+   */
+  provider?: string
 }
 
 /**

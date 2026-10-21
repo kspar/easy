@@ -40,6 +40,12 @@ data class SimilarityPair(
 
 data class SkippedSubmission(val id: Long, val reason: String)
 
+/**
+ * Which provider compares a cohort, and in which language: [language] is the exercise's, or text when no
+ * provider that may run takes the exercise's language - and then [fallback] says so.
+ */
+data class SimilarityBinding(val provider: String, val language: SimilarityLanguage, val fallback: String? = null)
+
 data class SimilarityOutcome(
     val pairs: List<SimilarityPair>,
     val skipped: List<SkippedSubmission>,
@@ -52,6 +58,8 @@ data class SimilarityOutcome(
      * most one between the group and any other submission, naming one member for them all.
      */
     val groups: List<List<Long>> = emptyList(),
+    /** The provider that measured it; see [SimilarityProvider.id]. */
+    val provider: String = "",
 )
 
 /**
@@ -70,6 +78,10 @@ data class SimilarityRun<T>(val rows: List<T>, val outcome: SimilarityOutcome)
 
 class TooManySubmissions(val requested: Int, val limit: Int) :
     RuntimeException("Similarity requested for $requested submissions, limit is $limit")
+
+/** No provider an admin has left on can compare [language], nor text in its place - or the language is switched off. */
+class SimilarityUnavailable(val language: SimilarityLanguage) :
+    RuntimeException("No similarity provider may compare ${language.wireName}")
 
 class SimilarityBusy : RuntimeException("Another similarity comparison is already running")
 

@@ -16,6 +16,7 @@ import core.ems.service.code.similarity.SimilarityLanguage
 import core.ems.service.code.similarity.SimilarityService
 import core.ems.service.code.similarity.SimilaritySource
 import core.ems.service.code.similarity.SimilarityTimedOut
+import core.ems.service.code.similarity.SimilarityUnavailable
 import core.ems.service.code.similarity.TooManySubmissions
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -110,6 +111,11 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
          * them; `scores` then names one member for the whole group. See SimilarityOutcome.groups.
          */
         @get:JsonProperty("groups") val groups: List<RespGroup>,
+        /**
+         * Which provider measured the scores: `jplag` (tokens, so renaming does not hide a copy) or
+         * `edit-distance` (whole texts, character by character). An admin chooses; see SimilarityRegistry.
+         */
+        @get:JsonProperty("provider") val provider: String,
     )
 
     data class RespGroup(
@@ -233,6 +239,18 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
         // One cheap row, and it decides the tokeniser, so it is read before the permit is asked for.
         val exercise = selectExerciseMeta(exerciseId, courses)
         val language = SimilarityLanguage.of(exercise.solutionFileName, exercise.containerImage)
+        // Which provider compares it is the admin's to say (see SimilarityRegistry), and known before the
+        // permit is asked for, so a language nobody may compare is refused without anybody waiting.
+        val binding = try {
+            similarityService.bind(language)
+        } catch (e: SimilarityUnavailable) {
+            throw InvalidRequestException(
+                "Similarity is not available for ${e.language.wireName} here.",
+                ReqError.SIMILARITY_UNAVAILABLE,
+                "language" to e.language.wireName,
+                notify = false,
+            )
+        }
 
         // The rows are selected by the loader below, which the service runs only once it holds the
         // permit. Loading them out here instead would put every queuing caller's whole cohort on the
@@ -245,13 +263,13 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
                     selectSubmissions(exerciseId, courses, submissionIds).also { rows ->
                         // Not the solution file name: it is teacher-authored text, and a newline in it
                         // would end this line and start a forged one on every run of the exercise.
-                        log.info { "Analysing similarity of ${rows.size} submissions as ${language.wireName}" }
+                        log.info { "Analysing similarity of ${rows.size} submissions as ${binding.language.wireName} with ${binding.provider}" }
                     }
                 },
                 // The owner is what stops a student's own attempts being reported as plagiarism
                 // against each other, whether they arrived as explicit ids or as the latest set.
                 asSource = { SimilaritySource(it.resp.id.toLong(), it.solution, it.studentId) },
-                language = language,
+                binding = binding,
                 // No base code. The only template column, anonymous_autoassess_template, is the embed
                 // page's starting code for anonymous visitors: course students are never given it, so
                 // subtracting it changed every course cohort's scores over a setting that belongs to
@@ -306,6 +324,7 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
             outcome.skipped.map { RespSkipped(it.id.toString(), it.reason) },
             outcome.truncated,
             outcome.groups.map { group -> RespGroup(group.map { it.toString() }) },
+            outcome.provider,
         )
     }
 

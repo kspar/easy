@@ -19,6 +19,7 @@
     "DELETE /v2/teacher/courses/{courseId}/exercises/{courseExerciseId}/submissions/{submissionId}/inline-comments/{commentId}": {  },
     "GET /v2/account/export": {  },
     "GET /v2/admin/operating-info": { "response": "core.ems.service.OperatingInfoController.Resp" },
+    "GET /v2/admin/similarity-providers": { "response": "core.ems.service.code.AdminReadSimilarityProvidersController.Resp" },
     "GET /v2/articles": { "response": "core.ems.service.article.ReadArticlesController.Resp" },
     "GET /v2/articles/{articleId}": { "response": "core.ems.service.article.ReadArticleDetailsController.Resp" },
     "GET /v2/container-images": { "response": "core.aas.service.ReadImagesController.Resp" },
@@ -118,6 +119,8 @@
     "POST /v2/unauth/exercises/{exerciseId}/anonymous/autoassess": { "request": "core.ems.service.exercise.AnonymousSubmitCont.Req", "response": "core.ems.service.exercise.AnonymousSubmitCont.Resp" },
     "POST /v2/unauth/statistics/common": { "request": "core.ems.service.StatResp", "response": "core.ems.service.StatResp" },
     "PUT /v2/admin/exercises/{exerciseId}/rewrite": { "request": "core.ems.service.exercise.UpdateExercise.Req" },
+    "PUT /v2/admin/similarity-languages/{language}": { "request": "core.ems.service.code.AdminUpdateSimilarityLanguageController.Req" },
+    "PUT /v2/admin/similarity-providers/{providerId}": { "request": "core.ems.service.code.AdminUpdateSimilarityProviderController.Req" },
     "PUT /v2/articles/{articleId}": { "request": "core.ems.service.article.UpdateArticleController.Req" },
     "PUT /v2/courses/{courseId}": { "request": "core.ems.service.course.UpdateCourse.Req" },
     "PUT /v2/courses/{courseId}/ai": { "request": "core.ems.service.ai.UpdateCourseAiPropsController.Req" },
@@ -430,6 +433,42 @@
     "core.ems.service.bugreport.CommonCreateBugReportController.Resp": {
       "id": { "kind": "string" }
     },
+    "core.ems.service.code.AdminReadSimilarityProvidersController.Resp": {
+      "languages": { "kind": "array", "type": "core.ems.service.code.AdminReadSimilarityProvidersController.RespLanguage" },
+      "providers": { "kind": "array", "type": "core.ems.service.code.AdminReadSimilarityProvidersController.RespProvider" }
+    },
+    "core.ems.service.code.AdminReadSimilarityProvidersController.RespLanguage": {
+      "compared_as": { "kind": "string", "nullable": true },
+      "enabled": { "kind": "boolean" },
+      "language": { "kind": "string" },
+      "provider": { "kind": "string", "nullable": true }
+    },
+    "core.ems.service.code.AdminReadSimilarityProvidersController.RespProvider": {
+      "default_priority": { "kind": "number" },
+      "enabled": { "kind": "boolean" },
+      "id": { "kind": "string" },
+      "languages": { "kind": "array", "type": "core.ems.service.code.AdminReadSimilarityProvidersController.RespProviderLanguage" },
+      "overridden": { "kind": "boolean" },
+      "priority": { "kind": "number" }
+    },
+    "core.ems.service.code.AdminReadSimilarityProvidersController.RespProviderLanguage": {
+      "enabled": { "kind": "boolean" },
+      "language": { "kind": "string" },
+      "overridden": { "kind": "boolean" },
+      "support": { "kind": "string" }
+    },
+    "core.ems.service.code.AdminUpdateSimilarityLanguageController.Req": {
+      "enabled": { "kind": "boolean" }
+    },
+    "core.ems.service.code.AdminUpdateSimilarityProviderController.Req": {
+      "enabled": { "kind": "boolean" },
+      "languages": { "kind": "array", "type": "core.ems.service.code.AdminUpdateSimilarityProviderController.ReqLanguage" },
+      "priority": { "kind": "number" }
+    },
+    "core.ems.service.code.AdminUpdateSimilarityProviderController.ReqLanguage": {
+      "enabled": { "kind": "boolean" },
+      "language": { "kind": "string" }
+    },
     "core.ems.service.code.TeacherCheckSimilarityController.Req": {
       "courses": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.ReqCourse" },
       "submissions": { "kind": "array", "nullable": true, "type": "core.ems.service.code.TeacherCheckSimilarityController.ReqSubmission" }
@@ -444,6 +483,7 @@
       "compared": { "kind": "number" },
       "groups": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespGroup" },
       "language": { "kind": "string" },
+      "provider": { "kind": "string" },
       "scores": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespScore" },
       "skipped": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespSkipped" },
       "submissions": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespSubmission" },

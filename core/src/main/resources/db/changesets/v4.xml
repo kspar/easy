@@ -1042,4 +1042,50 @@
         <dropColumn tableName="submission" columnName="flagged"/>
     </changeSet>
 
+    <!--
+        EZ-1667. Similarity is measured by one of several providers, each with the languages it supports
+        (core.ems.service.code.similarity.SimilarityRegistry). What a provider can do is code; these rows
+        are only an admin's overrides of it - a provider switched off or moved up the preference order,
+        one of its languages switched on or off, a language switched off for similarity as a whole. With
+        no rows everything runs as the code declares it, so the tables start empty and nothing is seeded:
+        deploying this changes no comparison until an admin says otherwise.
+    -->
+    <changeSet id="211026-1" author="priit">
+        <createTable tableName="similarity_provider">
+            <column name="id" type="varchar(50)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_similarity_provider"/>
+            </column>
+            <column name="enabled" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="priority" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="similarity_provider_language">
+            <column name="provider_id" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="language" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="similarity_provider_language"
+                       columnNames="provider_id, language"
+                       constraintName="pk_similarity_provider_language"/>
+
+        <createTable tableName="similarity_language">
+            <column name="language" type="varchar(20)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_similarity_language"/>
+            </column>
+            <column name="enabled" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
 </databaseChangeLog>

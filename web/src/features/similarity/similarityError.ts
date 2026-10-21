@@ -15,7 +15,7 @@ import { ApiResponseError } from '../../api/client.ts'
  * `errorMessage` always returns *something* — its fallback is the generic "something went wrong",
  * which is a worse answer than the timeout advice for a genuine timeout.
  */
-const REFUSALS = new Set(['TOO_MANY_SUBMISSIONS', 'SIMILARITY_BUSY', 'SIMILARITY_TIMEOUT'])
+const REFUSALS = new Set(['TOO_MANY_SUBMISSIONS', 'SIMILARITY_BUSY', 'SIMILARITY_TIMEOUT', 'SIMILARITY_UNAVAILABLE'])
 
 /** True when the failure is a named refusal that deserves its own sentence. */
 export function isSimilarityRefusal(error: unknown): boolean {

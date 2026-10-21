@@ -68,6 +68,7 @@ const CODE_KEYS: Record<string, string> = {
   // guaranteed not to help and would send the teacher round the same loop.
   SIMILARITY_BUSY: 'errors.similarityBusy',
   SIMILARITY_TIMEOUT: 'errors.similarityTimeout',
+  SIMILARITY_UNAVAILABLE: 'errors.similarityUnavailable',
   // The fallback only: with attrs.limit present the branch below names the actual number.
   TOO_MANY_SUBMISSIONS: 'errors.tooManySubmissions',
 

@@ -40,6 +40,7 @@
     "aiLimitReachedPerStudent_other": "You have used all {{count}} AI explanations for this exercise.",
     "aiLimitReachedSolutionLength": "Your solution is too long for an AI explanation. This course explains solutions of up to {{count}} characters.",
     "similarityBusy": "Another similarity comparison is already running. Only one runs at a time — wait a moment and try again.",
+    "similarityUnavailable": "Similarity checking is not available for this exercise's language. An administrator can switch it on.",
     "similarityTimeout": "The comparison did not finish within its time budget. Try a single group rather than the whole course.",
     "tooManySubmissions": "Too many submissions to compare at once. Narrow the selection to a single group.",
     "tooManySubmissionsLimit": "At most {{value}} submissions can be compared at once. Narrow the selection to a single group."

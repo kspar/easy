@@ -59,6 +59,9 @@ enum class SimilarityLanguage(val wireName: String, internal val frontend: Simil
         fun of(solutionFileName: String, containerImage: String?): SimilarityLanguage =
             containerImage?.let(::gradedBy) ?: forFileName(solutionFileName)
 
+        /** The language a stored or requested [wireName] names, or null if none does. */
+        fun byWireName(wireName: String): SimilarityLanguage? = entries.firstOrNull { it.wireName == wireName }
+
         /** By extension alone, for an exercise whose grader does not settle it. */
         fun forFileName(fileName: String): SimilarityLanguage =
             when (fileName.substringAfterLast('.', "").lowercase()) {

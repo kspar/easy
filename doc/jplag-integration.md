@@ -26,7 +26,8 @@ Everything is in `core/ems/service/code/similarity/`, one concern per file; the 
 | `PairRanking.kt` | Compares the pairs and keeps the best, through whichever provider measures them. |
 | `SimilarityProvider.kt` | What a way of measuring similarity owes the engine: prepare a cohort, score a pair, give a returned pair's details. |
 | `JPlagProvider.kt` | The JPlag provider: tokens from the frontends, JPlag's submission set, one tiling per pair. |
-| `EditDistanceProvider.kt`, `EditDistance.kt` | The edit-distance provider: the old check's two whole-text measures, Levenshtein ratio and bigram Dice, for any language. Not yet selectable; the registry that chooses between providers comes next. |
+| `EditDistanceProvider.kt`, `EditDistance.kt` | The edit-distance provider: the old check's two whole-text measures, Levenshtein ratio and bigram Dice, for any language. |
+| `SimilarityRegistry.kt` | Which provider compares a language: the providers' own defaults, and an admin's overrides (tables `similarity_provider`, `similarity_provider_language`, `similarity_language`; endpoints `/v2/admin/similarity-providers`, `/v2/admin/similarity-languages/{language}`). With no overrides edit distance compares everything, as before providers; an admin raises `jplag` to switch to token comparison, and switches its SQL on separately, since that one is experimental. |
 | `SimilarityModel.kt` | What the service takes and returns, and the refusals it throws: too many submissions, busy, timed out. |
 | `SimilarityService.kt` | The engine, the same for every provider: one comparison at a time, the bounds, identical submissions grouped, the outcome assembled. |
 

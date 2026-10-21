@@ -499,6 +499,33 @@ object SystemConfiguration : IdTable<String>("system_configuration") {
     val value = text("value").nullable()
 }
 
+/**
+ * An admin's say over one similarity provider. Providers are code, not data: a provider with no row runs
+ * as its code declares (`SimilarityProvider.defaultPriority`, enabled), so a row is only ever an
+ * override, and an id that names no installed provider is shown as such rather than deleted.
+ */
+object SimilarityProviderSetting : Table("similarity_provider") {
+    val provider = varchar("id", 50)
+    val enabled = bool("enabled")
+    val priority = integer("priority")
+    override val primaryKey = PrimaryKey(provider)
+}
+
+/** An admin's say over one language of one provider; no row means as the provider declares it. */
+object SimilarityProviderLanguage : Table("similarity_provider_language") {
+    val provider = varchar("provider_id", 50)
+    val language = varchar("language", 20)
+    val enabled = bool("enabled")
+    override val primaryKey = PrimaryKey(provider, language)
+}
+
+/** A language switched on or off for similarity as a whole; no row means on. Off is a refusal, not a fallback. */
+object SimilarityLanguageSetting : Table("similarity_language") {
+    val language = varchar("language", 20)
+    val enabled = bool("enabled")
+    override val primaryKey = PrimaryKey(language)
+}
+
 object LogReport : LongIdTable("log_report") {
     val userId = reference("user_id", Account)
     val logTime = datetime("log_time")

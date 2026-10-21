@@ -48,7 +48,9 @@ enum class ReqError(val errorCodeStr: String) {
 
     TOO_MANY_SUBMISSIONS("TOO_MANY_SUBMISSIONS"),
     SIMILARITY_BUSY("SIMILARITY_BUSY"),
-    SIMILARITY_TIMEOUT("SIMILARITY_TIMEOUT")
+    SIMILARITY_TIMEOUT("SIMILARITY_TIMEOUT"),
+    // An admin has switched the exercise's language off for similarity, or left no provider that takes it.
+    SIMILARITY_UNAVAILABLE("SIMILARITY_UNAVAILABLE")
 }
 
 

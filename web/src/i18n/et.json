@@ -40,6 +40,7 @@
     "aiLimitReachedPerStudent_other": "Oled kõik {{count}} AI selgitust selle ülesande kohta ära kasutanud.",
     "aiLimitReachedSolutionLength": "Sinu lahendus on AI selgituse jaoks liiga pikk. Sellel kursusel selgitatakse kuni {{count}} märgi pikkuseid lahendusi.",
     "similarityBusy": "Teine sarnasuse võrdlus juba käib. Korraga saab joosta üks — oota hetk ja proovi uuesti.",
+    "similarityUnavailable": "Selle ülesande keele jaoks ei ole sarnasuse kontroll saadaval. Administraator saab selle sisse lülitada.",
     "similarityTimeout": "Võrdlus ei jõudnud etteantud aja jooksul lõpuni. Proovi kogu kursuse asemel ühte rühma.",
     "tooManySubmissions": "Korraga on liiga palju esitusi võrrelda. Kitsenda valik ühele rühmale.",
     "tooManySubmissionsLimit": "Korraga saab võrrelda kõige rohkem {{value}} esitust. Kitsenda valik ühele rühmale."

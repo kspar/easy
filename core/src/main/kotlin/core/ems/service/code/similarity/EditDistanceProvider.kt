@@ -20,7 +20,13 @@ internal class EditDistanceProvider(
     private val maxSolutionChars: Int = DEFAULT_MAX_SOLUTION_CHARS,
 ) : SimilarityProvider {
 
-    override val id = "edit-distance"
+    override val id = ID
+
+    /** Characters are characters in every language. */
+    override val languages = SimilarityLanguage.entries.associateWith { LanguageSupport.STABLE }
+
+    /** First by default: it is what similarity measured before there were providers. */
+    override val defaultPriority = 100
 
     /** Characters are characters in every language, so every language is compared as itself. */
     override fun comparesAs(language: SimilarityLanguage): SimilarityLanguage = language
@@ -72,6 +78,8 @@ internal class EditDistanceProvider(
     }
 
     companion object {
+        const val ID = "edit-distance"
+
         /** About 20,000 characters: some 600 lines, well past an ordinary solution. */
         const val DEFAULT_MAX_SOLUTION_CHARS = 20_000
     }

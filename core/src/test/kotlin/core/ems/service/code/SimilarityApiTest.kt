@@ -1,6 +1,8 @@
 package core.ems.service.code
 
 import core.conf.security.EasyRole
+import core.db.SimilarityProviderLanguage
+import core.db.SimilarityProviderSetting
 import core.ems.service.code.similarity.SimilarityService
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -9,6 +11,7 @@ import core.testing.Fixtures
 import core.testing.HttpApi
 import core.testing.IntegrationTest
 import core.testing.TestClock
+import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -86,6 +89,20 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
             val otherCourse = Fixtures.course("Somebody else's")
             otherExercise = Fixtures.exercise("Private", admin)
             Fixtures.courseExercise(otherCourse, otherExercise)
+
+            // These tests are about JPlag's answers, which an admin chooses over the default edit
+            // distance - SQL included, which JPlag offers only as experimental. SimilarityProvidersApiTest
+            // covers the choosing.
+            SimilarityProviderSetting.insert {
+                it[provider] = "jplag"
+                it[enabled] = true
+                it[priority] = 1000
+            }
+            SimilarityProviderLanguage.insert {
+                it[provider] = "jplag"
+                it[language] = "sql"
+                it[enabled] = true
+            }
         }
     }
 

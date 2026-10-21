@@ -55,10 +55,12 @@ const apiError = (code, attrs = {}) =>
   new ApiResponseError(400, code === null ? null : { id: 'x', code, attrs, log_msg: 'failed' })
 
 describe('isSimilarityRefusal', () => {
-  test('the three named refusals are recognised', () => {
+  test('the four named refusals are recognised', () => {
     expect(isSimilarityRefusal(apiError('TOO_MANY_SUBMISSIONS'))).toBe(true)
     expect(isSimilarityRefusal(apiError('SIMILARITY_BUSY'))).toBe(true)
     expect(isSimilarityRefusal(apiError('SIMILARITY_TIMEOUT'))).toBe(true)
+    // A language switched off is not a failure to retry: the page says so rather than "try a group".
+    expect(isSimilarityRefusal(apiError('SIMILARITY_UNAVAILABLE'))).toBe(true)
   })
 
   test('too many submissions names the limit core sent, and says the generic thing only without one', () => {

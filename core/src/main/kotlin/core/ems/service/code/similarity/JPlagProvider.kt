@@ -56,7 +56,18 @@ internal class JPlagProvider(
 ) : SimilarityProvider {
     private val log = KotlinLogging.logger {}
 
-    override val id = "jplag"
+    override val id = ID
+
+    /** SQL's lexer is core's own, and every review found a way past it; an admin vouches for it first. */
+    override val languages = mapOf(
+        SimilarityLanguage.PYTHON to LanguageSupport.STABLE,
+        SimilarityLanguage.JAVA to LanguageSupport.STABLE,
+        SimilarityLanguage.SQL to LanguageSupport.EXPERIMENTAL,
+        SimilarityLanguage.TEXT to LanguageSupport.STABLE,
+    )
+
+    /** Below edit distance until an admin raises it: deploying this changes no course's scores by itself. */
+    override val defaultPriority = 50
 
     /**
      * The tokeniser, replaceable only by a test. The catches that turn a tokeniser that *throws* into
@@ -518,13 +529,15 @@ internal class JPlagProvider(
     private fun endLineAt(tokens: List<Token>, index: Int): Int =
         tokens.getOrNull(index)?.let { maxOf(it.endLine, it.startLine) }?.takeIf { it > 0 } ?: 0
 
-    private companion object {
-        /** How many solutions decide alone that a cohort is not in its language; see [Session.prepare]. */
-        const val LANGUAGE_SAMPLE = 20
+    companion object {
+        const val ID = "jplag"
 
-        val LAYOUT = Regex("\\s+")
+        /** How many solutions decide alone that a cohort is not in its language; see [Session.prepare]. */
+        private const val LANGUAGE_SAMPLE = 20
+
+        private val LAYOUT = Regex("\\s+")
 
         /** The template's identifier, beside the submissions'. */
-        val BASE_CODE = File("basecode")
+        private val BASE_CODE = File("basecode")
     }
 }

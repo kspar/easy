@@ -19,6 +19,16 @@ internal interface SimilarityProvider {
     val id: String
 
     /**
+     * The languages it can compare, and how ready each is. A language that is not here is never bound
+     * to it; an [LanguageSupport.EXPERIMENTAL] one only once an admin switches it on, so that a new
+     * language - or one whose tokeniser has a history - does not go live on deploy.
+     */
+    val languages: Map<SimilarityLanguage, LanguageSupport>
+
+    /** Its place in the preference order until an admin gives it another: higher is preferred. */
+    val defaultPriority: Int
+
+    /**
      * The language this provider compares [language] as in this JVM: [language] itself, or the fallback
      * it uses when it cannot read that language here. Asked before the permit is taken, so a comparison
      * that cannot run as asked is known not to before anybody waits for it.
@@ -27,6 +37,9 @@ internal interface SimilarityProvider {
 
     fun open(request: ProviderRequest, run: RunContext): ProviderSession
 }
+
+/** Whether a language is ready for every course, or used only where an admin has switched it on. */
+internal enum class LanguageSupport(val wireName: String) { STABLE("stable"), EXPERIMENTAL("experimental") }
 
 /** What a provider is asked to compare. [template] is starter code every submission was built on, if there is any. */
 internal class ProviderRequest(

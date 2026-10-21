@@ -76,17 +76,19 @@ class SimilarityService(
 ) {
     private val log = KotlinLogging.logger {}
 
-    /** The provider every comparison runs on. One today; choosing among several is the next step. */
-    private val provider = JPlagProvider(maxSolutionTokens, maxRepetition)
+    private val jplag = JPlagProvider(maxSolutionTokens, maxRepetition)
+
+    /** Every provider installed, and the choice between them; see [bind]. */
+    internal val registry = SimilarityRegistry(listOf(jplag, EditDistanceProvider()))
 
     /** [JPlagProvider.tokenise], replaceable only by a test. */
-    internal var tokenise by provider::tokenise
+    internal var tokenise by jplag::tokenise
 
     /** [JPlagProvider.comparePair], replaceable only by a test. */
-    internal var comparePair by provider::comparePair
+    internal var comparePair by jplag::comparePair
 
     /** [JPlagProvider.available], replaceable only by a test. */
-    internal var available by provider::available
+    internal var available by jplag::available
 
     /**
      * How many threads a cohort of this size runs on, replaceable only by a test - which is how the
@@ -142,22 +144,38 @@ class SimilarityService(
     fun <T> compare(
         loadRows: () -> List<T>,
         asSource: (T) -> SimilaritySource,
-        language: SimilarityLanguage,
+        binding: SimilarityBinding,
         baseCode: String?,
         topN: Int,
     ): SimilarityRun<T> {
-        val compared = provider.comparesAs(language)
+        val provider = checkNotNull(registry.provider(binding.provider)) { "No similarity provider ${binding.provider}" }
+        val compared = provider.comparesAs(binding.language)
         acquirePermit()
         try {
             val rows = loadRows()
             if (rows.size < 2) {
-                return SimilarityRun(rows, SimilarityOutcome(emptyList(), emptyList(), compared, false))
+                return SimilarityRun(rows, SimilarityOutcome(emptyList(), emptyList(), compared, false, provider = provider.id))
             }
-            return SimilarityRun(rows, run(rows.map(asSource), compared, baseCode, topN))
+            return SimilarityRun(rows, run(provider, rows.map(asSource), compared, baseCode, topN))
         } finally {
             oneAtATime.release()
         }
     }
+
+    /** [compare] on JPlag, whatever the registry says: the engine's own tests, which are about JPlag. */
+    internal fun <T> compare(
+        loadRows: () -> List<T>,
+        asSource: (T) -> SimilaritySource,
+        language: SimilarityLanguage,
+        baseCode: String?,
+        topN: Int,
+    ): SimilarityRun<T> = compare(loadRows, asSource, SimilarityBinding(jplag.id, language), baseCode, topN)
+
+    /**
+     * Which provider compares [language], as the admin has left the providers: see [SimilarityRegistry.bind].
+     * Asked before the permit, so a comparison nobody may run is refused before anybody waits for it.
+     */
+    fun bind(language: SimilarityLanguage): SimilarityBinding = registry.bind(language)
 
     /**
      * Takes the permit, waiting for it only if nobody else already is.
@@ -192,6 +210,7 @@ class SimilarityService(
     }
 
     private fun run(
+        provider: SimilarityProvider,
         sources: List<SimilaritySource>,
         language: SimilarityLanguage,
         baseCode: String?,
@@ -209,7 +228,7 @@ class SimilarityService(
 
                 if (cohort.usable.size < 2) {
                     log.info { "Nothing to compare: ${cohort.usable.size} usable of ${sources.size}, ${cohort.skipped.size} skipped" }
-                    return SimilarityOutcome(emptyList(), cohort.skipped, cohort.language, false)
+                    return SimilarityOutcome(emptyList(), cohort.skipped, cohort.language, false, provider = provider.id)
                 }
 
                 val compareStart = System.nanoTime()
@@ -228,7 +247,7 @@ class SimilarityService(
                             "${cohort.skipped.size} skipped, ${groups.size} identical group(s), ${ranking.scoring} scoring " +
                             "pairs of ${ranking.compared} compared, returning ${pairs.size}"
                 }
-                return SimilarityOutcome(pairs, cohort.skipped, cohort.language, ranking.scoring > pairs.size, groups)
+                return SimilarityOutcome(pairs, cohort.skipped, cohort.language, ranking.scoring > pairs.size, groups, provider.id)
             }
         }
     }
