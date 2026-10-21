@@ -1,5 +1,15 @@
 package core.db
 
+/**
+ * How many pairs a similarity check compares (EZ-1667). FULL compares every pair worth comparing;
+ * OPTIMISED does the same while that fits the run's budget, and beyond it compares the likeliest pairs
+ * first. Length in Table object is 20.
+ */
+enum class SimilarityMode {
+    FULL,
+    OPTIMISED
+}
+
 // Length in Table object is 20
 enum class GraderType {
     AUTO,

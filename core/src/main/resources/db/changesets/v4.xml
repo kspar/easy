@@ -1088,4 +1088,25 @@
         </createTable>
     </changeSet>
 
+    <!--
+        EZ-1667. A course's own similarity settings: a provider it always uses where it may (null leaves
+        the choice to the admin's preference order), and how many pairs a check compares. No row means
+        the defaults, so nothing is seeded.
+    -->
+    <changeSet id="211026-2" author="priit">
+        <createTable tableName="course_similarity_settings">
+            <column name="course_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_course_similarity_settings"/>
+            </column>
+            <column name="provider_id" type="varchar(50)"/>
+            <column name="mode" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="course_similarity_settings" baseColumnNames="course_id"
+                                 referencedTableName="course" referencedColumnNames="id"
+                                 constraintName="fk_course_similarity_settings_course"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
 </databaseChangeLog>

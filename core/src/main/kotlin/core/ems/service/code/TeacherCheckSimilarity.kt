@@ -11,12 +11,15 @@ import core.db.ExerciseVer
 import core.db.Submission
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
+import core.ems.service.code.similarity.MetricUnit
 import core.ems.service.code.similarity.SimilarityBusy
 import core.ems.service.code.similarity.SimilarityLanguage
 import core.ems.service.code.similarity.SimilarityService
 import core.ems.service.code.similarity.SimilaritySource
 import core.ems.service.code.similarity.SimilarityTimedOut
 import core.ems.service.code.similarity.SimilarityUnavailable
+import core.db.CourseSimilaritySettings
+import core.db.SimilarityMode
 import core.ems.service.code.similarity.TooManySubmissions
 import core.ems.service.idToLongOrInvalidReq
 import core.exception.InvalidRequestException
@@ -33,6 +36,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
 import org.springframework.security.access.annotation.Secured
@@ -116,6 +120,14 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
          * `edit-distance` (whole texts, character by character). An admin chooses; see SimilarityRegistry.
          */
         @get:JsonProperty("provider") val provider: String,
+        /** `full` or `optimised`: the course's setting, or the default. */
+        @get:JsonProperty("mode") val mode: String,
+        /**
+         * Why the comparison did not run as asked, or null when it did: `PINNED_UNAVAILABLE` (the course's
+         * pinned provider may not compare this language now) or `LANGUAGE_UNAVAILABLE` (no provider may,
+         * so it was compared as text).
+         */
+        @get:JsonProperty("provider_fallback") val providerFallback: String?,
     )
 
     data class RespGroup(
@@ -153,6 +165,15 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
          */
         @get:JsonProperty("score_a") val scoreA: Int = similarity,
         @get:JsonProperty("score_b") val scoreB: Int = maxSimilarity,
+        /** What the provider measured, by name - JPlag's similarities and shared tokens, or Levenshtein and Dice. */
+        @get:JsonProperty("metrics") val metrics: List<RespMetric> = emptyList(),
+    )
+
+    data class RespMetric(
+        @get:JsonProperty("id") val id: String,
+        /** A whole percent for unit `percent`, a number for unit `count`. */
+        @get:JsonProperty("value") val value: Int,
+        @get:JsonProperty("unit") val unit: String,
     )
 
     /** One matched region, as line ranges in each submission. */
@@ -241,8 +262,12 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
         val language = SimilarityLanguage.of(exercise.solutionFileName, exercise.containerImage)
         // Which provider compares it is the admin's to say (see SimilarityRegistry), and known before the
         // permit is asked for, so a language nobody may compare is refused without anybody waiting.
+        // A course's own settings apply when the check is about that course alone - which the page always
+        // asks; across several courses there is no one course's choice to follow, so the defaults do.
+        val courseSettings = courses.singleOrNull()?.let(::selectCourseSettings)
+        val mode = courseSettings?.mode ?: SimilarityMode.OPTIMISED
         val binding = try {
-            similarityService.bind(language)
+            similarityService.bind(language, courseSettings?.provider)
         } catch (e: SimilarityUnavailable) {
             throw InvalidRequestException(
                 "Similarity is not available for ${e.language.wireName} here.",
@@ -318,6 +343,9 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
                     // Kept so a future sign error surfaces as a clamp rather than as "-240%".
                     percent(pair.similarity), percent(pair.maxSimilarity),
                     pair.matches.map { RespMatch(it.startLine1, it.endLine1, it.startLine2, it.endLine2, it.tokens) },
+                    metrics = pair.metrics.map { metric ->
+                        RespMetric(metric.id, if (metric.unit == MetricUnit.SHARE) percent(metric.value) else metric.value.toInt(), metric.unit.wireName)
+                    },
                 )
             },
             outcome.language.wireName,
@@ -325,7 +353,16 @@ class TeacherCheckSimilarityController(private val similarityService: Similarity
             outcome.truncated,
             outcome.groups.map { group -> RespGroup(group.map { it.toString() }) },
             outcome.provider,
+            mode.name.lowercase(),
+            binding.fallback,
         )
+    }
+
+    private class CourseSettings(val provider: String?, val mode: SimilarityMode)
+
+    private fun selectCourseSettings(courseId: Long): CourseSettings? = transaction {
+        CourseSimilaritySettings.selectAll().where { CourseSimilaritySettings.course eq courseId }.singleOrNull()
+            ?.let { CourseSettings(it[CourseSimilaritySettings.provider], it[CourseSimilaritySettings.mode]) }
     }
 
     private fun tooManySubmissions(e: TooManySubmissions) = InvalidRequestException(

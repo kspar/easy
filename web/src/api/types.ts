@@ -598,6 +598,21 @@ export interface SimilarityScoreResp {
   /** JPlag maximum similarity, 0–100 — the shorter submission's share of matched tokens. */
   max_similarity: number
   matches: SimilarityMatchResp[]
+  /**
+   * What the provider measured, by name: `similarity`, `max_similarity` and `shared_tokens` for JPlag,
+   * `levenshtein` and `dice` for edit distance. Optional because a core older than providers sends none.
+   */
+  metrics?: SimilarityMetricResp[]
+}
+
+/**
+ * One named measurement of a pair: a whole percent for unit `percent`, a number for unit `count`.
+ * @endpoint POST /v2/exercises/{exerciseId}/similarity -> scores[].metrics[]
+ */
+export interface SimilarityMetricResp {
+  id: string
+  value: number
+  unit: string
 }
 
 /**
@@ -648,6 +663,13 @@ export interface SimilarityResp {
    * `edit-distance` compares whole texts. Optional because a core older than providers sends none.
    */
   provider?: string
+  /** `full` or `optimised`: the course's setting, or the default. */
+  mode?: string
+  /**
+   * Why the comparison did not run as asked, or null when it did: `PINNED_UNAVAILABLE` (the course's
+   * pinned provider may not compare this language now) or `LANGUAGE_UNAVAILABLE` (compared as text).
+   */
+  provider_fallback?: string | null
 }
 
 /**

@@ -33,6 +33,7 @@
     "GET /v2/courses/{courseId}/invite": { "response": "core.ems.service.course.invite.ReadCourseInviteDetails.Resp" },
     "GET /v2/courses/{courseId}/moodle": { "response": "core.ems.service.moodle.ReadCourseMoodlePropsController.Resp" },
     "GET /v2/courses/{courseId}/participants": { "response": "core.ems.service.course.ReadParticipantsOnCourseController.Resp" },
+    "GET /v2/courses/{courseId}/similarity-settings": { "response": "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.Resp" },
     "GET /v2/executors": { "response": "core.aas.service.ReadExecutorController.Resp" },
     "GET /v2/exercises/{exerciseId}": { "response": "core.ems.service.exercise.ReadExercise.Resp" },
     "GET /v2/exercises/{exerciseId}/anonymous/submissions": { "response": "core.ems.service.exercise.ReadAnonymousSubmissions.Resp" },
@@ -127,6 +128,7 @@
     "PUT /v2/courses/{courseId}/exercises/{courseExerciseId}/exception": { "request": "core.ems.service.exercise.exceptions.PutCourseExerciseExceptions.Req" },
     "PUT /v2/courses/{courseId}/invite": { "request": "core.ems.service.course.invite.GenerateCourseInvite.Req", "response": "core.ems.service.course.invite.GenerateCourseInvite.Resp" },
     "PUT /v2/courses/{courseId}/moodle": { "request": "core.ems.service.moodle.MoodleLinkCourseController.Req" },
+    "PUT /v2/courses/{courseId}/similarity-settings": { "request": "core.ems.service.code.TeacherUpdateCourseSimilaritySettingsController.Req" },
     "PUT /v2/executors/{executorId}": { "request": "core.aas.service.UpdateExecutorController.Req" },
     "PUT /v2/exercises/{exerciseId}": { "request": "core.ems.service.exercise.UpdateExercise.Req" },
     "PUT /v2/files/{fileId}": { "request": "core.ems.service.file.UpdateFileController.Req" },
@@ -483,7 +485,9 @@
       "compared": { "kind": "number" },
       "groups": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespGroup" },
       "language": { "kind": "string" },
+      "mode": { "kind": "string" },
       "provider": { "kind": "string" },
+      "provider_fallback": { "kind": "string", "nullable": true },
       "scores": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespScore" },
       "skipped": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespSkipped" },
       "submissions": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespSubmission" },
@@ -499,9 +503,15 @@
       "start_line_2": { "kind": "number" },
       "tokens": { "kind": "number" }
     },
+    "core.ems.service.code.TeacherCheckSimilarityController.RespMetric": {
+      "id": { "kind": "string" },
+      "unit": { "kind": "string" },
+      "value": { "kind": "number" }
+    },
     "core.ems.service.code.TeacherCheckSimilarityController.RespScore": {
       "matches": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespMatch" },
       "max_similarity": { "kind": "number" },
+      "metrics": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespMetric" },
       "score_a": { "kind": "number" },
       "score_b": { "kind": "number" },
       "similarity": { "kind": "number" },
@@ -519,6 +529,19 @@
       "given_name": { "kind": "string" },
       "id": { "kind": "string" },
       "solution": { "kind": "string", "nullable": true }
+    },
+    "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.Resp": {
+      "mode": { "kind": "string" },
+      "provider": { "kind": "string", "nullable": true },
+      "providers": { "kind": "array", "type": "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.RespProvider" }
+    },
+    "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.RespProvider": {
+      "id": { "kind": "string" },
+      "languages": { "kind": "array" }
+    },
+    "core.ems.service.code.TeacherUpdateCourseSimilaritySettingsController.Req": {
+      "mode": { "kind": "string" },
+      "provider": { "kind": "string", "nullable": true }
     },
     "core.ems.service.course.AddTeachersToCourse.GroupReq": {
       "id": { "kind": "string" }

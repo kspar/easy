@@ -519,6 +519,18 @@ object SimilarityProviderLanguage : Table("similarity_provider_language") {
     override val primaryKey = PrimaryKey(provider, language)
 }
 
+/**
+ * A course's own similarity settings; no row means the defaults - no provider pinned, so the admin's
+ * preference order decides, and [SimilarityMode.OPTIMISED].
+ */
+object CourseSimilaritySettings : Table("course_similarity_settings") {
+    val course = reference("course_id", Course)
+    /** A provider the course always uses where it may; null leaves the choice to the preference order. */
+    val provider = varchar("provider_id", 50).nullable()
+    val mode = enumerationByName("mode", 20, SimilarityMode::class)
+    override val primaryKey = PrimaryKey(course)
+}
+
 /** A language switched on or off for similarity as a whole; no row means on. Off is a refusal, not a fallback. */
 object SimilarityLanguageSetting : Table("similarity_language") {
     val language = varchar("language", 20)

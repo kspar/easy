@@ -36,7 +36,14 @@ data class SimilarityPair(
     val id1: Long, val id2: Long,
     val similarity: Double, val maxSimilarity: Double,
     val matches: List<SimilarityMatch>,
+    /** What the provider measured, by name; see [ProviderSession.metrics]. */
+    val metrics: List<SimilarityMetric> = emptyList(),
 )
+
+/** One named measurement of a pair: a share from 0 to 1, or a count. */
+data class SimilarityMetric(val id: String, val value: Double, val unit: MetricUnit)
+
+enum class MetricUnit(val wireName: String) { SHARE("percent"), COUNT("count") }
 
 data class SkippedSubmission(val id: Long, val reason: String)
 

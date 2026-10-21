@@ -129,6 +129,54 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(200, check().status)
     }
 
+    private fun putSettings(provider: String?, mode: String = "optimised", courseId: Long = course) =
+        api.put("/v2/courses/$courseId/similarity-settings", api.body("provider" to provider, "mode" to mode), Auth.asTeacher(teacher))
+
+    @Test
+    fun `a course with nothing set has no provider pinned, and the providers it may pin`() {
+        val response = api.get("/v2/courses/$course/similarity-settings", Auth.asTeacher(teacher))
+        assertEquals(200, response.status)
+        assertTrue(response.jsonOrNull!!.get("provider").isNull)
+        assertEquals("optimised", response.field("mode"))
+        assertEquals(listOf("edit-distance", "jplag"), response.elements("providers").map { it.get("id").asString() })
+    }
+
+    @Test
+    fun `a course's pinned provider compares its checks, against the admin's order`() {
+        putProvider("jplag", enabled = true, priority = 200)
+        assertEquals(200, putSettings("edit-distance", mode = "full").status)
+        val response = check()
+        assertEquals("edit-distance", response.field("provider"))
+        assertEquals("full", response.field("mode"))
+        assertTrue(response.jsonOrNull!!.get("provider_fallback").isNull)
+        assertEquals(listOf("levenshtein", "dice"), response.elements("scores").single().get("metrics").toList().map { it.get("id").asString() })
+
+        assertEquals(200, putSettings(null).status)
+        val byOrder = check()
+        assertEquals("jplag", byOrder.field("provider"))
+        val metrics = byOrder.elements("scores").single().get("metrics").toList().associate { it.get("id").asString() to it.get("unit").asString() }
+        assertEquals(mapOf("similarity" to "percent", "max_similarity" to "percent", "shared_tokens" to "count"), metrics)
+    }
+
+    @Test
+    fun `a pin the admin has since switched off is passed over, and the check says so`() {
+        assertEquals(200, putSettings("jplag").status)
+        putProvider("jplag", enabled = false, priority = 50)
+        val response = check()
+        assertEquals("edit-distance", response.field("provider"))
+        assertEquals("PINNED_UNAVAILABLE", response.field("provider_fallback"))
+        // And it cannot be pinned again while off.
+        assertEquals(400, putSettings("jplag").status)
+    }
+
+    @Test
+    fun `only the course's own teachers may read or change its settings`() {
+        val other = transaction { Fixtures.course("Not mine") }
+        assertEquals(403, api.get("/v2/courses/$other/similarity-settings", Auth.asTeacher(teacher)).status)
+        assertEquals(403, putSettings(null, courseId = other).status)
+        assertEquals(400, putSettings(null, mode = "everything").status)
+    }
+
     @Test
     fun `providers are code, so an unknown one or a language it does not compare is refused`() {
         assertEquals(400, putProvider("moss", enabled = true, priority = 10).status)

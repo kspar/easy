@@ -295,6 +295,15 @@ internal class JPlagProvider(
             )
         }
 
+        override fun metrics(pair: PairScore): List<SimilarityMetric> {
+            val comparison = pair.handle as JPlagComparison
+            return listOf(
+                SimilarityMetric("similarity", comparison.similarity(), MetricUnit.SHARE),
+                SimilarityMetric("max_similarity", comparison.maximalSimilarity(), MetricUnit.SHARE),
+                SimilarityMetric("shared_tokens", pair.rank, MetricUnit.COUNT),
+            )
+        }
+
         /**
          * A group's members are token for token the same, so the tiling's matches index any member's
          * tokens alike, and the lines are read from the members shown.

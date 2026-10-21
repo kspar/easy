@@ -175,7 +175,7 @@ class SimilarityService(
      * Which provider compares [language], as the admin has left the providers: see [SimilarityRegistry.bind].
      * Asked before the permit, so a comparison nobody may run is refused before anybody waits for it.
      */
-    fun bind(language: SimilarityLanguage): SimilarityBinding = registry.bind(language)
+    fun bind(language: SimilarityLanguage, pinned: String? = null): SimilarityBinding = registry.bind(language, pinned)
 
     /**
      * Takes the permit, waiting for it only if nobody else already is.
@@ -305,7 +305,7 @@ class SimilarityService(
         val (id1, id2) = first.members.asSequence()
             .flatMap { a -> second.members.asSequence().map { b -> a to b } }
             .first { (a, b) -> ownerById[a] == null || ownerById[b] == null || ownerById[a] != ownerById[b] }
-        return SimilarityPair(id1, id2, pair.similarity, pair.score, session.details(pair, id1, id2))
+        return SimilarityPair(id1, id2, pair.similarity, pair.score, session.details(pair, id1, id2), session.metrics(pair))
     }
 
     companion object {

@@ -1066,7 +1066,11 @@ class SimilarityServiceTest {
                         lineAt(t2, m.startOfSecond()), lineAt(t2, m.startOfSecond() + m.lengthOfSecond() - 1),
                         m.minimumLength(),
                     )
-                })
+                }, listOf(
+                    SimilarityMetric("similarity", c.similarity(), MetricUnit.SHARE),
+                    SimilarityMetric("max_similarity", c.maximalSimilarity(), MetricUnit.SHARE),
+                    SimilarityMetric("shared_tokens", c.shared().toDouble(), MetricUnit.COUNT),
+                ))
             }
 
         assertTrue(scoring.size > expected.size, "the cohort is meant to have more scoring pairs than the cut")

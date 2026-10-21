@@ -64,6 +64,22 @@ class SimilarityRegistryTest {
     }
 
     @Test
+    fun `a pinned provider comes first where it may run, and the order decides where it may not`() {
+        // Pinned against the order: the course keeps its choice.
+        assertEquals(SimilarityBinding(JPlagProvider.ID, PYTHON), registry.bind(PYTHON, RegistrySettings(), pinned = JPlagProvider.ID))
+        // JPlag may not compare SQL by default (experimental), so the pin does not hold, and the check says so.
+        assertEquals(
+            SimilarityBinding(EditDistanceProvider.ID, SQL, SimilarityRegistry.FALLBACK_PINNED_UNAVAILABLE),
+            registry.bind(SQL, RegistrySettings(), pinned = JPlagProvider.ID),
+        )
+        // Switched off by an admin since it was pinned: passed over the same way.
+        val jplagOff = RegistrySettings(providers = mapOf(JPlagProvider.ID to off))
+        assertEquals(SimilarityRegistry.FALLBACK_PINNED_UNAVAILABLE, registry.bind(PYTHON, jplagOff, pinned = JPlagProvider.ID).fallback)
+        // A pin never overrides a language switched off as a whole.
+        assertThrows<SimilarityUnavailable> { registry.bind(PYTHON, RegistrySettings(languages = mapOf(PYTHON to false)), pinned = JPlagProvider.ID) }
+    }
+
+    @Test
     fun `equal priorities are ordered by id, and an override for a provider not installed changes nothing`() {
         val tied = RegistrySettings(providers = mapOf(JPlagProvider.ID to ProviderOverride(true, 100), "gone" to jplagFirst))
         assertEquals(listOf(EditDistanceProvider.ID, JPlagProvider.ID), registry.preferenceOrder(tied).map { it.id })

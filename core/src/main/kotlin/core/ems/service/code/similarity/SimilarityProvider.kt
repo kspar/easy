@@ -86,6 +86,13 @@ internal interface ProviderSession : AutoCloseable {
      */
     fun details(pair: PairScore, shownFirst: Long, shownSecond: Long): List<SimilarityMatch>
 
+    /**
+     * The numbers this provider measured for [pair], named, for the page to show beside the score: JPlag's
+     * two similarities and its shared tokens, edit distance's Levenshtein ratio and Dice coefficient.
+     * Called only for pairs that are returned, so measuring them costs nothing per pair compared.
+     */
+    fun metrics(pair: PairScore): List<SimilarityMetric>
+
     override fun close() = Unit
 }
 

@@ -36,18 +36,26 @@ internal class SimilarityRegistry(val providers: List<SimilarityProvider>) {
         )
     }
 
-    fun bind(language: SimilarityLanguage): SimilarityBinding = bind(language, settings())
+    fun bind(language: SimilarityLanguage, pinned: String? = null): SimilarityBinding = bind(language, settings(), pinned)
 
     /**
      * The provider that compares [language]: the first, in preference order, that is on and has the
      * language on - or failing every one, the first that has text on, comparing the cohort word by word
      * and saying so. A language an admin has switched off is refused outright rather than compared as
      * text: off means the admin does not want it compared, not that it should be compared worse.
+     *
+     * A provider [pinned] by a course comes first when it may compare the language. When it may not -
+     * switched off since, or not offered the language - the choice falls to the preference order as if
+     * nothing were pinned, and the binding says the pin did not hold.
      */
-    fun bind(language: SimilarityLanguage, settings: RegistrySettings): SimilarityBinding {
+    fun bind(language: SimilarityLanguage, settings: RegistrySettings, pinned: String? = null): SimilarityBinding {
         if (!settings.languageEnabled(language)) throw SimilarityUnavailable(language)
         val usable = preferenceOrder(settings).filter { settings.enabled(it) }
-        usable.firstOrNull { settings.languageEnabled(it, language) }?.let { return SimilarityBinding(it.id, language) }
+        if (pinned != null) {
+            usable.firstOrNull { it.id == pinned && settings.languageEnabled(it, language) }?.let { return SimilarityBinding(it.id, language) }
+        }
+        val pinFailed = if (pinned != null) FALLBACK_PINNED_UNAVAILABLE else null
+        usable.firstOrNull { settings.languageEnabled(it, language) }?.let { return SimilarityBinding(it.id, language, pinFailed) }
         if (language != SimilarityLanguage.TEXT && settings.languageEnabled(SimilarityLanguage.TEXT)) {
             usable.firstOrNull { settings.languageEnabled(it, SimilarityLanguage.TEXT) }?.let {
                 return SimilarityBinding(it.id, SimilarityLanguage.TEXT, fallback = FALLBACK_LANGUAGE_UNAVAILABLE)
@@ -63,6 +71,9 @@ internal class SimilarityRegistry(val providers: List<SimilarityProvider>) {
     companion object {
         /** Why a cohort was compared as text: no provider that may run takes its language. */
         const val FALLBACK_LANGUAGE_UNAVAILABLE = "LANGUAGE_UNAVAILABLE"
+
+        /** Why a course's pinned provider did not compare it: it may not compare that language, or not at all. */
+        const val FALLBACK_PINNED_UNAVAILABLE = "PINNED_UNAVAILABLE"
     }
 }
 

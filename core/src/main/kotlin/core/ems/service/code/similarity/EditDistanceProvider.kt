@@ -71,10 +71,18 @@ internal class EditDistanceProvider(
             val dice = EditDistance.dice(bigramsById.getValue(a), bigramsById.getValue(b))
             val mean = (levenshtein + dice) / 2
             // Both measures are symmetric, so the pair is oriented by id: the same whichever way it is asked.
-            return PairScore(minOf(a, b), maxOf(a, b), score = maxOf(levenshtein, dice), rank = mean, similarity = mean, handle = null)
+            return PairScore(minOf(a, b), maxOf(a, b), score = maxOf(levenshtein, dice), rank = mean, similarity = mean, handle = doubleArrayOf(levenshtein, dice))
         }
 
         override fun details(pair: PairScore, shownFirst: Long, shownSecond: Long): List<SimilarityMatch> = emptyList()
+
+        override fun metrics(pair: PairScore): List<SimilarityMetric> {
+            val (levenshtein, dice) = pair.handle as DoubleArray
+            return listOf(
+                SimilarityMetric("levenshtein", levenshtein, MetricUnit.SHARE),
+                SimilarityMetric("dice", dice, MetricUnit.SHARE),
+            )
+        }
     }
 
     companion object {
