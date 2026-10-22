@@ -9,7 +9,6 @@
     "DELETE /v2/courses/{courseId}/groups/{groupId}": {  },
     "DELETE /v2/courses/{courseId}/groups/{groupId}/students": { "request": "core.ems.service.course.group.RemoveStudentsFromCourseGroupController.Req", "response": "core.ems.service.course.group.RemoveStudentsFromCourseGroupController.Resp" },
     "DELETE /v2/courses/{courseId}/invite": {  },
-    "DELETE /v2/courses/{courseId}/similarity-settings/exercises/{courseExerciseId}": {  },
     "DELETE /v2/courses/{courseId}/students": { "request": "core.ems.service.course.RemoveStudentsFromCourseController.Req", "response": "core.ems.service.course.RemoveStudentsFromCourseController.Resp" },
     "DELETE /v2/courses/{courseId}/teachers": { "request": "core.ems.service.course.RemoveTeachersFromCourseController.Req" },
     "DELETE /v2/executors/{executorId}": { "request": "core.aas.service.DeleteExecutorController.Req" },

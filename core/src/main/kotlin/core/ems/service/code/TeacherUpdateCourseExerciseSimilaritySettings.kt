@@ -31,8 +31,9 @@ import org.springframework.web.bind.annotation.RestController
  * its language best. Each setting is its own - the provider can be the exercise's while the mode stays the
  * course's. A provider is checked as the course's is: pinned only while an admin has it on.
  *
- * Neither its own is no setting at all, and is stored as none, so the exercise follows the course's as one
- * that was never set does.
+ * Neither its own is no setting at all, and is stored as none - the row is deleted, never the exercise - so
+ * the exercise follows the course's as one that was never set does. That is also the one way to clear an
+ * exercise's settings: a DELETE beside it would only have been a second way to do the same.
  */
 @RestController
 @RequestMapping("/v2")

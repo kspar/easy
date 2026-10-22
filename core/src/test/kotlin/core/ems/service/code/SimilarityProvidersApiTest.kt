@@ -348,11 +348,13 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(200, putExercise(ownProvider = false, provider = "edit-distance", mode = null).status)
         assertEquals(0, exerciseOverrides().size)
         assertEquals("jplag", estimate().get("provider").asString())
-        // And dropped outright, the same.
-        assertEquals(200, putExercise(ownProvider = true, provider = "edit-distance", mode = null).status)
-        assertEquals(200, api.delete("/v2/courses/$course/similarity-settings/exercises/$courseExercise", Auth.asTeacher(teacher)).status)
+        // Its own mode alone, then the course's again: cleared the same way.
+        assertEquals(200, putExercise(ownProvider = false, provider = null, mode = "optimised").status)
+        assertEquals("exercise", estimate().get("mode_from").asString())
+        assertEquals(200, putExercise(ownProvider = false, provider = null, mode = null).status)
         assertEquals(0, exerciseOverrides().size)
         assertEquals("course", estimate().get("provider_from").asString())
+        assertEquals("course", estimate().get("mode_from").asString())
         // With no course settings either, the defaults, and said so.
         transaction { CourseSimilaritySettings.deleteAll() }
         estimate().let {
@@ -371,10 +373,8 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         val foreign = putExercise(ownProvider = false, provider = null, mode = "full", courseExerciseId = otherExercise)
         assertEquals(400, foreign.status)
         assertEquals("ENTITY_WITH_ID_NOT_FOUND", foreign.field("code"))
-        assertEquals(400, api.delete("/v2/courses/$course/similarity-settings/exercises/$otherExercise", Auth.asTeacher(teacher)).status)
         // A course the teacher does not teach.
         assertEquals(403, putExercise(ownProvider = false, provider = null, mode = "full", courseExerciseId = otherExercise, courseId = other).status)
-        assertEquals(403, api.delete("/v2/courses/$other/similarity-settings/exercises/$otherExercise", Auth.asTeacher(teacher)).status)
         // A provider that is not installed, or switched off, and a mode that does not exist.
         assertEquals(400, putExercise(ownProvider = true, provider = "moss", mode = null).status)
         assertEquals(200, putProvider("jplag", enabled = false, priority = 50).status)
