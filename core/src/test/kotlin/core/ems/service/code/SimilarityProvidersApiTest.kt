@@ -1,6 +1,7 @@
 package core.ems.service.code
 
 import core.conf.security.EasyRole
+import core.db.CourseSimilaritySettings
 import core.db.SimilarityProviderSetting
 import core.ems.service.code.similarity.SimilarityLanguage
 import core.ems.service.code.similarity.SimilarityService
@@ -11,6 +12,7 @@ import core.testing.Fixtures
 import core.testing.HttpApi
 import core.testing.IntegrationTest
 import core.testing.TestClock
+import org.jetbrains.exposed.v1.jdbc.deleteAll
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -35,6 +37,7 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
     private var course = 0L
     private var exercise = 0L
     private var submissions = listOf<Long>()
+    private var courseExercise = 0L
 
     private val solution = """
         def count_words(text):
@@ -57,7 +60,7 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
             course = Fixtures.course("Mine")
             Fixtures.enrolTeacher(course, teacher)
             exercise = Fixtures.exercise("Word count", teacher)
-            val courseExercise = Fixtures.courseExercise(course, exercise)
+            courseExercise = Fixtures.courseExercise(course, exercise)
             submissions = (1..2).map { n ->
                 val student = "student-$n"
                 Fixtures.student(student)
@@ -280,6 +283,104 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals("jplag", java.provider)
         assertEquals("text", java.comparedAs)
         assertEquals("python", languages.single { it.language == "python" }.comparedAs)
+    }
+
+    private fun putExercise(ownProvider: Boolean, provider: String?, mode: String?, courseExerciseId: Long = courseExercise, courseId: Long = course) =
+        api.put(
+            "/v2/courses/$courseId/similarity-settings/exercises/$courseExerciseId",
+            api.body("own_provider" to ownProvider, "provider" to provider, "mode" to mode),
+            Auth.asTeacher(teacher),
+        )
+
+    private fun estimate() = api.post(
+        "/v2/exercises/$exercise/similarity/estimate",
+        api.body("courses" to listOf(mapOf("id" to course.toString()))),
+        Auth.asTeacher(teacher),
+    ).jsonOrNull!!
+
+    private fun exerciseOverrides() =
+        api.get("/v2/courses/$course/similarity-settings", Auth.asTeacher(teacher)).elements("exercises")
+
+    @Test
+    fun `an exercise's own settings come before the course's, each on its own`() {
+        assertEquals(200, putSettings("jplag", mode = "full").status)
+        estimate().let {
+            assertEquals("jplag", it.get("provider").asString())
+            assertEquals("full", it.get("mode").asString())
+            assertEquals("course", it.get("provider_from").asString())
+            assertEquals("course", it.get("mode_from").asString())
+        }
+        // Its own mode only: the course's provider still holds.
+        assertEquals(200, putExercise(ownProvider = false, provider = null, mode = "optimised").status)
+        estimate().let {
+            assertEquals("jplag", it.get("provider").asString())
+            assertEquals("course", it.get("provider_from").asString())
+            assertEquals("optimised", it.get("mode").asString())
+            assertEquals("exercise", it.get("mode_from").asString())
+        }
+        // Its own provider too, and the check runs on it.
+        assertEquals(200, putExercise(ownProvider = true, provider = "edit-distance", mode = "optimised").status)
+        assertEquals("exercise", estimate().get("provider_from").asString())
+        assertEquals("edit-distance", check().field("provider"))
+        val listed = exerciseOverrides().single()
+        assertEquals(courseExercise.toString(), listed.get("course_exercise_id").asString())
+        assertEquals("edit-distance", listed.get("provider").asString())
+    }
+
+    @Test
+    fun `an exercise may leave a course's pin for the admin's order`() {
+        assertEquals(200, putProvider("jplag", enabled = true, priority = 10).status)
+        assertEquals(200, putSettings("jplag").status)
+        assertEquals("jplag", check().field("provider"))
+        // Its own provider, none: the admin's order, where edit distance comes first.
+        assertEquals(200, putExercise(ownProvider = true, provider = null, mode = null).status)
+        assertEquals("edit-distance", check().field("provider"))
+        assertEquals("exercise", estimate().get("provider_from").asString())
+        assertEquals("course", estimate().get("mode_from").asString())
+    }
+
+    @Test
+    fun `an exercise with nothing of its own follows the course's again, and is not listed`() {
+        assertEquals(200, putSettings("jplag", mode = "full").status)
+        assertEquals(200, putExercise(ownProvider = true, provider = "edit-distance", mode = "optimised").status)
+        assertEquals(1, exerciseOverrides().size)
+        // Neither its own is stored as nothing at all.
+        assertEquals(200, putExercise(ownProvider = false, provider = "edit-distance", mode = null).status)
+        assertEquals(0, exerciseOverrides().size)
+        assertEquals("jplag", estimate().get("provider").asString())
+        // And dropped outright, the same.
+        assertEquals(200, putExercise(ownProvider = true, provider = "edit-distance", mode = null).status)
+        assertEquals(200, api.delete("/v2/courses/$course/similarity-settings/exercises/$courseExercise", Auth.asTeacher(teacher)).status)
+        assertEquals(0, exerciseOverrides().size)
+        assertEquals("course", estimate().get("provider_from").asString())
+        // With no course settings either, the defaults, and said so.
+        transaction { CourseSimilaritySettings.deleteAll() }
+        estimate().let {
+            assertEquals("default", it.get("provider_from").asString())
+            assertEquals("default", it.get("mode_from").asString())
+        }
+    }
+
+    @Test
+    fun `an exercise's settings are its course's teachers' to change, and only for an exercise on that course`() {
+        val (other, otherExercise) = transaction {
+            val other = Fixtures.course("Not mine")
+            other to Fixtures.courseExercise(other, Fixtures.exercise("Elsewhere", teacher))
+        }
+        // Another course's exercise, named under this course: not found here, and not changed.
+        val foreign = putExercise(ownProvider = false, provider = null, mode = "full", courseExerciseId = otherExercise)
+        assertEquals(400, foreign.status)
+        assertEquals("ENTITY_WITH_ID_NOT_FOUND", foreign.field("code"))
+        assertEquals(400, api.delete("/v2/courses/$course/similarity-settings/exercises/$otherExercise", Auth.asTeacher(teacher)).status)
+        // A course the teacher does not teach.
+        assertEquals(403, putExercise(ownProvider = false, provider = null, mode = "full", courseExerciseId = otherExercise, courseId = other).status)
+        assertEquals(403, api.delete("/v2/courses/$other/similarity-settings/exercises/$otherExercise", Auth.asTeacher(teacher)).status)
+        // A provider that is not installed, or switched off, and a mode that does not exist.
+        assertEquals(400, putExercise(ownProvider = true, provider = "moss", mode = null).status)
+        assertEquals(200, putProvider("jplag", enabled = false, priority = 50).status)
+        assertEquals(400, putExercise(ownProvider = true, provider = "jplag", mode = null).status)
+        assertEquals(400, putExercise(ownProvider = false, provider = null, mode = "everything").status)
+        assertEquals(0, exerciseOverrides().size)
     }
 
     @Test

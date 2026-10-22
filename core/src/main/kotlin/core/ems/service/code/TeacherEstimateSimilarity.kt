@@ -51,6 +51,10 @@ class TeacherEstimateSimilarityController(
          * it is not refused but stops there with the likeliest pairs found.
          */
         @get:JsonProperty("optimised") val optimised: Boolean,
+        /** Where the provider choice came from - `exercise`, `course` or `default` - so the page can say whose it is. */
+        @get:JsonProperty("provider_from") val providerFrom: String,
+        /** Where [mode] came from, likewise. */
+        @get:JsonProperty("mode_from") val modeFrom: String,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -79,6 +83,8 @@ class TeacherEstimateSimilarityController(
             estimate.budgetSec,
             estimate.withinBudget,
             estimate.optimised,
+            resolved.providerFrom.name.lowercase(),
+            resolved.modeFrom.name.lowercase(),
         )
     }
 }

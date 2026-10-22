@@ -3,6 +3,7 @@ package core.ems.service.code
 import core.conf.security.EasyUser
 import core.db.AutoExercise
 import core.db.CourseExercise
+import core.db.CourseExerciseSimilaritySettings
 import core.db.CourseSimilaritySettings
 import core.db.Exercise
 import core.db.ExerciseVer
@@ -53,7 +54,12 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         val mode: SimilarityMode,
         /** With the course's mode in it: [SimilarityBinding.optimised]. */
         val binding: SimilarityBinding,
+        /** Where the provider choice came from, and the mode: the exercise's own, the course's, or the default. */
+        val providerFrom: SettingsSource = SettingsSource.DEFAULT,
+        val modeFrom: SettingsSource = SettingsSource.DEFAULT,
     )
+
+    enum class SettingsSource { EXERCISE, COURSE, DEFAULT }
 
     fun resolve(exIdString: String, courseIds: List<String>, submissionIds: List<String>?, caller: EasyUser): Resolved {
         val exerciseId = exIdString.idToLongOrInvalidReq()
@@ -106,10 +112,14 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         // Which provider compares it is the admin's to say (see SimilarityRegistry), and known before the
         // permit is asked for, so a language nobody may compare is refused without anybody waiting.
         // A course's own settings apply when the check is about that course alone - which the page always
-        // asks; across several courses there is no one course's choice to follow, so the defaults do.
+        // asks; across several courses there is no one course's choice to follow, so the defaults do. The
+        // exercise's own, where it has them, come before the course's, each setting on its own.
         val courseSettings = courses.singleOrNull()?.let(::selectCourseSettings)
+        val exerciseSettings = courses.singleOrNull()?.let { selectExerciseSettings(exerciseId, it) }
+        val ownProvider = exerciseSettings != null && exerciseSettings.ownProvider
+        val pinned = if (exerciseSettings != null && exerciseSettings.ownProvider) exerciseSettings.provider else courseSettings?.provider
         val binding = try {
-            similarityService.bind(language, courseSettings?.provider)
+            similarityService.bind(language, pinned)
         } catch (e: SimilarityUnavailable) {
             throw InvalidRequestException(
                 "Similarity is not available for ${e.language.wireName} here.",
@@ -118,8 +128,20 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
                 notify = false,
             )
         }
-        val mode = courseSettings?.mode ?: SimilarityMode.OPTIMISED
-        return Resolved(exerciseId, courses, ids, language, mode, binding.copy(optimised = mode == SimilarityMode.OPTIMISED))
+        val mode = exerciseSettings?.mode ?: courseSettings?.mode ?: SimilarityMode.OPTIMISED
+        return Resolved(
+            exerciseId, courses, ids, language, mode, binding.copy(optimised = mode == SimilarityMode.OPTIMISED),
+            providerFrom = when {
+                ownProvider -> SettingsSource.EXERCISE
+                courseSettings != null -> SettingsSource.COURSE
+                else -> SettingsSource.DEFAULT
+            },
+            modeFrom = when {
+                exerciseSettings?.mode != null -> SettingsSource.EXERCISE
+                courseSettings != null -> SettingsSource.COURSE
+                else -> SettingsSource.DEFAULT
+            },
+        )
     }
 
     /** What running [resolved] would take, from the submissions' sizes; no text leaves the database. */
@@ -155,6 +177,26 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
     private fun selectCourseSettings(courseId: Long): CourseSettings? = transaction {
         CourseSimilaritySettings.selectAll().where { CourseSimilaritySettings.course eq courseId }.singleOrNull()
             ?.let { CourseSettings(it[CourseSimilaritySettings.provider], it[CourseSimilaritySettings.mode]) }
+    }
+
+    private class ExerciseSettings(val ownProvider: Boolean, val provider: String?, val mode: SimilarityMode?)
+
+    /**
+     * The exercise's own settings on [courseId], if it has any. Should the exercise be on the course twice,
+     * the first course exercise's settings are the ones read, every time.
+     */
+    private fun selectExerciseSettings(exerciseId: Long, courseId: Long): ExerciseSettings? = transaction {
+        (CourseExerciseSimilaritySettings innerJoin CourseExercise).selectAll()
+            .where { CourseExercise.exercise eq exerciseId and (CourseExercise.course eq courseId) }
+            .orderBy(CourseExercise.id)
+            .firstOrNull()
+            ?.let {
+                ExerciseSettings(
+                    it[CourseExerciseSimilaritySettings.ownProvider],
+                    it[CourseExerciseSimilaritySettings.provider],
+                    it[CourseExerciseSimilaritySettings.mode],
+                )
+            }
     }
 
     private data class ExerciseMeta(val solutionFileName: String, val containerImage: String?)

@@ -34,6 +34,18 @@ export function estimateView(estimate: Partial<SimilarityEstimateResp> | undefin
 }
 
 /**
+ * Whether the exercise compares by settings of its own (EZ-1667), from where the estimate says each came
+ * from: `all` when both are its own, `some` when one is, null when it follows the course's or the
+ * defaults - or core does not say. Said on the page, because a teacher who changed the course's settings
+ * would otherwise take this exercise's result for one made by them.
+ */
+export function ownSettings(estimate: Partial<SimilarityEstimateResp> | undefined): 'all' | 'some' | null {
+  const own = [estimate?.provider_from, estimate?.mode_from].filter((from) => from === 'exercise').length
+  if (own === 2) return 'all'
+  return own === 1 ? 'some' : null
+}
+
+/**
  * A duration as a teacher reads it: seconds under a minute and a half, whole minutes, rounded up,
  * from there. "About 95 s" is a number to convert; "about 2 min" is not.
  *

@@ -712,6 +712,12 @@ export interface SimilarityEstimateResp {
    * is not refused but stops there with the likeliest pairs found.
    */
   optimised: boolean
+  /**
+   * Where the provider choice and the mode came from: `exercise` (its own), `course` or `default`. Absent
+   * from an older core.
+   */
+  provider_from?: string
+  mode_from?: string
 }
 
 /**
@@ -724,6 +730,21 @@ export interface CourseSimilaritySettings {
   provider: string | null
   mode: string
   providers: SimilarityProviderOption[]
+  /** The course exercises with settings of their own. Absent from an older core. */
+  exercises?: CourseExerciseSimilaritySettings[]
+}
+
+/**
+ * One course exercise's own settings, over the course's: with `own_provider` false the course's provider
+ * applies, with it true `provider` does (null being the admin's order); a null `mode` is the course's.
+ *
+ * @endpoint GET /v2/courses/{courseId}/similarity-settings -> exercises[]
+ */
+export interface CourseExerciseSimilaritySettings {
+  course_exercise_id: string
+  own_provider: boolean
+  provider: string | null
+  mode: string | null
 }
 
 /**
@@ -795,6 +816,13 @@ export interface AdminSimilarityLanguageReq {
 export interface CourseSimilaritySettingsReq {
   provider: string | null
   mode: string
+}
+
+/** @requestBody PUT /v2/courses/{courseId}/similarity-settings/exercises/{courseExerciseId} */
+export interface CourseExerciseSimilaritySettingsReq {
+  own_provider: boolean
+  provider: string | null
+  mode: string | null
 }
 
 /**

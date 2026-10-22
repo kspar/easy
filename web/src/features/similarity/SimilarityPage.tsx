@@ -49,7 +49,7 @@ import { skippedByReason } from './similaritySkipped.ts'
 import type { SkippedReason } from './similaritySkipped.ts'
 import { highlightFileName } from './similarityLanguage.ts'
 import { capped, comparedBy, coverage, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
-import { estimateView, formatDuration } from './similarityEstimate.ts'
+import { estimateView, formatDuration, ownSettings } from './similarityEstimate.ts'
 import type { ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
 import CourseSimilaritySettingsDialog from '../course-settings/CourseSimilaritySettingsDialog.tsx'
@@ -365,7 +365,13 @@ export default function SimilarityPage() {
         </Button>
       </Box>
 
-      <CourseSimilaritySettingsDialog courseId={courseId!} open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <CourseSimilaritySettingsDialog
+        courseId={courseId!}
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        exercise={selected}
+        exercises={exercises}
+      />
 
       {/* What is about to be compared, before committing to the wait: and how long, once core says. */}
       {selected && !rowsLoading && (
@@ -379,6 +385,8 @@ export default function SimilarityPage() {
               count: estimate.pairs,
               duration: formatDuration(estimate.seconds, t),
             })}
+          {ownSettings(estimateData) === 'all' && ` ${t('similarity.ownSettingsAll')}`}
+          {ownSettings(estimateData) === 'some' && ` ${t('similarity.ownSettingsSome')}`}
         </Typography>
       )}
 

@@ -531,6 +531,20 @@ object CourseSimilaritySettings : Table("course_similarity_settings") {
     override val primaryKey = PrimaryKey(course)
 }
 
+/**
+ * One course exercise's own similarity settings, over its course's; no row means the course's for both.
+ * Each is its own: with [ownProvider] false the course's provider applies, with it true [provider] does -
+ * a pin, or null for the admin's preference order even where the course pins one. A null [mode] is the
+ * course's.
+ */
+object CourseExerciseSimilaritySettings : Table("course_exercise_similarity_settings") {
+    val courseExercise = reference("course_exercise_id", CourseExercise)
+    val ownProvider = bool("own_provider")
+    val provider = varchar("provider_id", 50).nullable()
+    val mode = enumerationByName("mode", 20, SimilarityMode::class).nullable()
+    override val primaryKey = PrimaryKey(courseExercise)
+}
+
 /** A language switched on or off for similarity as a whole; no row means on. Off is a refusal, not a fallback. */
 object SimilarityLanguageSetting : Table("similarity_language") {
     val language = varchar("language", 20)

@@ -1109,4 +1109,26 @@
                                  onDelete="CASCADE"/>
     </changeSet>
 
+    <!--
+        EZ-1667. One course exercise's own similarity settings, over its course's: own_provider false takes
+        the course's provider, true takes provider_id (null being the admin's order); a null mode takes the
+        course's. No row means the course's settings, so nothing is seeded. Gone with the course exercise.
+    -->
+    <changeSet id="221026-1" author="priit">
+        <createTable tableName="course_exercise_similarity_settings">
+            <column name="course_exercise_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_course_exercise_similarity_settings"/>
+            </column>
+            <column name="own_provider" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_id" type="varchar(50)"/>
+            <column name="mode" type="varchar(20)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="course_exercise_similarity_settings" baseColumnNames="course_exercise_id"
+                                 referencedTableName="course_exercise" referencedColumnNames="id"
+                                 constraintName="fk_course_exercise_similarity_settings_course_exercise"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
 </databaseChangeLog>

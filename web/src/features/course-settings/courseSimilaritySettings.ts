@@ -1,4 +1,9 @@
-import type { CourseSimilaritySettings, CourseSimilaritySettingsReq } from '../../api/types.ts'
+import type {
+  CourseExerciseSimilaritySettings,
+  CourseExerciseSimilaritySettingsReq,
+  CourseSimilaritySettings,
+  CourseSimilaritySettingsReq,
+} from '../../api/types.ts'
 
 /**
  * The choices in the course's similarity settings dialog (EZ-1667), and what saving them sends.
@@ -23,13 +28,14 @@ export interface ProviderChoice {
   available: boolean
 }
 
-export function providerChoices(settings: CourseSimilaritySettings): ProviderChoice[] {
+/** [pinned] is the pin stored where the choice is made - the course's, or the exercise's own. */
+export function providerChoices(settings: CourseSimilaritySettings, pinned: string | null = settings.provider): ProviderChoice[] {
   const choices: ProviderChoice[] = [
     { value: AUTOMATIC, languages: [], available: true },
     ...settings.providers.map((p) => ({ value: p.id, languages: p.languages, available: true })),
   ]
-  if (settings.provider !== null && !settings.providers.some((p) => p.id === settings.provider)) {
-    choices.push({ value: settings.provider, languages: [], available: false })
+  if (pinned !== null && !settings.providers.some((p) => p.id === pinned)) {
+    choices.push({ value: pinned, languages: [], available: false })
   }
   return choices
 }
@@ -55,4 +61,63 @@ export function canSave(settings: CourseSimilaritySettings, choice: string, mode
 
 export function settingsRequest(choice: string, mode: Mode): CourseSimilaritySettingsReq {
   return { provider: choice === AUTOMATIC ? null : choice, mode }
+}
+
+/**
+ * One exercise's own settings, over the course's (EZ-1667). Each choice gains one more, first: the
+ * course's, whatever it is - for the provider and for the mode apart, since an exam may compare every pair
+ * on the course's provider. Its value is not a provider id, nor [AUTOMATIC], which on an exercise means
+ * the admin's order even where the course pins a provider.
+ */
+export const FROM_COURSE = '@course'
+
+export type ExerciseMode = Mode | typeof FROM_COURSE
+
+function own(settings: CourseSimilaritySettings, courseExerciseId: string): CourseExerciseSimilaritySettings | undefined {
+  return settings.exercises?.find((e) => e.course_exercise_id === courseExerciseId)
+}
+
+export function exerciseProviderChoices(settings: CourseSimilaritySettings, courseExerciseId: string): ProviderChoice[] {
+  const exercise = own(settings, courseExerciseId)
+  const pinned = exercise?.own_provider ? exercise.provider : null
+  return [{ value: FROM_COURSE, languages: [], available: true }, ...providerChoices(settings, pinned)]
+}
+
+export function exerciseInitialChoice(settings: CourseSimilaritySettings, courseExerciseId: string): string {
+  const exercise = own(settings, courseExerciseId)
+  if (!exercise?.own_provider) return FROM_COURSE
+  return exercise.provider ?? AUTOMATIC
+}
+
+export function exerciseInitialMode(settings: CourseSimilaritySettings, courseExerciseId: string): ExerciseMode {
+  const mode = own(settings, courseExerciseId)?.mode
+  return mode === 'full' || mode === 'optimised' ? mode : FROM_COURSE
+}
+
+export function exerciseCanSave(settings: CourseSimilaritySettings, courseExerciseId: string, choice: string, mode: ExerciseMode): boolean {
+  const available = exerciseProviderChoices(settings, courseExerciseId).some((c) => c.value === choice && c.available)
+  const changed = choice !== exerciseInitialChoice(settings, courseExerciseId) || mode !== exerciseInitialMode(settings, courseExerciseId)
+  return changed && available
+}
+
+/** The course's for both is sent as neither its own, which core stores as no settings at all. */
+export function exerciseSettingsRequest(choice: string, mode: ExerciseMode): CourseExerciseSimilaritySettingsReq {
+  return {
+    own_provider: choice !== FROM_COURSE,
+    provider: choice === FROM_COURSE || choice === AUTOMATIC ? null : choice,
+    mode: mode === FROM_COURSE ? null : mode,
+  }
+}
+
+/**
+ * The course's exercises that have settings of their own, by title, for the course's dialog to name: a
+ * teacher changing the course's settings would otherwise expect every exercise to follow. An exercise
+ * not in [exercises] - removed from the course since - is left out.
+ */
+export function exercisesWithOwnSettings(
+  settings: CourseSimilaritySettings,
+  exercises: { course_exercise_id: string; effective_title: string }[],
+): string[] {
+  const titleById = new Map(exercises.map((e) => [e.course_exercise_id, e.effective_title]))
+  return (settings.exercises ?? []).flatMap((e) => titleById.get(e.course_exercise_id) ?? [])
 }

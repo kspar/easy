@@ -9,6 +9,7 @@
     "DELETE /v2/courses/{courseId}/groups/{groupId}": {  },
     "DELETE /v2/courses/{courseId}/groups/{groupId}/students": { "request": "core.ems.service.course.group.RemoveStudentsFromCourseGroupController.Req", "response": "core.ems.service.course.group.RemoveStudentsFromCourseGroupController.Resp" },
     "DELETE /v2/courses/{courseId}/invite": {  },
+    "DELETE /v2/courses/{courseId}/similarity-settings/exercises/{courseExerciseId}": {  },
     "DELETE /v2/courses/{courseId}/students": { "request": "core.ems.service.course.RemoveStudentsFromCourseController.Req", "response": "core.ems.service.course.RemoveStudentsFromCourseController.Resp" },
     "DELETE /v2/courses/{courseId}/teachers": { "request": "core.ems.service.course.RemoveTeachersFromCourseController.Req" },
     "DELETE /v2/executors/{executorId}": { "request": "core.aas.service.DeleteExecutorController.Req" },
@@ -130,6 +131,7 @@
     "PUT /v2/courses/{courseId}/invite": { "request": "core.ems.service.course.invite.GenerateCourseInvite.Req", "response": "core.ems.service.course.invite.GenerateCourseInvite.Resp" },
     "PUT /v2/courses/{courseId}/moodle": { "request": "core.ems.service.moodle.MoodleLinkCourseController.Req" },
     "PUT /v2/courses/{courseId}/similarity-settings": { "request": "core.ems.service.code.TeacherUpdateCourseSimilaritySettingsController.Req" },
+    "PUT /v2/courses/{courseId}/similarity-settings/exercises/{courseExerciseId}": { "request": "core.ems.service.code.TeacherUpdateCourseExerciseSimilaritySettingsController.Req" },
     "PUT /v2/executors/{executorId}": { "request": "core.aas.service.UpdateExecutorController.Req" },
     "PUT /v2/exercises/{exerciseId}": { "request": "core.ems.service.exercise.UpdateExercise.Req" },
     "PUT /v2/files/{fileId}": { "request": "core.ems.service.file.UpdateFileController.Req" },
@@ -540,21 +542,35 @@
       "estimated_sec": { "kind": "number" },
       "language": { "kind": "string" },
       "mode": { "kind": "string" },
+      "mode_from": { "kind": "string" },
       "optimised": { "kind": "boolean" },
       "pairs": { "kind": "number" },
       "provider": { "kind": "string" },
       "provider_fallback": { "kind": "string", "nullable": true },
+      "provider_from": { "kind": "string" },
       "submissions": { "kind": "number" },
       "within_budget": { "kind": "boolean" }
     },
     "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.Resp": {
+      "exercises": { "kind": "array", "type": "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.RespExercise" },
       "mode": { "kind": "string" },
       "provider": { "kind": "string", "nullable": true },
       "providers": { "kind": "array", "type": "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.RespProvider" }
     },
+    "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.RespExercise": {
+      "course_exercise_id": { "kind": "string" },
+      "mode": { "kind": "string", "nullable": true },
+      "own_provider": { "kind": "boolean" },
+      "provider": { "kind": "string", "nullable": true }
+    },
     "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.RespProvider": {
       "id": { "kind": "string" },
       "languages": { "kind": "array" }
+    },
+    "core.ems.service.code.TeacherUpdateCourseExerciseSimilaritySettingsController.Req": {
+      "mode": { "kind": "string", "nullable": true },
+      "own_provider": { "kind": "boolean" },
+      "provider": { "kind": "string", "nullable": true }
     },
     "core.ems.service.code.TeacherUpdateCourseSimilaritySettingsController.Req": {
       "mode": { "kind": "string" },

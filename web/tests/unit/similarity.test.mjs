@@ -18,7 +18,7 @@ import { isSimilarityRefusal } from '../../src/features/similarity/similarityErr
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
 import { capped, comparedBy, coverage, pairMetrics, providerName, resultNotes, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
-import { estimateView, formatDuration } from '../../src/features/similarity/similarityEstimate.ts'
+import { estimateView, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
 import { skippedByReason } from '../../src/features/similarity/similaritySkipped.ts'
@@ -401,6 +401,16 @@ describe('the estimate', () => {
     expect(coverage({ complete: true, pairs_compared: 4950, pairs_total: 4950 })).toBeNull()
     // An older core says nothing of it, and nothing is claimed.
     expect(coverage({})).toBeNull()
+  })
+
+  test('the page says when an exercise compares by settings of its own', () => {
+    expect(ownSettings({ provider_from: 'exercise', mode_from: 'exercise' })).toBe('all')
+    expect(ownSettings({ provider_from: 'course', mode_from: 'exercise' })).toBe('some')
+    expect(ownSettings({ provider_from: 'exercise', mode_from: 'default' })).toBe('some')
+    expect(ownSettings({ provider_from: 'course', mode_from: 'course' })).toBeNull()
+    // An older core does not say, and nothing is claimed.
+    expect(ownSettings({})).toBeNull()
+    expect(ownSettings(undefined)).toBeNull()
   })
 
   test('the cap notice is for an answer cut to the top pairs, not for a run stopped at the time limit', () => {

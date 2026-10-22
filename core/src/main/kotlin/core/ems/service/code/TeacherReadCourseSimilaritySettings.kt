@@ -2,6 +2,8 @@ package core.ems.service.code
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
+import core.db.CourseExercise
+import core.db.CourseExerciseSimilaritySettings
 import core.db.CourseSimilaritySettings
 import core.db.SimilarityMode
 import core.ems.service.access_control.assertAccess
@@ -21,7 +23,8 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * A course's similarity settings, with the providers a teacher may pin: those an admin has left on, each
  * with the languages it may compare. A course with none set answers the defaults - no provider pinned,
- * so the admin's preference order decides, and `optimised`.
+ * so the admin's preference order decides, and `optimised`. With them, the exercises that have settings
+ * of their own, so the dialog can say which do not follow the course's.
  */
 @RestController
 @RequestMapping("/v2")
@@ -34,6 +37,17 @@ class TeacherReadCourseSimilaritySettingsController(private val similarityServic
         /** `full` or `optimised`. */
         @get:JsonProperty("mode") val mode: String,
         @get:JsonProperty("providers") val providers: List<RespProvider>,
+        /** The course exercises with settings of their own, by course exercise id. */
+        @get:JsonProperty("exercises") val exercises: List<RespExercise>,
+    )
+
+    data class RespExercise(
+        @get:JsonProperty("course_exercise_id") val courseExerciseId: String,
+        /** False: the course's provider. True: [provider], which null makes the admin's preference order. */
+        @get:JsonProperty("own_provider") val ownProvider: Boolean,
+        @get:JsonProperty("provider") val provider: String?,
+        /** `full`, `optimised`, or null for the course's. */
+        @get:JsonProperty("mode") val mode: String?,
     )
 
     data class RespProvider(
@@ -49,8 +63,19 @@ class TeacherReadCourseSimilaritySettingsController(private val similarityServic
         val courseId = courseIdStr.idToLongOrInvalidReq()
         caller.assertAccess { teacherOnCourse(courseId) }
 
-        val row = transaction {
-            CourseSimilaritySettings.selectAll().where { CourseSimilaritySettings.course eq courseId }.singleOrNull()
+        val (row, exercises) = transaction {
+            CourseSimilaritySettings.selectAll().where { CourseSimilaritySettings.course eq courseId }.singleOrNull() to
+                    (CourseExerciseSimilaritySettings innerJoin CourseExercise).selectAll()
+                        .where { CourseExercise.course eq courseId }
+                        .orderBy(CourseExerciseSimilaritySettings.courseExercise)
+                        .map {
+                            RespExercise(
+                                it[CourseExerciseSimilaritySettings.courseExercise].value.toString(),
+                                it[CourseExerciseSimilaritySettings.ownProvider],
+                                it[CourseExerciseSimilaritySettings.provider],
+                                it[CourseExerciseSimilaritySettings.mode]?.name?.lowercase(),
+                            )
+                        }
         }
         val registry = similarityService.registry
         val settings = registry.settings()
@@ -63,6 +88,7 @@ class TeacherReadCourseSimilaritySettingsController(private val similarityServic
                 val languages = provider.languages.keys.filter { settings.languageEnabled(it) && settings.mayCompare(provider, it) }
                 RespProvider(provider.id, languages.map { it.wireName }.sorted())
             },
+            exercises,
         )
     }
 }

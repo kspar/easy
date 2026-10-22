@@ -3,6 +3,7 @@ import { apiFetch } from './client.ts'
 import type {
   CourseAiSettings,
   CourseSimilaritySettings,
+  CourseExerciseSimilaritySettingsReq,
   CourseSimilaritySettingsReq,
   StudentCourse,
   TeacherCourse,
@@ -144,6 +145,23 @@ export function useCourseSimilaritySettings(courseId: string, enabled = true) {
     queryFn: () => apiFetch<CourseSimilaritySettings>(`/courses/${courseId}/similarity-settings`),
     enabled,
     staleTime: 0,
+  })
+}
+
+/**
+ * EZ-1667. One course exercise's own settings, over the course's. Neither its own - `own_provider` false
+ * and `mode` null - is stored as none, and the exercise follows the course's again.
+ */
+export function useUpdateCourseExerciseSimilaritySettings(courseId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ courseExerciseId, body }: { courseExerciseId: string; body: CourseExerciseSimilaritySettingsReq }) =>
+      apiFetch(`/courses/${courseId}/similarity-settings/exercises/${encodeURIComponent(courseExerciseId)}`, { method: 'PUT', body }),
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['courses', courseId, 'similarity-settings'] }),
+      // As for the course's: the estimate prices the check with the provider and mode this changes.
+      queryClient.invalidateQueries({ queryKey: ['similarity-estimate'] }),
+    ]),
   })
 }
 
