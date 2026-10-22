@@ -68,10 +68,17 @@ class AdminUpdateSimilarityProviderController(private val similarityService: Sim
         }.toMap()
 
         transaction {
-            SimilarityProviderSetting.upsert {
-                it[SimilarityProviderSetting.provider] = provider.id
-                it[enabled] = body.enabled
-                it[priority] = body.priority
+            // Its defaults are no override, so they are stored as none: kept as a row, they stayed this
+            // server's choice for good, and a later release that moved the provider's default priority
+            // would not move it here - Restore defaults included, which only wrote today's default again.
+            if (body.enabled && body.priority == provider.defaultPriority) {
+                SimilarityProviderSetting.deleteWhere { SimilarityProviderSetting.provider eq provider.id }
+            } else {
+                SimilarityProviderSetting.upsert {
+                    it[SimilarityProviderSetting.provider] = provider.id
+                    it[enabled] = body.enabled
+                    it[priority] = body.priority
+                }
             }
             SimilarityProviderLanguage.deleteWhere { SimilarityProviderLanguage.provider eq provider.id }
             SimilarityProviderLanguage.batchInsert(languages.entries) { (language, enabled) ->

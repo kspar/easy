@@ -79,7 +79,10 @@ easy:
       # Above it: skipped as TOO_REPETITIVE.
       max-repetition: 1000000
       # Wall-clock budget for one run, read before each submission is tokenised and before each pair
-      # is compared. Past it the run is refused as SIMILARITY_TIMEOUT.
+      # is compared. The optimised mode - the default - stops at it and answers with the pairs it has
+      # compared, flagged complete: false and truncated; the full mode is refused up front when its
+      # estimate is over it, and past it as SIMILARITY_TIMEOUT. A run that has not finished preparing
+      # by then is refused as SIMILARITY_TIMEOUT in either mode.
       timeout-sec: 120
 
     db:

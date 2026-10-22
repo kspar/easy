@@ -23,8 +23,9 @@ export function estimateView(estimate: Partial<SimilarityEstimateResp> | undefin
   if (!estimate) return { kind: 'unknown' }
   const { submissions, pairs, estimated_sec: seconds, budget_sec: budget, within_budget: fits, optimised } = estimate
   if (!isCount(submissions) || !isCount(pairs) || !isCount(seconds) || typeof fits !== 'boolean') return { kind: 'unknown' }
-  // No pair at all - every solution blank, or too long for this provider - is not "about 0 s". Find still
-  // runs it: the result names who could not be compared, and why.
+  // No pair at all - every solution blank, too long for this provider, or one text three or more authors
+  // handed in, which is one comparand - is not "about 0 s". Find still runs it: the result names who could
+  // not be compared and why, or the group that handed in the same text.
   if (pairs === 0) return { kind: 'nothing', submissions }
   if (fits) return { kind: 'fits', submissions, pairs, seconds }
   // Over the budget, optimised is not refused: it stops at the budget with the likeliest pairs found.

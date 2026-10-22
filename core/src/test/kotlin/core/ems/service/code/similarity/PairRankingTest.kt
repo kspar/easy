@@ -100,6 +100,16 @@ class PairRankingTest {
     }
 
     @Test
+    fun `pairs are reached in the order of what they could share, so a run stopped early has the likeliest`() {
+        // A score's bound can be about sizes alone - edit distance's is near 1 for every pair of like length -
+        // so the order is by what a pair could share first. Ordered by the score's bound first, these five
+        // were whichever pairs tied at the top of it, and a run stopped after them missed the pairs most alike.
+        val full = ranking(1) { it.rank(Drawn(seed = 9), comparands(20), 5) }
+        val stopped = ranking(1) { it.rankBounded(Drawn(seed = 9, failAfter = 5), comparands(20), 10, partial = true) }
+        assertEquals(ids(full).take(5).toSet(), ids(stopped).toSet())
+    }
+
+    @Test
     fun `a timeout in the middle of a pair keeps the pairs each worker finished before it`() {
         // One worker, so the five pairs before the sixth are one chunk's: thrown away with the chunk, a
         // stopped run returned nothing it had scored.

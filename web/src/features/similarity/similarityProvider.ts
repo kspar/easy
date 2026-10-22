@@ -129,6 +129,15 @@ export function coverage(result: Pick<SimilarityResp, 'complete' | 'pairs_compar
 }
 
 /**
+ * Whether to say the answer was cut to the top pairs by each order. Not for a run that stopped at the time
+ * limit: core flags that `truncated` too, which is all a page older than `complete` can be told, but this
+ * page says so in [coverage]'s warning - and the cap notice above a list of twelve claimed a hundred.
+ */
+export function capped(result: Pick<SimilarityResp, 'truncated' | 'complete'>): boolean {
+  return result.truncated && result.complete !== false
+}
+
+/**
  * The numbers to show for a pair, in the order the provider sent them. A core older than metrics sends
  * none, and the two scores every response carries stand in, as JPlag's two similarities.
  */

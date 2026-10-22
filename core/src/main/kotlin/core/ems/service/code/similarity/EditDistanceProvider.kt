@@ -47,7 +47,7 @@ internal class EditDistanceProvider(
     override fun pairNanos(charsA: Int, charsB: Int): Long =
         7L * ((minOf(charsA, charsB) + 63) / 64) * maxOf(charsA, charsB) + 2L * (charsA + charsB) + 2_000
 
-    /** Blank solutions are too small and those above the cap, in code points, too large; neither is compared. */
+    /** Blank solutions are too small and those above the cap, in UTF-8 bytes, too large; neither is compared. */
     override fun compares(chars: Int): Boolean = chars in 1..maxSolutionChars
 
     /** Characters are characters in every language, so every language is compared as itself. */
@@ -87,9 +87,9 @@ internal class EditDistanceProvider(
                 when {
                     // Nothing to compare: blank answers would pair with each other as identical.
                     source.solution.isBlank() -> skipped += SkippedSubmission(source.id, "TOO_SMALL")
-                    // In code points, as the database counts characters, so the estimate priced from its
-                    // count skips what this skips; in UTF-16 units, emoji counted twice and the two disagreed.
-                    source.solution.codePointCount(0, source.solution.length) > maxSolutionChars ->
+                    // In UTF-8 bytes, as the estimate reads them from the database, so it skips what this
+                    // skips; counted differently, the two disagreed and the estimate priced pairs this never ran.
+                    utf8Length(source.solution) > maxSolutionChars ->
                         skipped += SkippedSubmission(source.id, "TOO_LARGE")
                     else -> usable += source.id
                 }
@@ -132,18 +132,19 @@ internal class EditDistanceProvider(
         }
 
         /**
-         * From lengths and bigram counts alone: a common subsequence is no longer than the shorter text, and
-         * two sets share no more than the smaller has - each in the same arithmetic as the real measure, so
-         * never below it, nor below [bound].
+         * The ratio from lengths alone - a common subsequence is no longer than the shorter text, in the same
+         * arithmetic as the real measure, so never below it - and Dice itself, as [bound] has it. Dice is what
+         * makes the order the optimised mode sorts by about the texts rather than their sizes: from bigram
+         * counts it was about 1 for every pair of like length, the usual cohort, so a run stopped at the
+         * deadline had reached its pairs by size and ids, and a copy among the rest was missed. Merging two
+         * bigram lists costs some hundredth of the ratio, so bounding every pair this way stays a small part
+         * of the run.
          */
         override fun quickBound(a: Long, b: Long): PairBound {
             val lengthA = solutionById.getValue(a).length
             val lengthB = solutionById.getValue(b).length
             val levenshtein = if (lengthA + lengthB == 0) 0.0 else (2 * minOf(lengthA, lengthB)) / (lengthA + lengthB).toDouble()
-            val bigramsA = bigramsById.getValue(a).size
-            val bigramsB = bigramsById.getValue(b).size
-            val dice = (2.0 * minOf(bigramsA, bigramsB)) / (bigramsA + bigramsB)
-            return combined(levenshtein, dice)
+            return combined(levenshtein, EditDistance.dice(bigramsById.getValue(a), bigramsById.getValue(b)))
         }
 
         /** The score's and the mean's bounds from the two measures' bounds, exactly as [score] combines the real values. */
@@ -166,7 +167,20 @@ internal class EditDistanceProvider(
     companion object {
         const val ID = "edit-distance"
 
-        /** About 20,000 characters: some 600 lines, well past an ordinary solution. */
+        /** About 20,000 characters - bytes, counted as the database does - some 600 lines, well past an ordinary solution. */
         const val DEFAULT_MAX_SOLUTION_CHARS = 20_000
+
+        /** [text]'s length in UTF-8 bytes, Postgres's `octet_length`, without encoding it. */
+        internal fun utf8Length(text: String): Int {
+            var bytes = 0
+            for (c in text) bytes += when {
+                c.code < 0x80 -> 1
+                c.code < 0x800 -> 2
+                // A pair of surrogates is one character of four bytes.
+                Character.isSurrogate(c) -> 2
+                else -> 3
+            }
+            return bytes
+        }
     }
 }

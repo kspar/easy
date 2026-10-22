@@ -92,7 +92,9 @@ internal class PairRanking(
      * The optimised mode (EZ-1667): the same two top N as [rank], from the pairs [ProviderSession.bound]
      * cannot rule out, scored likeliest first.
      *
-     * Every pair worth comparing is ordered by its [ProviderSession.quickBound], highest first, and taken in
+     * Every pair worth comparing is ordered by its [ProviderSession.quickBound], highest first - by what the
+     * pair could share, then what it could score, since the score's bound is about sizes more than texts and
+     * near 1 for every pair of like length - and taken in
      * batches across the workers, each of which bounds its pairs exactly ([ProviderSession.bound]) before
      * scoring them. Once N pairs are kept in an order, its N-th is a floor: a pair whose bound is below the
      * floor in both orders cannot enter either top N, then or later, since floors only rise, and is not
@@ -102,13 +104,13 @@ internal class PairRanking(
      * it: the likeliest pairs having gone first, what is kept by then is the best the budget could find.
      */
     fun rankBounded(session: ProviderSession, comparands: List<Comparand>, topN: Int, partial: Boolean): Ranking {
-        // Ordered by the quick bounds, which cost nothing; the exact ones are computed by the workers, pair by
+        // Ordered by the quick bounds, which cost little; the exact ones are computed by the workers, pair by
         // pair, just before scoring - in parallel, and stopped by the deadline like the scoring is.
-        val candidates = workers.all(
-            (0 until workers.threads).map { stripe -> { bounded(stripe, session, comparands) } },
-        ).flatten().sortedWith(
+        val stripes = workers.all((0 until workers.threads).map { stripe -> { bounded(stripe, session, comparands) } })
+        val total = stripes.sumOf { it.pairs }
+        val candidates = stripes.flatMap { it.candidates }.sortedWith(
             // Total, so the order - and with it which pairs a cut-short run reached - is the same on any number of threads.
-            compareByDescending<Candidate> { it.bound.score }.thenByDescending { it.bound.rank }
+            compareByDescending<Candidate> { it.bound.rank }.thenByDescending { it.bound.score }
                 .thenBy { minOf(it.a, it.b) }.thenBy { maxOf(it.a, it.b) },
         )
 
@@ -117,11 +119,13 @@ internal class PairRanking(
         var compared = 0
         var scoring = 0
         var mayHaveMore = false
-        var complete = true
+        // Stopped while ordering: no pair is scored, and the run says it did not finish.
+        var complete = candidates.size == total
+        if (!complete && !partial) throw SimilarityTimedOut(budgetSec)
         var next = 0
         val batchSize = workers.threads * BATCH_PER_THREAD
 
-        while (next < candidates.size) {
+        while (complete && next < candidates.size) {
             if (deadline.passed()) {
                 if (!partial) throw SimilarityTimedOut(budgetSec)
                 complete = false
@@ -162,10 +166,12 @@ internal class PairRanking(
                 if (byPercent.size > topN) byPercent.poll()
             }
         }
+        // A run stopped short may have missed anything, and `truncated` is all a page older than `complete`
+        // can be told; the current page shows its own warning for `complete` instead of the cap notice.
         if (!complete) mayHaveMore = true
 
         val top = (byShared.toList() + byPercent.toList()).distinct().sortedWith(BEST_FIRST)
-        return Ranking(top, scoring, compared, candidates.size, complete, mayHaveMore)
+        return Ranking(top, scoring, compared, total, complete, mayHaveMore)
     }
 
     /** The N-th kept in each order: a pair bounded below both cannot be kept by either, then or later. */
@@ -209,19 +215,29 @@ internal class PairRanking(
     /** A pair worth comparing, and how high it could score, by [ProviderSession.quickBound]. */
     private class Candidate(val a: Long, val b: Long, val bound: PairBound)
 
-    /** Rows [first], first + threads, … of the pair triangle, quickly bounded, for [rankBounded]. */
-    private fun bounded(first: Int, session: ProviderSession, comparands: List<Comparand>): List<Candidate> {
+    /** One worker's share of the pairs, quickly bounded, and how many pairs it had: past the deadline, more than it bounded. */
+    private class Bounded(val candidates: List<Candidate>, val pairs: Int)
+
+    /**
+     * Rows [first], first + threads, … of the pair triangle, quickly bounded, for [rankBounded]. Past the
+     * deadline the rest are counted but not bounded: a quick bound is cheap, not free, and at the cap all of
+     * them together are not.
+     */
+    private fun bounded(first: Int, session: ProviderSession, comparands: List<Comparand>): Bounded {
         val mine = mutableListOf<Candidate>()
+        var pairs = 0
         for (i in first until comparands.size step workers.threads) {
             for (j in i + 1 until comparands.size) {
                 if (!comparands[i].apartFrom(comparands[j])) continue
-                if (workers.stopped) return emptyList()
+                if (workers.stopped) return Bounded(emptyList(), 0)
+                pairs++
+                if (deadline.passed()) continue
                 val a = comparands[i].representative
                 val b = comparands[j].representative
                 mine += Candidate(a, b, checkNotNull(session.quickBound(a, b)) { "A bounded provider gave no bound" })
             }
         }
-        return mine
+        return Bounded(mine, pairs)
     }
 
     /** One worker's share of the pairs, with its own counts: the workers share nothing but the stop. */

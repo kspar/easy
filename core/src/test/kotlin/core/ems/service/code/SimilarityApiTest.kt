@@ -467,6 +467,31 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
+    fun `the estimate refuses a named submission that is not there, as the check does`() {
+        // Left out, the estimate answered for the rest and enabled a check the loader then refused.
+        val (exercise, mine, elsewhere) = transaction {
+            val exercise = Fixtures.exercise("Named", teacher)
+            val courseExercise = Fixtures.courseExercise(myCourse, exercise)
+            val other = Fixtures.courseExercise(myCourse, Fixtures.exercise("Other", teacher))
+            val student = Fixtures.student("named-1").also { Fixtures.enrolStudent(myCourse, it) }
+            Triple(
+                exercise,
+                Fixtures.submission(courseExercise, student, number = 1, solution = "print(1)"),
+                Fixtures.submission(other, student, number = 1, solution = "print(2)"),
+            )
+        }
+        fun estimate(ids: List<Long>) = api.post(
+            "/v2/exercises/$exercise/similarity/estimate",
+            api.body("courses" to listOf(mapOf("id" to myCourse.toString())), "submissions" to ids.map { mapOf("id" to it.toString()) }),
+            Auth.asTeacher(teacher),
+        )
+        assertEquals(200, estimate(listOf(mine)).status)
+        val refused = estimate(listOf(mine, elsewhere))
+        assertEquals(400, refused.status)
+        assertEquals("ENTITY_WITH_ID_NOT_FOUND", refused.field("code"))
+    }
+
+    @Test
     fun `the estimate is refused as the check is, for a course the caller does not teach`() {
         val notMine = transaction { Fixtures.course("Not mine") }
         val response = api.post(

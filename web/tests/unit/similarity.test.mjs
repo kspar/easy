@@ -17,7 +17,7 @@ import { expect, test, describe } from 'vitest'
 import { isSimilarityRefusal } from '../../src/features/similarity/similarityError.ts'
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
-import { comparedBy, coverage, pairMetrics, providerName, resultNotes, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
+import { capped, comparedBy, coverage, pairMetrics, providerName, resultNotes, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
 import { estimateView, formatDuration } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
@@ -401,6 +401,15 @@ describe('the estimate', () => {
     expect(coverage({ complete: true, pairs_compared: 4950, pairs_total: 4950 })).toBeNull()
     // An older core says nothing of it, and nothing is claimed.
     expect(coverage({})).toBeNull()
+  })
+
+  test('the cap notice is for an answer cut to the top pairs, not for a run stopped at the time limit', () => {
+    expect(capped({ truncated: true, complete: true })).toBe(true)
+    // An older core says nothing of complete, and its truncated means the cap.
+    expect(capped({ truncated: true })).toBe(true)
+    // Stopped short: the coverage warning says so, and twelve pairs are not "the 100 highest-scoring".
+    expect(capped({ truncated: true, complete: false })).toBe(false)
+    expect(capped({ truncated: false, complete: true })).toBe(false)
   })
 
   test('a cohort with no pair to compare says so, rather than "about 0 s"', () => {

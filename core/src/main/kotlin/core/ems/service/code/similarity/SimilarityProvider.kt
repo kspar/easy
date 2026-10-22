@@ -61,7 +61,7 @@ internal interface SimilarityProvider {
      */
     val bounds: Boolean get() = false
 
-    /** Whether a solution of [chars] characters is compared at all, rather than skipped by size. */
+    /** Whether a solution of [chars] UTF-8 bytes is compared at all, rather than skipped by size. */
     fun compares(chars: Int): Boolean = chars > 0
 
     fun open(request: ProviderRequest, run: RunContext): ProviderSession
@@ -75,6 +75,8 @@ internal class ProviderRequest(
     val language: SimilarityLanguage,
     val sources: List<SimilaritySource>,
     val template: String?,
+    /** [SimilarityBinding.textAllowed]: whether a cohort not in [language] may be compared as text instead. */
+    val textAllowed: Boolean = true,
 )
 
 /**
@@ -116,10 +118,11 @@ internal interface ProviderSession : AutoCloseable {
     fun bound(a: Long, b: Long): PairBound? = null
 
     /**
-     * Looser bounds than [bound], in constant time - from sizes alone - for ordering every pair before any
-     * is looked at: the optimised mode sorts by these, and computes [bound] only for the pairs it reaches,
-     * in parallel and under the deadline. Never below [bound]. Bounding every pair exactly up front was a
-     * phase of its own that one worker could not finish inside the budget at the cap.
+     * Looser bounds than [bound], and cheap - a small part of a pair's [score] - for ordering every pair
+     * before any is scored: the optimised mode sorts by these, [PairBound.rank] first, and computes [bound]
+     * only for the pairs it reaches, in parallel and under the deadline. Never below [bound], and about the
+     * texts, not only their sizes, or the order is not the likeliest first. Bounding every pair exactly up
+     * front was a phase of its own that one worker could not finish inside the budget at the cap.
      */
     fun quickBound(a: Long, b: Long): PairBound? = bound(a, b)
 
@@ -157,6 +160,9 @@ internal class PreparedCohort(
     val identical: (Long, Long) -> Boolean,
 )
 
+/** At least as high as a pair's [PairScore.score], [PairScore.rank] and [PairScore.similarity]. */
+internal class PairBound(val score: Double, val rank: Double, val similarity: Double)
+
 /**
  * How alike one pair is, in the three numbers the engine ranks by.
  *
@@ -170,9 +176,6 @@ internal class PreparedCohort(
  * [handle] is the provider's own record of the comparison, kept only for pairs that are returned, so
  * that their details need not be computed again.
  */
-/** At least as high as a pair's [PairScore.score], [PairScore.rank] and [PairScore.similarity]. */
-internal class PairBound(val score: Double, val rank: Double, val similarity: Double)
-
 internal class PairScore(
     val first: Long,
     val second: Long,

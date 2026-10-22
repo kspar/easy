@@ -76,7 +76,14 @@ class AdminReadSimilarityProvidersController(private val similarityService: Simi
             },
             SimilarityLanguage.entries.map { language ->
                 val binding = runCatching { registry.bind(language, settings) }.getOrNull()
-                RespLanguage(language.wireName, settings.languageEnabled(language), binding?.provider, binding?.language?.wireName)
+                RespLanguage(
+                    language.wireName,
+                    settings.languageEnabled(language),
+                    binding?.provider,
+                    // What the run compares it as, as the estimate and the run report it: JPlag without javac
+                    // compares Java as text though Java is what it was bound to.
+                    binding?.let { (registry.provider(it.provider)?.comparesAs(it.language) ?: it.language).wireName },
+                )
             },
         )
     }

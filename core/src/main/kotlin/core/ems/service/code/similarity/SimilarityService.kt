@@ -13,8 +13,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * The pieces, each in a file of its own:
  *
  *  - a [SimilarityProvider] measures how alike two submissions are. That is the only part that depends
- *    on how similarity is measured, and [JPlagProvider] - JPlag's token tiling, with one
- *    [SimilarityFrontend] per [SimilarityLanguage] - is the one there is;
+ *    on how similarity is measured. [JPlagProvider] tiles tokens, with one [SimilarityFrontend] per
+ *    language, and [EditDistanceProvider] compares characters; [SimilarityRegistry] chooses between them;
  *  - [SimilarityWorkers] runs a comparison's work in parallel, and holds every rule about doing so;
  *  - [PairRanking] compares the pairs and keeps the best;
  *  - this class admits one comparison at a time, bounds what each can cost, groups identical
@@ -65,8 +65,10 @@ class SimilarityService(
      *
      * The backstop for what the per-solution bounds do not add up: many submissions just under
      * them, or a future JPlag whose cost model differs. Read before each submission is tokenised and
-     * before each pair is compared, so once the budget is spent the remaining work costs nothing and
-     * the run is refused instead of finishing and then refusing. Overshoot is bounded by what is
+     * before each pair is compared, so once the budget is spent the remaining work costs nothing: a full
+     * run is refused rather than finishing and then refusing, and an optimised one on a provider that
+     * bounds its pairs answers with the pairs it compared, flagged incomplete (see [PairRanking.rankBounded]).
+     * Either is refused if the budget runs out before the cohort is prepared. Overshoot is bounded by what is
      * already in flight - one submission or one pair per pool thread - and each of those is bounded
      * in turn: a submission by [maxSolutionTokens] and its frontend's time limit, a pair by
      * [maxRepetition]. None can be cut short from outside once started, since no parser and not the
@@ -207,7 +209,7 @@ class SimilarityService(
             // Optimised - [SimilarityBinding.optimised] - rules out the pairs that cannot be among the top N,
             // and stops at the deadline with the likeliest found rather than refuse, where the provider can
             // bound its pairs ([SimilarityProvider.bounds]); one that cannot compares every pair either way.
-            return SimilarityRun(rows, run(provider, rows.map(asSource), compared, baseCode, topN, binding.optimised && provider.bounds))
+            return SimilarityRun(rows, run(provider, rows.map(asSource), compared, baseCode, topN, binding.optimised && provider.bounds, binding.textAllowed))
         } finally {
             oneAtATime.release()
         }
@@ -267,13 +269,14 @@ class SimilarityService(
         baseCode: String?,
         topN: Int,
         bounded: Boolean,
+        textAllowed: Boolean,
     ): SimilarityOutcome {
         val deadline = Deadline.after(TimeUnit.SECONDS.toNanos(timeoutSec))
         val ownerById = sources.mapNotNull { source -> source.owner?.let { source.id to it } }.toMap()
         val threads = threadsFor(sources.size)
 
         SimilarityWorkers(threads, WORKER_STACK_BYTES).use { workers ->
-            provider.open(ProviderRequest(language, sources, baseCode), RunContext(workers, deadline, timeoutSec)).use { session ->
+            provider.open(ProviderRequest(language, sources, baseCode, textAllowed), RunContext(workers, deadline, timeoutSec)).use { session ->
                 val prepareStart = System.nanoTime()
                 val cohort = session.prepare()
                 val prepareMs = (System.nanoTime() - prepareStart) / 1_000_000

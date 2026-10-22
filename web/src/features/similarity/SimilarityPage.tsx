@@ -48,7 +48,7 @@ import { emptyReason, hasUnreadableScores } from './similarityEmptyState.ts'
 import { skippedByReason } from './similaritySkipped.ts'
 import type { SkippedReason } from './similaritySkipped.ts'
 import { highlightFileName } from './similarityLanguage.ts'
-import { comparedBy, coverage, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
+import { capped, comparedBy, coverage, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
 import { estimateView, formatDuration } from './similarityEstimate.ts'
 import type { ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
@@ -478,7 +478,7 @@ export default function SimilarityPage() {
           {/* Instead of an emptiness sentence, which would blame a threshold of zero. */}
           {unreadable && <Alert severity="warning" sx={{ mb: 2 }}>{t('similarity.unreadable')}</Alert>}
 
-          {result.truncated && (
+          {capped(result) && (
             <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.capped', { limit: MAX_PAIRS })}</Alert>
           )}
 

@@ -246,7 +246,7 @@ export function unchangedSpans(doc: Text, chunks: SideChunk[]): [number, number]
       const start = line.text.search(/\S/)
       if (start >= 0) {
         const textFrom = line.from + start
-        const textTo = line.from + line.text.replace(/\s+$/, '').length
+        const textTo = line.from + line.text.trimEnd().length
         const spanFrom = Math.max(pos, textFrom)
         const spanTo = Math.min(stop, line.to, textTo)
         if (spanTo > spanFrom) spans.push([spanFrom, spanTo])

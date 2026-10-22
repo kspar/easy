@@ -115,6 +115,34 @@ class EditDistanceTest {
     }
 
     @Test
+    fun `the quick bound is about the texts, so copies are ordered before unrelated pairs of like length`() {
+        // The optimised mode compares pairs in this order and may stop part way: from sizes alone, a padded
+        // copy came after every unrelated pair closer in length, and a run cut short could miss it.
+        val code = (1..30).map { seed ->
+            val random = Random(seed)
+            val word = { String(CharArray(5) { 'a' + random.nextInt(26) }) }
+            (1..40).joinToString("\n") { "    ${word()} = ${word()}(${word()})" }
+        }
+        val padded = code[0] + "\n# kopeeritud\n# ja natuke muudetud\n" + "    print('valmis')\n".repeat(5)
+        val renamed = code[1].replace("(", "[").replace(")", "]")
+        val sources = code.mapIndexed { i, text -> SimilaritySource(i + 1L, text) } +
+            listOf(SimilaritySource(101, padded), SimilaritySource(102, renamed))
+        SimilarityWorkers(1, 1L shl 20).use { workers ->
+            val run = RunContext(workers, Deadline.after(TimeUnit.SECONDS.toNanos(60)), 60)
+            EditDistanceProvider().open(ProviderRequest(SimilarityLanguage.TEXT, sources, null), run).use { session ->
+                val ids = session.prepare().usable
+                val copies = setOf(1L to 101L, 2L to 102L)
+                val unrelated = ids.flatMap { a -> ids.filter { it > a }.map { a to it } } - copies
+                val highestUnrelated = unrelated.maxOf { (a, b) -> session.quickBound(a, b)!!.rank }
+                for ((a, b) in copies) {
+                    val rank = session.quickBound(a, b)!!.rank
+                    assertTrue(rank > highestUnrelated, "copy $a-$b quickly bounded at $rank, an unrelated pair at $highestUnrelated")
+                }
+            }
+        }
+    }
+
+    @Test
     fun `a pair scored after another was bounded gets its own Dice, not the one kept from the bound`() {
         // The optimised mode scores a pair right after bounding it, on the same thread, and the score takes
         // that bound's Dice; any other pair must not.
@@ -165,18 +193,27 @@ class EditDistanceTest {
     }
 
     @Test
-    fun `the character cap counts code points, as the database the estimate reads does`() {
-        // Six emoji are twelve UTF-16 units and six characters to Postgres's char_length: counted in
-        // units, the run skipped what the estimate had priced into every pair.
-        val provider = EditDistanceProvider(maxSolutionChars = 10)
+    fun `the cap counts UTF-8 bytes, as the database the estimate reads does, never fewer than the units compared`() {
+        // Six emoji are twelve UTF-16 units, six characters and 24 bytes to Postgres's octet_length. Counted
+        // in characters, the estimate priced them at half what the comparison costs; counted differently
+        // from the estimate, the run skipped what it had priced into every pair.
         val emoji = String(Character.toChars(0x1F600)).repeat(6)
-        assertEquals(12, emoji.length)
-        assertTrue(provider.compares(emoji.codePointCount(0, emoji.length)))
+        assertEquals(24, EditDistanceProvider.utf8Length(emoji))
+        // One of each width: ASCII, Estonian, the euro sign, a combining mark, an emoji.
+        for (text in listOf("", "abc", "õäöü", "€", "a" + Char(0x308), emoji, "x = 'õ€' + $emoji")) {
+            assertEquals(text.toByteArray(Charsets.UTF_8).size, EditDistanceProvider.utf8Length(text))
+            assertTrue(EditDistanceProvider.utf8Length(text) >= text.length)
+        }
+        val provider = EditDistanceProvider(maxSolutionChars = 24)
+        assertTrue(provider.compares(24))
+        assertTrue(!provider.compares(25))
         SimilarityWorkers(1, 1L shl 20).use { workers ->
             val run = RunContext(workers, Deadline.after(TimeUnit.SECONDS.toNanos(60)), 60)
-            val sources = listOf(SimilaritySource(1, emoji), SimilaritySource(2, emoji + "x"))
+            val sources = listOf(SimilaritySource(1, emoji), SimilaritySource(2, emoji + "x"), SimilaritySource(3, "õ".repeat(12)))
             provider.open(ProviderRequest(SimilarityLanguage.TEXT, sources, null), run).use { session ->
-                assertEquals(listOf(1L, 2L), session.prepare().usable)
+                val cohort = session.prepare()
+                assertEquals(listOf(1L, 3L), cohort.usable)
+                assertEquals(listOf(SkippedSubmission(2, "TOO_LARGE")), cohort.skipped)
             }
         }
     }

@@ -24,9 +24,9 @@ import core.exception.ReqError
 import org.jetbrains.exposed.v1.core.CustomFunction
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.IntegerColumnType
 import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.core.and
-import org.jetbrains.exposed.v1.core.charLength
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.isNull
@@ -130,17 +130,24 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
      * [estimate], refused when over the budget - a named 400 that says how long it would have taken and
      * what the budget is, so the page can say "about 9 minutes; try a group" rather than wait two minutes
      * for a timeout that was certain from the start.
+     *
+     * Not priced at all when nothing could be refused - optimised, on a provider that bounds its pairs,
+     * which stops at the budget instead - since pricing reads every chosen solution's size, and the
+     * default check read the cohort for an answer it then threw away.
      */
-    fun assertAffordable(resolved: Resolved): SimilarityEstimate = try {
-        similarityService.assertAffordable(resolved.binding, selectSizes(resolved))
-    } catch (e: SimilarityTooCostly) {
-        throw InvalidRequestException(
-            "Similarity comparison would take about ${e.estimate.seconds}s, over the ${e.estimate.budgetSec}s budget; try a smaller group.",
-            ReqError.SIMILARITY_TOO_COSTLY,
-            "estimated_sec" to e.estimate.seconds.toString(),
-            "budget_sec" to e.estimate.budgetSec.toString(),
-            notify = false,
-        )
+    fun assertAffordable(resolved: Resolved) {
+        if (resolved.binding.optimised && similarityService.registry.provider(resolved.binding.provider)?.bounds == true) return
+        try {
+            similarityService.assertAffordable(resolved.binding, selectSizes(resolved))
+        } catch (e: SimilarityTooCostly) {
+            throw InvalidRequestException(
+                "Similarity comparison would take about ${e.estimate.seconds}s, over the ${e.estimate.budgetSec}s budget; try a smaller group.",
+                ReqError.SIMILARITY_TOO_COSTLY,
+                "estimated_sec" to e.estimate.seconds.toString(),
+                "budget_sec" to e.estimate.budgetSec.toString(),
+                notify = false,
+            )
+        }
     }
 
     private class CourseSettings(val provider: String?, val mode: SimilarityMode)
@@ -205,22 +212,36 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
     }
 
     /**
-     * Each chosen submission's length in characters and its author, and - only where another has the
-     * same length, since only those can be identical - an md5 of its text, all computed by the database,
-     * so the cohort is priced without one solution reaching the heap. It runs before the permit, as often
-     * as the page asks: hashing every text on every call made the database read and hash the whole
-     * cohort each time a teacher changed group. Restricted like the loader, to the exercise on the
-     * asserted courses; an id that is not there is left out here and refused by the loader when the
-     * check runs.
+     * Each chosen submission's length and its author, and - only where another has the same length, since
+     * only those can be identical - an md5 of its text, all computed by the database, so the cohort is
+     * priced without one solution reaching the heap. It runs before the permit, as often as the page asks:
+     * hashing every text on every call made the database read and hash the whole cohort each time a
+     * teacher changed group.
+     *
+     * The length is in UTF-8 bytes, `octet_length`, which Postgres reads from a stored value's header;
+     * `char_length` decoded every solution to count it. Bytes are never fewer than the UTF-16 units the
+     * providers work in, so a cohort is never priced below its cost - in characters, emoji were priced at
+     * half - and the providers cap solutions in bytes too, so the estimate skips what the run skips.
+     *
+     * Restricted like the loader, to the exercise on the asserted courses, and refused like it when an id
+     * named is not there: left out, the estimate answered for the rest and enabled a check the loader then
+     * refused, after the permit.
      */
     private fun selectSizes(resolved: Resolved): List<SizedSource> = transaction {
         if (resolved.submissionIds.isEmpty()) return@transaction emptyList()
-        val chars = Submission.solution.charLength()
-        val chosen = (CourseExercise innerJoin Submission).select(Submission.id, Submission.student, chars).where {
+        val bytes = CustomFunction("octet_length", IntegerColumnType(), Submission.solution)
+        val chosen = (CourseExercise innerJoin Submission).select(Submission.id, Submission.student, bytes).where {
             CourseExercise.exercise eq resolved.exerciseId and
                     (CourseExercise.course inList resolved.courses) and
                     (Submission.id inList resolved.submissionIds)
-        }.map { Triple(it[Submission.id].value, it[Submission.student].value, it[chars] ?: 0) }
+        }.map { Triple(it[Submission.id].value, it[Submission.student].value, it[bytes] ?: 0) }
+        if (chosen.size < resolved.submissionIds.size) {
+            throw InvalidRequestException(
+                "Number of submissions '${resolved.submissionIds.size}' requested to analyze does not equal to the number of submissions found: '${chosen.size}'.",
+                ReqError.ENTITY_WITH_ID_NOT_FOUND,
+                notify = false,
+            )
+        }
 
         val alike = chosen.groupBy { it.third }.values.filter { it.size > 1 }.flatten().map { it.first }
         val digest = CustomFunction("md5", TextColumnType(), Submission.solution)

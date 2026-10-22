@@ -1,6 +1,8 @@
 package core.ems.service.code
 
 import core.conf.security.EasyRole
+import core.db.SimilarityProviderSetting
+import core.ems.service.code.similarity.SimilarityLanguage
 import core.ems.service.code.similarity.SimilarityService
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -9,6 +11,7 @@ import core.testing.Fixtures
 import core.testing.HttpApi
 import core.testing.IntegrationTest
 import core.testing.TestClock
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -250,6 +253,33 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(403, api.get("/v2/courses/$other/similarity-settings", Auth.asTeacher(teacher)).status)
         assertEquals(403, putSettings(null, courseId = other).status)
         assertEquals(400, putSettings(null, mode = "everything").status)
+    }
+
+    @Test
+    fun `a provider saved at its defaults is no override, so it follows a later release's default`() {
+        val overridden = { api.get("/v2/admin/similarity-providers", Auth.asAdmin(admin)).elements("providers").single { it.get("id").asString() == "jplag" }.get("overridden").asBoolean() }
+        assertEquals(200, putProvider("jplag", enabled = true, priority = 200).status)
+        assertTrue(overridden())
+        // Restore defaults: on, at the default priority, no languages.
+        assertEquals(200, putProvider("jplag", enabled = true, priority = 50).status)
+        assertTrue(!overridden())
+        assertEquals(0L, transaction { SimilarityProviderSetting.selectAll().count() })
+        // Off at the default priority is an override still.
+        assertEquals(200, putProvider("jplag", enabled = false, priority = 50).status)
+        assertTrue(overridden())
+    }
+
+    @Test
+    fun `a language a provider compares as text is listed as compared as text`() {
+        // Without javac JPlag compares Java as text, as the estimate and the check say; the admin page said Java.
+        val service = SimilarityService(maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = 60)
+            .also { it.available = { language -> language != SimilarityLanguage.JAVA } }
+        assertEquals(200, putProvider("jplag", enabled = true, priority = 200).status)
+        val languages = AdminReadSimilarityProvidersController(service).controller(Auth.easyUser(admin, EasyRole.ADMIN)).languages
+        val java = languages.single { it.language == "java" }
+        assertEquals("jplag", java.provider)
+        assertEquals("text", java.comparedAs)
+        assertEquals("python", languages.single { it.language == "python" }.comparedAs)
     }
 
     @Test

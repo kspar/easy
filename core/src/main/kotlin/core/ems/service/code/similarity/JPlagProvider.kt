@@ -192,13 +192,15 @@ internal class JPlagProvider(
             // A sample first, so a cohort that is not in its language at all - an essay exercise that kept
             // `lahendus.py` - is not parsed in full only to be thrown away: that pass cost twice what the
             // text comparison did, inside the same budget, and could time out a run text alone finishes.
-            // The whole cohort still decides when the sample does not.
+            // The whole cohort still decides when the sample does not. Never where an admin has switched
+            // text off: then the cohort is compared in its language, and what does not parse is skipped.
             var language = request.language
+            val mayFallBack = language != SimilarityLanguage.TEXT && request.textAllowed
             val sample = minOf(sources.size, LANGUAGE_SAMPLE)
             val sampled = tokenise(language, 0 until sample, withTemplate = false)
-            var results = if (language != SimilarityLanguage.TEXT && mostlyNotIn(sampled)) sampled
+            var results = if (mayFallBack && mostlyNotIn(sampled)) sampled
             else sampled + tokenise(language, sample until sources.size, withTemplate = true)
-            if (language != SimilarityLanguage.TEXT && mostlyNotIn(results.take(sources.size))) {
+            if (mayFallBack && mostlyNotIn(results.take(sources.size))) {
                 log.info { "Most of this cohort did not parse as ${language.wireName}; comparing it as text instead" }
                 language = SimilarityLanguage.TEXT
                 results = tokenise(language, sources.indices, withTemplate = true)

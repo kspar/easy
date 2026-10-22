@@ -749,17 +749,6 @@ class SimilarityServiceTest {
         // say otherwise, so an essay exercise's answers reached the Python parser. Error recovery made
         // each line of prose one identical token: unrelated essays paired at 90-100%, short answers were
         // TOO_SMALL, and the page said "python".
-        val essays = listOf(
-            "Minu lemmik aastaaeg on suvi, sest siis on soe ja saab ujumas käia.\nSuvel käin ma tihti vanaema juures maal.\n" +
-                "Seal on palju loomi ja suur aed.\nÕhtuti loeme koos raamatuid ja räägime juttu.\n" +
-                "Sügisel algab kool jälle ning siis on vähem aega.\nTalvel sajab lund ja me suusatame metsas.\n",
-            "Programmeerimine on minu arvates huvitav, kuid vahel ka raske.\nKõige rohkem meeldib mulle ülesandeid lahendada koos sõpradega.\n" +
-                "Eksamiks valmistumine võtab palju aega ja kannatust.\nLoodan, et saan sel aastal hea hinde.\n" +
-                "Järgmisel semestril tahan õppida andmebaase.\nSiis oskan ehk ise mõne rakenduse teha.\n",
-            "Eile käisime klassiga muuseumis, kus näitati vanu masinaid.\nGiid rääkis, kuidas esimesed arvutid olid terve toa suurused.\n" +
-                "Mulle jäi meelde, et need kasutasid lampe ja releesid.\nPärast seda sõime linnas lõunat ja jalutasime vanalinnas.\n" +
-                "Koju jõudsime alles õhtul, väsinud aga rõõmsad.\nJärgmine kord tahaksin minna teadusmuuseumisse.\n",
-        )
         val outcome = compare(1L to essays[0], 2L to essays[1], 3L to essays[2], 4L to essays[0])
 
         assertEquals(SimilarityLanguage.TEXT, outcome.language)
@@ -768,6 +757,31 @@ class SimilarityServiceTest {
             assertTrue((outcome.pairOrNull(a, b)?.maxSimilarity ?: 0.0) < 0.3, "unrelated essays $a and $b: ${outcome.pairOrNull(a, b)}")
         }
     }
+
+    @Test
+    fun `a cohort not in its language stays in it where an admin has switched text off`() {
+        // Switched to text regardless, the check compared word by word where the admin had said no, and
+        // edit distance - which the registry would have chosen - was never asked.
+        val noText = SimilarityBinding(JPlagProvider.ID, SimilarityLanguage.PYTHON, textAllowed = false)
+        val outcome = service.compare(
+            { listOf(1L to essays[0], 2L to essays[1], 3L to essays[2], 4L to essays[0]).map { SimilaritySource(it.first, it.second) } },
+            { it }, noText, null, 100,
+        ).outcome
+        assertEquals(SimilarityLanguage.PYTHON, outcome.language)
+    }
+
+    /** Prose in Estonian, as an essay exercise that kept `lahendus.py` collects it. */
+    private val essays = listOf(
+        "Minu lemmik aastaaeg on suvi, sest siis on soe ja saab ujumas käia.\nSuvel käin ma tihti vanaema juures maal.\n" +
+            "Seal on palju loomi ja suur aed.\nÕhtuti loeme koos raamatuid ja räägime juttu.\n" +
+            "Sügisel algab kool jälle ning siis on vähem aega.\nTalvel sajab lund ja me suusatame metsas.\n",
+        "Programmeerimine on minu arvates huvitav, kuid vahel ka raske.\nKõige rohkem meeldib mulle ülesandeid lahendada koos sõpradega.\n" +
+            "Eksamiks valmistumine võtab palju aega ja kannatust.\nLoodan, et saan sel aastal hea hinde.\n" +
+            "Järgmisel semestril tahan õppida andmebaase.\nSiis oskan ehk ise mõne rakenduse teha.\n",
+        "Eile käisime klassiga muuseumis, kus näitati vanu masinaid.\nGiid rääkis, kuidas esimesed arvutid olid terve toa suurused.\n" +
+            "Mulle jäi meelde, et need kasutasid lampe ja releesid.\nPärast seda sõime linnas lõunat ja jalutasime vanalinnas.\n" +
+            "Koju jõudsime alles õhtul, väsinud aga rõõmsad.\nJärgmine kord tahaksin minna teadusmuuseumisse.\n",
+    )
 
     @Test
     fun `a cohort with a broken solution or two is still compared in its own language`() {

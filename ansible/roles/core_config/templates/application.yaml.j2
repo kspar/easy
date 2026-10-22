@@ -89,7 +89,9 @@ easy:
       ## Tokenising and comparing both cost more per solution than max-submissions can see. A solution
       ## above max-solution-tokens (lexical tokens: comments do not count) is skipped as TOO_LARGE; one
       ## repeating itself past max-repetition, which is what makes a single pair slow, as
-      ## TOO_REPETITIVE; and a run past timeout-sec is refused. See SimilarityService for the measurements.
+      ## TOO_REPETITIVE. At timeout-sec an optimised run - the default - answers with the pairs it has
+      ## compared, flagged complete: false; a full run is refused, up front when its estimate is over it.
+      ## See SimilarityService for the measurements.
       max-solution-tokens: {{ easy_core_similarity_max_solution_tokens }}
       max-repetition: {{ easy_core_similarity_max_repetition }}
       timeout-sec: {{ easy_core_similarity_timeout_sec }}

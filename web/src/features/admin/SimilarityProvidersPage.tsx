@@ -139,6 +139,9 @@ function ProviderCard({ provider, onSaved }: { provider: AdminSimilarityProvider
   const priorityValid = parsedPriority(draft) !== null
   const changed = isChanged(provider, draft)
   const help = providerHelp(provider.id, t)
+  // Every card has an "On" switch, a priority and the same languages: named by their labels alone, a
+  // screen reader could not say whose they are.
+  const name = providerName(provider.id, t)
 
   function save(body: ReturnType<typeof updateRequest>) {
     if (!body) return
@@ -153,9 +156,16 @@ function ProviderCard({ provider, onSaved }: { provider: AdminSimilarityProvider
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-        <Typography variant="subtitle2" sx={{ flex: '1 1 auto' }}>{providerName(provider.id, t)}</Typography>
+        <Typography variant="subtitle2" sx={{ flex: '1 1 auto' }}>{name}</Typography>
         <FormControlLabel
-          control={<Switch size="small" checked={draft.enabled} onChange={(e) => setEdited({ ...draft, enabled: e.target.checked })} />}
+          control={
+            <Switch
+              size="small"
+              checked={draft.enabled}
+              onChange={(e) => setEdited({ ...draft, enabled: e.target.checked })}
+              slotProps={{ input: { 'aria-label': t('admin.similarity.providerSwitchName', { provider: name }) } }}
+            />
+          }
           label={t('admin.similarity.providerOn')}
         />
       </Box>
@@ -168,7 +178,7 @@ function ProviderCard({ provider, onSaved }: { provider: AdminSimilarityProvider
         size="small"
         error={!priorityValid}
         helperText={t('admin.similarity.priorityHelp', { value: provider.default_priority, max: MAX_PRIORITY })}
-        inputProps={{ inputMode: 'numeric', maxLength: 4 }}
+        inputProps={{ inputMode: 'numeric', maxLength: 4, 'aria-label': t('admin.similarity.priorityName', { provider: name }) }}
         sx={{ maxWidth: 360, mb: 1 }}
       />
 
@@ -181,6 +191,7 @@ function ProviderCard({ provider, onSaved }: { provider: AdminSimilarityProvider
                 size="small"
                 checked={draft.languages[language.language] ?? language.enabled}
                 onChange={(e) => setEdited({ ...draft, languages: { ...draft.languages, [language.language]: e.target.checked } })}
+                slotProps={{ input: { 'aria-label': t('admin.similarity.providerLanguageName', { provider: name, language: languageName(language.language, t) }) } }}
               />
             }
             label={

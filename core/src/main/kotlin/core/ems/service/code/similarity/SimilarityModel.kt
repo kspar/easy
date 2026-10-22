@@ -61,6 +61,13 @@ data class SimilarityBinding(
      * while the estimate, admitting the cohort as optimised, had it.
      */
     val optimised: Boolean = false,
+    /**
+     * Whether the provider may compare the cohort as text if it finds that it is not in [language] - JPlag
+     * does, for an essay exercise that kept `lahendus.py`. Off where an admin has switched text off, for the
+     * provider or as a whole: decided while running, that fallback compared word by word where the admin
+     * had said no, and said nothing of it.
+     */
+    val textAllowed: Boolean = true,
 )
 
 data class SimilarityOutcome(
@@ -102,7 +109,7 @@ data class SimilarityOutcome(
 data class SimilarityRun<T>(val rows: List<T>, val outcome: SimilarityOutcome)
 
 /**
- * A submission as the estimate sees it: its size in characters, its author, and a fingerprint of its
+ * A submission as the estimate sees it: its size in UTF-8 bytes (`chars`, as every provider counts it), its author, and a fingerprint of its
  * text - never the text, so a cohort can be priced without loading it. Equal fingerprints are compared
  * once, as identical texts are; null is a text of its own.
  */

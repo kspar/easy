@@ -158,6 +158,8 @@ class TeacherCheckSimilarityController(
         @get:JsonProperty("similarity") val similarity: Int,
         @get:JsonProperty("max_similarity") val maxSimilarity: Int,
         @get:JsonProperty("matches") val matches: List<RespMatch>,
+        /** What the provider measured, by name - JPlag's similarities and shared tokens, or Levenshtein and Dice. */
+        @get:JsonProperty("metrics") val metrics: List<RespMetric> = emptyList(),
         /**
          * The two scores under the names the pre-JPlag page reads, which labels `score_a` "Shared text"
          * (Dice) and `score_b` "Edit distance" (Levenshtein). A tab stays on the bundle it loaded — for
@@ -167,8 +169,6 @@ class TeacherCheckSimilarityController(
          * default - they are those, so the old page's labels are true; otherwise [similarity] and
          * [maxSimilarity]. Transitional: remove once no pre-JPlag bundle can be open.
          */
-        /** What the provider measured, by name - JPlag's similarities and shared tokens, or Levenshtein and Dice. */
-        @get:JsonProperty("metrics") val metrics: List<RespMetric> = emptyList(),
         @get:JsonProperty("score_a") val scoreA: Int = metrics.firstOrNull { it.id == "dice" }?.value ?: similarity,
         @get:JsonProperty("score_b") val scoreB: Int = metrics.firstOrNull { it.id == "levenshtein" }?.value ?: maxSimilarity,
     )
@@ -193,7 +193,7 @@ class TeacherCheckSimilarityController(
         @get:JsonProperty("id") val id: String,
         /**
          * `CANNOT_PARSE`, `TOO_SMALL`, `TOO_LARGE`, `TOO_COMPLEX` or `TOO_REPETITIVE` — our own names, mapped in
-         * [SimilarityService.skipReason] or assigned by the service, rather than passed through from
+         * `JPlagProvider.skipReason` or assigned by the provider, rather than passed through from
          * JPlag's enum. `EMPTY` and `UNUSABLE` are mapped too, so the mapping stays exhaustive, but
          * cannot occur today. The page names the skipped students under each reason it knows, and
          * under a generic one for anything else.

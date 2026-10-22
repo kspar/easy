@@ -80,6 +80,27 @@ class SimilarityRegistryTest {
     }
 
     @Test
+    fun `a pin holds when the language falls back to text, and a pin passed over there says so`() {
+        // Python off for both providers, JPlag first: Python is compared as text, by the course's pin
+        // where it may compare text, rather than by the first in the order.
+        val pythonOff = RegistrySettings(
+            providers = mapOf(JPlagProvider.ID to jplagFirst),
+            providerLanguages = mapOf((JPlagProvider.ID to PYTHON) to false, (EditDistanceProvider.ID to PYTHON) to false),
+        )
+        assertEquals(SimilarityBinding(JPlagProvider.ID, TEXT, SimilarityRegistry.FALLBACK_LANGUAGE_UNAVAILABLE), registry.bind(PYTHON, pythonOff))
+        assertEquals(
+            SimilarityBinding(EditDistanceProvider.ID, TEXT, SimilarityRegistry.FALLBACK_LANGUAGE_UNAVAILABLE),
+            registry.bind(PYTHON, pythonOff, pinned = EditDistanceProvider.ID),
+        )
+        // The pin may not compare text either: passed over, and the binding says so rather than only "as text".
+        val pinTextOff = RegistrySettings(pythonOff.providers, pythonOff.providerLanguages + ((EditDistanceProvider.ID to TEXT) to false))
+        assertEquals(
+            SimilarityBinding(JPlagProvider.ID, TEXT, SimilarityRegistry.FALLBACK_PINNED_UNAVAILABLE),
+            registry.bind(PYTHON, pinTextOff, pinned = EditDistanceProvider.ID),
+        )
+    }
+
+    @Test
     fun `a provider that would compare a language as text here may do so only where text is on`() {
         // JPlag compares a language whose frontend cannot load in this JVM as text. Checking only the
         // language asked for let it compare word by word where an admin had switched text off.
@@ -90,8 +111,9 @@ class SimilarityRegistryTest {
         // Text off for JPlag, or as a whole: the next provider compares Java, as Java.
         val textOffForJplag = RegistrySettings(providers = jplagFirst, providerLanguages = mapOf((JPlagProvider.ID to TEXT) to false))
         assertEquals(SimilarityBinding(EditDistanceProvider.ID, JAVA), registry.bind(JAVA, textOffForJplag))
+        assertEquals(false, registry.bind(PYTHON, textOffForJplag).textAllowed)
         val textOff = RegistrySettings(providers = jplagFirst, languages = mapOf(TEXT to false))
-        assertEquals(SimilarityBinding(EditDistanceProvider.ID, JAVA), registry.bind(JAVA, textOff))
+        assertEquals(SimilarityBinding(EditDistanceProvider.ID, JAVA, textAllowed = false), registry.bind(JAVA, textOff))
         // And a pin on it does not hold either.
         assertEquals(SimilarityRegistry.FALLBACK_PINNED_UNAVAILABLE, registry.bind(JAVA, textOff, pinned = JPlagProvider.ID).fallback)
     }

@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * The threads one comparison runs on - made for it and gone with it - and where its work runs in
  * parallel. (JPlag's SubmissionSet parses on virtual threads of its own, but all it does there is take
- * the tokens made here; see `SimilarityService.skipReason` for what its failures become.)
+ * the tokens made here; see `JPlagProvider.skipReason` for what its failures become.)
  *
  * Every rule about running that work is kept here rather than by each caller, because each one is easy
  * to get subtly wrong and invisible when it is, and two independent reviews of the code this replaced

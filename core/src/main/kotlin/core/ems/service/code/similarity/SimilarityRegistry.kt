@@ -44,21 +44,25 @@ internal class SimilarityRegistry(val providers: List<SimilarityProvider>) {
      * and saying so. A language an admin has switched off is refused outright rather than compared as
      * text: off means the admin does not want it compared, not that it should be compared worse.
      *
-     * A provider [pinned] by a course comes first when it may compare the language. When it may not -
-     * switched off since, or not offered the language - the choice falls to the preference order as if
-     * nothing were pinned, and the binding says the pin did not hold.
+     * A provider [pinned] by a course comes first when it may compare the language, and then when it may
+     * compare text. When it may not - switched off since, or not offered the language - the choice falls
+     * to the preference order as if nothing were pinned, and the binding says the pin did not hold.
      */
     fun bind(language: SimilarityLanguage, settings: RegistrySettings, pinned: String? = null): SimilarityBinding {
         if (!settings.languageEnabled(language)) throw SimilarityUnavailable(language)
         val usable = preferenceOrder(settings).filter { settings.enabled(it) }
         if (pinned != null) {
-            usable.firstOrNull { it.id == pinned && settings.mayCompare(it, language) }?.let { return SimilarityBinding(it.id, language) }
+            usable.firstOrNull { it.id == pinned && settings.mayCompare(it, language) }?.let { return SimilarityBinding(it.id, language, textAllowed = settings.mayCompareText(it)) }
         }
         val pinFailed = if (pinned != null) FALLBACK_PINNED_UNAVAILABLE else null
-        usable.firstOrNull { settings.mayCompare(it, language) }?.let { return SimilarityBinding(it.id, language, pinFailed) }
+        usable.firstOrNull { settings.mayCompare(it, language) }?.let { return SimilarityBinding(it.id, language, pinFailed, textAllowed = settings.mayCompareText(it)) }
         if (language != SimilarityLanguage.TEXT && settings.languageEnabled(SimilarityLanguage.TEXT)) {
-            usable.firstOrNull { settings.mayCompare(it, SimilarityLanguage.TEXT) }?.let {
-                return SimilarityBinding(it.id, SimilarityLanguage.TEXT, fallback = FALLBACK_LANGUAGE_UNAVAILABLE)
+            // The pin holds for text too, where it may compare text; passed over, the binding says so, as
+            // above - the language note alone hid from the teacher that their choice was not the one used.
+            val text = usable.filter { settings.mayCompare(it, SimilarityLanguage.TEXT) }
+            (text.firstOrNull { it.id == pinned } ?: text.firstOrNull())?.let {
+                val fallback = if (pinned != null && it.id != pinned) FALLBACK_PINNED_UNAVAILABLE else FALLBACK_LANGUAGE_UNAVAILABLE
+                return SimilarityBinding(it.id, SimilarityLanguage.TEXT, fallback = fallback)
             }
         }
         throw SimilarityUnavailable(language)
@@ -108,4 +112,8 @@ internal class RegistrySettings(
         val actual = provider.comparesAs(language)
         return actual == language || (languageEnabled(actual) && languageEnabled(provider, actual))
     }
+
+    /** Whether [provider] may compare text here: on for it and as a whole. See [SimilarityBinding.textAllowed]. */
+    fun mayCompareText(provider: SimilarityProvider): Boolean =
+        languageEnabled(SimilarityLanguage.TEXT) && mayCompare(provider, SimilarityLanguage.TEXT)
 }
