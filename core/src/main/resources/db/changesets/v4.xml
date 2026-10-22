@@ -1131,4 +1131,20 @@
                                  onDelete="CASCADE"/>
     </changeSet>
 
+    <!--
+        EZ-1667. Which of each student's submissions a check compares: LATEST, as every check has so far,
+        or FIRST. The course's defaults to LATEST, so a course with settings already keeps comparing what
+        it did; an exercise's is null for the course's.
+    -->
+    <changeSet id="221026-2" author="priit">
+        <addColumn tableName="course_similarity_settings">
+            <column name="attempts" type="varchar(20)" defaultValue="LATEST">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="course_exercise_similarity_settings">
+            <column name="attempts" type="varchar(20)"/>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

@@ -18,7 +18,7 @@ import { isSimilarityRefusal } from '../../src/features/similarity/similarityErr
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
 import { capped, comparedBy, coverage, pairMetrics, providerName, resultNotes, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
-import { estimateView, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
+import { comparesFirstAttempts, estimateView, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
 import { skippedByReason } from '../../src/features/similarity/similaritySkipped.ts'
@@ -408,6 +408,13 @@ describe('the estimate', () => {
     expect(ownSettings({ provider_from: 'course', mode_from: 'exercise' })).toBe('some')
     expect(ownSettings({ provider_from: 'exercise', mode_from: 'default' })).toBe('some')
     expect(ownSettings({ provider_from: 'course', mode_from: 'course' })).toBeNull()
+    // With attempts, all three: two of them is some.
+    expect(ownSettings({ provider_from: 'exercise', mode_from: 'exercise', attempts_from: 'course' })).toBe('some')
+    expect(ownSettings({ provider_from: 'exercise', mode_from: 'exercise', attempts_from: 'exercise' })).toBe('all')
+    expect(ownSettings({ provider_from: 'course', mode_from: 'course', attempts_from: 'exercise' })).toBe('some')
+    expect(comparesFirstAttempts({ attempts: 'first' })).toBe(true)
+    expect(comparesFirstAttempts({ attempts: 'latest' })).toBe(false)
+    expect(comparesFirstAttempts({})).toBe(false)
     // An older core does not say, and nothing is claimed.
     expect(ownSettings({})).toBeNull()
     expect(ownSettings(undefined)).toBeNull()

@@ -3,6 +3,7 @@ package core.ems.service.code
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.CourseSimilaritySettings
+import core.db.SimilarityAttempts
 import core.db.SimilarityMode
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
@@ -14,6 +15,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.upsert
 import org.springframework.security.access.annotation.Secured
@@ -37,6 +40,11 @@ class TeacherUpdateCourseSimilaritySettingsController(private val similarityServ
         @param:JsonProperty("provider") @field:Size(max = 50) val provider: String?,
         /** `full` or `optimised`. */
         @param:JsonProperty("mode", required = true) @field:NotBlank @field:Size(max = 20) val mode: String,
+        /**
+         * `latest` or `first`. Optional, and left as it is when not given, so a page from before it existed
+         * does not set every course it saves back to the latest.
+         */
+        @param:JsonProperty("attempts") @field:Size(max = 20) val attempts: String? = null,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -48,6 +56,10 @@ class TeacherUpdateCourseSimilaritySettingsController(private val similarityServ
 
         val mode = SimilarityMode.entries.firstOrNull { it.name.equals(body.mode, ignoreCase = true) }
             ?: throw InvalidRequestException("Unknown similarity mode.", ReqError.INVALID_PARAMETER_VALUE, "mode" to body.mode, notify = false)
+        val attempts = body.attempts?.let { wire ->
+            SimilarityAttempts.entries.firstOrNull { it.name.equals(wire, ignoreCase = true) }
+                ?: throw InvalidRequestException("Unknown attempts.", ReqError.INVALID_PARAMETER_VALUE, "attempts" to wire, notify = false)
+        }
         if (body.provider != null) {
             val registry = similarityService.registry
             val provider = registry.provider(body.provider)
@@ -58,10 +70,13 @@ class TeacherUpdateCourseSimilaritySettingsController(private val similarityServ
         }
 
         transaction {
+            val stored = CourseSimilaritySettings.selectAll().where { CourseSimilaritySettings.course eq courseId }
+                .singleOrNull()?.get(CourseSimilaritySettings.attempts)
             CourseSimilaritySettings.upsert {
                 it[course] = courseId
                 it[provider] = body.provider
                 it[CourseSimilaritySettings.mode] = mode
+                it[CourseSimilaritySettings.attempts] = attempts ?: stored ?: SimilarityAttempts.LATEST
             }
         }
     }

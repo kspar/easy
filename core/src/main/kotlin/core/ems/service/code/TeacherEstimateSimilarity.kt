@@ -55,6 +55,9 @@ class TeacherEstimateSimilarityController(
         @get:JsonProperty("provider_from") val providerFrom: String,
         /** Where [mode] came from, likewise. */
         @get:JsonProperty("mode_from") val modeFrom: String,
+        /** `latest` or `first`: which of each student's submissions it would compare. */
+        @get:JsonProperty("attempts") val attempts: String,
+        @get:JsonProperty("attempts_from") val attemptsFrom: String,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -85,6 +88,8 @@ class TeacherEstimateSimilarityController(
             estimate.optimised,
             resolved.providerFrom.name.lowercase(),
             resolved.modeFrom.name.lowercase(),
+            resolved.attempts.name.lowercase(),
+            resolved.attemptsFrom.name.lowercase(),
         )
     }
 }

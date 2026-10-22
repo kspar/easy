@@ -28,18 +28,20 @@ import {
   AUTOMATIC,
   canSave,
   exerciseCanSave,
+  exerciseInitialAttempts,
   exerciseInitialChoice,
   exerciseInitialMode,
   exerciseProviderChoices,
   exerciseSettingsRequest,
   exercisesWithOwnSettings,
   FROM_COURSE,
+  initialAttempts,
   initialChoice,
   initialMode,
   providerChoices,
   settingsRequest,
 } from './courseSimilaritySettings.ts'
-import type { ExerciseMode } from './courseSimilaritySettings.ts'
+import type { ExerciseAttempts, ExerciseMode } from './courseSimilaritySettings.ts'
 
 /** A course exercise, as the similarity page has it. */
 interface CourseExerciseRef {
@@ -78,27 +80,35 @@ export default function CourseSimilaritySettingsDialog({
   // opens, rather than a copy taken once and left behind by a save from another tab.
   const [picked, setPicked] = useState<string | null>(null)
   const [pickedMode, setPickedMode] = useState<ExerciseMode | null>(null)
+  const [pickedAttempts, setPickedAttempts] = useState<ExerciseAttempts | null>(null)
   const [scope, setScope] = useState<'course' | 'exercise'>('course')
   const [saved, setSaved] = useState(false)
   const forExercise = scope === 'exercise' && exercise !== undefined
   const exerciseId = exercise?.course_exercise_id ?? ''
 
   const stored = settings && (forExercise
-    ? { choice: exerciseInitialChoice(settings, exerciseId), mode: exerciseInitialMode(settings, exerciseId) }
-    : { choice: initialChoice(settings), mode: initialMode(settings) as ExerciseMode })
+    ? {
+        choice: exerciseInitialChoice(settings, exerciseId),
+        mode: exerciseInitialMode(settings, exerciseId),
+        attempts: exerciseInitialAttempts(settings, exerciseId),
+      }
+    : { choice: initialChoice(settings), mode: initialMode(settings) as ExerciseMode, attempts: initialAttempts(settings) as ExerciseAttempts })
   const choice = picked ?? stored?.choice ?? AUTOMATIC
   const mode = pickedMode ?? stored?.mode ?? 'optimised'
+  const attempts = pickedAttempts ?? stored?.attempts ?? 'latest'
   const choices = settings ? (forExercise ? exerciseProviderChoices(settings, exerciseId) : providerChoices(settings)) : []
   const savable = settings !== undefined && (forExercise
-    ? exerciseCanSave(settings, exerciseId, choice, mode)
-    : mode !== FROM_COURSE && canSave(settings, choice, mode))
+    ? exerciseCanSave(settings, exerciseId, choice, mode, attempts)
+    : mode !== FROM_COURSE && attempts !== FROM_COURSE && canSave(settings, choice, mode, attempts))
   const update = forExercise ? updateExercise : updateCourse
   const ownTitles = settings && !forExercise ? exercisesWithOwnSettings(settings, exercises) : []
   const modeChoices: ExerciseMode[] = forExercise ? [FROM_COURSE, 'optimised', 'full'] : ['optimised', 'full']
+  const attemptsChoices: ExerciseAttempts[] = forExercise ? [FROM_COURSE, 'latest', 'first'] : ['latest', 'first']
 
   function close() {
     setPicked(null)
     setPickedMode(null)
+    setPickedAttempts(null)
     setScope('course')
     onClose()
   }
@@ -108,6 +118,7 @@ export default function CourseSimilaritySettingsDialog({
     // A choice made for one scope means nothing in the other.
     setPicked(null)
     setPickedMode(null)
+    setPickedAttempts(null)
     setScope(next)
   }
 
@@ -119,15 +130,25 @@ export default function CourseSimilaritySettingsDialog({
   function handleSave() {
     if (!settings) return
     if (forExercise) {
-      updateExercise.mutate({ courseExerciseId: exerciseId, body: exerciseSettingsRequest(choice, mode) }, { onSuccess: done })
-    } else if (mode !== FROM_COURSE) {
-      updateCourse.mutate(settingsRequest(choice, mode), { onSuccess: done })
+      updateExercise.mutate({ courseExerciseId: exerciseId, body: exerciseSettingsRequest(choice, mode, attempts) }, { onSuccess: done })
+    } else if (mode !== FROM_COURSE && attempts !== FROM_COURSE) {
+      updateCourse.mutate(settingsRequest(choice, mode, attempts), { onSuccess: done })
     }
   }
 
   function modeLabel(value: ExerciseMode): string {
     if (value === FROM_COURSE) return t('similarity.settingsFromCourse')
     return value === 'optimised' ? t('similarity.settingsModeOptimised') : t('similarity.settingsModeFull')
+  }
+
+  function attemptsLabel(value: ExerciseAttempts): string {
+    if (value === FROM_COURSE) return t('similarity.settingsFromCourse')
+    return value === 'latest' ? t('similarity.settingsAttemptsLatest') : t('similarity.settingsAttemptsFirst')
+  }
+
+  function attemptsHelp(value: ExerciseAttempts): string {
+    if (value === FROM_COURSE) return settings ? attemptsLabel(initialAttempts(settings)) : ''
+    return value === 'latest' ? t('similarity.settingsAttemptsLatestHelp') : t('similarity.settingsAttemptsFirstHelp')
   }
 
   function modeHelp(value: ExerciseMode): string {
@@ -239,6 +260,35 @@ export default function CourseSimilaritySettingsDialog({
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>{modeLabel(value)}</Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                           {modeHelp(value)}
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                ))}
+              </RadioGroup>
+            </>
+          )}
+
+          {settings && (
+            <>
+              <Typography variant="subtitle2" sx={{ mt: 1 }}>{t('similarity.settingsAttemptsTitle')}</Typography>
+              <RadioGroup
+                aria-label={t('similarity.settingsAttemptsTitle')}
+                value={attempts}
+                onChange={(e) => setPickedAttempts(attemptsChoices.find((a) => a === e.target.value) ?? 'latest')}
+                sx={{ gap: 1 }}
+              >
+                {attemptsChoices.map((value) => (
+                  <FormControlLabel
+                    key={value}
+                    value={value}
+                    control={<Radio size="small" />}
+                    sx={{ alignItems: 'flex-start', '& .MuiRadio-root': { pt: 0.25 } }}
+                    label={
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{attemptsLabel(value)}</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          {attemptsHelp(value)}
                         </Typography>
                       </Box>
                     }

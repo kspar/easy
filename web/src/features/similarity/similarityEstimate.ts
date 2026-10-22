@@ -33,6 +33,11 @@ export function estimateView(estimate: Partial<SimilarityEstimateResp> | undefin
   return { kind: 'tooCostly', submissions, pairs, seconds, budget: isCount(budget) ? budget : 0 }
 }
 
+/** Whether the check compares each student's first attempt rather than the latest (EZ-1667). */
+export function comparesFirstAttempts(estimate: Partial<SimilarityEstimateResp> | undefined): boolean {
+  return estimate?.attempts === 'first'
+}
+
 /**
  * Whether the exercise compares by settings of its own (EZ-1667), from where the estimate says each came
  * from: `all` when both are its own, `some` when one is, null when it follows the course's or the
@@ -40,9 +45,11 @@ export function estimateView(estimate: Partial<SimilarityEstimateResp> | undefin
  * would otherwise take this exercise's result for one made by them.
  */
 export function ownSettings(estimate: Partial<SimilarityEstimateResp> | undefined): 'all' | 'some' | null {
-  const own = [estimate?.provider_from, estimate?.mode_from].filter((from) => from === 'exercise').length
-  if (own === 2) return 'all'
-  return own === 1 ? 'some' : null
+  const sources = [estimate?.provider_from, estimate?.mode_from, estimate?.attempts_from]
+  const own = sources.filter((from) => from === 'exercise').length
+  if (own === 0) return null
+  // All of those core says: an older core says nothing of attempts, and two of two is all it has.
+  return own === sources.filter((from) => from !== undefined).length ? 'all' : 'some'
 }
 
 /**

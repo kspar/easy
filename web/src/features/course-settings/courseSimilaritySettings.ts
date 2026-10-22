@@ -19,6 +19,9 @@ export const AUTOMATIC = ''
 /** The two modes, as core names them: the likeliest pairs first, or every pair. */
 export type Mode = 'optimised' | 'full'
 
+/** Which of each student's submissions is compared: what they handed in last, or their first attempt. */
+export type Attempts = 'latest' | 'first'
+
 export interface ProviderChoice {
   /** The control's value: a provider id, or [AUTOMATIC]. */
   value: string
@@ -50,17 +53,22 @@ export function initialMode(settings: CourseSimilaritySettings): Mode {
   return settings.mode === 'full' ? 'full' : 'optimised'
 }
 
+/** The stored attempts, read as one of the two; an older core, which has none, compares the latest. */
+export function initialAttempts(settings: CourseSimilaritySettings): Attempts {
+  return settings.attempts === 'first' ? 'first' : 'latest'
+}
+
 /** Saving is offered when something changed, and the provider chosen can be chosen. */
-export function canSave(settings: CourseSimilaritySettings, choice: string, mode: Mode): boolean {
+export function canSave(settings: CourseSimilaritySettings, choice: string, mode: Mode, attempts: Attempts): boolean {
   const available = providerChoices(settings).some((c) => c.value === choice && c.available)
-  const changed = choice !== initialChoice(settings) || mode !== initialMode(settings)
+  const changed = choice !== initialChoice(settings) || mode !== initialMode(settings) || attempts !== initialAttempts(settings)
   // Not with a pin switched off since, even to change the mode alone: core refuses to store a provider
   // that is off, so the teacher moves off it first.
   return changed && available
 }
 
-export function settingsRequest(choice: string, mode: Mode): CourseSimilaritySettingsReq {
-  return { provider: choice === AUTOMATIC ? null : choice, mode }
+export function settingsRequest(choice: string, mode: Mode, attempts: Attempts): CourseSimilaritySettingsReq {
+  return { provider: choice === AUTOMATIC ? null : choice, mode, attempts }
 }
 
 /**
@@ -72,6 +80,8 @@ export function settingsRequest(choice: string, mode: Mode): CourseSimilaritySet
 export const FROM_COURSE = '@course'
 
 export type ExerciseMode = Mode | typeof FROM_COURSE
+
+export type ExerciseAttempts = Attempts | typeof FROM_COURSE
 
 function own(settings: CourseSimilaritySettings, courseExerciseId: string): CourseExerciseSimilaritySettings | undefined {
   return settings.exercises?.find((e) => e.course_exercise_id === courseExerciseId)
@@ -94,18 +104,32 @@ export function exerciseInitialMode(settings: CourseSimilaritySettings, courseEx
   return mode === 'full' || mode === 'optimised' ? mode : FROM_COURSE
 }
 
-export function exerciseCanSave(settings: CourseSimilaritySettings, courseExerciseId: string, choice: string, mode: ExerciseMode): boolean {
+export function exerciseInitialAttempts(settings: CourseSimilaritySettings, courseExerciseId: string): ExerciseAttempts {
+  const attempts = own(settings, courseExerciseId)?.attempts
+  return attempts === 'latest' || attempts === 'first' ? attempts : FROM_COURSE
+}
+
+export function exerciseCanSave(
+  settings: CourseSimilaritySettings,
+  courseExerciseId: string,
+  choice: string,
+  mode: ExerciseMode,
+  attempts: ExerciseAttempts,
+): boolean {
   const available = exerciseProviderChoices(settings, courseExerciseId).some((c) => c.value === choice && c.available)
-  const changed = choice !== exerciseInitialChoice(settings, courseExerciseId) || mode !== exerciseInitialMode(settings, courseExerciseId)
+  const changed = choice !== exerciseInitialChoice(settings, courseExerciseId) ||
+    mode !== exerciseInitialMode(settings, courseExerciseId) ||
+    attempts !== exerciseInitialAttempts(settings, courseExerciseId)
   return changed && available
 }
 
-/** The course's for both is sent as neither its own, which core stores as no settings at all. */
-export function exerciseSettingsRequest(choice: string, mode: ExerciseMode): CourseExerciseSimilaritySettingsReq {
+/** The course's for every setting is sent as none its own, which core stores as no settings at all. */
+export function exerciseSettingsRequest(choice: string, mode: ExerciseMode, attempts: ExerciseAttempts): CourseExerciseSimilaritySettingsReq {
   return {
     own_provider: choice !== FROM_COURSE,
     provider: choice === FROM_COURSE || choice === AUTOMATIC ? null : choice,
     mode: mode === FROM_COURSE ? null : mode,
+    attempts: attempts === FROM_COURSE ? null : attempts,
   }
 }
 

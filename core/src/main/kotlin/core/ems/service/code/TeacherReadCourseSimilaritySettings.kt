@@ -5,6 +5,7 @@ import core.conf.security.EasyUser
 import core.db.CourseExercise
 import core.db.CourseExerciseSimilaritySettings
 import core.db.CourseSimilaritySettings
+import core.db.SimilarityAttempts
 import core.db.SimilarityMode
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
@@ -36,6 +37,8 @@ class TeacherReadCourseSimilaritySettingsController(private val similarityServic
         @get:JsonProperty("provider") val provider: String?,
         /** `full` or `optimised`. */
         @get:JsonProperty("mode") val mode: String,
+        /** `latest` or `first`: which of each student's submissions a check compares. */
+        @get:JsonProperty("attempts") val attempts: String,
         @get:JsonProperty("providers") val providers: List<RespProvider>,
         /** The course exercises with settings of their own, by course exercise id. */
         @get:JsonProperty("exercises") val exercises: List<RespExercise>,
@@ -48,6 +51,8 @@ class TeacherReadCourseSimilaritySettingsController(private val similarityServic
         @get:JsonProperty("provider") val provider: String?,
         /** `full`, `optimised`, or null for the course's. */
         @get:JsonProperty("mode") val mode: String?,
+        /** `latest`, `first`, or null for the course's. */
+        @get:JsonProperty("attempts") val attempts: String?,
     )
 
     data class RespProvider(
@@ -74,6 +79,7 @@ class TeacherReadCourseSimilaritySettingsController(private val similarityServic
                                 it[CourseExerciseSimilaritySettings.ownProvider],
                                 it[CourseExerciseSimilaritySettings.provider],
                                 it[CourseExerciseSimilaritySettings.mode]?.name?.lowercase(),
+                                it[CourseExerciseSimilaritySettings.attempts]?.name?.lowercase(),
                             )
                         }
         }
@@ -82,6 +88,7 @@ class TeacherReadCourseSimilaritySettingsController(private val similarityServic
         return Resp(
             row?.get(CourseSimilaritySettings.provider),
             (row?.get(CourseSimilaritySettings.mode) ?: SimilarityMode.OPTIMISED).name.lowercase(),
+            (row?.get(CourseSimilaritySettings.attempts) ?: SimilarityAttempts.LATEST).name.lowercase(),
             registry.preferenceOrder(settings).filter { settings.enabled(it) }.map { provider ->
                 // What a check would let it compare: on for it, and not switched off as a whole - listed
                 // otherwise, the dialog offered a provider for a language every check then refused.

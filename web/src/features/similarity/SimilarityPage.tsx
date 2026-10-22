@@ -49,7 +49,7 @@ import { skippedByReason } from './similaritySkipped.ts'
 import type { SkippedReason } from './similaritySkipped.ts'
 import { highlightFileName } from './similarityLanguage.ts'
 import { capped, comparedBy, coverage, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
-import { estimateView, formatDuration, ownSettings } from './similarityEstimate.ts'
+import { comparesFirstAttempts, estimateView, formatDuration, ownSettings } from './similarityEstimate.ts'
 import type { ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
 import CourseSimilaritySettingsDialog from '../course-settings/CourseSimilaritySettingsDialog.tsx'
@@ -385,6 +385,7 @@ export default function SimilarityPage() {
               count: estimate.pairs,
               duration: formatDuration(estimate.seconds, t),
             })}
+          {comparesFirstAttempts(estimateData) && ` ${t('similarity.firstAttemptsNote')}`}
           {ownSettings(estimateData) === 'all' && ` ${t('similarity.ownSettingsAll')}`}
           {ownSettings(estimateData) === 'some' && ` ${t('similarity.ownSettingsSome')}`}
         </Typography>
@@ -667,6 +668,8 @@ export default function SimilarityPage() {
                             exact clock time is the evidence.
                           */}
                           {sub.course_title} ·{' '}
+                          {/* Which attempt: with the first attempts compared, not the one the student's page opens on. */}
+                          {sub.number !== undefined && `${t('similarity.attemptNumber', { number: sub.number })} · `}
                           {formatDateTime(new Date(sub.created_at), dateFnsLocale)}
                         </Typography>
                       </Box>

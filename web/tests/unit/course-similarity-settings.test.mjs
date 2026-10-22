@@ -11,12 +11,14 @@ import {
   AUTOMATIC,
   canSave,
   exerciseCanSave,
+  exerciseInitialAttempts,
   exerciseInitialChoice,
   exerciseInitialMode,
   exerciseProviderChoices,
   exerciseSettingsRequest,
   exercisesWithOwnSettings,
   FROM_COURSE,
+  initialAttempts,
   initialChoice,
   initialMode,
   providerChoices,
@@ -41,19 +43,19 @@ describe('course similarity settings', () => {
     const stale = providerChoices(settings).at(-1)
     expect(stale).toEqual({ value: 'moss', languages: [], available: false })
     expect(initialChoice(settings)).toBe('moss')
-    expect(canSave(settings, 'moss', 'optimised')).toBe(false)
+    expect(canSave(settings, 'moss', 'optimised', 'latest')).toBe(false)
     // Not even to change the mode alone: core refuses to store a provider that is off.
-    expect(canSave(settings, 'moss', 'full')).toBe(false)
+    expect(canSave(settings, 'moss', 'full', 'latest')).toBe(false)
     // Moving off it is a change, and allowed.
-    expect(canSave(settings, AUTOMATIC, 'optimised')).toBe(true)
+    expect(canSave(settings, AUTOMATIC, 'optimised', 'latest')).toBe(true)
   })
 
   test('saving is offered for a change only, of either the provider or the mode', () => {
     const settings = { provider: 'jplag', mode: 'optimised', providers }
-    expect(canSave(settings, 'jplag', 'optimised')).toBe(false)
-    expect(canSave(settings, 'edit-distance', 'optimised')).toBe(true)
-    expect(canSave(settings, 'jplag', 'full')).toBe(true)
-    expect(canSave(settings, 'not-installed', 'optimised')).toBe(false)
+    expect(canSave(settings, 'jplag', 'optimised', 'latest')).toBe(false)
+    expect(canSave(settings, 'edit-distance', 'optimised', 'latest')).toBe(true)
+    expect(canSave(settings, 'jplag', 'full', 'latest')).toBe(true)
+    expect(canSave(settings, 'not-installed', 'optimised', 'latest')).toBe(false)
   })
 
   test('the dialog opens on the stored mode, and on the default for one it does not know', () => {
@@ -63,8 +65,16 @@ describe('course similarity settings', () => {
   })
 
   test('what is sent is what is chosen, and Automatic unpins', () => {
-    expect(settingsRequest(AUTOMATIC, 'full')).toEqual({ provider: null, mode: 'full' })
-    expect(settingsRequest('edit-distance', 'optimised')).toEqual({ provider: 'edit-distance', mode: 'optimised' })
+    expect(settingsRequest(AUTOMATIC, 'full', 'latest')).toEqual({ provider: null, mode: 'full', attempts: 'latest' })
+    expect(settingsRequest('edit-distance', 'optimised', 'first')).toEqual({ provider: 'edit-distance', mode: 'optimised', attempts: 'first' })
+  })
+
+  test('the attempts open on what is stored, an older core\'s on the latest, and a change to them alone can be saved', () => {
+    const settings = { provider: null, mode: 'optimised', attempts: 'first', providers }
+    expect(initialAttempts(settings)).toBe('first')
+    expect(initialAttempts({ provider: null, mode: 'optimised', providers })).toBe('latest')
+    expect(canSave(settings, AUTOMATIC, 'optimised', 'first')).toBe(false)
+    expect(canSave(settings, AUTOMATIC, 'optimised', 'latest')).toBe(true)
   })
 
   describe('for one exercise', () => {
@@ -74,7 +84,7 @@ describe('course similarity settings', () => {
     test("an exercise with nothing of its own opens on the course's, for both", () => {
       expect(exerciseInitialChoice(course, '7')).toBe(FROM_COURSE)
       expect(exerciseInitialMode(course, '7')).toBe(FROM_COURSE)
-      expect(exerciseCanSave(course, '7', FROM_COURSE, FROM_COURSE)).toBe(false)
+      expect(exerciseCanSave(course, '7', FROM_COURSE, FROM_COURSE, FROM_COURSE)).toBe(false)
       expect(exerciseProviderChoices(course, '7').map((c) => c.value)).toEqual([FROM_COURSE, AUTOMATIC, 'edit-distance', 'jplag'])
     })
 
@@ -93,16 +103,25 @@ describe('course similarity settings', () => {
     test("its own pin switched off since is shown, but not the course's", () => {
       const stale = withOwn({ own_provider: true, provider: 'moss', mode: null })
       expect(exerciseProviderChoices(stale, '7').at(-1)).toEqual({ value: 'moss', languages: [], available: false })
-      expect(exerciseCanSave(stale, '7', 'moss', 'full')).toBe(false)
-      expect(exerciseCanSave(stale, '7', FROM_COURSE, FROM_COURSE)).toBe(true)
+      expect(exerciseCanSave(stale, '7', 'moss', 'full', FROM_COURSE)).toBe(false)
+      expect(exerciseCanSave(stale, '7', FROM_COURSE, FROM_COURSE, FROM_COURSE)).toBe(true)
       const courseStale = { ...course, provider: 'moss' }
       expect(exerciseProviderChoices(courseStale, '7').some((c) => c.value === 'moss')).toBe(false)
     })
 
     test("the course's is sent as not its own, and Automatic as its own with no pin", () => {
-      expect(exerciseSettingsRequest(FROM_COURSE, FROM_COURSE)).toEqual({ own_provider: false, provider: null, mode: null })
-      expect(exerciseSettingsRequest(AUTOMATIC, 'full')).toEqual({ own_provider: true, provider: null, mode: 'full' })
-      expect(exerciseSettingsRequest('edit-distance', FROM_COURSE)).toEqual({ own_provider: true, provider: 'edit-distance', mode: null })
+      expect(exerciseSettingsRequest(FROM_COURSE, FROM_COURSE, FROM_COURSE)).toEqual({ own_provider: false, provider: null, mode: null, attempts: null })
+      expect(exerciseSettingsRequest(AUTOMATIC, 'full', FROM_COURSE)).toEqual({ own_provider: true, provider: null, mode: 'full', attempts: null })
+      expect(exerciseSettingsRequest('edit-distance', FROM_COURSE, 'first')).toEqual({ own_provider: true, provider: 'edit-distance', mode: null, attempts: 'first' })
+    })
+
+    test('its own attempts open on what is stored, and are a setting of their own', () => {
+      const first = withOwn({ own_provider: false, provider: null, mode: null, attempts: 'first' })
+      expect(exerciseInitialAttempts(first, '7')).toBe('first')
+      expect(exerciseInitialChoice(first, '7')).toBe(FROM_COURSE)
+      expect(exerciseInitialAttempts(course, '7')).toBe(FROM_COURSE)
+      expect(exerciseCanSave(first, '7', FROM_COURSE, FROM_COURSE, 'first')).toBe(false)
+      expect(exerciseCanSave(first, '7', FROM_COURSE, FROM_COURSE, FROM_COURSE)).toBe(true)
     })
 
     test("the course's dialog names the exercises with settings of their own, and only those still on it", () => {

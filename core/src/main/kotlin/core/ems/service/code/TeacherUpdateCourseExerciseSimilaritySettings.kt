@@ -3,6 +3,7 @@ package core.ems.service.code
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
 import core.db.CourseExerciseSimilaritySettings
+import core.db.SimilarityAttempts
 import core.db.SimilarityMode
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.assertCourseExerciseIsOnCourse
@@ -47,6 +48,8 @@ class TeacherUpdateCourseExerciseSimilaritySettingsController(private val simila
         @param:JsonProperty("provider") @field:Size(max = 50) val provider: String?,
         /** `full`, `optimised`, or null for the course's. */
         @param:JsonProperty("mode") @field:Size(max = 20) val mode: String?,
+        /** `latest`, `first`, or null for the course's. */
+        @param:JsonProperty("attempts") @field:Size(max = 20) val attempts: String? = null,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -67,6 +70,10 @@ class TeacherUpdateCourseExerciseSimilaritySettingsController(private val simila
             SimilarityMode.entries.firstOrNull { it.name.equals(wire, ignoreCase = true) }
                 ?: throw InvalidRequestException("Unknown similarity mode.", ReqError.INVALID_PARAMETER_VALUE, "mode" to wire, notify = false)
         }
+        val attempts = body.attempts?.let { wire ->
+            SimilarityAttempts.entries.firstOrNull { it.name.equals(wire, ignoreCase = true) }
+                ?: throw InvalidRequestException("Unknown attempts.", ReqError.INVALID_PARAMETER_VALUE, "attempts" to wire, notify = false)
+        }
         val provider = body.provider.takeIf { body.ownProvider }
         if (provider != null) {
             val registry = similarityService.registry
@@ -78,7 +85,7 @@ class TeacherUpdateCourseExerciseSimilaritySettingsController(private val simila
         }
 
         transaction {
-            if (!body.ownProvider && mode == null) {
+            if (!body.ownProvider && mode == null && attempts == null) {
                 CourseExerciseSimilaritySettings.deleteWhere { CourseExerciseSimilaritySettings.courseExercise eq courseExerciseId }
             } else {
                 CourseExerciseSimilaritySettings.upsert {
@@ -86,6 +93,7 @@ class TeacherUpdateCourseExerciseSimilaritySettingsController(private val simila
                     it[ownProvider] = body.ownProvider
                     it[CourseExerciseSimilaritySettings.provider] = provider
                     it[CourseExerciseSimilaritySettings.mode] = mode
+                    it[CourseExerciseSimilaritySettings.attempts] = attempts
                 }
             }
         }

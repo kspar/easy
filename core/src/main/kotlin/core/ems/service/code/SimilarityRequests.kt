@@ -7,6 +7,7 @@ import core.db.CourseExerciseSimilaritySettings
 import core.db.CourseSimilaritySettings
 import core.db.Exercise
 import core.db.ExerciseVer
+import core.db.SimilarityAttempts
 import core.db.SimilarityMode
 import core.db.Submission
 import core.ems.service.access_control.assertAccess
@@ -57,6 +58,9 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         /** Where the provider choice came from, and the mode: the exercise's own, the course's, or the default. */
         val providerFrom: SettingsSource = SettingsSource.DEFAULT,
         val modeFrom: SettingsSource = SettingsSource.DEFAULT,
+        /** Which of each student's submissions [submissionIds] are, and where that came from. */
+        val attempts: SimilarityAttempts = SimilarityAttempts.LATEST,
+        val attemptsFrom: SettingsSource = SettingsSource.DEFAULT,
     )
 
     enum class SettingsSource { EXERCISE, COURSE, DEFAULT }
@@ -87,8 +91,22 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         // Distinct, because the query below answers a repeated id with one row: counted twice, it
         // failed the found-count check and was reported as not found although it plainly exists, and
         // the cap counted it twice as well.
-        val ids = submissionIds?.map { it.idToLongOrInvalidReq() }?.distinct()
-            ?: selectLatestSubmissionIds(exerciseId, courses)
+        //
+        // A course's own settings apply when the check is about that course alone - which the page always
+        // asks; across several courses there is no one course's choice to follow, so the defaults do. The
+        // exercise's own, where it has them, come before the course's, each setting on its own. Read here,
+        // because which attempts are compared decides the ids.
+        val courseSettings = courses.singleOrNull()?.let(::selectCourseSettings)
+        val exerciseSettings = courses.singleOrNull()?.let { selectExerciseSettings(exerciseId, it) }
+        val attempts = exerciseSettings?.attempts ?: courseSettings?.attempts ?: SimilarityAttempts.LATEST
+        val named = submissionIds?.map { it.idToLongOrInvalidReq() }?.distinct()
+        val ids = when {
+            named == null -> selectSubmissionIds(exerciseId, courses, attempts)
+            // The page names each student's latest, which is what it lists.
+            attempts == SimilarityAttempts.LATEST -> named
+            // The ids name the students; their first attempts are what is compared.
+            else -> selectFirstAttemptsOf(exerciseId, courses, named)
+        }
 
         // The cap exists to stop a huge cohort reaching the heap at all, so it is checked before any
         // solution text is read — and only here: the loader selects exactly these ids, so a second
@@ -111,11 +129,6 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         val language = SimilarityLanguage.of(exercise.solutionFileName, exercise.containerImage)
         // Which provider compares it is the admin's to say (see SimilarityRegistry), and known before the
         // permit is asked for, so a language nobody may compare is refused without anybody waiting.
-        // A course's own settings apply when the check is about that course alone - which the page always
-        // asks; across several courses there is no one course's choice to follow, so the defaults do. The
-        // exercise's own, where it has them, come before the course's, each setting on its own.
-        val courseSettings = courses.singleOrNull()?.let(::selectCourseSettings)
-        val exerciseSettings = courses.singleOrNull()?.let { selectExerciseSettings(exerciseId, it) }
         val ownProvider = exerciseSettings != null && exerciseSettings.ownProvider
         val pinned = if (exerciseSettings != null && exerciseSettings.ownProvider) exerciseSettings.provider else courseSettings?.provider
         val binding = try {
@@ -138,6 +151,12 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
             },
             modeFrom = when {
                 exerciseSettings?.mode != null -> SettingsSource.EXERCISE
+                courseSettings != null -> SettingsSource.COURSE
+                else -> SettingsSource.DEFAULT
+            },
+            attempts = attempts,
+            attemptsFrom = when {
+                exerciseSettings?.attempts != null -> SettingsSource.EXERCISE
                 courseSettings != null -> SettingsSource.COURSE
                 else -> SettingsSource.DEFAULT
             },
@@ -172,14 +191,14 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         }
     }
 
-    private class CourseSettings(val provider: String?, val mode: SimilarityMode)
+    private class CourseSettings(val provider: String?, val mode: SimilarityMode, val attempts: SimilarityAttempts)
 
     private fun selectCourseSettings(courseId: Long): CourseSettings? = transaction {
         CourseSimilaritySettings.selectAll().where { CourseSimilaritySettings.course eq courseId }.singleOrNull()
-            ?.let { CourseSettings(it[CourseSimilaritySettings.provider], it[CourseSimilaritySettings.mode]) }
+            ?.let { CourseSettings(it[CourseSimilaritySettings.provider], it[CourseSimilaritySettings.mode], it[CourseSimilaritySettings.attempts]) }
     }
 
-    private class ExerciseSettings(val ownProvider: Boolean, val provider: String?, val mode: SimilarityMode?)
+    private class ExerciseSettings(val ownProvider: Boolean, val provider: String?, val mode: SimilarityMode?, val attempts: SimilarityAttempts?)
 
     /**
      * The exercise's own settings on [courseId], if it has any. Should the exercise be on the course twice,
@@ -195,6 +214,7 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
                     it[CourseExerciseSimilaritySettings.ownProvider],
                     it[CourseExerciseSimilaritySettings.provider],
                     it[CourseExerciseSimilaritySettings.mode],
+                    it[CourseExerciseSimilaritySettings.attempts],
                 )
             }
     }
@@ -231,26 +251,57 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
     }
 
     /**
-     * The newest submission per student per course exercise, ids only.
+     * The newest submission per student per course exercise - or with [SimilarityAttempts.FIRST] the
+     * oldest - ids only, of every author or of [authors] alone.
      *
      * Deliberately selects no solution text: this runs before the cap is checked and before the
      * permit is taken, so it must not be the thing that puts a cohort on the heap. The ordering plus
      * `associate` is the idiom from [selectLatestSubmissionsForExercise] — last write per key wins —
      * extended to a key of (course exercise, student) because this endpoint spans several courses
-     * and the same student can appear in more than one.
+     * and the same student can appear in more than one. For the first attempt the order is reversed,
+     * so the last write is the oldest.
      */
-    private fun selectLatestSubmissionIds(exerciseId: Long, courses: List<Long>): List<Long> = transaction {
+    private fun selectSubmissionIds(
+        exerciseId: Long,
+        courses: List<Long>,
+        attempts: SimilarityAttempts,
+        authors: Set<Pair<Long, String>>? = null,
+    ): List<Long> = transaction {
+        val order = if (attempts == SimilarityAttempts.FIRST) SortOrder.DESC else SortOrder.ASC
         (CourseExercise innerJoin Submission)
             .select(Submission.id, Submission.student, Submission.courseExercise)
-            .where { CourseExercise.exercise eq exerciseId and (CourseExercise.course inList courses) }
-            .orderBy(
-                Submission.createdAt to SortOrder.ASC,
-                Submission.number to SortOrder.ASC,
-                Submission.id to SortOrder.ASC,
-            )
+            .where {
+                var where = CourseExercise.exercise eq exerciseId and (CourseExercise.course inList courses)
+                if (authors != null) where = where and (Submission.student inList authors.map { it.second }.distinct())
+                where
+            }
+            .orderBy(Submission.createdAt to order, Submission.number to order, Submission.id to order)
             .associate { (it[Submission.courseExercise].value to it[Submission.student].value) to it[Submission.id].value }
+            .filterKeys { authors == null || it in authors }
             .values
             .toList()
+    }
+
+    /**
+     * The first attempt of each student [named] submissions are by, on the same course exercise. Refused
+     * like the loader refuses when a named id is not on the exercise on the asserted courses: dropped, the
+     * check would answer for fewer students than were asked for and not say so.
+     */
+    private fun selectFirstAttemptsOf(exerciseId: Long, courses: List<Long>, named: List<Long>): List<Long> {
+        val authors = transaction {
+            (CourseExercise innerJoin Submission)
+                .select(Submission.courseExercise, Submission.student)
+                .where {
+                    CourseExercise.exercise eq exerciseId and (CourseExercise.course inList courses) and (Submission.id inList named)
+                }
+                .map { it[Submission.courseExercise].value to it[Submission.student].value }
+        }
+        if (authors.size < named.size) throw InvalidRequestException(
+            "Number of submissions '${named.size}' requested to analyze does not equal to the number of submissions found: '${authors.size}'.",
+            ReqError.ENTITY_WITH_ID_NOT_FOUND,
+            notify = false,
+        )
+        return selectSubmissionIds(exerciseId, courses, SimilarityAttempts.FIRST, authors.toSet())
     }
 
     /**

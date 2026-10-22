@@ -10,6 +10,16 @@ enum class SimilarityMode {
     OPTIMISED
 }
 
+/**
+ * EZ-1667. Which of each student's submissions a similarity check compares. LATEST is what they handed in
+ * last. FIRST is their first attempt: a solution copied and then changed until it no longer looks copied
+ * is still a copy there. Length in Table object is 20.
+ */
+enum class SimilarityAttempts {
+    LATEST,
+    FIRST
+}
+
 // Length in Table object is 20
 enum class GraderType {
     AUTO,

@@ -129,6 +129,8 @@ class TeacherCheckSimilarityController(
          * pairs it reached, the likeliest first, and a more similar pair may be among the rest.
          */
         @get:JsonProperty("complete") val complete: Boolean,
+        /** `latest` or `first`: which of each student's submissions were compared. */
+        @get:JsonProperty("attempts") val attempts: String,
     )
 
     data class RespGroup(
@@ -148,7 +150,9 @@ class TeacherCheckSimilarityController(
         @get:JsonProperty("solution") val solution: String?,
         @get:JsonProperty("given_name") val givenName: String,
         @get:JsonProperty("family_name") val familyName: String,
-        @get:JsonProperty("course_title") val courseTitle: String
+        @get:JsonProperty("course_title") val courseTitle: String,
+        /** Which of the student's attempts this is, from 1: the page says so when it is not their latest. */
+        @get:JsonProperty("number") val number: Int,
     )
 
     data class RespScore(
@@ -309,6 +313,7 @@ class TeacherCheckSimilarityController(
             outcome.pairsTotal,
             outcome.pairsCompared,
             outcome.complete,
+            resolved.attempts.name.lowercase(),
         )
     }
 
@@ -339,6 +344,7 @@ class TeacherCheckSimilarityController(
                 Submission.createdAt,
                 Submission.solution,
                 Submission.student,
+                Submission.number,
                 Account.givenName,
                 Account.familyName
             )
@@ -356,7 +362,8 @@ class TeacherCheckSimilarityController(
                     it[Submission.solution],
                     it[Account.givenName],
                     it[Account.familyName],
-                    it[Course.title]
+                    it[Course.title],
+                    it[Submission.number],
                 ),
                 it[Submission.student].value,
                 it[Submission.solution],

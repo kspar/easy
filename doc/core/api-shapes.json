@@ -484,6 +484,7 @@
       "id": { "kind": "string" }
     },
     "core.ems.service.code.TeacherCheckSimilarityController.Resp": {
+      "attempts": { "kind": "string" },
       "compared": { "kind": "number" },
       "complete": { "kind": "boolean" },
       "groups": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespGroup" },
@@ -534,9 +535,12 @@
       "family_name": { "kind": "string" },
       "given_name": { "kind": "string" },
       "id": { "kind": "string" },
+      "number": { "kind": "number" },
       "solution": { "kind": "string", "nullable": true }
     },
     "core.ems.service.code.TeacherEstimateSimilarityController.Resp": {
+      "attempts": { "kind": "string" },
+      "attempts_from": { "kind": "string" },
       "budget_sec": { "kind": "number" },
       "estimated_sec": { "kind": "number" },
       "language": { "kind": "string" },
@@ -551,12 +555,14 @@
       "within_budget": { "kind": "boolean" }
     },
     "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.Resp": {
+      "attempts": { "kind": "string" },
       "exercises": { "kind": "array", "type": "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.RespExercise" },
       "mode": { "kind": "string" },
       "provider": { "kind": "string", "nullable": true },
       "providers": { "kind": "array", "type": "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.RespProvider" }
     },
     "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.RespExercise": {
+      "attempts": { "kind": "string", "nullable": true },
       "course_exercise_id": { "kind": "string" },
       "mode": { "kind": "string", "nullable": true },
       "own_provider": { "kind": "boolean" },
@@ -567,11 +573,13 @@
       "languages": { "kind": "array" }
     },
     "core.ems.service.code.TeacherUpdateCourseExerciseSimilaritySettingsController.Req": {
+      "attempts": { "kind": "string", "nullable": true },
       "mode": { "kind": "string", "nullable": true },
       "own_provider": { "kind": "boolean" },
       "provider": { "kind": "string", "nullable": true }
     },
     "core.ems.service.code.TeacherUpdateCourseSimilaritySettingsController.Req": {
+      "attempts": { "kind": "string", "nullable": true },
       "mode": { "kind": "string" },
       "provider": { "kind": "string", "nullable": true }
     },

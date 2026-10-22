@@ -574,6 +574,8 @@ export interface SimilarSubmissionResp {
   given_name: string
   family_name: string
   course_title: string
+  /** Which of the student's attempts this is, from 1. Absent from an older core. */
+  number?: number
 }
 
 /** @endpoint POST /v2/exercises/{exerciseId}/similarity -> scores[].matches[] */
@@ -687,6 +689,8 @@ export interface SimilarityResp {
    * pairs it reached, the likeliest first, and a more similar pair may be among the rest.
    */
   complete?: boolean
+  /** `latest` or `first`: which of each student's submissions were compared. Absent from an older core. */
+  attempts?: string
 }
 
 /**
@@ -718,6 +722,9 @@ export interface SimilarityEstimateResp {
    */
   provider_from?: string
   mode_from?: string
+  /** `latest` or `first`: which of each student's submissions it would compare, and where that came from. */
+  attempts?: string
+  attempts_from?: string
 }
 
 /**
@@ -729,6 +736,8 @@ export interface SimilarityEstimateResp {
 export interface CourseSimilaritySettings {
   provider: string | null
   mode: string
+  /** `latest` or `first`. Absent from an older core. */
+  attempts?: string
   providers: SimilarityProviderOption[]
   /** The course exercises with settings of their own. Absent from an older core. */
   exercises?: CourseExerciseSimilaritySettings[]
@@ -745,6 +754,8 @@ export interface CourseExerciseSimilaritySettings {
   own_provider: boolean
   provider: string | null
   mode: string | null
+  /** `latest`, `first`, or null for the course's. */
+  attempts?: string | null
 }
 
 /**
@@ -816,6 +827,7 @@ export interface AdminSimilarityLanguageReq {
 export interface CourseSimilaritySettingsReq {
   provider: string | null
   mode: string
+  attempts: string
 }
 
 /** @requestBody PUT /v2/courses/{courseId}/similarity-settings/exercises/{courseExerciseId} */
@@ -823,6 +835,7 @@ export interface CourseExerciseSimilaritySettingsReq {
   own_provider: boolean
   provider: string | null
   mode: string | null
+  attempts: string | null
 }
 
 /**

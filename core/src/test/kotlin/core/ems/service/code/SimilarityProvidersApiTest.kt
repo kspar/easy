@@ -161,8 +161,12 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(200, check().status)
     }
 
-    private fun putSettings(provider: String?, mode: String = "optimised", courseId: Long = course) =
-        api.put("/v2/courses/$courseId/similarity-settings", api.body("provider" to provider, "mode" to mode), Auth.asTeacher(teacher))
+    private fun putSettings(provider: String?, mode: String = "optimised", courseId: Long = course, attempts: String? = null) =
+        api.put(
+            "/v2/courses/$courseId/similarity-settings",
+            api.body(*listOfNotNull("provider" to provider, "mode" to mode, attempts?.let { "attempts" to it }).toTypedArray()),
+            Auth.asTeacher(teacher),
+        )
 
     @Test
     fun `a course with nothing set has no provider pinned, and the providers it may pin`() {
@@ -285,12 +289,18 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals("python", languages.single { it.language == "python" }.comparedAs)
     }
 
-    private fun putExercise(ownProvider: Boolean, provider: String?, mode: String?, courseExerciseId: Long = courseExercise, courseId: Long = course) =
-        api.put(
-            "/v2/courses/$courseId/similarity-settings/exercises/$courseExerciseId",
-            api.body("own_provider" to ownProvider, "provider" to provider, "mode" to mode),
-            Auth.asTeacher(teacher),
-        )
+    private fun putExercise(
+        ownProvider: Boolean,
+        provider: String?,
+        mode: String?,
+        courseExerciseId: Long = courseExercise,
+        courseId: Long = course,
+        attempts: String? = null,
+    ) = api.put(
+        "/v2/courses/$courseId/similarity-settings/exercises/$courseExerciseId",
+        api.body("own_provider" to ownProvider, "provider" to provider, "mode" to mode, "attempts" to attempts),
+        Auth.asTeacher(teacher),
+    )
 
     private fun estimate() = api.post(
         "/v2/exercises/$exercise/similarity/estimate",
@@ -381,6 +391,112 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(400, putExercise(ownProvider = true, provider = "jplag", mode = null).status)
         assertEquals(400, putExercise(ownProvider = false, provider = null, mode = "everything").status)
         assertEquals(0, exerciseOverrides().size)
+    }
+
+    /** student-1 copies the [solution] student-2 handed in, then rewrites it: only the first attempt shows it. */
+    private fun rewrittenCopy(): Long = transaction {
+        Fixtures.submission(
+            courseExercise, "student-1", number = 2,
+            solution = """
+                import collections
+
+                class Counter:
+                    def __init__(self):
+                        self.seen = collections.defaultdict(int)
+            """.trimIndent(),
+        )
+    }
+
+    private fun checkNamed(ids: List<Long>) = api.post(
+        "/v2/exercises/$exercise/similarity",
+        api.body(
+            "courses" to listOf(mapOf("id" to course.toString())),
+            "submissions" to ids.map { mapOf("id" to it.toString()) },
+        ),
+        Auth.asTeacher(teacher),
+    )
+
+    @Test
+    fun `with the first attempts, a copy later rewritten is found where the latest hide it`() {
+        val latest = rewrittenCopy()
+        // A third student the page does not name - a group chosen, say - who must not come in with the swap.
+        transaction {
+            Fixtures.student("student-3")
+            Fixtures.enrolStudent(course, "student-3")
+            Fixtures.submission(courseExercise, "student-3", number = 1, solution = "print(sum(map(int, input().split())))")
+        }
+        // What the page sends: each student's latest.
+        val page = listOf(latest, submissions[1])
+        val latestRun = checkNamed(page).jsonOrNull!!
+        assertEquals("latest", latestRun.get("attempts").asString())
+        assertTrue(latestRun.get("scores").toList().none { it.get("max_similarity").asInt() > 50 }, "the rewrite still matched: $latestRun")
+
+        assertEquals(200, putSettings(null, attempts = "first").status)
+        val firstRun = checkNamed(page)
+        assertEquals(200, firstRun.status)
+        val json = firstRun.jsonOrNull!!
+        assertEquals("first", json.get("attempts").asString())
+        assertEquals(2, json.get("compared").asInt())
+        assertEquals(100, json.get("scores").toList().single().get("max_similarity").asInt())
+        // Compared and returned: student-1's first attempt, said to be one.
+        val compared = json.get("submissions").toList().associate { it.get("id").asString() to it.get("number").asInt() }
+        assertEquals(mapOf(submissions[0].toString() to 1, submissions[1].toString() to 1), compared)
+        // Asked without ids, every student's first attempt.
+        val everyone = api.post(
+            "/v2/exercises/$exercise/similarity",
+            api.body("courses" to listOf(mapOf("id" to course.toString()))),
+            Auth.asTeacher(teacher),
+        ).jsonOrNull!!
+        assertEquals(3, everyone.get("compared").asInt())
+        assertEquals(100, everyone.get("scores").toList().maxOf { it.get("max_similarity").asInt() })
+        estimate().let {
+            assertEquals("first", it.get("attempts").asString())
+            assertEquals("course", it.get("attempts_from").asString())
+        }
+    }
+
+    @Test
+    fun `an exercise can compare first attempts while its course compares the latest, and a save without it keeps the course's`() {
+        val latest = rewrittenCopy()
+        assertEquals(200, putSettings(null, attempts = "first").status)
+        // Saved by a page that does not know of attempts: left as it was.
+        assertEquals(200, putSettings("edit-distance").status)
+        assertEquals("first", api.get("/v2/courses/$course/similarity-settings", Auth.asTeacher(teacher)).field("attempts"))
+        assertEquals(200, putSettings(null, attempts = "latest").status)
+        assertEquals(200, putExercise(ownProvider = false, provider = null, mode = null, attempts = "first").status)
+        assertEquals("first", exerciseOverrides().single().get("attempts").asString())
+        assertEquals("exercise", estimate().get("attempts_from").asString())
+        assertEquals(100, checkNamed(listOf(latest, submissions[1])).elements("scores").single().get("max_similarity").asInt())
+        // Attempts alone is a setting of its own: cleared, nothing is left.
+        assertEquals(200, putExercise(ownProvider = false, provider = null, mode = null, attempts = null).status)
+        assertEquals(0, exerciseOverrides().size)
+        assertEquals(400, putSettings(null, attempts = "best").status)
+        assertEquals(400, putExercise(ownProvider = false, provider = null, mode = null, attempts = "best").status)
+    }
+
+    @Test
+    fun `with the first attempts, a student is swapped for their first on the same course exercise only`() {
+        // The exercise on the course twice, student-1 with attempts under both: naming their submission on
+        // one brings that one's first attempt, not the other's as well.
+        transaction {
+            val again = Fixtures.courseExercise(course, exercise)
+            Fixtures.submission(again, "student-1", number = 1, solution = "print('elsewhere')")
+        }
+        assertEquals(200, putSettings(null, attempts = "first").status)
+        val json = checkNamed(listOf(submissions[0], submissions[1])).jsonOrNull!!
+        assertEquals(2, json.get("compared").asInt())
+    }
+
+    @Test
+    fun `with the first attempts, a named submission that is not there is refused, not dropped`() {
+        assertEquals(200, putSettings(null, attempts = "first").status)
+        val elsewhere = transaction {
+            val other = Fixtures.courseExercise(course, Fixtures.exercise("Other", teacher))
+            Fixtures.submission(other, "student-1", number = 1)
+        }
+        val refused = checkNamed(listOf(submissions[0], elsewhere))
+        assertEquals(400, refused.status)
+        assertEquals("ENTITY_WITH_ID_NOT_FOUND", refused.field("code"))
     }
 
     @Test
