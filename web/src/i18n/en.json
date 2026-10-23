@@ -23,6 +23,7 @@
     "exerciseNotAutoassessable": "This exercise has no tests to run.",
     "exerciseWrongSolutionType": "That submission does not match the type this exercise expects.",
     "invalidParameterValue": "One of the values was not accepted. Check the form and try again.",
+    "textContainsNul": "The text contains a NUL character (character code 0), which cannot be saved. It is invisible in the editor and usually arrives by pasting from a terminal or a binary file — remove it and try again.",
     "assessmentAwaitTimeout": "The tests are taking longer than usual. The result will appear once they finish.",
     "moodleSyncInProgress": "A Moodle sync is already running. Wait for it to finish.",
     "moodleCourseAlreadyLinked": "Another course is already linked to that Moodle course. Unlink it first.",

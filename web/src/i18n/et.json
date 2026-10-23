@@ -23,6 +23,7 @@
     "exerciseNotAutoassessable": "Sellel ülesandel pole teste, mida käivitada.",
     "exerciseWrongSolutionType": "Esitus ei vasta tüübile, mida see ülesanne ootab.",
     "invalidParameterValue": "Üht väärtust ei võetud vastu. Kontrolli vormi ja proovi uuesti.",
+    "textContainsNul": "Tekstis on NUL-märk (märgikood 0), mida ei saa salvestada. See on redaktoris nähtamatu ja tuleb tavaliselt kaasa terminalist või binaarfailist kopeerides — eemalda see ja proovi uuesti.",
     "assessmentAwaitTimeout": "Testid võtavad tavalisest kauem aega. Tulemus ilmub, kui need lõpetavad.",
     "moodleSyncInProgress": "Moodle'i sünkroonimine juba käib. Oota, kuni see lõpeb.",
     "moodleCourseAlreadyLinked": "Selle Moodle'i kursusega on juba seotud teine kursus. Eemalda enne selle seos.",
