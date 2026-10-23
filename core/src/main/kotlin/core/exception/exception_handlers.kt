@@ -1,6 +1,7 @@
 package core.exception
 
 import core.aas.ExecutorOverloadException
+import core.conf.NulCharacterException
 import core.util.SendMailService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.json.JsonParseException
@@ -122,6 +123,19 @@ class EasyExceptionHandler(private val mailService: SendMailService) : ResponseE
         val id = UUID.randomUUID().toString()
         log.info { "HttpMessageNotReadableException: ${ex.message}" }
         log.info { "Request info: ${request.getDescription(true)}" }
+
+        // Its own code rather than INVALID_PARAMETER_VALUE: the client can do something specific
+        // about it, and `field` says where. See RejectNulCharacters for why this is refused here.
+        val nul = ex.cause as? NulCharacterException
+        if (nul != null) {
+            val resp = RequestErrorResponse(
+                id,
+                ReqError.TEXT_CONTAINS_NUL.errorCodeStr,
+                mapOf("field" to nul.field),
+                "'${nul.field}' contains the NUL character (U+0000), which cannot be stored."
+            )
+            return ResponseEntity(resp, HttpStatus.BAD_REQUEST)
+        }
 
         val msg = when (ex.cause) {
             is InvalidNullException -> {
