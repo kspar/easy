@@ -79,8 +79,14 @@ internal class JPlagProvider(
      */
     override fun prepareNanos(chars: Int): Long = 20_000_000L + 2_000L * chars
 
-    /** One tiling: about 70 µs, and a few nanoseconds a character, at the same sizes. */
-    override fun pairNanos(charsA: Int, charsB: Int): Long = 70_000L + 4L * (charsA + charsB)
+    /**
+     * One tiling: about 70 µs, a few nanoseconds a character, and a term in the product of the two sizes,
+     * since greedy string tiling looks for each token's matches in the other submission. Without it, 300
+     * solutions of 19 KB were priced at 7 s and took over 120: a pair there measured 21-29 ms on one of
+     * four threads against 0.2 ms priced. With it, such a pair is about 26 ms, and an ordinary one of
+     * 0.8 KB about 0.12 ms against 0.07 ms measured - generous, as the estimate should be.
+     */
+    override fun pairNanos(charsA: Int, charsB: Int): Long = 70_000L + 4L * (charsA + charsB) + charsA.toLong() * charsB / 14
 
     /**
      * The tokeniser, replaceable only by a test. The catches that turn a tokeniser that *throws* into

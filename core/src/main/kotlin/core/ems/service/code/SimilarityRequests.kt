@@ -181,15 +181,18 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         try {
             similarityService.assertAffordable(resolved.binding, selectSizes(resolved))
         } catch (e: SimilarityTooCostly) {
-            throw InvalidRequestException(
-                "Similarity comparison would take about ${e.estimate.seconds}s, over the ${e.estimate.budgetSec}s budget; try a smaller group.",
-                ReqError.SIMILARITY_TOO_COSTLY,
-                "estimated_sec" to e.estimate.seconds.toString(),
-                "budget_sec" to e.estimate.budgetSec.toString(),
-                notify = false,
-            )
+            throw tooCostly(e)
         }
     }
+
+    /** The named 400 for a run over the budget: priced so before it starts, or measured so as it runs. */
+    fun tooCostly(e: SimilarityTooCostly) = InvalidRequestException(
+        "Similarity comparison would take about ${e.estimate.seconds}s, over the ${e.estimate.budgetSec}s budget; try a smaller group.",
+        ReqError.SIMILARITY_TOO_COSTLY,
+        "estimated_sec" to e.estimate.seconds.toString(),
+        "budget_sec" to e.estimate.budgetSec.toString(),
+        notify = false,
+    )
 
     private class CourseSettings(val provider: String?, val mode: SimilarityMode, val attempts: SimilarityAttempts)
 

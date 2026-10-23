@@ -894,6 +894,8 @@ class SimilarityServiceTest {
         // Two threads, not the default of half the cores: on 64 of them the slowest stripe's 29 pairs
         // took 0.73 s, inside the budget, and the run returned normally - this failed on big machines.
         slow.threadsFor = { 2 }
+        // The deadline itself, behind the pace that would otherwise refuse this run first.
+        slow.projectRuns = false
         // A tail of its own length each: identical submissions would be one group, compared once.
         val sources = (1L..30L).map { SimilaritySource(it, original + "\n" + "print($it)\n".repeat(it.toInt())) }
 
@@ -901,6 +903,20 @@ class SimilarityServiceTest {
         assertThrows<SimilarityTimedOut> { slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
         val tookMs = (System.nanoTime() - started) / 1_000_000
         assertTrue(tookMs < 5_000, "refused only after ${tookMs}ms, so the pairs past the budget were still compared")
+    }
+
+    @Test
+    fun `a comparison whose pace says it cannot finish is refused as too costly before the deadline`() {
+        // The same slow pairs, with the pace on: 435 pairs at 25 ms on two threads is over 5 s against a
+        // budget of one, which a tenth of it shows; refused then, not when the second is spent.
+        val slow = service(timeoutSec = 1)
+        slow.comparePair = { gst, first, second -> Thread.sleep(25); gst.compare(first, second) }
+        slow.threadsFor = { 2 }
+        val sources = (1L..30L).map { SimilaritySource(it, original + "\n" + "print($it)\n".repeat(it.toInt())) }
+
+        val refused = assertThrows<SimilarityTooCostly> { slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
+        assertEquals(435, refused.estimate.pairs)
+        assertTrue(refused.estimate.seconds > 1, "projected only ${refused.estimate.seconds}s")
     }
 
     @Test

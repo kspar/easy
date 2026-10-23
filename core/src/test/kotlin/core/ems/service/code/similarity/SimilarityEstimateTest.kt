@@ -81,6 +81,20 @@ class SimilarityEstimateTest {
     }
 
     @Test
+    fun `JPlag prices a pair of large solutions at what tiling them costs, and an ordinary pair near what it costs`() {
+        // Measured in the EZ-1667 stress test, on one of four threads: 21-29 ms a pair of 19 KB solutions,
+        // which a model linear in their sizes priced at 0.2 ms - 300 of them at 7 s, against over 120 s.
+        val large = JPlagProvider(maxSolutionTokens = 10_000, maxRepetition = 1_000_000).pairNanos(19_000, 19_000)
+        assertTrue(large in 20_000_000L..40_000_000L, "a 19 KB pair priced at ${large / 1_000} µs")
+        // 0.07 ms measured at 0.8 KB: generous, but not so much that an ordinary cohort is refused.
+        val ordinary = JPlagProvider(maxSolutionTokens = 10_000, maxRepetition = 1_000_000).pairNanos(800, 800)
+        assertTrue(ordinary in 60_000L..200_000L, "a 0.8 KB pair priced at ${ordinary / 1_000} µs")
+        // 300 of the large ones on four threads: over the two-minute budget, so refused before they run.
+        val estimate = service(threads = 4).estimate(jplag, (1L..300L).map { SizedSource(it, 19_000, "s$it") })
+        assertTrue(!estimate.withinBudget, "300 large solutions estimated at ${estimate.seconds}s")
+    }
+
+    @Test
     fun `over the budget is refused, and the budget itself is not`() {
         val sources = listOf(SizedSource(1, 100, "ann"), SizedSource(2, 100, "ben"))
         val wall = service().estimate(editDistance, sources).wallNanos

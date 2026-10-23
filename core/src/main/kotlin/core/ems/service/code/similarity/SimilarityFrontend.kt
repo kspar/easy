@@ -95,6 +95,9 @@ class SolutionTooComplex(message: String) : SolutionRefused(message)
 internal value class Deadline private constructor(private val at: Long) {
     fun passed(): Boolean = System.nanoTime() - at >= 0
 
+    /** How long is left, or a negative number once it has passed. */
+    fun remainingNanos(): Long = at - System.nanoTime()
+
     companion object {
         fun after(nanos: Long) = Deadline(System.nanoTime() + nanos)
     }

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
@@ -23,6 +24,9 @@ class PairRankingTest {
         private val seed: Int,
         private val failAfter: Int = Int.MAX_VALUE,
         private val boundMs: Long = 0,
+        private val scoreMs: Long = 0,
+        /** Only the first this many pairs take [scoreMs]: a cold start. */
+        private val slowPairs: Int = Int.MAX_VALUE,
     ) : ProviderSession {
         val calls = AtomicInteger()
         val bounds = AtomicInteger()
@@ -41,6 +45,7 @@ class PairRankingTest {
         override fun score(a: Long, b: Long): PairScore {
             // As a provider polling its deadline in the middle of a pair would.
             if (calls.incrementAndGet() > failAfter) throw SimilarityTimedOut(1)
+            if (scoreMs > 0 && calls.get() <= slowPairs) Thread.sleep(scoreMs)
             val (score, rank) = of(a, b)
             return PairScore(minOf(a, b), maxOf(a, b), score, rank, score / 2, null)
         }
@@ -107,6 +112,34 @@ class PairRankingTest {
         val full = ranking(1) { it.rank(Drawn(seed = 9), comparands(20), 5) }
         val stopped = ranking(1) { it.rankBounded(Drawn(seed = 9, failAfter = 5), comparands(20), 10, partial = true) }
         assertEquals(ids(full).take(5).toSet(), ids(stopped).toSet())
+    }
+
+    @Test
+    fun `a full run its own pace says cannot finish is refused early, as too costly, not at the deadline`() {
+        // 190 pairs at 20 ms on one thread is about 4 s against a budget of one: priced too low, the run
+        // used to hold the permit the whole second and then time out. Measured at a tenth of it, it stops.
+        val started = System.nanoTime()
+        val refused = assertThrows<SimilarityTooCostly> {
+            ranking(1, budgetMs = 1_000) { it.rank(Drawn(seed = 3, scoreMs = 20), comparands(20), 5) }
+        }
+        val tookMs = (System.nanoTime() - started) / 1_000_000
+        assertTrue(tookMs < 700, "refused only after ${tookMs}ms")
+        assertEquals(190, refused.estimate.pairs)
+    }
+
+    @Test
+    fun `a slow start is not taken for the pace of the whole run`() {
+        // A cold JVM's first pairs are the slowest: three at 30 ms, then the rest at once. Read at the first
+        // pair, that pace was 190 pairs at 30 ms against a budget of one second, and the run was refused;
+        // read once a tenth of the budget is spent, it is what it is.
+        val ranked = ranking(1, budgetMs = 1_000) { it.rank(Drawn(seed = 3, scoreMs = 30, slowPairs = 3), comparands(20), 5) }
+        assertEquals(190, ranked.compared)
+    }
+
+    @Test
+    fun `a full run that keeps pace with its budget is not refused`() {
+        val ranked = ranking(1, budgetMs = 2_000) { it.rank(Drawn(seed = 3, scoreMs = 1), comparands(20), 5) }
+        assertEquals(190, ranked.compared)
     }
 
     @Test

@@ -1,6 +1,9 @@
 package core.ems.service.code.similarity
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.PriorityQueue
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * What one pair is compared as: a submission, or a group of identical ones compared once (see
@@ -74,12 +77,16 @@ internal class PairRanking(
     private val workers: SimilarityWorkers,
     private val deadline: Deadline,
     private val budgetSec: Long,
+    /** Whether [rank] refuses a run its own pace says cannot finish; see [Pace]. Off only in a test of the deadline itself. */
+    private val project: Boolean = true,
 ) {
+    private val log = KotlinLogging.logger {}
 
     /** [comparands] are the cohort's usable submissions, identical ones as one; see [Comparand]. */
     fun rank(session: ProviderSession, comparands: List<Comparand>, topN: Int): Ranking {
+        val pace = if (project) Pace(comparands) else null
         val stripes = workers.all(
-            (0 until workers.threads).map { stripe -> { stripe(stripe, session, comparands, topN) } },
+            (0 until workers.threads).map { stripe -> { stripe(stripe, session, comparands, topN, pace) } },
         )
         val byShared = stripes.flatMap { it.byShared }.sortedWith(BEST_FIRST).take(topN)
         val byPercent = stripes.flatMap { it.byPercent }.sortedWith(HIGHEST_FIRST).take(topN)
@@ -250,7 +257,7 @@ internal class PairRanking(
      * Keeps its own [topN] by each order, which is enough: every pair of either global top N is in that
      * order's top N of the stripe it was compared in.
      */
-    private fun stripe(first: Int, session: ProviderSession, comparands: List<Comparand>, topN: Int): Stripe {
+    private fun stripe(first: Int, session: ProviderSession, comparands: List<Comparand>, topN: Int, pace: Pace?): Stripe {
         val byShared = PriorityQueue(BEST_FIRST.reversed())
         val byPercent = PriorityQueue(HIGHEST_FIRST.reversed())
         var compared = 0
@@ -265,6 +272,7 @@ internal class PairRanking(
                 val b = comparands[j].representative
                 val pair = session.score(a, b)
                 compared++
+                pace?.pairDone()
                 if (pair == null || pair.score < MIN_REPORTED_SIMILARITY) continue
                 scoring++
                 val ranked = Ranked(pair, minOf(a, b), maxOf(a, b))
@@ -277,7 +285,48 @@ internal class PairRanking(
         return Stripe(byShared.toList(), byPercent.toList(), compared, scoring)
     }
 
+    /**
+     * A full run's pace, measured once a tenth of the time it has left is spent: the pairs done so far say
+     * how long all of them will take, and a run that cannot finish is refused then, as too costly, rather
+     * than holding the one permit to the deadline and timing out. The estimate prices a run before it
+     * starts, from sizes and a cost model measured on one machine; this measures the run itself, on this
+     * one. The stress test of EZ-1667 found the model under by a hundred times for JPlag on large
+     * solutions, and by three for edit distance on a slower server: each admitted runs that then timed out.
+     *
+     * Only for runs that would be refused anyway - [rankBounded] stops at the deadline with what it has.
+     * Checked once, and only past [PROJECTION_MARGIN] times the time left, since a cold JVM's first pairs
+     * are slower than the rest and a run near the line may still finish.
+     */
+    private inner class Pace(comparands: List<Comparand>) {
+        private val started = System.nanoTime()
+        private val left = deadline.remainingNanos()
+        private val checkAfter = left / PROJECT_AFTER_SHARE
+        private val submissions = comparands.size
+        private val total = comparands.indices.sumOf { i -> (i + 1 until comparands.size).count { j -> comparands[i].apartFrom(comparands[j]) }.toLong() }
+        private val done = AtomicLong()
+        private val checked = AtomicBoolean()
+
+        fun pairDone() {
+            val n = done.incrementAndGet()
+            if (checked.get()) return
+            val elapsed = System.nanoTime() - started
+            if (elapsed < checkAfter || !checked.compareAndSet(false, true)) return
+            val projected = elapsed * (total.toDouble() / n)
+            if (projected <= left * PROJECTION_MARGIN) return
+            val spentBefore = budgetSec * 1_000_000_000L - left
+            val estimate = SimilarityEstimate(submissions, total, workers.threads, spentBefore + projected.toLong(), budgetSec)
+            log.info { "Refusing a comparison at its pace: $n of $total pairs in ${elapsed / 1_000_000}ms, so about ${estimate.seconds}s in all, over the ${budgetSec}s budget" }
+            throw SimilarityTooCostly(estimate)
+        }
+    }
+
     companion object {
+        /** [Pace] is read once this share of the time left is spent: a tenth. */
+        private const val PROJECT_AFTER_SHARE = 10
+
+        /** How far past the time left [Pace] must project before it refuses. */
+        private const val PROJECTION_MARGIN = 1.5
+
         /** The smallest score the page shows as 1% rather than 0%: it rounds to whole percents. */
         private const val MIN_REPORTED_SIMILARITY = 0.005
 

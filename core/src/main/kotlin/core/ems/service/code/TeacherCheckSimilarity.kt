@@ -11,6 +11,7 @@ import core.ems.service.code.similarity.SimilarityBusy
 import core.ems.service.code.similarity.SimilarityService
 import core.ems.service.code.similarity.SimilaritySource
 import core.ems.service.code.similarity.SimilarityTimedOut
+import core.ems.service.code.similarity.SimilarityTooCostly
 import core.exception.InvalidRequestException
 import core.exception.ReqError
 import core.util.DateTimeSerializer
@@ -263,6 +264,10 @@ class TeacherCheckSimilarityController(
                 "Another similarity comparison is already running, try again shortly.",
                 ReqError.SIMILARITY_BUSY, notify = false,
             )
+        } catch (e: SimilarityTooCostly) {
+            // Measured as it ran: at its pace it would not have finished, so it was stopped early with the
+            // same refusal the estimate gives, rather than at the deadline.
+            throw requests.tooCostly(e)
         } catch (e: SimilarityTimedOut) {
             // Not a 500: nothing is broken, the cohort is simply more than one run's budget. Named so
             // the page can say "try a smaller group", which for this one is advice that works — the

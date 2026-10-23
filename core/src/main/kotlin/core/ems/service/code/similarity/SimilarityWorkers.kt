@@ -132,7 +132,7 @@ internal class SimilarityWorkers(val threads: Int, stackBytes: Long) : AutoClose
 
         private fun severity(failure: Throwable): Int = when (failure) {
             is Error -> 0
-            is SimilarityTimedOut -> 2
+            is SimilarityTimedOut, is SimilarityTooCostly -> 2
             else -> 1
         }
     }

@@ -394,6 +394,33 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
+    fun `a run whose pace says it cannot finish is refused as SIMILARITY_TOO_COSTLY, saying how long it would take`() {
+        // Priced as fitting, then measured as it runs: ten pairs at 500 ms on one thread against a budget of
+        // three seconds - three, since a cold JPlag spends most of one preparing. The refusal is the estimate's, with its numbers, so the page says the same either way.
+        transaction {
+            (1..3).forEach { n ->
+                val other = "pace-$n"
+                Fixtures.student(other)
+                Fixtures.enrolStudent(myCourse, other)
+                Fixtures.submission(myCourseExercise, other, number = 1, solution = solution + "\nprint($n)\n".repeat(n))
+            }
+        }
+        val service = SimilarityService(maxSubmissions = 10, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = 3)
+        service.comparePair = { gst, first, second -> Thread.sleep(500); gst.compare(first, second) }
+        service.threadsFor = { 1 }
+        val slow = TeacherCheckSimilarityController(service, SimilarityRequests(service))
+        val request = TeacherCheckSimilarityController.Req(listOf(TeacherCheckSimilarityController.ReqCourse(myCourse.toString())), null)
+
+        val refused = assertThrows<InvalidRequestException> {
+            slow.controller(myExercise.toString(), request, Auth.easyUser(teacher, EasyRole.TEACHER))
+        }
+        assertEquals(ReqError.SIMILARITY_TOO_COSTLY, refused.code)
+        val attributes = refused.attributes.toMap()
+        assertEquals("3", attributes["budget_sec"])
+        assertTrue(attributes.getValue("estimated_sec").toInt() >= 4, "estimated ${attributes["estimated_sec"]}s")
+    }
+
+    @Test
     fun `a cohort priced over the budget is refused before it runs, saying how long it would take`() {
         // Priced from sizes, before the permit: with no budget at all any cohort is over it, and the
         // refusal must come without one solution being tokenised - a run would only time out.

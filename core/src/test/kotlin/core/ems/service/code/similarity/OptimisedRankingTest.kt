@@ -100,7 +100,8 @@ class OptimisedRankingTest {
         assertTrue(outcome.pairs.isNotEmpty())
         assertTrue(outcome.truncated)
 
-        assertThrows<SimilarityTimedOut> { service(timeoutSec = 2).compare({ sources }, { it }, editDistance, null, 10) }
+        // Full, it is refused - at its pace, as too costly, before the budget is spent on it.
+        assertThrows<SimilarityTooCostly> { service(timeoutSec = 2).compare({ sources }, { it }, editDistance, null, 10) }
     }
 
     @Test

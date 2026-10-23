@@ -83,6 +83,9 @@ class SimilarityService(
     /** Every provider installed, and the choice between them; see [bind]. */
     internal val registry = SimilarityRegistry(listOf(jplag, EditDistanceProvider()))
 
+    /** Whether a full run is refused once its pace says it cannot finish; see `PairRanking.Pace`. Off only in a test of the deadline. */
+    internal var projectRuns = true
+
     /** [JPlagProvider.tokenise], replaceable only by a test. */
     internal var tokenise by jplag::tokenise
 
@@ -290,7 +293,7 @@ class SimilarityService(
                 val comparands = comparands(cohort, ownerById)
                 val groups = comparands.filter { it.members.size > 1 }.map { it.members }
                 session.ready(comparands.map { it.representative })
-                val ranking = PairRanking(workers, deadline, timeoutSec).let {
+                val ranking = PairRanking(workers, deadline, timeoutSec, projectRuns).let {
                     if (bounded) it.rankBounded(session, comparands, topN, partial = true) else it.rank(session, comparands, topN)
                 }
                 val compareMs = (System.nanoTime() - compareStart) / 1_000_000
