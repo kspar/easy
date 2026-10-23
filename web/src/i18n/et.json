@@ -753,6 +753,7 @@
     "attemptNumber": "{{number}}. esitus",
     "settingsModeFullHelp": "Võrdleb kõiki paare. Kontroll, mis võtaks lubatust kauem, lükatakse tagasi; vali siis rühm.",
     "partialAhead": "Kõigi paaride võrdlemine võib võtta kuni umbes {{duration}}, kauem kui üks kontroll tohib kesta ({{budget}}). Kõigepealt võrreldakse tõenäolisemaid paare ja kontroll lõpeb {{budget}} järel leitud kõige sarnasemate paaridega.",
+    "incompleteInGroup": "Peatus ajapiirangu tõttu pärast {{compared}} paari võrdlemist {{total}}-st, tõenäolisemad enne. Ülejäänute seas võib olla sarnane paar.",
     "incomplete": "Peatus ajapiirangu tõttu pärast {{compared}} paari võrdlemist {{total}}-st, tõenäolisemad enne. Ülejäänute seas võib olla sarnane paar: kõigi võrdlemiseks vali rühm.",
     "ruledOut": "Võrreldi {{compared}} paari {{total}}-st: ülejäänud ei saanud olla kõige sarnasemate seas."
   },

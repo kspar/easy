@@ -753,6 +753,7 @@
     "attemptNumber": "attempt {{number}}",
     "settingsModeFullHelp": "Compares every pair. A check that would take longer than allowed is refused; choose a group instead.",
     "partialAhead": "Comparing every pair could take up to about {{duration}}, longer than the {{budget}} one check may run. The likeliest pairs are compared first, and the check stops at {{budget}} with the most similar pairs found.",
+    "incompleteInGroup": "Stopped at the time limit after comparing {{compared}} of {{total}} pairs, the likeliest first. A similar pair may be among the rest.",
     "incomplete": "Stopped at the time limit after comparing {{compared}} of {{total}} pairs, the likeliest first. A similar pair may be among the rest: choose a group to compare them all.",
     "ruledOut": "Compared {{compared}} of {{total}} pairs: the others could not have been among the most similar."
   },

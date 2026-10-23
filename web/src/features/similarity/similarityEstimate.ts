@@ -52,6 +52,20 @@ export function ownSettings(estimate: Partial<SimilarityEstimateResp> | undefine
   return own === sources.filter((from) => from !== undefined).length ? 'all' : 'some'
 }
 
+/** Refusals the check would give as well, which the estimate already knows: said before Find, not after. */
+const REFUSALS = new Set(['TOO_MANY_SUBMISSIONS', 'SIMILARITY_UNAVAILABLE'])
+
+/**
+ * The estimate's refusal, if it is one the check would give too (EZ-1667): more submissions than one check
+ * takes, or a language nobody may compare. Found in the stress test: the page fell back to "may take
+ * long", kept Find on, and gave the reason only after the click. Any other failure - an older core with no
+ * estimate, a network error - says nothing about the check, so it is not one.
+ */
+export function estimateRefusal(error: unknown): string | null {
+  const code = (error as { errorBody?: { code?: unknown } | null } | null | undefined)?.errorBody?.code
+  return typeof code === 'string' && REFUSALS.has(code) ? code : null
+}
+
 /**
  * A duration as a teacher reads it: seconds under a minute and a half, whole minutes, rounded up,
  * from there. "About 95 s" is a number to convert; "about 2 min" is not.

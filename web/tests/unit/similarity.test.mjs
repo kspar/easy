@@ -18,7 +18,7 @@ import { isSimilarityRefusal } from '../../src/features/similarity/similarityErr
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
 import { capped, comparedBy, coverage, pairMetrics, providerName, resultNotes, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
-import { comparesFirstAttempts, estimateView, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
+import { comparesFirstAttempts, estimateRefusal, estimateView, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
 import { skippedByReason } from '../../src/features/similarity/similaritySkipped.ts'
@@ -401,6 +401,18 @@ describe('the estimate', () => {
     expect(coverage({ complete: true, pairs_compared: 4950, pairs_total: 4950 })).toBeNull()
     // An older core says nothing of it, and nothing is claimed.
     expect(coverage({})).toBeNull()
+  })
+
+  test('a refusal the check would give too is known from the estimate, and nothing else is', () => {
+    const refusal = (status, code) => ({ status, errorBody: code === undefined ? null : { code } })
+    expect(estimateRefusal(refusal(400, 'TOO_MANY_SUBMISSIONS'))).toBe('TOO_MANY_SUBMISSIONS')
+    expect(estimateRefusal(refusal(400, 'SIMILARITY_UNAVAILABLE'))).toBe('SIMILARITY_UNAVAILABLE')
+    // Says nothing about the check: an older core with no estimate, a failure without a code, none at all.
+    expect(estimateRefusal(refusal(404))).toBeNull()
+    expect(estimateRefusal(refusal(400, 'INVALID_PARAMETER_VALUE'))).toBeNull()
+    expect(estimateRefusal(new Error('network'))).toBeNull()
+    expect(estimateRefusal(null)).toBeNull()
+    expect(estimateRefusal(undefined)).toBeNull()
   })
 
   test('the page says when an exercise compares by settings of its own', () => {

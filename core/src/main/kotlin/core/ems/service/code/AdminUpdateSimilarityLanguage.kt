@@ -8,6 +8,8 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.upsert
 import org.springframework.security.access.annotation.Secured
@@ -38,9 +40,14 @@ class AdminUpdateSimilarityLanguageController {
         )
         log.info { "Similarity for ${language.wireName} ${if (body.enabled) "on" else "off"} by ${caller.id}" }
         transaction {
-            SimilarityLanguageSetting.upsert {
-                it[SimilarityLanguageSetting.language] = language.wireName
-                it[enabled] = body.enabled
+            // On is every language's default, so it is stored as no row, as a provider at its defaults is.
+            if (body.enabled) {
+                SimilarityLanguageSetting.deleteWhere { SimilarityLanguageSetting.language eq language.wireName }
+            } else {
+                SimilarityLanguageSetting.upsert {
+                    it[SimilarityLanguageSetting.language] = language.wireName
+                    it[enabled] = false
+                }
             }
         }
     }

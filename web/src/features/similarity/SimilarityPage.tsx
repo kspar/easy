@@ -49,7 +49,7 @@ import { skippedByReason } from './similaritySkipped.ts'
 import type { SkippedReason } from './similaritySkipped.ts'
 import { highlightFileName } from './similarityLanguage.ts'
 import { capped, comparedBy, coverage, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
-import { comparesFirstAttempts, estimateView, formatDuration, ownSettings } from './similarityEstimate.ts'
+import { comparesFirstAttempts, estimateRefusal, estimateView, formatDuration, ownSettings } from './similarityEstimate.ts'
 import type { ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
 import CourseSimilaritySettingsDialog from '../course-settings/CourseSimilaritySettingsDialog.tsx'
@@ -120,8 +120,10 @@ export default function SimilarityPage() {
   // whether it would be refused as too costly - so the refusal comes before the click, not after it.
   // The ids are the ones `run` sends, memoised so the query's key holds still between renders.
   const submittedIds = useMemo(() => submitted.map((r) => r.submission!.id), [submitted])
-  const { data: estimateData } = useSimilarityEstimate(selected ? exerciseId : undefined, courseId!, submittedIds)
+  const { data: estimateData, error: estimateError } = useSimilarityEstimate(selected ? exerciseId : undefined, courseId!, submittedIds)
   const estimate = estimateView(estimateData)
+  // A refusal the check would give too: said now, with Find off, rather than after the click.
+  const refusedAhead = estimateRefusal(estimateError) !== null
 
   const check = useCheckSimilarity(exerciseId || undefined)
   // What the last run was over, taken when it was asked for. The result belongs to that selection and
@@ -350,7 +352,7 @@ export default function SimilarityPage() {
             running ? <CircularProgress size={16} color="inherit" /> : <CompareArrowsOutlined />
           }
           // Not offered for a check core has already said it would refuse: the alert below says why.
-          disabled={!selected || running || rowsLoading || submitted.length < 2 || estimate.kind === 'tooCostly'}
+          disabled={!selected || running || rowsLoading || submitted.length < 2 || estimate.kind === 'tooCostly' || refusedAhead}
           onClick={run}
         >
           {/* Named apart from an ordinary run: after a group or exercise change this is the run the
@@ -400,6 +402,10 @@ export default function SimilarityPage() {
         </Alert>
       )}
 
+      {refusedAhead && (
+        <Alert severity="warning" sx={{ mb: 2 }}>{errorMessage(estimateError, t)}</Alert>
+      )}
+
       {estimate.kind === 'tooCostly' && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           {t('similarity.tooCostly', {
@@ -418,7 +424,7 @@ export default function SimilarityPage() {
         <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.tooFewSubmissions')}</Alert>
       )}
 
-      {estimate.kind === 'unknown' && submitted.length > PAIR_WARNING_THRESHOLD && (
+      {estimate.kind === 'unknown' && !refusedAhead && submitted.length > PAIR_WARNING_THRESHOLD && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           {t('similarity.slowWarning', { pairs: pairCount })}
         </Alert>
@@ -473,7 +479,10 @@ export default function SimilarityPage() {
           {/* Not every pair was compared: stopped at the time limit, or ruled out as unable to rank. */}
           {covered?.kind === 'incomplete' && (
             <Alert severity="warning" sx={{ mb: 2 }}>
-              {t('similarity.incomplete', { compared: covered.compared, total: covered.total })}
+              {/* "Choose a group" is no advice to a teacher who has one chosen. */}
+              {group
+                ? t('similarity.incompleteInGroup', { compared: covered.compared, total: covered.total })
+                : t('similarity.incomplete', { compared: covered.compared, total: covered.total })}
             </Alert>
           )}
           {covered?.kind === 'ruledOut' && (

@@ -2,6 +2,7 @@ package core.ems.service.code
 
 import core.conf.security.EasyRole
 import core.db.CourseSimilaritySettings
+import core.db.SimilarityLanguageSetting
 import core.db.SimilarityProviderSetting
 import core.ems.service.code.similarity.SimilarityLanguage
 import core.ems.service.code.similarity.SimilarityService
@@ -159,6 +160,8 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
 
         assertEquals(200, putLanguage("python", enabled = true).status)
         assertEquals(200, check().status)
+        // On again is its default, so no row is left saying so.
+        assertEquals(0L, transaction { SimilarityLanguageSetting.selectAll().count() })
     }
 
     private fun putSettings(provider: String?, mode: String = "optimised", courseId: Long = course, attempts: String? = null) =
