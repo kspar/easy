@@ -8,8 +8,14 @@ import java.util.concurrent.ConcurrentHashMap
  * Two numbers per pair, as the old page showed them: the Levenshtein-style [EditDistance.ratio] and the
  * bigram [EditDistance.dice]. Neither knows what code is, so renaming every variable lowers both, and
  * both work on any text in any language - which is what makes this provider the one that can always
- * answer. The score a threshold filters on is the higher of the two, and the outcome is ordered by their
- * mean, as the old check ordered by their sum.
+ * answer.
+ *
+ * The ratio is the score, the rank and the similarity; Dice is measured and shown, but decides nothing.
+ * Dice over bigram *sets* is high for any two programs in one language - they share their keywords,
+ * operators and indentation - and the score used to be the higher of the two, as the old page filtered on:
+ * the stress test of EZ-1667 found pairs scored 80% whose ratio was 0%, so the highest-scoring list and the
+ * page's threshold were mostly that noise, and the optimised mode, ruling pairs out below the score of
+ * the hundredth, compared 98% of a cohort.
  *
  * What it does not do, it says: it has no match ranges, so [details] is empty and the page shows the
  * difference itself.
@@ -33,7 +39,7 @@ internal class EditDistanceProvider(
     /** A ratio over whole texts says how alike they are, not where. */
     override val matchRanges = false
 
-    /** Dice exactly and the ratio from above, both linear in the texts' lengths: see [Session.bound]. */
+    /** The ratio from above, linear in the texts' lengths: see [Session.bound]. */
     override val bounds = true
 
     /** Its bigrams, sorted: measured at about 100 ns a character. */
@@ -67,17 +73,8 @@ internal class EditDistanceProvider(
 
         private fun profile(id: Long) = profileById.computeIfAbsent(id) { EditDistance.profile(solutionById.getValue(it)) }
 
-        /**
-         * The Dice the last [bound] on this thread computed, and for which pair: the engine scores a pair on
-         * the thread that bounded it, right after, so [score] takes it from here rather than merging again.
-         */
-        private val lastDice = ThreadLocal<Triple<Long, Long, Double>>()
-
-        private fun dice(a: Long, b: Long): Double {
-            val cached = lastDice.get()
-            if (cached != null && cached.first == a && cached.second == b) return cached.third
-            return EditDistance.dice(bigramsById.getValue(a), bigramsById.getValue(b))
-        }
+        /** Its quick bound is [bound] itself: ordering every pair by the exact one costs about what Dice did. */
+        override val quickBoundIsExact = true
 
         override fun prepare(): PreparedCohort {
             if (run.deadline.passed()) throw SimilarityTimedOut(run.budgetSec)
@@ -113,44 +110,23 @@ internal class EditDistanceProvider(
             val levenshtein = EditDistance.ratio(solutionById.getValue(a), solutionById.getValue(b)) {
                 if (run.deadline.passed()) throw SimilarityTimedOut(run.budgetSec)
             }
-            val dice = dice(a, b)
-            val mean = (levenshtein + dice) / 2
+            val dice = EditDistance.dice(bigramsById.getValue(a), bigramsById.getValue(b))
             // Both measures are symmetric, so the pair is oriented by id: the same whichever way it is asked.
-            return PairScore(minOf(a, b), maxOf(a, b), score = maxOf(levenshtein, dice), rank = mean, similarity = mean, handle = doubleArrayOf(levenshtein, dice))
+            return PairScore(
+                minOf(a, b), maxOf(a, b), score = levenshtein, rank = levenshtein, similarity = levenshtein,
+                handle = doubleArrayOf(levenshtein, dice),
+            )
         }
 
         /**
-         * Dice itself - a merge of two sorted bigram sets, some hundred times cheaper than the ratio - and
-         * the ratio's [EditDistance.ratioBound]; then the score's and the mean's bounds from those exactly
-         * as [score] combines the real values, so that each is at least the real one.
+         * The ratio's [EditDistance.ratioBound], from the characters and the bigrams the two share: about the
+         * texts, not only their sizes - a bound from lengths alone was about 1 for every pair of like length,
+         * the usual cohort, and ordered a run's pairs by size - and two merges of sorted lists, a small part
+         * of what the ratio costs. The ratio is all three numbers, so it bounds all three.
          */
         override fun bound(a: Long, b: Long): PairBound {
             val levenshtein = EditDistance.ratioBound(profile(a), profile(b))
-            val dice = EditDistance.dice(bigramsById.getValue(a), bigramsById.getValue(b))
-            lastDice.set(Triple(a, b, dice))
-            return combined(levenshtein, dice)
-        }
-
-        /**
-         * The ratio from lengths alone - a common subsequence is no longer than the shorter text, in the same
-         * arithmetic as the real measure, so never below it - and Dice itself, as [bound] has it. Dice is what
-         * makes the order the optimised mode sorts by about the texts rather than their sizes: from bigram
-         * counts it was about 1 for every pair of like length, the usual cohort, so a run stopped at the
-         * deadline had reached its pairs by size and ids, and a copy among the rest was missed. Merging two
-         * bigram lists costs some hundredth of the ratio, so bounding every pair this way stays a small part
-         * of the run.
-         */
-        override fun quickBound(a: Long, b: Long): PairBound {
-            val lengthA = solutionById.getValue(a).length
-            val lengthB = solutionById.getValue(b).length
-            val levenshtein = if (lengthA + lengthB == 0) 0.0 else (2 * minOf(lengthA, lengthB)) / (lengthA + lengthB).toDouble()
-            return combined(levenshtein, EditDistance.dice(bigramsById.getValue(a), bigramsById.getValue(b)))
-        }
-
-        /** The score's and the mean's bounds from the two measures' bounds, exactly as [score] combines the real values. */
-        private fun combined(levenshtein: Double, dice: Double): PairBound {
-            val mean = (levenshtein + dice) / 2
-            return PairBound(score = maxOf(levenshtein, dice), rank = mean, similarity = mean)
+            return PairBound(score = levenshtein, rank = levenshtein, similarity = levenshtein)
         }
 
         override fun details(pair: PairScore, shownFirst: Long, shownSecond: Long): List<SimilarityMatch> = emptyList()
@@ -169,18 +145,5 @@ internal class EditDistanceProvider(
 
         /** About 20,000 characters - bytes, counted as the database does - some 600 lines, well past an ordinary solution. */
         const val DEFAULT_MAX_SOLUTION_BYTES = 20_000
-
-        /** [text]'s length in UTF-8 bytes, Postgres's `octet_length`, without encoding it. */
-        internal fun utf8Length(text: String): Int {
-            var bytes = 0
-            for (c in text) bytes += when {
-                c.code < 0x80 -> 1
-                c.code < 0x800 -> 2
-                // A pair of surrogates is one character of four bytes.
-                Character.isSurrogate(c) -> 2
-                else -> 3
-            }
-            return bytes
-        }
     }
 }

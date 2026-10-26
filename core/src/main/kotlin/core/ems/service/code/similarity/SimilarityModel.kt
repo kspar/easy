@@ -153,3 +153,16 @@ class SimilarityBusy : RuntimeException("Another similarity comparison is alread
 
 class SimilarityTimedOut(val budgetSec: Long) :
     RuntimeException("Similarity comparison exceeded its ${budgetSec}s budget")
+
+/** [text]'s length in UTF-8 bytes, Postgres's `octet_length`, without encoding it: what every provider's sizes are in. */
+internal fun utf8Length(text: String): Int {
+    var bytes = 0
+    for (c in text) bytes += when {
+        c.code < 0x80 -> 1
+        c.code < 0x800 -> 2
+        // A pair of surrogates is one character of four bytes.
+        Character.isSurrogate(c) -> 2
+        else -> 3
+    }
+    return bytes
+}

@@ -143,22 +143,23 @@ class EditDistanceTest {
     }
 
     @Test
-    fun `a pair scored after another was bounded gets its own Dice, not the one kept from the bound`() {
-        // The optimised mode scores a pair right after bounding it, on the same thread, and the score takes
-        // that bound's Dice; any other pair must not.
-        // 1-2 share every bigram but one, 1-3 three of seven: two Dice values far apart.
-        val sources = listOf(SimilaritySource(1, "abcdefgh"), SimilaritySource(2, "abcdefgx"), SimilaritySource(3, "qrstabcd"))
+    fun `the score is the ratio alone, and Dice, shown beside it, decides nothing`() {
+        // Two texts of one small alphabet, as two programs in one language share keywords, operators and
+        // indentation: nearly every bigram is in both, so Dice is high, while the texts are not alike. Scored
+        // as the higher of the two, such a pair ranked among copies.
+        val random = Random(1667)
+        val text = { String(CharArray(1_000) { "abcdefgh "[random.nextInt(9)] }) }
+        val sources = listOf(SimilaritySource(1, text()), SimilaritySource(2, text()))
         SimilarityWorkers(1, 1L shl 20).use { workers ->
             val run = RunContext(workers, Deadline.after(TimeUnit.SECONDS.toNanos(60)), 60)
-            val fresh = EditDistanceProvider().open(ProviderRequest(SimilarityLanguage.TEXT, sources, null), run).use { session ->
+            EditDistanceProvider().open(ProviderRequest(SimilarityLanguage.PYTHON, sources, null), run).use { session ->
                 session.prepare()
-                session.score(1, 3)!!.similarity
-            }
-            EditDistanceProvider().open(ProviderRequest(SimilarityLanguage.TEXT, sources, null), run).use { session ->
-                session.prepare()
-                session.bound(1, 2)
-                // The mean of the two measures, which a wrong Dice moves whichever measure is the higher.
-                assertEquals(fresh, session.score(1, 3)!!.similarity)
+                val pair = session.score(1, 2)!!
+                val (levenshtein, dice) = session.metrics(pair).map { it.value }
+                assertTrue(dice > levenshtein, "the pair does not tell the two apart: ratio $levenshtein, Dice $dice")
+                assertEquals(levenshtein, pair.score)
+                assertEquals(levenshtein, pair.rank)
+                assertEquals(levenshtein, pair.similarity)
             }
         }
     }
@@ -198,11 +199,11 @@ class EditDistanceTest {
         // in characters, the estimate priced them at half what the comparison costs; counted differently
         // from the estimate, the run skipped what it had priced into every pair.
         val emoji = String(Character.toChars(0x1F600)).repeat(6)
-        assertEquals(24, EditDistanceProvider.utf8Length(emoji))
+        assertEquals(24, utf8Length(emoji))
         // One of each width: ASCII, Estonian, the euro sign, a combining mark, an emoji.
         for (text in listOf("", "abc", "õäöü", "€", "a" + Char(0x308), emoji, "x = 'õ€' + $emoji")) {
-            assertEquals(text.toByteArray(Charsets.UTF_8).size, EditDistanceProvider.utf8Length(text))
-            assertTrue(EditDistanceProvider.utf8Length(text) >= text.length)
+            assertEquals(text.toByteArray(Charsets.UTF_8).size, utf8Length(text))
+            assertTrue(utf8Length(text) >= text.length)
         }
         val provider = EditDistanceProvider(maxSolutionBytes = 24)
         assertTrue(provider.compares(24))
