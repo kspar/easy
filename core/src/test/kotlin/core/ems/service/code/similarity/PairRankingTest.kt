@@ -32,9 +32,10 @@ class PairRankingTest {
         val bounds = AtomicInteger()
 
         /** Drawn from the pair itself, so that which worker asks first changes nothing. */
-        private fun of(a: Long, b: Long): Pair<Double, Double> {
+        /** Score, rank and similarity, each drawn on its own: no order of one is an order of another. */
+        fun of(a: Long, b: Long): Triple<Double, Double, Double> {
             val random = Random(seed * 1_000_003L + minOf(a, b) * 10_000 + maxOf(a, b))
-            return random.nextDouble() to random.nextDouble() * 500
+            return Triple(random.nextDouble(), random.nextDouble() * 500, random.nextDouble())
         }
 
         override fun prepare() = error("not used")
@@ -46,21 +47,21 @@ class PairRankingTest {
             // As a provider polling its deadline in the middle of a pair would.
             if (calls.incrementAndGet() > failAfter) throw SimilarityTimedOut(1)
             if (scoreMs > 0 && calls.get() <= slowPairs) Thread.sleep(scoreMs)
-            val (score, rank) = of(a, b)
-            return PairScore(minOf(a, b), maxOf(a, b), score, rank, score / 2, null)
+            val (score, rank, similarity) = of(a, b)
+            return PairScore(minOf(a, b), maxOf(a, b), score, rank, similarity, null)
         }
 
         override fun bound(a: Long, b: Long): PairBound {
             bounds.incrementAndGet()
             if (boundMs > 0) Thread.sleep(boundMs)
-            val (score, rank) = of(a, b)
-            return PairBound(score, rank, score / 2)
+            val (score, rank, similarity) = of(a, b)
+            return PairBound(score, rank, similarity)
         }
 
-        /** Looser than [bound], as a quick bound is: the pair's own values, raised. */
+        /** Looser than [bound], as a quick bound is: the pair's own values, raised - the similarity without ties at 1. */
         override fun quickBound(a: Long, b: Long): PairBound {
-            val (score, rank) = of(a, b)
-            return PairBound(minOf(1.0, score + 0.2), rank + 100, minOf(1.0, score + 0.2) / 2)
+            val (score, rank, similarity) = of(a, b)
+            return PairBound(minOf(1.0, score + 0.2), rank + 100, 0.5 + similarity / 2)
         }
     }
 
@@ -105,13 +106,15 @@ class PairRankingTest {
     }
 
     @Test
-    fun `pairs are reached in the order of what they could share, so a run stopped early has the likeliest`() {
-        // A score's bound can be about sizes alone - edit distance's is near 1 for every pair of like length -
-        // so the order is by what a pair could share first. Ordered by the score's bound first, these five
-        // were whichever pairs tied at the top of it, and a run stopped after them missed the pairs most alike.
-        val full = ranking(1) { it.rank(Drawn(seed = 9), comparands(20), 5) }
+    fun `pairs are reached in the order of the share they could have in common, so a run stopped early has the likeliest`() {
+        // Not the score's bound - edit distance's is about sizes alone, near 1 for every pair of like length -
+        // nor what a pair could share, which for JPlag is a count of tokens and put large unrelated programs
+        // before a short copy. Ordered by either, a run stopped after five pairs missed those most alike.
+        val drawn = Drawn(seed = 9)
+        val likeliest = (1L..20L).flatMap { a -> (a + 1..20L).map { b -> a to b } }
+            .sortedByDescending { (a, b) -> drawn.of(a, b).third }.take(5).map { (a, b) -> "$a-$b" }.toSet()
         val stopped = ranking(1) { it.rankBounded(Drawn(seed = 9, failAfter = 5), comparands(20), 10, partial = true) }
-        assertEquals(ids(full).take(5).toSet(), ids(stopped).toSet())
+        assertEquals(likeliest, ids(stopped).toSet())
     }
 
     @Test

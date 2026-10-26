@@ -99,9 +99,11 @@ internal class PairRanking(
      * The optimised mode (EZ-1667): the same two top N as [rank], from the pairs [ProviderSession.bound]
      * cannot rule out, scored likeliest first.
      *
-     * Every pair worth comparing is ordered by its [ProviderSession.quickBound], highest first - by what the
-     * pair could share, then what it could score, since the score's bound is about sizes more than texts and
-     * near 1 for every pair of like length - and taken in
+     * Every pair worth comparing is ordered by its [ProviderSession.quickBound], highest first - by the share
+     * both sides could have in common, then what they could share and score. Not by the score's bound, which
+     * for edit distance is about sizes more than texts and near 1 for every pair of like length; nor by what
+     * they could share, which for JPlag is a count of tokens and put large unrelated programs before a short
+     * verbatim copy - and taken in
      * batches across the workers, each of which bounds its pairs exactly ([ProviderSession.bound]) before
      * scoring them. Once N pairs are kept in an order, its N-th is a floor: a pair whose bound is below the
      * floor in both orders cannot enter either top N, then or later, since floors only rise, and is not
@@ -117,7 +119,7 @@ internal class PairRanking(
         val total = stripes.sumOf { it.pairs }
         val candidates = stripes.flatMap { it.candidates }.sortedWith(
             // Total, so the order - and with it which pairs a cut-short run reached - is the same on any number of threads.
-            compareByDescending<Candidate> { it.bound.rank }.thenByDescending { it.bound.score }
+            compareByDescending<Candidate> { it.bound.similarity }.thenByDescending { it.bound.rank }.thenByDescending { it.bound.score }
                 .thenBy { minOf(it.a, it.b) }.thenBy { maxOf(it.a, it.b) },
         )
 

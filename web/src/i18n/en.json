@@ -742,7 +742,7 @@
     "estimateNothing": "{{submissions}} submissions, but no pair is left to compare: each is blank, too long for this method, or the same text others handed in. Find shows them.",
     "settingsModeTitle": "Pairs to compare",
     "settingsModeOptimised": "Likeliest pairs first (recommended)",
-    "settingsModeOptimisedHelp": "Compares the likeliest pairs first and skips pairs that cannot be among the most similar. If time runs out, it shows the most similar pairs found by then and says so. Only edit distance can do this; other methods compare every pair.",
+    "settingsModeOptimisedHelp": "Compares the likeliest pairs first and skips pairs that cannot be among the most similar. If time runs out, it shows the most similar pairs found by then and says so.",
     "settingsModeFull": "Every pair",
     "settingsAttemptsTitle": "Which attempt",
     "settingsAttemptsLatest": "Latest (recommended)",

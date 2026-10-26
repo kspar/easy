@@ -742,7 +742,7 @@
     "estimateNothing": "{{submissions}} esitust, kuid võrrelda pole ühtegi paari: kõik on tühjad, selle meetodi jaoks liiga pikad või sama tekst, mille esitasid teised. Otsing näitab need.",
     "settingsModeTitle": "Võrreldavad paarid",
     "settingsModeOptimised": "Tõenäolisemad paarid enne (soovitatav)",
-    "settingsModeOptimisedHelp": "Võrdleb kõigepealt tõenäolisemaid paare ja jätab vahele paarid, mis ei saa olla kõige sarnasemate seas. Kui aeg saab otsa, näitab selleks ajaks leitud kõige sarnasemaid paare ja ütleb seda. Seda oskab ainult muudatuste kaugus; teised meetodid võrdlevad kõiki paare.",
+    "settingsModeOptimisedHelp": "Võrdleb kõigepealt tõenäolisemaid paare ja jätab vahele paarid, mis ei saa olla kõige sarnasemate seas. Kui aeg saab otsa, näitab selleks ajaks leitud kõige sarnasemaid paare ja ütleb seda.",
     "settingsModeFull": "Kõik paarid",
     "settingsAttemptsTitle": "Milline esitus",
     "settingsAttemptsLatest": "Viimane (soovitatav)",

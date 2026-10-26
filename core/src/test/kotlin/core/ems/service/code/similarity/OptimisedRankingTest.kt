@@ -104,13 +104,60 @@ class OptimisedRankingTest {
         assertThrows<SimilarityTooCostly> { service(timeoutSec = 2).compare({ sources }, { it }, editDistance, null, 10) }
     }
 
+    /**
+     * Edit distance with its bounds withheld: the engine's path for a provider that cannot bound its pairs,
+     * which no provider built in takes since JPlag gained bounds, and one over HTTP might.
+     */
+    private class Unbounded(inner: SimilarityProvider = EditDistanceProvider()) : SimilarityProvider by inner {
+        override val id = "unbounded"
+        override val bounds = false
+    }
+
+    private val unbounded = SimilarityBinding("unbounded", SimilarityLanguage.PYTHON, optimised = true)
+
+    private fun unboundedService(timeoutSec: Long = 120) =
+        service(timeoutSec).also { it.registry = SimilarityRegistry(listOf(Unbounded())) }
+
     @Test
     fun `a provider that cannot bound its pairs compares every pair, optimised or not`() {
         val sources = cohort(3, 12)
-        val jplag = SimilarityBinding(JPlagProvider.ID, SimilarityLanguage.PYTHON, optimised = true)
-        val outcome = service().compare({ sources }, { it }, jplag, null, 10).outcome
+        val outcome = unboundedService().compare({ sources }, { it }, unbounded, null, 10).outcome
         assertTrue(outcome.complete)
         assertEquals(outcome.pairsTotal, outcome.pairsCompared)
+    }
+
+    private val jplag = SimilarityBinding(JPlagProvider.ID, SimilarityLanguage.PYTHON)
+
+    @Test
+    fun `optimised, JPlag keeps exactly the pairs its full run keeps, on any number of threads, and compares fewer`() {
+        // Its bounds on the shared token runs; one below the tiling would drop a pair from the top without a
+        // trace. Varied lengths, renamed and padded copies: the cohort the edit-distance test above uses.
+        for (seed in 1..3) {
+            val sources = cohort(seed, 40)
+            val full = service().compare({ sources }, { it }, jplag, null, 10).outcome
+            for (threads in listOf(1, 2, 4)) {
+                val optimised = service(threads = threads).compare({ sources }, { it }, jplag.copy(optimised = true), null, 10).outcome
+                assertTrue(optimised.complete)
+                assertEquals(signature(full), signature(optimised), "seed $seed on $threads thread(s)")
+                assertTrue(optimised.pairsCompared < optimised.pairsTotal, "compared ${optimised.pairsCompared} of ${optimised.pairsTotal}")
+            }
+        }
+    }
+
+    @Test
+    fun `optimised, a JPlag run past its budget returns the likeliest pairs it reached, copies first`() {
+        // Every tiling slowed so the cohort cannot finish in eight seconds - eight, as tokenising alone took
+        // over three on a loaded machine and the run was refused preparing: what it reached by then is
+        // returned, and the verbatim copies, bounded highest, are among it.
+        val sources = cohort(5, 60)
+        val slow = service(timeoutSec = 8, threads = 1)
+        slow.comparePair = { gst, first, second -> Thread.sleep(200); gst.compare(first, second) }
+        val outcome = slow.compare({ sources }, { it }, jplag.copy(optimised = true), null, 10).outcome
+        assertFalse(outcome.complete)
+        assertTrue(outcome.pairsCompared in 1 until outcome.pairsTotal, "compared ${outcome.pairsCompared} of ${outcome.pairsTotal}")
+        val copies = sources.indices.filter { it % 9 == 3 }.map { (it + 1L) to it.toLong() }
+        val found = outcome.pairs.map { minOf(it.id1, it.id2) to maxOf(it.id1, it.id2) }.toSet()
+        assertTrue(copies.any { (copy, original) -> (original to copy) in found }, "no verbatim copy among ${outcome.pairs.size} pairs")
     }
 
     @Test
@@ -121,7 +168,8 @@ class OptimisedRankingTest {
         assertTrue(estimate.optimised)
         assertFalse(estimate.withinBudget)
         assertThrows<SimilarityTooCostly> { noBudget.assertAffordable(editDistance, sources) }
-        val jplag = SimilarityBinding(JPlagProvider.ID, SimilarityLanguage.PYTHON, optimised = true)
-        assertThrows<SimilarityTooCostly> { noBudget.assertAffordable(jplag, sources) }
+        assertThrows<SimilarityTooCostly> { unboundedService(timeoutSec = 0).assertAffordable(unbounded, sources) }
+        // JPlag bounds its pairs, so it is not refused optimised either.
+        assertTrue(noBudget.assertAffordable(jplag.copy(optimised = true), sources).optimised)
     }
 }

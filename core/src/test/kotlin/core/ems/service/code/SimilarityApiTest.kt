@@ -1,6 +1,8 @@
 package core.ems.service.code
 
 import core.conf.security.EasyRole
+import core.db.CourseSimilaritySettings
+import core.db.SimilarityMode
 import core.db.SimilarityProviderLanguage
 import core.db.SimilarityProviderSetting
 import core.ems.service.code.similarity.SimilarityService
@@ -104,6 +106,15 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
                 it[language] = "sql"
                 it[enabled] = true
             }
+        }
+    }
+
+    /** The course compares every pair, which a run over its budget is refused for. */
+    private fun fullMode() = transaction {
+        CourseSimilaritySettings.insert {
+            it[course] = myCourse
+            it[provider] = null
+            it[mode] = SimilarityMode.FULL
         }
     }
 
@@ -396,7 +407,10 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
     @Test
     fun `a run whose pace says it cannot finish is refused as SIMILARITY_TOO_COSTLY, saying how long it would take`() {
         // Priced as fitting, then measured as it runs: ten pairs at 500 ms on one thread against a budget of
-        // three seconds - three, since a cold JPlag spends most of one preparing. The refusal is the estimate's, with its numbers, so the page says the same either way.
+        // three seconds - three, since a cold JPlag spends most of one preparing. The refusal is the
+        // estimate's, with its numbers, so the page says the same either way. Every pair: optimised, JPlag
+        // now stops at the budget with what it found instead.
+        fullMode()
         transaction {
             (1..3).forEach { n ->
                 val other = "pace-$n"
@@ -423,7 +437,9 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
     @Test
     fun `a cohort priced over the budget is refused before it runs, saying how long it would take`() {
         // Priced from sizes, before the permit: with no budget at all any cohort is over it, and the
-        // refusal must come without one solution being tokenised - a run would only time out.
+        // refusal must come without one solution being tokenised - a run would only time out. Every pair, as
+        // only that is refused: optimised, it would stop at the budget instead.
+        fullMode()
         val tokenised = AtomicInteger()
         val service = SimilarityService(
             maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000,

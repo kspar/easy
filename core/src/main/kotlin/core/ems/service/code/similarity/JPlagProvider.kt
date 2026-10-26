@@ -16,6 +16,7 @@ import de.jplag.options.JPlagOptions
 import de.jplag.options.LanguageOptions
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Similarity as JPlag measures it: Greedy String Tiling over each language's tokens, so that renaming,
@@ -71,6 +72,14 @@ internal class JPlagProvider(
 
     /** The tiling's matched token runs, as line ranges. */
     override val matchRanges = true
+
+    /**
+     * From the token runs two submissions share, [TokenRuns]: a bound on the matched tokens, and so on every
+     * number the tiling gives, cheaply enough to order every pair by it. The optimised mode then compares the
+     * likeliest pairs first, rules out those that cannot reach the top, and stops at the deadline with what it
+     * found - where before a JPlag run compared every pair, and one too large for the budget was refused.
+     */
+    override val bounds = true
 
     /**
      * Tokenising: about 20 ms a solution whatever its size, and 2 µs a character on top, measured on
@@ -184,6 +193,24 @@ internal class JPlagProvider(
         private lateinit var options: JPlagOptions
         private lateinit var submissionById: Map<Long, Submission>
         private lateinit var gst: GreedyStringTiling
+
+        /** Token types as small numbers, for [TokenRuns]; one session's own, so the numbers stay small. */
+        private val typeIds = ConcurrentHashMap<TokenType, Int>()
+
+        /**
+         * Built on a submission's first [bound], as edit distance's profiles are: only the optimised mode reads
+         * them, and at the cap they are some 12 bytes a token that a full run would have held for nothing.
+         */
+        private val runsById = ConcurrentHashMap<Long, TokenRuns>()
+
+        private fun runs(id: Long): TokenRuns = runsById.computeIfAbsent(id) {
+            val tokens = submissionById.getValue(it).tokenList
+            val ids = IntArray(tokens.size) { i ->
+                val type = tokens[i].type
+                if (type.isExcludedFromMatching()) -1 else typeIds.computeIfAbsent(type) { typeIds.size }
+            }
+            TokenRuns.of(ids, options.minimumTokenMatch())
+        }
 
         override fun prepare(): PreparedCohort {
             val template = request.template?.takeIf { it.isNotBlank() }
@@ -315,6 +342,21 @@ internal class JPlagProvider(
                 similarity = comparison.similarity(),
                 handle = comparison,
             )
+        }
+
+        /**
+         * The matched tokens' bound, and the shares it allows over JPlag's own divisors - each submission's
+         * tokens less its file end and what the starter code marked, read after [ready] has marked it - in
+         * the arithmetic [JPlagComparison] uses, so none is below the tiling's. A divisor of none would make
+         * JPlag's share NaN; the bound then allows anything.
+         */
+        override fun bound(a: Long, b: Long): PairBound {
+            val matched = runs(a).matchedBound(runs(b)).toDouble()
+            val divisorA = submissionById.getValue(a).similarityDivisor
+            val divisorB = submissionById.getValue(b).similarityDivisor
+            val score = if (minOf(divisorA, divisorB) <= 0) 1.0 else minOf(1.0, matched / minOf(divisorA, divisorB))
+            val similarity = if (divisorA + divisorB <= 0) 1.0 else minOf(1.0, 2 * matched / (divisorA + divisorB))
+            return PairBound(score = score, rank = matched, similarity = similarity)
         }
 
         override fun metrics(pair: PairScore): List<SimilarityMetric> {

@@ -81,7 +81,7 @@ class SimilarityService(
     private val jplag = JPlagProvider(maxSolutionTokens, maxRepetition)
 
     /** Every provider installed, and the choice between them; see [bind]. */
-    internal val registry = SimilarityRegistry(listOf(jplag, EditDistanceProvider()))
+    internal var registry = SimilarityRegistry(listOf(jplag, EditDistanceProvider()))
 
     /** Whether a full run is refused once its pace says it cannot finish; see `PairRanking.Pace`. Off only in a test of the deadline. */
     internal var projectRuns = true
