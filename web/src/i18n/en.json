@@ -762,7 +762,12 @@
     "orderShared": "Most shared code first",
     "orderScore": "Highest score first",
     "metricsTitle": "What the numbers mean",
-    "forReference": "Shown for reference only: it decides neither the order nor what the threshold hides."
+    "forReference": "Shown for reference only: it decides neither the order nor what the threshold hides.",
+    "matchesTitle": "Matching blocks, largest first (lines on the left ↔ on the right) — pick one to see it on both sides:",
+    "matchChip": "{{fromA}}–{{toA}} ↔ {{fromB}}–{{toB}}",
+    "matchesMore_one": "and {{count}} smaller",
+    "matchesMore_other": "and {{count}} smaller",
+    "nothingShared": "No line or run of text is the same in both, so nothing is marked: the score counts the characters the two have in common wherever they are, scattered through both."
   },
   "about": {
     "s1": "Lahendus is operated and developed by the",

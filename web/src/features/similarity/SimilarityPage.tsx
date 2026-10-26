@@ -44,6 +44,7 @@ import {
 import SimilarityDiff from './SimilarityDiff.tsx'
 import ReadOnlyCodeSnippet from '../course-exercise/ReadOnlyCodeSnippet.tsx'
 import type { MatchedLines } from './similarityHighlight.ts'
+import { matchEntries } from './similarityHighlight.ts'
 import { groupAuthors, identicalOthers } from './similarityGroups.ts'
 import { isSimilarityRefusal } from './similarityError.ts'
 import { emptyReason, hasUnreadableScores } from './similarityEmptyState.ts'
@@ -111,6 +112,8 @@ export default function SimilarityPage() {
   const [group, setGroup] = useSavedGroup(courseId!)
   const [minScore, setMinScore] = useState(0)
   const [order, setOrder] = useState<PairOrder>('shared')
+  // The match picked in each opened pair, by the pair's key: marked apart and scrolled to on both sides.
+  const [selectedMatch, setSelectedMatch] = useState<Record<string, number | undefined>>({})
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const { data: exercises, isLoading: exercisesLoading } = useTeacherCourseExercises(courseId)
@@ -634,6 +637,8 @@ export default function SimilarityPage() {
               { sub: a, link: studentLink(score.sub_1) },
               { sub: b, link: studentLink(score.sub_2) },
             ]
+            const pairKey = `${score.sub_1}-${score.sub_2}`
+            const matchList = usesMatchRanges(result) ? matchEntries(score.matches ?? []) : { shown: [], more: 0 }
             // Outlined like every other surface: with the bespoke shadow scale gone (X-014), a
             // bare Accordion would be the app's only elevated element.
             //
@@ -765,6 +770,37 @@ export default function SimilarityPage() {
                     />
                     {t('similarity.sharedLegend')}
                   </Box>
+                  {/* Which block is the copy of which: the band shades every matched line alike, so on a
+                      pair with several matches the two sides could not be lined up by eye. */}
+                  {matchList.shown.length > 0 && (
+                    <Box sx={{ mb: 1 }}>
+                      <Typography variant="caption" color="text.secondary" component="div">
+                        {t('similarity.matchesTitle')}
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, alignItems: 'center' }}>
+                        {matchList.shown.map((m) => {
+                          const on = selectedMatch[pairKey] === m.index
+                          return (
+                            <Chip
+                              key={m.index}
+                              size="small"
+                              clickable
+                              color={on ? 'primary' : 'default'}
+                              variant={on ? 'filled' : 'outlined'}
+                              aria-pressed={on}
+                              label={t('similarity.matchChip', { fromA: m.fromA, toA: m.toA, fromB: m.fromB, toB: m.toB })}
+                              onClick={() => setSelectedMatch((picked) => ({ ...picked, [pairKey]: on ? undefined : m.index }))}
+                            />
+                          )
+                        })}
+                        {matchList.more > 0 && (
+                          <Typography variant="caption" color="text.secondary">
+                            {t('similarity.matchesMore', { count: matchList.more })}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  )}
                   {/* CodeMirror picks its grammar from the extension. The exercise list does not
                       carry solution_file_name, but the comparison already resolved a language and
                       that is the same decision, so derive it rather than add an API field. */}
@@ -772,9 +808,12 @@ export default function SimilarityPage() {
                     left={a.solution ?? ''}
                     right={b.solution ?? ''}
                     fileName={highlightFileName(result.language)}
-                    matchedLeft={matchedByPair.get(`${score.sub_1}-${score.sub_2}`)?.left}
-                    matchedRight={matchedByPair.get(`${score.sub_1}-${score.sub_2}`)?.right}
+                    matchedLeft={matchedByPair.get(pairKey)?.left}
+                    matchedRight={matchedByPair.get(pairKey)?.right}
                     matchRanges={usesMatchRanges(result)}
+                    selectedMatch={selectedMatch[pairKey]}
+                    leftLabel={`${a.given_name} ${a.family_name}`}
+                    rightLabel={`${b.given_name} ${b.family_name}`}
                   />
                 </AccordionDetails>
               </Accordion>

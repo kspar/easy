@@ -762,7 +762,12 @@
     "orderShared": "Enim ühist koodi enne",
     "orderScore": "Kõrgeim skoor enne",
     "metricsTitle": "Mida numbrid tähendavad",
-    "forReference": "Näidatakse vaid teadmiseks: see ei mõjuta järjekorda ega seda, mida lävend peidab."
+    "forReference": "Näidatakse vaid teadmiseks: see ei mõjuta järjekorda ega seda, mida lävend peidab.",
+    "matchesTitle": "Kattuvad plokid, suurimad enne (read vasakul ↔ paremal) — vali üks, et näha seda mõlemal poolel:",
+    "matchChip": "{{fromA}}–{{toA}} ↔ {{fromB}}–{{toB}}",
+    "matchesMore_one": "ja {{count}} väiksem",
+    "matchesMore_other": "ja {{count}} väiksemat",
+    "nothingShared": "Ükski rida ega tekstilõik pole mõlemas sama, seega pole midagi märgitud: skoor loeb märke, mis on kahel ühised, ükskõik kus need mõlemas paiknevad."
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",

@@ -16,7 +16,7 @@
 import { expect, test, describe } from 'vitest'
 import { isSimilarityRefusal } from '../../src/features/similarity/similarityError.ts'
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
-import { matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
+import { matchEntries, matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
 import { capped, comparedBy, coverage, forReference, orderPairs, pairMetrics, providerName, ranksBySharedCode, resultNotes, rowMetrics, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
 import { comparesFirstAttempts, estimateRefusal, estimateView, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
@@ -350,6 +350,24 @@ describe('the provider', () => {
  * where. Built from the merge package's own chunks, so a change in how it reports them shows up here
  * rather than as a pair painted wrong.
  */
+describe('the matches to pick from', () => {
+  // The band shades every matched line alike, so which block is the copy of which is said as a list.
+  test('largest first, each knowing its place in the response, and none core could not place', () => {
+    const m = (a, b, tokens) => ({ start_line_1: a[0], end_line_1: a[1], start_line_2: b[0], end_line_2: b[1], tokens })
+    const { shown, more } = matchEntries([m([1, 4], [2, 5], 12), m([10, 30], [12, 32], 80), m([0, 0], [3, 3], 99), m([6, 8], [7, 9], 12)])
+    expect(shown.map((e) => e.index)).toEqual([1, 0, 3])
+    expect(shown[0]).toEqual({ index: 1, fromA: 10, toA: 30, fromB: 12, toB: 32, tokens: 80 })
+    expect(more).toBe(0)
+  })
+
+  test('at most thirty, and how many more', () => {
+    const many = Array.from({ length: 34 }, (_, i) => ({ start_line_1: i + 1, end_line_1: i + 1, start_line_2: i + 1, end_line_2: i + 1, tokens: 10 }))
+    const { shown, more } = matchEntries(many)
+    expect(shown).toHaveLength(30)
+    expect(more).toBe(4)
+  })
+})
+
 describe('shared code from the diff', () => {
   const sides = (a, b) => {
     const docA = Text.of(a.split('\n'))

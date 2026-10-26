@@ -34,6 +34,7 @@ import type { Chunk } from '@codemirror/merge'
  */
 
 const commonLine = Decoration.line({ class: 'cm-commonLine' })
+const selectedLine = Decoration.line({ class: 'cm-commonLine cm-selectedMatch' })
 const commonSpan = Decoration.mark({ class: 'cm-commonSpan' })
 
 /**
@@ -99,9 +100,13 @@ function gutterRule(dark: boolean) {
  * Blue, deliberately: green and red are spoken for on this page — the scores and the pass/fail
  * language everywhere else in the product — and "shared" is neither good news nor bad news. It is
  * the thing to look at.
+ *
+ * At about a quarter, where it was an eighth: in the stress test of EZ-1667 the shared lines could not be
+ * told from the rest at a glance, which is the one thing the band is for. Still light enough that the
+ * code's own colours read through it.
  */
-export const SHARED_LIGHT = 'rgba(90, 150, 190, .13)'
-export const SHARED_DARK = 'rgba(120, 180, 220, .16)'
+export const SHARED_LIGHT = 'rgba(90, 150, 190, .26)'
+export const SHARED_DARK = 'rgba(120, 180, 220, .28)'
 
 function sharedTheme(dark: boolean) {
   const shared = dark ? SHARED_DARK : SHARED_LIGHT
@@ -116,10 +121,16 @@ function sharedTheme(dark: boolean) {
     '&.cm-merge-a .cm-commonLine, &.cm-merge-b .cm-commonLine': {
       backgroundColor: shared + ' !important',
     },
+    // The match picked from the list, on both sides at once: what the band alone could not say is which
+    // block on the left is the copy of which on the right. A deeper shade and a rule down its edge.
+    '&.cm-merge-a .cm-selectedMatch, &.cm-merge-b .cm-selectedMatch': {
+      backgroundColor: (dark ? 'rgba(120, 180, 220, .45)' : 'rgba(90, 150, 190, .45)') + ' !important',
+      boxShadow: `inset 3px 0 0 ${dark ? '#8cc4e8' : '#3a7aa8'}`,
+    },
     // A rounded, text-hugging mark for a fragment inside a line that differs (chunks only). Darker
     // than the band: it covers far less area, and the fragment is the rarer, more telling signal.
     '&.cm-merge-a .cm-commonSpan, &.cm-merge-b .cm-commonSpan': {
-      backgroundColor: dark ? 'rgba(120, 180, 220, .22)' : 'rgba(90, 150, 190, .18)',
+      backgroundColor: dark ? 'rgba(120, 180, 220, .38)' : 'rgba(90, 150, 190, .34)',
       borderRadius: '2px',
     },
   })
@@ -160,14 +171,15 @@ export function matchedLineNumbers(ranges: MatchedLines[], docLines: number): nu
  *
  * Core sends the matched token runs as line ranges (`scores[].matches`), so the ink follows the
  * number above it. An empty list is a real answer — nothing matched — and renders as no highlight,
- * which is what a 0% pair should look like.
+ * which is what a 0% pair should look like. The [selected] one, if any, is marked apart.
  */
-export function tokenMatchHighlighting(dark: boolean, ranges: MatchedLines[]) {
+export function tokenMatchHighlighting(dark: boolean, ranges: MatchedLines[], selected?: MatchedLines) {
   const build = (view: EditorView) => {
     const builder = new RangeSetBuilder<Decoration>()
     const doc = view.state.doc
+    const chosen = new Set(selected ? matchedLineNumbers([selected], doc.lines) : [])
     for (const line of matchedLineNumbers(ranges, doc.lines)) {
-      builder.add(doc.line(line).from, doc.line(line).from, commonLine)
+      builder.add(doc.line(line).from, doc.line(line).from, chosen.has(line) ? selectedLine : commonLine)
     }
     return builder.finish()
   }
@@ -260,9 +272,10 @@ export function unchangedSpans(doc: Text, chunks: SideChunk[]): [number, number]
 /**
  * Highlights what a character diff finds the two have in common, for a provider that says how alike
  * two texts are but not where. Identical lines get the band, and inside lines that differ, the runs
- * that did not change get the mark.
+ * that did not change get the mark. [painted] is told how many it marked, once the merge view has its
+ * chunks: none on either side is a pair whose score the page cannot point at, and says so.
  */
-export function chunkHighlighting(dark: boolean) {
+export function chunkHighlighting(dark: boolean, painted?: (side: 'a' | 'b', count: number) => void) {
   const build = (view: EditorView) => {
     const builder = new RangeSetBuilder<Decoration>()
     const info = getChunks(view.state)
@@ -277,6 +290,7 @@ export function chunkHighlighting(dark: boolean) {
     ]
     decorations.sort((x, y) => x[0] - y[0])
     for (const [from, to, decoration] of decorations) builder.add(from, to, decoration)
+    painted?.(info.side, decorations.length)
     return builder.finish()
   }
   // The merge view computes its chunks a tick after the editors exist - `getChunks` is null until then
@@ -284,3 +298,31 @@ export function chunkHighlighting(dark: boolean) {
   const stale = (u: ViewUpdate) => u.docChanged || getChunks(u.state)?.chunks !== getChunks(u.startState)?.chunks
   return [muteDiffColours, gutterRule(dark), sharedTheme(dark), highlighter(build, stale)]
 }
+
+/** A matched block as the page lists it: where it is on each side, how much it covers, and its place in `matches`. */
+export interface MatchEntry {
+  index: number
+  fromA: number
+  toA: number
+  fromB: number
+  toB: number
+  tokens: number
+}
+
+/**
+ * A pair's matches as a list to pick from, largest first: the band marks every matched line in one shade,
+ * so it could not say which block on the left is the copy of which on the right. A match core could not
+ * place on both sides - a line of 0 - is left out, as there is nothing to show of it; [MAX_MATCHES] at
+ * most, and how many more there are.
+ */
+export function matchEntries(
+  matches: { start_line_1: number; end_line_1: number; start_line_2: number; end_line_2: number; tokens: number }[],
+): { shown: MatchEntry[]; more: number } {
+  const placed = matches
+    .map((m, index) => ({ index, fromA: m.start_line_1, toA: m.end_line_1, fromB: m.start_line_2, toB: m.end_line_2, tokens: m.tokens }))
+    .filter((m) => m.fromA >= 1 && m.fromB >= 1)
+    .sort((x, y) => y.tokens - x.tokens || x.fromA - y.fromA)
+  return { shown: placed.slice(0, MAX_MATCHES), more: Math.max(0, placed.length - MAX_MATCHES) }
+}
+
+const MAX_MATCHES = 30
