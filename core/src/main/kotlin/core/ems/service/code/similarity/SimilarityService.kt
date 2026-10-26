@@ -96,6 +96,9 @@ class SimilarityService(
      */
     private val untrustedBounds: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
+    /** This server's runs against the cost model, which the estimate is scaled by. */
+    internal val calibration = Calibration()
+
     /** Whether [provider]'s bounds may rule pairs out: it has them, and no run has caught one wrong. */
     private fun bounds(provider: SimilarityProvider) = provider.bounds && provider.id !in untrustedBounds
 
@@ -174,8 +177,10 @@ class SimilarityService(
                 if (authors >= GROUP_AUTHORS) listOf(same.first().bytes to same.mapTo(mutableSetOf()) { it.owner })
                 else same.map { it.bytes to setOf(it.owner) }
             }
-        val prepareNanos = sources.sumOf { provider.prepareNanos(it.bytes) }
-        var nanos = prepareNanos
+        // The model's figures, scaled by how this server's runs have compared with them (see [Calibration]).
+        val prepareNanos = (sources.sumOf { provider.prepareNanos(it.bytes) } *
+                calibration.factor(provider.id, Calibration.Phase.PREPARE)).toLong()
+        var pairNanos = 0L
         var pairs = 0L
         for (i in comparands.indices) for (j in i + 1 until comparands.size) {
             val (bytesA, ownersA) = comparands[i]
@@ -183,8 +188,9 @@ class SimilarityService(
             // One author on both sides is a student against their own attempt, which is never compared.
             if (ownersA.size == 1 && ownersA == ownersB && ownersA.single() != null) continue
             pairs++
-            nanos += provider.pairNanos(bytesA, bytesB)
+            pairNanos += provider.pairNanos(bytesA, bytesB)
         }
+        val nanos = prepareNanos + (pairNanos * calibration.factor(provider.id, Calibration.Phase.PAIRS)).toLong()
         val threads = threadsFor(sources.size)
         // Optimised stops at the budget with the pairs it reached - but only once the cohort is prepared,
         // and preparing is not stopped part way with anything to show: a cohort JPlag would spend the whole
@@ -299,9 +305,13 @@ class SimilarityService(
 
         SimilarityWorkers(threads, WORKER_STACK_BYTES).use { workers ->
             provider.open(ProviderRequest(language, sources, baseCode, textAllowed), RunContext(workers, deadline, timeoutSec)).use { session ->
+                val bytesById = sources.associate { it.id to utf8Length(it.solution) }
                 val prepareStart = ticker.nanos()
                 val cohort = session.prepare()
-                val prepareMs = (ticker.nanos() - prepareStart) / 1_000_000
+                val prepareNanos = ticker.nanos() - prepareStart
+                val prepareMs = prepareNanos / 1_000_000
+                // The whole pool's time, as the model's figures are one worker's.
+                calibration.observe(provider.id, Calibration.Phase.PREPARE, prepareNanos * threads, sources.sumOf { provider.prepareNanos(bytesById.getValue(it.id)) })
 
                 if (cohort.usable.size < 2) {
                     log.info { "Nothing to compare: ${cohort.usable.size} usable of ${sources.size}, ${cohort.skipped.size} skipped" }
@@ -312,8 +322,14 @@ class SimilarityService(
                 val comparands = comparands(cohort, ownerById)
                 val groups = comparands.filter { it.members.size > 1 }.map { it.members }
                 session.ready(comparands.map { it.representative })
-                val ranking = PairRanking(workers, deadline, timeoutSec, projectRuns).let {
-                    if (bounded) it.rankBounded(session, comparands, topN, partial = true) else it.rank(session, comparands, topN)
+                val ranker = PairRanking(workers, deadline, timeoutSec, projectRuns) { a, b ->
+                    provider.pairNanos(bytesById.getValue(a), bytesById.getValue(b))
+                }
+                // Measured however the ranking ends: a run refused at its pace is the one that says most.
+                val ranking = try {
+                    if (bounded) ranker.rankBounded(session, comparands, topN, partial = true) else ranker.rank(session, comparands, topN)
+                } finally {
+                    calibration.observe(provider.id, Calibration.Phase.PAIRS, ranker.scoredNanos.get(), ranker.predictedNanos.get())
                 }
                 ranking.boundsViolation?.let { violation ->
                     untrustedBounds += provider.id

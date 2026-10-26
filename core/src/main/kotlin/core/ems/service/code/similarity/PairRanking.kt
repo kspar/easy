@@ -82,8 +82,23 @@ internal class PairRanking(
     private val budgetSec: Long,
     /** Whether [rank] refuses a run its own pace says cannot finish; see [Pace]. Off only in a test of the deadline itself. */
     private val project: Boolean = true,
+    /** What the cost model predicts a pair costs, in one worker's nanoseconds, for [Calibration]. */
+    private val pairCost: (Long, Long) -> Long = { _, _ -> 0L },
 ) {
     private val log = KotlinLogging.logger {}
+
+    /** One worker's time the scored pairs took, and what the model predicted for them: read by [Calibration]. */
+    val scoredNanos = AtomicLong()
+    val predictedNanos = AtomicLong()
+
+    /** [ProviderSession.score], timed for [Calibration]. */
+    private fun timedScore(session: ProviderSession, a: Long, b: Long): PairScore? {
+        val started = deadline.ticker.nanos()
+        val pair = session.score(a, b)
+        scoredNanos.addAndGet(deadline.ticker.nanos() - started)
+        predictedNanos.addAndGet(pairCost(a, b))
+        return pair
+    }
 
     /** [comparands] are the cohort's usable submissions, identical ones as one; see [Comparand]. */
     fun rank(session: ProviderSession, comparands: List<Comparand>, topN: Int): Ranking {
@@ -251,7 +266,7 @@ internal class PairRanking(
                 continue
             }
             val pair = try {
-                session.score(candidate.a, candidate.b)
+                timedScore(session, candidate.a, candidate.b)
             } catch (e: SimilarityTimedOut) {
                 if (partial) break
                 throw e
@@ -323,7 +338,7 @@ internal class PairRanking(
                 if (deadline.passed()) throw SimilarityTimedOut(budgetSec)
                 val a = comparands[i].representative
                 val b = comparands[j].representative
-                val pair = session.score(a, b)
+                val pair = timedScore(session, a, b)
                 compared++
                 pace?.pairDone()
                 if (pair == null || pair.score < MIN_REPORTED_SIMILARITY) continue
