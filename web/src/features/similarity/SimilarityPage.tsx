@@ -4,6 +4,7 @@ import {
   AccordionDetails,
   AccordionSummary,
   Alert,
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -16,6 +17,7 @@ import {
   MenuItem,
   Select,
   Slider,
+  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
@@ -87,6 +89,10 @@ const PAIR_WARNING_THRESHOLD = 120
  * returns at most twice this, and the threshold always has the highest-scoring ones to filter.
  */
 const MAX_PAIRS = 100
+
+/** Students with something handed in for [exercise]: everyone but those who have not started. */
+const handedIn = (exercise: { ungraded_count: number; started_count: number; completed_count: number }) =>
+  exercise.ungraded_count + exercise.started_count + exercise.completed_count
 
 export default function SimilarityPage() {
   const { courseId } = useParams<{ courseId: string }>()
@@ -325,24 +331,34 @@ export default function SimilarityPage() {
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', mb: 2 }}>
-        <FormControl size="small" sx={{ minWidth: 280 }} disabled={exercisesLoading}>
-          <InputLabel id="similarity-exercise">{t('similarity.exercise')}</InputLabel>
-          <Select
-            labelId="similarity-exercise"
-            label={t('similarity.exercise')}
-            value={exercises?.some((e) => e.exercise_id === exerciseId) ? exerciseId : ''}
-            onChange={(e) => {
-              setExerciseId(e.target.value)
-              check.reset()
-            }}
-          >
-            {(exercises ?? []).map((e) => (
-              <MenuItem key={e.course_exercise_id} value={e.exercise_id}>
-                {e.effective_title}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        {/* Searchable, and each with how many have handed something in: a course has dozens of exercises,
+            and a plain list said nothing of which had anything to compare. */}
+        <Autocomplete
+          size="small"
+          sx={{ minWidth: 280, flex: '0 1 360px' }}
+          // Enter takes the first match, so a search typed is a search done.
+          autoHighlight
+          disabled={exercisesLoading}
+          options={exercises ?? []}
+          value={selected ?? null}
+          getOptionLabel={(e) => e.effective_title}
+          isOptionEqualToValue={(a, b) => a.course_exercise_id === b.course_exercise_id}
+          onChange={(_, e) => {
+            setExerciseId(e?.exercise_id ?? '')
+            check.reset()
+          }}
+          renderOption={({ key, ...props }, e) => (
+            <li key={key} {...props}>
+              <Box sx={{ display: 'flex', width: '100%', gap: 2, justifyContent: 'space-between' }}>
+                <span>{e.effective_title}</span>
+                <Typography component="span" variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                  {t('similarity.handedIn', { count: handedIn(e) })}
+                </Typography>
+              </Box>
+            </li>
+          )}
+          renderInput={(params) => <TextField {...params} label={t('similarity.exercise')} />}
+        />
 
         {groups && groups.length > 0 && (
           <FormControl size="small" sx={{ minWidth: 200 }}>
@@ -393,6 +409,11 @@ export default function SimilarityPage() {
         exercises={exercises}
       />
 
+      {/* Where to start, said: the page was a heading, two selects and an empty screen. */}
+      {!selected && !exercisesLoading && (
+        <Typography color="text.secondary" sx={{ mt: 3 }}>{t('similarity.chooseExercise')}</Typography>
+      )}
+
       {/* What is about to be compared, before committing to the wait: and how long, once core says. */}
       {selected && !rowsLoading && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
@@ -405,13 +426,17 @@ export default function SimilarityPage() {
               count: estimate.pairs,
               duration: formatDuration(estimate.seconds, t),
             })}
-          {comparesFirstAttempts(estimateData) && ` ${t('similarity.firstAttemptsNote')}`}
-          {ownSettings(estimateData) === 'all' && ` ${t('similarity.ownSettingsAll')}`}
-          {ownSettings(estimateData) === 'some' && ` ${t('similarity.ownSettingsSome')}`}
+          {/* A line of their own: run on after the estimate, "about 2 s This exercise has…" read as one
+              sentence with its full stop missing. */}
+          {comparesFirstAttempts(estimateData) && <Box component="span" sx={{ display: 'block' }}>{t('similarity.firstAttemptsNote')}</Box>}
+          {ownSettings(estimateData) === 'all' && <Box component="span" sx={{ display: 'block' }}>{t('similarity.ownSettingsAll')}</Box>}
+          {ownSettings(estimateData) === 'some' && <Box component="span" sx={{ display: 'block' }}>{t('similarity.ownSettingsSome')}</Box>}
         </Typography>
       )}
 
-      {estimate.kind === 'partial' && (
+      {/* What was said before the run is not said again over its result: three and four notices stacked
+          above the first pair, one of them about a wait that was over. */}
+      {estimate.kind === 'partial' && !result && (
         <Alert severity="info" sx={{ mb: 2 }}>
           {t('similarity.partialAhead', {
             duration: formatDuration(estimate.seconds, t),
@@ -424,7 +449,7 @@ export default function SimilarityPage() {
         <Alert severity="warning" sx={{ mb: 2 }}>{errorMessage(estimateError, t)}</Alert>
       )}
 
-      {estimate.kind === 'tooCostly' && (
+      {estimate.kind === 'tooCostly' && !result && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           {t('similarity.tooCostly', {
             duration: formatDuration(estimate.seconds, t),
@@ -442,7 +467,7 @@ export default function SimilarityPage() {
         <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.tooFewSubmissions')}</Alert>
       )}
 
-      {estimate.kind === 'unknown' && !refusedAhead && submitted.length > PAIR_WARNING_THRESHOLD && (
+      {estimate.kind === 'unknown' && !refusedAhead && !result && submitted.length > PAIR_WARNING_THRESHOLD && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           {t('similarity.slowWarning', { pairs: pairCount })}
         </Alert>
@@ -533,8 +558,11 @@ export default function SimilarityPage() {
           {/* Instead of an emptiness sentence, which would blame a threshold of zero. */}
           {unreadable && <Alert severity="warning" sx={{ mb: 2 }}>{t('similarity.unreadable')}</Alert>}
 
+          {/* A note, not an alert: nothing went wrong, and the count it explains is the one just above. */}
           {capped(result) && (
-            <Alert severity="info" sx={{ mb: 2 }}>{t('similarity.capped', { limit: MAX_PAIRS })}</Alert>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              {t('similarity.capped', { limit: MAX_PAIRS, shown: result.scores.length })}
+            </Typography>
           )}
 
           {/* The course's pinned provider passed over, or the language compared as text; otherwise
@@ -655,11 +683,11 @@ export default function SimilarityPage() {
                 variant="outlined"
                 slotProps={{ transition: { unmountOnExit: true } }}
               >
-                <AccordionSummary expandIcon={<ExpandMoreOutlined />}>
+                <AccordionSummary expandIcon={<ExpandMoreOutlined />} sx={{ '& .MuiAccordionSummary-content': { minWidth: 0 } }}>
                   <Box
-                    sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%', pr: 2, flexWrap: 'wrap' }}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, columnGap: 2, width: '100%', pr: { xs: 0, sm: 2 }, flexWrap: 'wrap', minWidth: 0 }}
                   >
-                    <Typography sx={{ fontWeight: 500 }}>
+                    <Typography sx={{ fontWeight: 500, overflowWrap: 'anywhere' }}>
                       {a.given_name} {a.family_name} — {b.given_name} {b.family_name}
                     </Typography>
                     {/* A side that stands for a group of identical submissions says how many more it is, and
@@ -675,7 +703,8 @@ export default function SimilarityPage() {
                         />
                       ) : null
                     })}
-                    <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+                    {/* Wrapping, so on a phone the chips go below the names rather than off the side. */}
+                    <Box sx={{ ml: 'auto', display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       {/* Labelled, because "84% · 61%" invites the question of which is which — and
                           the two answer different questions. Named for what they measure rather
                           than for the algorithm; the algorithm is in the tooltip, for the reader

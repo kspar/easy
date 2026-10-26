@@ -660,7 +660,7 @@
     "helpText": "Lahenduste võrdlus võimaldab leida sarnasusi erinevate õpilaste lahenduste vahel.",
     "find": "Otsi sarnasusi",
     "searching": "Võrdlen…",
-    "explanation": "Võrdleb selle ülesande kõiki esitatud lahenduste paare ja loetleb kõige sarnasemad. Kuidas neid võrreldakse, sõltub võrdlusmeetodist, mis on nimetatud tulemuste juures. Kõrge skoor on põhjus vaadata, mitte otsus.",
+    "explanation": "Loetleb ülesande esitatud lahenduste seast kõige sarnasemad paarid. Kuidas neid võrreldakse, sõltub võrdlusmeetodist, mis on nimetatud tulemuste juures. Kõrge skoor on põhjus vaadata, mitte otsus.",
     "exercise": "Ülesanne",
     "group": "Rühm",
     "allStudents": "Kõik õpilased",
@@ -668,7 +668,7 @@
     "slowWarning": "See võrdleb ühe päringuga {{pairs}} paari ja võib võtta kaua aega või aeguda. Ühe rühma kaupa on tavaliselt kiirem.",
     "failed": "Võrdlus ei lõppenud. Suure kursuse puhul on põhjus tavaliselt aegumine — proovi ühe rühmaga.",
     "minScore": "Väikseim näidatav skoor: {{value}}%",
-    "capped": "Tagastatakse ainult {{limit}} kõige rohkem ühist koodi jagavat paari ja {{limit}} kõrgeima skooriga paari, seega võib paare olla veel.",
+    "capped": "Need on {{limit}} kõige rohkem ühist koodi jagavat paari ja {{limit}} kõrgeima skooriga paari, kokku {{shown}} eri paari: nende all võib paare olla veel.",
     "noPairs": "Sarnaseid paare ei leitud",
     "results_one": "{{count}} paar",
     "results_other": "{{count}} paari",
@@ -767,7 +767,10 @@
     "matchChip": "{{fromA}}–{{toA}} ↔ {{fromB}}–{{toB}}",
     "matchesMore_one": "ja {{count}} väiksem",
     "matchesMore_other": "ja {{count}} väiksemat",
-    "nothingShared": "Ükski rida ega tekstilõik pole mõlemas sama, seega pole midagi märgitud: skoor loeb märke, mis on kahel ühised, ükskõik kus need mõlemas paiknevad."
+    "nothingShared": "Ükski rida ega tekstilõik pole mõlemas sama, seega pole midagi märgitud: skoor loeb märke, mis on kahel ühised, ükskõik kus need mõlemas paiknevad.",
+    "chooseExercise": "Vali ülesanne, et näha, mitu lahendust sellel on ja kui kaua nende võrdlemine võtab.",
+    "handedIn_one": "{{count}} esitanud",
+    "handedIn_other": "{{count}} esitanud"
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",

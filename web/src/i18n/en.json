@@ -660,7 +660,7 @@
     "helpText": "Similarity analysis aims to find similarities between students' solutions, which could make it easier to find cases of plagiarism.",
     "find": "Find similarities",
     "searching": "Comparing…",
-    "explanation": "Compares every pair of submitted solutions for this exercise and lists the most similar. How they are compared depends on the comparison method, which is named with the results. Read a high score as a reason to look, not as a verdict.",
+    "explanation": "Lists the most similar pairs among the solutions handed in for an exercise. How they are compared depends on the comparison method, which is named with the results. Read a high score as a reason to look, not as a verdict.",
     "exercise": "Exercise",
     "group": "Group",
     "allStudents": "All students",
@@ -668,7 +668,7 @@
     "slowWarning": "This compares {{pairs}} pairs in a single request and may take a long time or time out. Narrowing to one group is usually faster.",
     "failed": "The comparison did not finish. On a large course this is usually a timeout — try a single group.",
     "minScore": "Lowest score shown: {{value}}%",
-    "capped": "Only the {{limit}} pairs sharing the most code and the {{limit}} highest-scoring pairs are returned, so there may be more below these.",
+    "capped": "These are the {{limit}} pairs sharing the most code and the {{limit}} highest-scoring, {{shown}} different pairs in all: there may be more below them.",
     "noPairs": "No similar pairs found",
     "results_one": "{{count}} pair",
     "results_other": "{{count}} pairs",
@@ -767,7 +767,10 @@
     "matchChip": "{{fromA}}–{{toA}} ↔ {{fromB}}–{{toB}}",
     "matchesMore_one": "and {{count}} smaller",
     "matchesMore_other": "and {{count}} smaller",
-    "nothingShared": "No line or run of text is the same in both, so nothing is marked: the score counts the characters the two have in common wherever they are, scattered through both."
+    "nothingShared": "No line or run of text is the same in both, so nothing is marked: the score counts the characters the two have in common wherever they are, scattered through both.",
+    "chooseExercise": "Choose an exercise to see how many solutions it has and how long comparing them takes.",
+    "handedIn_one": "{{count}} handed in",
+    "handedIn_other": "{{count}} handed in"
   },
   "about": {
     "s1": "Lahendus is operated and developed by the",
