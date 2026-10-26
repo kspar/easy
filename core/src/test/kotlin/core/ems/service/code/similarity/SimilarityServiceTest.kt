@@ -40,9 +40,10 @@ class SimilarityServiceTest {
         maxSolutionTokens: Int = 10_000,
         maxRepetition: Long = 1_000_000,
         timeoutSec: Long = 120,
+        clock: Ticker = Ticker.SYSTEM,
     ) = SimilarityService(
         maxSubmissions = 50, maxSolutionTokens = maxSolutionTokens, maxRepetition = maxRepetition,
-        timeoutSec = timeoutSec,
+        timeoutSec = timeoutSec, ticker = clock,
     )
 
     private val service = service()
@@ -889,28 +890,28 @@ class SimilarityServiceTest {
         // stopped once started, so the budget covered tokenising only. Pairs are made slow here - a
         // really slow pair is what maxRepetition now refuses to run - and 435 of them at 25 ms each
         // would take seconds even spread over the pool. The budget is one second.
-        val slow = service(timeoutSec = 1)
-        slow.comparePair = { gst, first, second -> Thread.sleep(25); gst.compare(first, second) }
-        // Two threads, not the default of half the cores: on 64 of them the slowest stripe's 29 pairs
-        // took 0.73 s, inside the budget, and the run returned normally - this failed on big machines.
+        val clock = ManualTicker()
+        val compared = AtomicInteger()
+        val slow = service(timeoutSec = 1, clock = clock)
+        slow.comparePair = { gst, first, second -> compared.incrementAndGet(); clock.advance(25); gst.compare(first, second) }
         slow.threadsFor = { 2 }
         // The deadline itself, behind the pace that would otherwise refuse this run first.
         slow.projectRuns = false
         // A tail of its own length each: identical submissions would be one group, compared once.
         val sources = (1L..30L).map { SimilaritySource(it, original + "\n" + "print($it)\n".repeat(it.toInt())) }
 
-        val started = System.nanoTime()
         assertThrows<SimilarityTimedOut> { slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
-        val tookMs = (System.nanoTime() - started) / 1_000_000
-        assertTrue(tookMs < 5_000, "refused only after ${tookMs}ms, so the pairs past the budget were still compared")
+        // A second at 25 ms a pair is 40 pairs, and each worker may finish the one it began: not all 435.
+        assertTrue(compared.get() <= 42, "compared ${compared.get()} pairs, so the pairs past the budget were still compared")
     }
 
     @Test
     fun `a comparison whose pace says it cannot finish is refused as too costly before the deadline`() {
         // The same slow pairs, with the pace on: 435 pairs at 25 ms on two threads is over 5 s against a
         // budget of one, which a tenth of it shows; refused then, not when the second is spent.
-        val slow = service(timeoutSec = 1)
-        slow.comparePair = { gst, first, second -> Thread.sleep(25); gst.compare(first, second) }
+        val clock = ManualTicker()
+        val slow = service(timeoutSec = 1, clock = clock)
+        slow.comparePair = { gst, first, second -> clock.advance(25); gst.compare(first, second) }
         slow.threadsFor = { 2 }
         val sources = (1L..30L).map { SimilaritySource(it, original + "\n" + "print($it)\n".repeat(it.toInt())) }
 
@@ -926,12 +927,12 @@ class SimilarityServiceTest {
         // Without them a spent budget still tokenised the whole cohort, holding the one permit.
         val tokenised = AtomicInteger()
         val compared = AtomicInteger()
-        val slow = service(timeoutSec = 1).also {
+        val clock = ManualTicker()
+        val slow = service(timeoutSec = 1, clock = clock).also {
             it.threadsFor = { 1 }
             it.tokenise = { language, id, solution, maxTokens ->
                 tokenised.incrementAndGet()
-                val until = System.nanoTime() + 50_000_000L
-                while (System.nanoTime() - until < 0) Thread.onSpinWait()
+                clock.advance(50)
                 language.read(id, solution, maxTokens)
             }
             it.comparePair = { gst, first, second -> compared.incrementAndGet(); gst.compare(first, second) }
@@ -940,7 +941,7 @@ class SimilarityServiceTest {
         val sources = (1L..100L).map { SimilaritySource(it, original + "\n" + "print($it)\n".repeat(it.toInt())) }
 
         assertThrows<SimilarityTimedOut> { slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
-        assertTrue(tokenised.get() < 40, "tokenised ${tokenised.get()} of 100 solutions on a one-second budget of 50 ms each")
+        assertTrue(tokenised.get() <= 21, "tokenised ${tokenised.get()} of 100 solutions on a one-second budget of 50 ms each")
         assertEquals(0, compared.get(), "a pair was compared although the budget was spent while tokenising")
     }
 
@@ -949,13 +950,11 @@ class SimilarityServiceTest {
         // The last solution starts inside the budget and ends past it. Nothing is left to compare - the
         // other is too small - so without the check after tokenising, the run past its budget answered
         // as if it had finished in time: no pair check was ever reached to refuse it.
-        val slow = service(timeoutSec = 1).also {
+        val clock = ManualTicker()
+        val slow = service(timeoutSec = 1, clock = clock).also {
             it.threadsFor = { 1 }
             it.tokenise = { language, id, solution, maxTokens ->
-                if (solution == original) {
-                    val until = System.nanoTime() + 1_200_000_000L
-                    while (System.nanoTime() - until < 0) Thread.onSpinWait()
-                }
+                if (solution == original) clock.advance(1_200)
                 language.read(id, solution, maxTokens)
             }
         }

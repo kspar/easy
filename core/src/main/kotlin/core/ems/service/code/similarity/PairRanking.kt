@@ -300,7 +300,7 @@ internal class PairRanking(
      * are slower than the rest and a run near the line may still finish.
      */
     private inner class Pace(comparands: List<Comparand>) {
-        private val started = System.nanoTime()
+        private val started = deadline.ticker.nanos()
         private val left = deadline.remainingNanos()
         private val checkAfter = left / PROJECT_AFTER_SHARE
         private val submissions = comparands.size
@@ -318,7 +318,7 @@ internal class PairRanking(
         fun pairDone() {
             val n = done.incrementAndGet()
             if (checked.get()) return
-            val elapsed = System.nanoTime() - started
+            val elapsed = deadline.ticker.nanos() - started
             if (elapsed < checkAfter || !checked.compareAndSet(false, true)) return
             val projected = elapsed * (total.toDouble() / n)
             if (projected <= left * PROJECTION_MARGIN) return

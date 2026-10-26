@@ -75,6 +75,8 @@ class SimilarityService(
      * tiling polls for interruption.
      */
     @param:Value("\${easy.core.similarity.timeout-sec}") private val timeoutSec: Long,
+    /** The clock budgets, paces and timings are read on: the system's, but in a test that moves its own. */
+    private val ticker: Ticker = Ticker.SYSTEM,
 ) {
     private val log = KotlinLogging.logger {}
 
@@ -154,23 +156,23 @@ class SimilarityService(
         // Comparands as [comparands] makes them, with the authors of each. Collapsing every identical text
         // instead priced fifty pairs of identical solutions as fifty comparands where the run compares a
         // hundred - a quarter of the pairs, admitted to time out.
-        val comparands = sources.filter { provider.compares(it.chars) }
+        val comparands = sources.filter { provider.compares(it.bytes) }
             .groupBy { it.digest ?: "#${it.id}" }.values
             .flatMap { same ->
                 val authors = same.mapNotNull { it.owner }.distinct().size + same.count { it.owner == null }
-                if (authors >= GROUP_AUTHORS) listOf(same.first().chars to same.mapTo(mutableSetOf()) { it.owner })
-                else same.map { it.chars to setOf(it.owner) }
+                if (authors >= GROUP_AUTHORS) listOf(same.first().bytes to same.mapTo(mutableSetOf()) { it.owner })
+                else same.map { it.bytes to setOf(it.owner) }
             }
-        val prepareNanos = sources.sumOf { provider.prepareNanos(it.chars) }
+        val prepareNanos = sources.sumOf { provider.prepareNanos(it.bytes) }
         var nanos = prepareNanos
         var pairs = 0L
         for (i in comparands.indices) for (j in i + 1 until comparands.size) {
-            val (charsA, ownersA) = comparands[i]
-            val (charsB, ownersB) = comparands[j]
+            val (bytesA, ownersA) = comparands[i]
+            val (bytesB, ownersB) = comparands[j]
             // One author on both sides is a student against their own attempt, which is never compared.
             if (ownersA.size == 1 && ownersA == ownersB && ownersA.single() != null) continue
             pairs++
-            nanos += provider.pairNanos(charsA, charsB)
+            nanos += provider.pairNanos(bytesA, bytesB)
         }
         val threads = threadsFor(sources.size)
         // Optimised stops at the budget with the pairs it reached - but only once the cohort is prepared,
@@ -280,29 +282,29 @@ class SimilarityService(
         bounded: Boolean,
         textAllowed: Boolean,
     ): SimilarityOutcome {
-        val deadline = Deadline.after(TimeUnit.SECONDS.toNanos(timeoutSec))
+        val deadline = Deadline.after(TimeUnit.SECONDS.toNanos(timeoutSec), ticker)
         val ownerById = sources.mapNotNull { source -> source.owner?.let { source.id to it } }.toMap()
         val threads = threadsFor(sources.size)
 
         SimilarityWorkers(threads, WORKER_STACK_BYTES).use { workers ->
             provider.open(ProviderRequest(language, sources, baseCode, textAllowed), RunContext(workers, deadline, timeoutSec)).use { session ->
-                val prepareStart = System.nanoTime()
+                val prepareStart = ticker.nanos()
                 val cohort = session.prepare()
-                val prepareMs = (System.nanoTime() - prepareStart) / 1_000_000
+                val prepareMs = (ticker.nanos() - prepareStart) / 1_000_000
 
                 if (cohort.usable.size < 2) {
                     log.info { "Nothing to compare: ${cohort.usable.size} usable of ${sources.size}, ${cohort.skipped.size} skipped" }
                     return SimilarityOutcome(emptyList(), cohort.skipped, cohort.language, false, provider = provider.id)
                 }
 
-                val compareStart = System.nanoTime()
+                val compareStart = ticker.nanos()
                 val comparands = comparands(cohort, ownerById)
                 val groups = comparands.filter { it.members.size > 1 }.map { it.members }
                 session.ready(comparands.map { it.representative })
                 val ranking = PairRanking(workers, deadline, timeoutSec, projectRuns).let {
                     if (bounded) it.rankBounded(session, comparands, topN, partial = true) else it.rank(session, comparands, topN)
                 }
-                val compareMs = (System.nanoTime() - compareStart) / 1_000_000
+                val compareMs = (ticker.nanos() - compareStart) / 1_000_000
 
                 val comparandById = comparands.associateBy { it.representative }
                 val pairs = ranking.top.map { pairOf(it.pair, comparandById, ownerById, session) }

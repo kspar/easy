@@ -44,16 +44,16 @@ internal interface SimilarityProvider {
     fun comparesAs(language: SimilarityLanguage): SimilarityLanguage
 
     /**
-     * What one solution of [chars] characters costs before any pair, in nanoseconds of one worker; and
+     * What one solution of [bytes] UTF-8 bytes costs before any pair, in nanoseconds of one worker; and
      * [pairNanos], what one pair costs. Measured on this provider, not derived, and only as exact as a
      * measurement: they are what [SimilarityService.estimate] adds up to refuse a cohort that would not
      * finish inside the budget before anybody waits for it, and to tell a teacher how long one will take.
      * Generous rather than tight - an overestimate refuses a run that might have finished, but an
      * underestimate is still bounded by the deadline.
      */
-    fun prepareNanos(chars: Int): Long
+    fun prepareNanos(bytes: Int): Long
 
-    fun pairNanos(charsA: Int, charsB: Int): Long
+    fun pairNanos(bytesA: Int, bytesB: Int): Long
 
     /**
      * Whether its sessions give a [ProviderSession.bound] for every pair: what lets the optimised mode
@@ -61,8 +61,8 @@ internal interface SimilarityProvider {
      */
     val bounds: Boolean get() = false
 
-    /** Whether a solution of [chars] UTF-8 bytes is compared at all, rather than skipped by size. */
-    fun compares(chars: Int): Boolean = chars > 0
+    /** Whether a solution of [bytes] UTF-8 bytes is compared at all, rather than skipped by size. */
+    fun compares(bytes: Int): Boolean = bytes > 0
 
     fun open(request: ProviderRequest, run: RunContext): ProviderSession
 }

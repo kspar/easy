@@ -86,7 +86,7 @@ internal class JPlagProvider(
      * Python of 2 to 20 KB on one core. Tokens are not known before it, so the cost is read from
      * characters.
      */
-    override fun prepareNanos(chars: Int): Long = 20_000_000L + 2_000L * chars
+    override fun prepareNanos(bytes: Int): Long = 20_000_000L + 2_000L * bytes
 
     /**
      * One tiling: about 70 µs, a few nanoseconds a character, and a term in the product of the two sizes,
@@ -95,7 +95,7 @@ internal class JPlagProvider(
      * four threads against 0.2 ms priced. With it, such a pair is about 26 ms, and an ordinary one of
      * 0.8 KB about 0.12 ms against 0.07 ms measured - generous, as the estimate should be.
      */
-    override fun pairNanos(charsA: Int, charsB: Int): Long = 70_000L + 4L * (charsA + charsB) + charsA.toLong() * charsB / 14
+    override fun pairNanos(bytesA: Int, bytesB: Int): Long = 70_000L + 4L * (bytesA + bytesB) + bytesA.toLong() * bytesB / 14
 
     /**
      * The tokeniser, replaceable only by a test. The catches that turn a tokeniser that *throws* into

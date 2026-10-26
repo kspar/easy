@@ -5,6 +5,7 @@ import core.db.CourseSimilaritySettings
 import core.db.SimilarityMode
 import core.db.SimilarityProviderLanguage
 import core.db.SimilarityProviderSetting
+import core.ems.service.code.similarity.ManualTicker
 import core.ems.service.code.similarity.SimilarityService
 import core.exception.InvalidRequestException
 import core.exception.ReqError
@@ -383,13 +384,13 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
         // controller is driven directly over a service with one second, and a tokeniser slower than
         // that. Not a budget of none: that is now priced and refused before the run (see below), and the
         // timeout is still what an estimate that came out too low ends in. The mapping is under test.
+        val clock = ManualTicker()
         val service = SimilarityService(
             maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000,
-            timeoutSec = 1,
+            timeoutSec = 1, ticker = clock,
         )
         service.tokenise = { language, id, source, maxTokens ->
-            val until = System.nanoTime() + 1_200_000_000L
-            while (System.nanoTime() - until < 0) Thread.onSpinWait()
+            clock.advance(1_200)
             language.read(id, source, maxTokens)
         }
         val slow = TeacherCheckSimilarityController(service, SimilarityRequests(service))
@@ -406,10 +407,9 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
 
     @Test
     fun `a run whose pace says it cannot finish is refused as SIMILARITY_TOO_COSTLY, saying how long it would take`() {
-        // Priced as fitting, then measured as it runs: ten pairs at 500 ms on one thread against a budget of
-        // three seconds - three, since a cold JPlag spends most of one preparing. The refusal is the
-        // estimate's, with its numbers, so the page says the same either way. Every pair: optimised, JPlag
-        // now stops at the budget with what it found instead.
+        // Priced as fitting, then measured as it runs: ten pairs at 500 ms of the test's clock on one thread
+        // against a budget of three seconds. The refusal is the estimate's, with its numbers, so the page says
+        // the same either way. Every pair: optimised, JPlag now stops at the budget with what it found instead.
         fullMode()
         transaction {
             (1..3).forEach { n ->
@@ -419,8 +419,9 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
                 Fixtures.submission(myCourseExercise, other, number = 1, solution = solution + "\nprint($n)\n".repeat(n))
             }
         }
-        val service = SimilarityService(maxSubmissions = 10, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = 3)
-        service.comparePair = { gst, first, second -> Thread.sleep(500); gst.compare(first, second) }
+        val clock = ManualTicker()
+        val service = SimilarityService(maxSubmissions = 10, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = 3, ticker = clock)
+        service.comparePair = { gst, first, second -> clock.advance(500); gst.compare(first, second) }
         service.threadsFor = { 1 }
         val slow = TeacherCheckSimilarityController(service, SimilarityRequests(service))
         val request = TeacherCheckSimilarityController.Req(listOf(TeacherCheckSimilarityController.ReqCourse(myCourse.toString())), null)

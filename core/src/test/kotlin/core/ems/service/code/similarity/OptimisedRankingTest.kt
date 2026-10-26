@@ -19,8 +19,8 @@ import kotlin.random.Random
 @Timeout(value = 120, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
 class OptimisedRankingTest {
 
-    private fun service(timeoutSec: Long = 120, threads: Int = 2) =
-        SimilarityService(maxSubmissions = 500, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = timeoutSec)
+    private fun service(timeoutSec: Long = 120, threads: Int = 2, clock: Ticker = Ticker.SYSTEM) =
+        SimilarityService(maxSubmissions = 500, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = timeoutSec, ticker = clock)
             .also { it.threadsFor = { threads } }
 
     private val editDistance = SimilarityBinding(EditDistanceProvider.ID, SimilarityLanguage.PYTHON)
@@ -91,9 +91,11 @@ class OptimisedRankingTest {
 
     @Test
     fun `at the budget an optimised run returns the likeliest pairs it reached, and a full one is refused`() {
-        // Long solutions, so that a pair takes milliseconds and the cohort far more than a second.
+        // Time is spent as the run reads it, a millisecond a read - about two a pair - so the budget runs out
+        // part way on any machine: on real time, one twice as fast as the one this was written on finished
+        // the cohort inside it, and the test failed.
         val sources = (1L..60L).map { id -> SimilaritySource(id, solution(id.toInt(), 300), "s$id") }
-        val slow = service(timeoutSec = 2)
+        val slow = service(timeoutSec = 3, clock = SteppingTicker(1_000_000))
         val outcome = slow.compare({ sources }, { it }, editDistance.copy(optimised = true), null, 10).outcome
         assertFalse(outcome.complete)
         assertTrue(outcome.pairsCompared in 1 until outcome.pairsTotal, "compared ${outcome.pairsCompared} of ${outcome.pairsTotal}")
@@ -101,7 +103,7 @@ class OptimisedRankingTest {
         assertTrue(outcome.truncated)
 
         // Full, it is refused - at its pace, as too costly, before the budget is spent on it.
-        assertThrows<SimilarityTooCostly> { service(timeoutSec = 2).compare({ sources }, { it }, editDistance, null, 10) }
+        assertThrows<SimilarityTooCostly> { service(timeoutSec = 1, clock = SteppingTicker(1_000_000)).compare({ sources }, { it }, editDistance, null, 10) }
     }
 
     /**
@@ -146,12 +148,13 @@ class OptimisedRankingTest {
 
     @Test
     fun `optimised, a JPlag run past its budget returns the likeliest pairs it reached, copies first`() {
-        // Every tiling slowed so the cohort cannot finish in eight seconds - eight, as tokenising alone took
-        // over three on a loaded machine and the run was refused preparing: what it reached by then is
-        // returned, and the verbatim copies, bounded highest, are among it.
+        // Every tiling takes 200 ms of the test's own clock, so the cohort cannot finish in two seconds of it,
+        // however long tokenising takes on the machine: what it reached by then is returned, and the verbatim
+        // copies, bounded highest, are among it.
         val sources = cohort(5, 60)
-        val slow = service(timeoutSec = 8, threads = 1)
-        slow.comparePair = { gst, first, second -> Thread.sleep(200); gst.compare(first, second) }
+        val clock = ManualTicker()
+        val slow = service(timeoutSec = 2, threads = 1, clock = clock)
+        slow.comparePair = { gst, first, second -> clock.advance(200); gst.compare(first, second) }
         val outcome = slow.compare({ sources }, { it }, jplag.copy(optimised = true), null, 10).outcome
         assertFalse(outcome.complete)
         assertTrue(outcome.pairsCompared in 1 until outcome.pairsTotal, "compared ${outcome.pairsCompared} of ${outcome.pairsTotal}")

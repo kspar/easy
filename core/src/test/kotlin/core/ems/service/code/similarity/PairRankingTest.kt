@@ -29,14 +29,18 @@ class PairRankingTest {
         private val slowPairs: Int = Int.MAX_VALUE,
         /** A quick bound that is the exact one, as JPlag's is. */
         private val quickIsExact: Boolean = false,
+        /** The clock [scoreMs] and [boundMs] are spent on. */
+        private val clock: ManualTicker = ManualTicker(),
     ) : ProviderSession {
         override val quickBoundIsExact get() = quickIsExact
 
         val calls = AtomicInteger()
         val bounds = AtomicInteger()
 
-        /** Drawn from the pair itself, so that which worker asks first changes nothing. */
-        /** Score, rank and similarity, each drawn on its own: no order of one is an order of another. */
+        /**
+         * Score, rank and similarity, drawn from the pair itself, so that which worker asks first changes
+         * nothing, and each on its own: no order of one is an order of another.
+         */
         fun of(a: Long, b: Long): Triple<Double, Double, Double> {
             val random = Random(seed * 1_000_003L + minOf(a, b) * 10_000 + maxOf(a, b))
             return Triple(random.nextDouble(), random.nextDouble() * 500, random.nextDouble())
@@ -50,14 +54,14 @@ class PairRankingTest {
         override fun score(a: Long, b: Long): PairScore {
             // As a provider polling its deadline in the middle of a pair would.
             if (calls.incrementAndGet() > failAfter) throw SimilarityTimedOut(1)
-            if (scoreMs > 0 && calls.get() <= slowPairs) Thread.sleep(scoreMs)
+            if (scoreMs > 0 && calls.get() <= slowPairs) clock.advance(scoreMs)
             val (score, rank, similarity) = of(a, b)
             return PairScore(minOf(a, b), maxOf(a, b), score, rank, similarity, null)
         }
 
         override fun bound(a: Long, b: Long): PairBound {
             bounds.incrementAndGet()
-            if (boundMs > 0) Thread.sleep(boundMs)
+            if (boundMs > 0) clock.advance(boundMs)
             val (score, rank, similarity) = of(a, b)
             return PairBound(score, rank, similarity)
         }
@@ -72,8 +76,8 @@ class PairRankingTest {
 
     private fun comparands(n: Int, authors: Int = n) = (1L..n).map { Comparand(it, listOf(it), listOf("s${it % authors}")) }
 
-    private fun <R> ranking(threads: Int, budgetMs: Long = 60_000, block: (PairRanking) -> R): R =
-        SimilarityWorkers(threads, 1L shl 20).use { block(PairRanking(it, Deadline.after(TimeUnit.MILLISECONDS.toNanos(budgetMs)), 60)) }
+    private fun <R> ranking(threads: Int, budgetMs: Long = 60_000, clock: Ticker = ManualTicker(), block: (PairRanking) -> R): R =
+        SimilarityWorkers(threads, 1L shl 20).use { block(PairRanking(it, Deadline.after(TimeUnit.MILLISECONDS.toNanos(budgetMs), clock), 60)) }
 
     private fun ids(ranking: Ranking) = ranking.top.map { "${it.lowId}-${it.highId}" }
 
@@ -101,13 +105,13 @@ class PairRankingTest {
         // and that phase threw, partial or not.
         // A worker's share of a batch is 32 pairs, 1.6 s of bounds here: stopped only between batches, the
         // run would outlast its 300 ms by more than a second.
-        val session = Drawn(seed = 6, boundMs = 50)
-        val started = System.nanoTime()
-        val stopped = ranking(2, budgetMs = 300) { it.rankBounded(session, comparands(30), 5, partial = true) }
-        val tookMs = (System.nanoTime() - started) / 1_000_000
+        val clock = ManualTicker()
+        val session = Drawn(seed = 6, boundMs = 50, clock = clock)
+        val stopped = ranking(2, budgetMs = 300, clock = clock) { it.rankBounded(session, comparands(30), 5, partial = true) }
         assertFalse(stopped.complete)
         assertTrue(stopped.compared in 1 until stopped.total, "compared ${stopped.compared} of ${stopped.total}")
-        assertTrue(tookMs < 1_200, "stopped only after ${tookMs}ms")
+        // Past the 300 ms by at most one bound a worker had started before it.
+        assertTrue(clock.millis <= 300 + 2 * 50, "stopped only after ${clock.millis}ms")
     }
 
     @Test
@@ -126,12 +130,11 @@ class PairRankingTest {
     fun `a full run its own pace says cannot finish is refused early, as too costly, not at the deadline`() {
         // 190 pairs at 20 ms on one thread is about 4 s against a budget of one: priced too low, the run
         // used to hold the permit the whole second and then time out. Measured at a tenth of it, it stops.
-        val started = System.nanoTime()
+        val clock = ManualTicker()
         val refused = assertThrows<SimilarityTooCostly> {
-            ranking(1, budgetMs = 1_000) { it.rank(Drawn(seed = 3, scoreMs = 20), comparands(20), 5) }
+            ranking(1, budgetMs = 1_000, clock = clock) { it.rank(Drawn(seed = 3, scoreMs = 20, clock = clock), comparands(20), 5) }
         }
-        val tookMs = (System.nanoTime() - started) / 1_000_000
-        assertTrue(tookMs < 700, "refused only after ${tookMs}ms")
+        assertTrue(clock.millis < 200, "refused only after ${clock.millis}ms")
         assertEquals(190, refused.estimate.pairs)
     }
 
@@ -140,7 +143,8 @@ class PairRankingTest {
         // A cold JVM's first pairs are the slowest: three at 30 ms, then the rest at once. Read at the first
         // pair, that pace was 190 pairs at 30 ms against a budget of one second, and the run was refused;
         // read once a tenth of the budget is spent, it is what it is.
-        val ranked = ranking(1, budgetMs = 1_000) { it.rank(Drawn(seed = 3, scoreMs = 30, slowPairs = 3), comparands(20), 5) }
+        val clock = ManualTicker()
+        val ranked = ranking(1, budgetMs = 1_000, clock = clock) { it.rank(Drawn(seed = 3, scoreMs = 30, slowPairs = 3, clock = clock), comparands(20), 5) }
         assertEquals(190, ranked.compared)
     }
 
@@ -148,7 +152,8 @@ class PairRankingTest {
     fun `the pace counts every pair but an author's own, as the stripes compare them`() {
         // 20 comparands by 5 authors, four each: 190 pairs less 5 times the 6 among each author's own.
         val refused = assertThrows<SimilarityTooCostly> {
-            ranking(1, budgetMs = 1_000) { it.rank(Drawn(seed = 3, scoreMs = 20), comparands(20, authors = 5), 5) }
+            val clock = ManualTicker()
+            ranking(1, budgetMs = 1_000, clock = clock) { it.rank(Drawn(seed = 3, scoreMs = 20, clock = clock), comparands(20, authors = 5), 5) }
         }
         assertEquals(160, refused.estimate.pairs)
     }
@@ -163,7 +168,8 @@ class PairRankingTest {
 
     @Test
     fun `a full run that keeps pace with its budget is not refused`() {
-        val ranked = ranking(1, budgetMs = 2_000) { it.rank(Drawn(seed = 3, scoreMs = 1), comparands(20), 5) }
+        val clock = ManualTicker()
+        val ranked = ranking(1, budgetMs = 2_000, clock = clock) { it.rank(Drawn(seed = 3, scoreMs = 1, clock = clock), comparands(20), 5) }
         assertEquals(190, ranked.compared)
     }
 

@@ -84,21 +84,34 @@ class SolutionTooLarge(val limit: Int) : SolutionRefused("Solution has more than
 class SolutionTooComplex(message: String) : SolutionRefused(message)
 
 /**
- * A point on [System.nanoTime]'s clock, and whether it has passed.
- *
- * Compared the way that clock's documentation asks, `now - deadline >= 0` rather than `now >= deadline`:
- * its values can be negative and can wrap, and the plain comparison is wrong across a wrap. The
- * practical case is a budget large enough to mean "no limit", which saturates to `Long.MAX_VALUE`
- * nanoseconds and wraps the sum - refusing every run at once, where the difference reads "never".
+ * Where the engine reads the time (EZ-1667): [System.nanoTime] in the running server, or a test's own
+ * clock that moves only when the test moves it - so a test of a budget is not a race between a sleep and
+ * the work, decided by how loaded the machine running it is.
  */
-@JvmInline
-internal value class Deadline private constructor(private val at: Long) {
-    fun passed(): Boolean = System.nanoTime() - at >= 0
-
-    /** How long is left, or a negative number once it has passed. */
-    fun remainingNanos(): Long = at - System.nanoTime()
+fun interface Ticker {
+    fun nanos(): Long
 
     companion object {
-        fun after(nanos: Long) = Deadline(System.nanoTime() + nanos)
+        val SYSTEM = Ticker { System.nanoTime() }
+    }
+}
+
+/**
+ * A point on a [Ticker]'s clock, and whether it has passed.
+ *
+ * Compared the way [System.nanoTime]'s documentation asks, `now - deadline >= 0` rather than
+ * `now >= deadline`: its values can be negative and can wrap, and the plain comparison is wrong across a
+ * wrap. The practical case is a budget large enough to mean "no limit", which saturates to
+ * `Long.MAX_VALUE` nanoseconds and wraps the sum - refusing every run at once, where the difference reads
+ * "never".
+ */
+internal class Deadline private constructor(private val at: Long, val ticker: Ticker) {
+    fun passed(): Boolean = ticker.nanos() - at >= 0
+
+    /** How long is left, or a negative number once it has passed. */
+    fun remainingNanos(): Long = at - ticker.nanos()
+
+    companion object {
+        fun after(nanos: Long, ticker: Ticker = Ticker.SYSTEM) = Deadline(ticker.nanos() + nanos, ticker)
     }
 }

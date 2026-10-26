@@ -204,7 +204,7 @@ class EditDistanceTest {
             assertEquals(text.toByteArray(Charsets.UTF_8).size, EditDistanceProvider.utf8Length(text))
             assertTrue(EditDistanceProvider.utf8Length(text) >= text.length)
         }
-        val provider = EditDistanceProvider(maxSolutionChars = 24)
+        val provider = EditDistanceProvider(maxSolutionBytes = 24)
         assertTrue(provider.compares(24))
         assertTrue(!provider.compares(25))
         SimilarityWorkers(1, 1L shl 20).use { workers ->
@@ -220,7 +220,7 @@ class EditDistanceTest {
 
     @Test
     fun `a solution above the character cap is skipped as too large, and a blank one as too small`() {
-        val provider = EditDistanceProvider(maxSolutionChars = 10)
+        val provider = EditDistanceProvider(maxSolutionBytes = 10)
         SimilarityWorkers(1, 1L shl 20).use { workers ->
             val run = RunContext(workers, Deadline.after(TimeUnit.SECONDS.toNanos(60)), 60)
             val sources = listOf(SimilaritySource(1, "print(1)"), SimilaritySource(2, "x".repeat(11)), SimilaritySource(3, "  \n"), SimilaritySource(4, "print(2)"))

@@ -14,12 +14,12 @@ import java.util.concurrent.ConcurrentHashMap
  * What it does not do, it says: it has no match ranges, so [details] is empty and the page shows the
  * difference itself.
  *
- * [maxSolutionChars] bounds what one pair can cost. The ratio is |a|·|b|/64 word steps, so two
+ * [maxSolutionBytes] bounds what one pair can cost. The ratio is |a|·|b|/64 word steps, so two
  * solutions at the bound cost about six million - milliseconds - and one above it is skipped as
  * TOO_LARGE rather than holding the permit for longer.
  */
 internal class EditDistanceProvider(
-    private val maxSolutionChars: Int = DEFAULT_MAX_SOLUTION_CHARS,
+    private val maxSolutionBytes: Int = DEFAULT_MAX_SOLUTION_BYTES,
 ) : SimilarityProvider {
 
     override val id = ID
@@ -37,18 +37,18 @@ internal class EditDistanceProvider(
     override val bounds = true
 
     /** Its bigrams, sorted: measured at about 100 ns a character. */
-    override fun prepareNanos(chars: Int): Long = 100L * chars
+    override fun prepareNanos(bytes: Int): Long = 100L * bytes
 
     /**
      * The bit-parallel LCS walks the longer text once per 64 characters of the shorter, measured at
      * about 7 ns a step on one core; Dice merges two sorted bigram lists. 500 solutions of 2.7 KB come
      * to 104 s here, against 100 s measured.
      */
-    override fun pairNanos(charsA: Int, charsB: Int): Long =
-        7L * ((minOf(charsA, charsB) + 63) / 64) * maxOf(charsA, charsB) + 2L * (charsA + charsB) + 2_000
+    override fun pairNanos(bytesA: Int, bytesB: Int): Long =
+        7L * ((minOf(bytesA, bytesB) + 63) / 64) * maxOf(bytesA, bytesB) + 2L * (bytesA + bytesB) + 2_000
 
     /** Blank solutions are too small and those above the cap, in UTF-8 bytes, too large; neither is compared. */
-    override fun compares(chars: Int): Boolean = chars in 1..maxSolutionChars
+    override fun compares(bytes: Int): Boolean = bytes in 1..maxSolutionBytes
 
     /** Characters are characters in every language, so every language is compared as itself. */
     override fun comparesAs(language: SimilarityLanguage): SimilarityLanguage = language
@@ -89,7 +89,7 @@ internal class EditDistanceProvider(
                     source.solution.isBlank() -> skipped += SkippedSubmission(source.id, "TOO_SMALL")
                     // In UTF-8 bytes, as the estimate reads them from the database, so it skips what this
                     // skips; counted differently, the two disagreed and the estimate priced pairs this never ran.
-                    utf8Length(source.solution) > maxSolutionChars ->
+                    utf8Length(source.solution) > maxSolutionBytes ->
                         skipped += SkippedSubmission(source.id, "TOO_LARGE")
                     else -> usable += source.id
                 }
@@ -168,7 +168,7 @@ internal class EditDistanceProvider(
         const val ID = "edit-distance"
 
         /** About 20,000 characters - bytes, counted as the database does - some 600 lines, well past an ordinary solution. */
-        const val DEFAULT_MAX_SOLUTION_CHARS = 20_000
+        const val DEFAULT_MAX_SOLUTION_BYTES = 20_000
 
         /** [text]'s length in UTF-8 bytes, Postgres's `octet_length`, without encoding it. */
         internal fun utf8Length(text: String): Int {

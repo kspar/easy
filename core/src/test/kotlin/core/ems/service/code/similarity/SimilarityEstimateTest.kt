@@ -39,7 +39,7 @@ class SimilarityEstimateTest {
         val estimate = service().estimate(editDistance, sources)
         assertEquals(1, estimate.pairs)
         // Every submission is still prepared; only the one pair is scored.
-        assertEquals(sources.sumOf { provider.prepareNanos(it.chars) } + provider.pairNanos(200, 300), estimate.wallNanos)
+        assertEquals(sources.sumOf { provider.prepareNanos(it.bytes) } + provider.pairNanos(200, 300), estimate.wallNanos)
     }
 
     @Test
