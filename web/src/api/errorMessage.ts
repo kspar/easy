@@ -45,6 +45,9 @@ const CODE_KEYS: Record<string, string> = {
   EXERCISE_NOT_AUTOASSESSABLE: 'errors.exerciseNotAutoassessable',
   EXERCISE_WRONG_SOLUTION_TYPE: 'errors.exerciseWrongSolutionType',
   INVALID_PARAMETER_VALUE: 'errors.invalidParameterValue',
+  // Usually pasted in from a terminal or a binary file, and invisible in the editor, so the sentence
+  // has to say what to look for. `attrs.field` is a wire name and not worth showing.
+  TEXT_CONTAINS_NUL: 'errors.textContainsNul',
 
   // Grading and Moodle — transient, and the advice differs from "something went wrong".
   ASSESSMENT_AWAIT_TIMEOUT: 'errors.assessmentAwaitTimeout',

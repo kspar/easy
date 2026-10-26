@@ -38,6 +38,10 @@ enum class ReqError(val errorCodeStr: String) {
 
     BUG_REPORT_RATE_LIMITED("BUG_REPORT_RATE_LIMITED"),
 
+    // A string in the request body contains U+0000, which PostgreSQL text cannot store. Attribute
+    // `field` names it by wire name. See core.conf.RejectNulCharacters.
+    TEXT_CONTAINS_NUL("TEXT_CONTAINS_NUL"),
+
     // EZ-1712. The course has no AI provider configured; a submission that is not the student's
     // latest failed one; the provider answered with an error or not at all.
     AI_NOT_CONFIGURED("AI_NOT_CONFIGURED"),
