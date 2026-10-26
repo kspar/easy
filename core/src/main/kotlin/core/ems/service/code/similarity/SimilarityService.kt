@@ -86,7 +86,7 @@ class SimilarityService(
     /** Every provider installed, and the choice between them; see [bind]. */
     internal var registry = SimilarityRegistry(listOf(jplag, EditDistanceProvider()))
 
-    /** Whether a full run is refused once its pace says it cannot finish; see `PairRanking.Pace`. Off only in a test of the deadline. */
+    /** Whether preparing, and a full run's pairs, are refused once their pace says they cannot finish; see [RunPace]. Off only in a test of the deadline. */
     internal var projectRuns = true
 
     /**
@@ -304,7 +304,7 @@ class SimilarityService(
         val threads = threadsFor(sources.size)
 
         SimilarityWorkers(threads, WORKER_STACK_BYTES).use { workers ->
-            provider.open(ProviderRequest(language, sources, baseCode, textAllowed), RunContext(workers, deadline, timeoutSec)).use { session ->
+            provider.open(ProviderRequest(language, sources, baseCode, textAllowed), RunContext(workers, deadline, timeoutSec, projectRuns)).use { session ->
                 val bytesById = sources.associate { it.id to utf8Length(it.solution) }
                 val prepareStart = ticker.nanos()
                 val cohort = session.prepare()

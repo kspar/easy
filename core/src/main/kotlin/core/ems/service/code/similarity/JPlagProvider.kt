@@ -217,11 +217,19 @@ internal class JPlagProvider(
 
         override fun prepare(): PreparedCohort {
             val template = request.template?.takeIf { it.isNotBlank() }
+            // Tokenising cannot stop part way with anything to show, so a cohort it would spend the budget on
+            // is refused at its pace, not at the deadline: the estimate prices it from a model of one
+            // machine's speed, and on a slower server - or with solutions slower to parse than their size
+            // says - a run spent the whole budget here and found nothing.
+            fun pace() = if (!run.project) null else RunPace(run.deadline, run.budgetSec, sources.size.toLong(), "solutions tokenised") { wall ->
+                SimilarityEstimate(sources.size, 0, run.workers.threads, wall, run.budgetSec)
+            }
+            var pace = pace()
             // The template too, when there is one, on the pool like everything else: it is parsed inside
             // the permit, cannot be interrupted, and needs the pool's stack as much as a submission does.
             fun tokenise(language: SimilarityLanguage, indices: IntRange, withTemplate: Boolean) = run.workers.all(
                 indices.map { i ->
-                    { tokeniseOne("Submission ${sources[i].id}", files[i], sources[i].solution, language, run) }
+                    { tokeniseOne("Submission ${sources[i].id}", files[i], sources[i].solution, language, run).also { pace?.done() } }
                 } + listOfNotNull(template?.takeIf { withTemplate }?.let { { tokeniseOne("The exercise template", BASE_CODE, it, language, run) } }),
             )
 
@@ -239,6 +247,8 @@ internal class JPlagProvider(
             if (mayFallBack && mostlyNotIn(results.take(sources.size))) {
                 log.info { "Most of this cohort did not parse as ${language.wireName}; comparing it as text instead" }
                 language = SimilarityLanguage.TEXT
+                // Tokenised again, from the start: a pace of its own, read against the time now left.
+                pace = pace()
                 results = tokenise(language, sources.indices, withTemplate = true)
             }
             val minTokenMatch = language.frontend.minimumTokenMatch

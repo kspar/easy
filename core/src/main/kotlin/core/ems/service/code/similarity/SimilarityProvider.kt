@@ -84,7 +84,13 @@ internal class ProviderRequest(
  * for the refusal to name. A session reads the deadline wherever it can stop, and runs its parallel
  * work on [workers] rather than threads of its own, so that the permit bounds all of it.
  */
-internal class RunContext(val workers: SimilarityWorkers, val deadline: Deadline, val budgetSec: Long)
+internal class RunContext(
+    val workers: SimilarityWorkers,
+    val deadline: Deadline,
+    val budgetSec: Long,
+    /** Whether work that would only time out is refused at its pace; see [RunPace]. Off only in a test of the deadline itself. */
+    val project: Boolean = true,
+)
 
 /**
  * One cohort, from preparing it to the last pair's details.

@@ -382,13 +382,15 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
     fun `a run past its budget is refused as SIMILARITY_TIMEOUT with the budget, not a 500`() {
         // The context's service has the test config's 120 s, which no fixture here can spend, so the
         // controller is driven directly over a service with one second, and a tokeniser slower than
-        // that. Not a budget of none: that is now priced and refused before the run (see below), and the
-        // timeout is still what an estimate that came out too low ends in. The mapping is under test.
+        // that. Not a budget of none: that is now priced and refused before the run (see below). And with
+        // the pace off, which would refuse this one first: a run its pace lets through, being near the
+        // line, still ends in the timeout when it crosses it. The mapping is under test.
         val clock = ManualTicker()
         val service = SimilarityService(
             maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000,
             timeoutSec = 1, ticker = clock,
         )
+        service.projectRuns = false
         service.tokenise = { language, id, source, maxTokens ->
             clock.advance(1_200)
             language.read(id, source, maxTokens)

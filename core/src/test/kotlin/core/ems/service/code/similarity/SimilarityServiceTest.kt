@@ -936,6 +936,8 @@ class SimilarityServiceTest {
                 language.read(id, solution, maxTokens)
             }
             it.comparePair = { gst, first, second -> compared.incrementAndGet(); gst.compare(first, second) }
+            // The deadline itself, behind the pace that would otherwise refuse this run first.
+            it.projectRuns = false
         }
         // A tail of its own length each: identical, they were one group, and no pair was compared anyway.
         val sources = (1L..100L).map { SimilaritySource(it, original + "\n" + "print($it)\n".repeat(it.toInt())) }
@@ -943,6 +945,52 @@ class SimilarityServiceTest {
         assertThrows<SimilarityTimedOut> { slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
         assertTrue(tokenised.get() <= 21, "tokenised ${tokenised.get()} of 100 solutions on a one-second budget of 50 ms each")
         assertEquals(0, compared.get(), "a pair was compared although the budget was spent while tokenising")
+    }
+
+    @Test
+    fun `tokenising whose pace says it cannot finish is refused as too costly before the deadline`() {
+        // Tokenising has nothing to show part way, so a cohort it would spend the budget on held the one
+        // permit to the deadline and then timed out. 100 solutions at 50 ms of the test's clock on one
+        // thread is 5 s against a budget of one: a tenth of it shows that, and the rest is never read.
+        val tokenised = AtomicInteger()
+        val clock = ManualTicker()
+        val slow = service(timeoutSec = 1, clock = clock).also {
+            it.threadsFor = { 1 }
+            it.tokenise = { language, id, solution, maxTokens ->
+                tokenised.incrementAndGet()
+                clock.advance(50)
+                language.read(id, solution, maxTokens)
+            }
+        }
+        val sources = (1L..100L).map { SimilaritySource(it, original + "\n" + "print($it)\n".repeat(it.toInt())) }
+
+        val refused = assertThrows<SimilarityTooCostly> { slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
+        assertTrue(refused.estimate.seconds >= 5, "projected only ${refused.estimate.seconds}s")
+        assertTrue(tokenised.get() <= 3, "tokenised ${tokenised.get()} of 100 solutions before the pace was read")
+    }
+
+    @Test
+    fun `tokenising again as text is paced afresh, against the time then left`() {
+        // A cohort that is not in its language is read twice: a sample in it, then everything as text. The
+        // second pass carried on the first's count, so twenty cheap reads made a slow text pass look a
+        // fifth done when its pace was read, and it ran to the deadline. Here reading as Python costs
+        // nothing and as text 50 ms, so the text pass alone is 5 s against a budget of one.
+        val asText = AtomicInteger()
+        val clock = ManualTicker()
+        val slow = service(timeoutSec = 1, clock = clock).also {
+            it.threadsFor = { 1 }
+            it.tokenise = { language, id, solution, maxTokens ->
+                if (language == SimilarityLanguage.TEXT) {
+                    asText.incrementAndGet()
+                    clock.advance(50)
+                }
+                language.read(id, solution, maxTokens)
+            }
+        }
+        val sources = (1L..100L).map { SimilaritySource(it, essays[it.toInt() % essays.size] + "\nLõpetuseks veel mõte number $it.") }
+
+        assertThrows<SimilarityTooCostly> { slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
+        assertTrue(asText.get() <= 3, "read ${asText.get()} of 100 solutions as text before the pace was read")
     }
 
     @Test
@@ -957,6 +1005,7 @@ class SimilarityServiceTest {
                 if (solution == original) clock.advance(1_200)
                 language.read(id, solution, maxTokens)
             }
+            it.projectRuns = false
         }
         val sources = listOf(SimilaritySource(1, ""), SimilaritySource(2, original))
 
