@@ -21,6 +21,20 @@ internal class ManualTicker : Ticker {
 }
 
 /**
+ * A clock of each thread's own, moved only by that thread: the time each worker itself spent, so that what
+ * one worker's slow task takes is not the others' time as well, as it is on a shared clock.
+ */
+internal class PerThreadTicker : Ticker {
+    private val now = ThreadLocal.withInitial { AtomicLong() }
+
+    override fun nanos(): Long = now.get().get()
+
+    fun advance(millis: Long) {
+        now.get().addAndGet(TimeUnit.MILLISECONDS.toNanos(millis))
+    }
+}
+
+/**
  * A clock that moves [stepNanos] each time it is read: work that reads the time as it goes - every pair,
  * every few rows of a long one - spends it in proportion, on any machine, for a provider with no hook of
  * its own to slow down.

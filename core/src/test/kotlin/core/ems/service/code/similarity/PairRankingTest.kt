@@ -38,6 +38,8 @@ class PairRankingTest {
          * the pairs reached first, so a run has set its floors and ruled pairs out before one is caught.
          */
         private val unsoundBelow: Double = 0.0,
+        /** Bounds of nothing for the pairs scoring above this, sound for the rest: wrong exactly on pairs they rule out. */
+        private val hiddenAbove: Double = 2.0,
     ) : ProviderSession {
         override val quickBoundIsExact get() = quickIsExact
 
@@ -72,6 +74,7 @@ class PairRankingTest {
             val (score, rank, similarity) = of(a, b)
             if (unsound) return PairBound(score / 2, rank / 2, similarity / 2)
             if (similarity < unsoundBelow) return PairBound(score - 0.001, rank - 0.001, similarity - 0.001)
+            if (score > hiddenAbove) return PairBound(0.0, 0.0, 0.0)
             return PairBound(score, rank, similarity)
         }
 
@@ -79,6 +82,7 @@ class PairRankingTest {
         override fun quickBound(a: Long, b: Long): PairBound {
             val (score, rank, similarity) = of(a, b)
             if (unsound) return PairBound(score / 2, rank / 2, similarity / 2)
+            if (score > hiddenAbove) return PairBound(0.0, 0.0, 0.0)
             if (quickIsExact) return PairBound(score, rank, similarity)
             return PairBound(minOf(1.0, score + 0.2), rank + 100, 0.5 + similarity / 2)
         }
@@ -130,7 +134,19 @@ class PairRankingTest {
     }
 
     @Test
-    fun `pairs the quick bound already rules out are never bounded exactly`() {
+    fun `bounds wrong only on the pairs they rule out are caught by scoring some of those anyway`() {
+        // Nothing for the pairs that score highest, sound for the rest: every pair the bounds let through
+        // scores under them, so checking those alone never caught it, and the run left the best pairs out.
+        for (threads in listOf(1, 3)) {
+            val full = ranking(threads) { it.rank(Drawn(seed = 7), comparands(40), 5) }
+            val caught = ranking(threads) { it.rankBounded(Drawn(seed = 7, hiddenAbove = 0.8), comparands(40), 5, partial = false) }
+            assertEquals(ids(full), ids(caught), "on $threads thread(s)")
+            assertTrue(caught.boundsViolation != null, "on $threads thread(s)")
+        }
+    }
+
+    @Test
+    fun `pairs the quick bound already rules out are not bounded exactly, but for the few audited`() {
         // The quick bounds order everything for free; the exact ones are for the pairs reached.
         val session = Drawn(seed = 4)
         val ranked = ranking(2) { it.rankBounded(session, comparands(40), 3, partial = false) }

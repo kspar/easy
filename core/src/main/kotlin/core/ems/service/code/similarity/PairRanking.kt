@@ -2,7 +2,6 @@ package core.ems.service.code.similarity
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.PriorityQueue
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -87,15 +86,13 @@ internal class PairRanking(
     private val log = KotlinLogging.logger {}
 
     /** One worker's time the scored pairs took, and what the model predicted for them: read by [Calibration]. */
-    val scoredNanos = AtomicLong()
-    val predictedNanos = AtomicLong()
+    val scored = Spent()
 
     /** [ProviderSession.score], timed for [Calibration]. */
     private fun timedScore(session: ProviderSession, a: Long, b: Long): PairScore? {
         val started = deadline.ticker.nanos()
         val pair = session.score(a, b)
-        scoredNanos.addAndGet(deadline.ticker.nanos() - started)
-        predictedNanos.addAndGet(pairCost(a, b))
+        scored.add(deadline.ticker.nanos() - started, pairCost(a, b))
         return pair
     }
 
@@ -131,11 +128,14 @@ internal class PairRanking(
      * With [partial], the deadline ends the run with what it has, flagged incomplete, instead of refusing
      * it: the likeliest pairs having gone first, what is kept by then is the best the budget could find.
      *
-     * The bounds are checked as the run goes: every scored pair against the bounds it was let through on.
-     * One scoring above them means the provider's bounds are wrong - a JPlag upgrade that changed how it
-     * divides, say, which no test of ours saw - and the pairs they ruled out may belong in the top. Then
-     * nothing more is ruled out, every pair passed over so far is scored after all, and the run says so in
-     * [Ranking.boundsViolation]: the result is exact again, or stops at the deadline flagged incomplete.
+     * The bounds are checked as the run goes: every scored pair against the bounds it was let through on,
+     * and one in [AUDIT_EVERY] of the pairs they rule out scored anyway, against the bounds that ruled it out
+     * (see [audited]). One scoring above them means the provider's bounds are wrong - a JPlag upgrade that
+     * changed how it divides, say, which no test of ours saw - and the pairs they ruled out may belong in the
+     * top. Then nothing more is ruled out, every pair passed over so far is scored after all, and the run
+     * says so in [Ranking.boundsViolation]: the result is exact again, or stops at the deadline flagged
+     * incomplete. A bound wrong on a few pairs only may still go unseen; one wrong on a kind of pair - those
+     * with the template, say - is caught.
      */
     fun rankBounded(session: ProviderSession, comparands: List<Comparand>, topN: Int, partial: Boolean): Ranking {
         // Ordered by the quick bounds, which cost little; the exact ones are computed by the workers, pair by
@@ -179,8 +179,9 @@ internal class PairRanking(
             while (next < work.size && batch.size < batchSize) {
                 val candidate = work[next++]
                 when {
-                    pruning && candidate.bound.score < MIN_REPORTED_SIMILARITY -> passedOver += Worked(candidate, null, skipped = true, ruledOut = false)
-                    pruning && floors.rulesOut(candidate.bound) -> passedOver += Worked(candidate, null, skipped = true, ruledOut = true)
+                    !pruning || audited(candidate) -> batch += candidate
+                    candidate.bound.score < MIN_REPORTED_SIMILARITY -> passedOver += Worked(candidate, null, skipped = true, ruledOut = false)
+                    floors.rulesOut(candidate.bound) -> passedOver += Worked(candidate, null, skipped = true, ruledOut = true)
                     else -> batch += candidate
                 }
             }
@@ -231,6 +232,16 @@ internal class PairRanking(
     }
 
     /**
+     * Whether [candidate] is scored although its bounds rule it out, to check them on the pairs they rule
+     * out as well: every pair a bound lets through is checked, but one wrong exactly where it rules pairs
+     * out - copies bounded below the floor - left every scored pair under its bound and was never caught.
+     * One in [AUDIT_EVERY], chosen by its ids, so the same pairs on any number of threads. Its bounds sound,
+     * an audited pair is below both floors or under 1%, so it enters neither top N and the result is unchanged.
+     */
+    private fun audited(candidate: Candidate): Boolean =
+        Math.floorMod(minOf(candidate.a, candidate.b) * 1_000_003L + maxOf(candidate.a, candidate.b), AUDIT_EVERY) == 0L
+
+    /**
      * A pair a worker reached, or the run passed over: scored, or [skipped] by its bound - [ruledOut] by
      * the floors, or else below what the page shows as 1%.
      */
@@ -238,7 +249,8 @@ internal class PairRanking(
 
     /**
      * [chunk]'s pairs in order: each bounded exactly, and scored unless that rules it out against [floors] -
-     * the floors at the batch's start, which only rise, so a pair ruled out by them is out for good. With
+     * the floors at the batch's start, which only rise, so a pair ruled out by them is out for good - or it
+     * is [audited], and scored anyway. With
      * [partial], it stops at the deadline - before a pair, or in the middle of one, which the provider ends
      * by throwing - and returns those it finished: thrown, the timeout lost the whole batch, and on a cold
      * JVM, whose first pairs are slow, that was every pair.
@@ -262,7 +274,7 @@ internal class PairRanking(
                 session.quickBoundIsExact -> candidate.bound
                 else -> session.bound(candidate.a, candidate.b) ?: candidate.bound
             }
-            if (exact != null && (exact.score < MIN_REPORTED_SIMILARITY || floors.rulesOut(exact))) {
+            if (exact != null && (exact.score < MIN_REPORTED_SIMILARITY || floors.rulesOut(exact)) && !audited(candidate)) {
                 done += Worked(candidate, null, skipped = true, ruledOut = exact.score >= MIN_REPORTED_SIMILARITY)
                 continue
             }
@@ -377,6 +389,9 @@ internal class PairRanking(
          * to a few pairs while the floors are seldom more than a batch out of date.
          */
         private const val BATCH_PER_THREAD = 32
+
+        /** One in this many pairs the bounds rule out is scored anyway, to check them: some 1.5% more pairs scored. */
+        private const val AUDIT_EVERY = 64L
 
         /**
          * The ranking the page shows: most shared first, then highest score, then highest similarity,

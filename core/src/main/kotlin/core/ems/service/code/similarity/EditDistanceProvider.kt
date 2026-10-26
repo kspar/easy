@@ -14,8 +14,14 @@ import java.util.concurrent.ConcurrentHashMap
  * Dice over bigram *sets* is high for any two programs in one language - they share their keywords,
  * operators and indentation - and the score used to be the higher of the two, as the old page filtered on:
  * the stress test of EZ-1667 found pairs scored 80% whose ratio was 0%, so the highest-scoring list and the
- * page's threshold were mostly that noise, and the optimised mode, ruling pairs out below the score of
- * the hundredth, compared 98% of a cohort.
+ * page's threshold were mostly that noise.
+ *
+ * What the ratio's bound buys the optimised mode is the order - likeliest first, so a run stopped at its
+ * budget has the best pairs - not pruning: unrelated solutions in one language are 60-70% alike character
+ * by character, so for a cohort of like lengths the bound sits about where the hundredth best pair does
+ * (see [EditDistance.lcsBound]). The stress test's 250 Python solutions compared 26,126 of 26,565 pairs,
+ * scored by the ratio as by the higher of the two before it; an edit-distance cohort costs about what a full
+ * run does.
  *
  * What it does not do, it says: it has no match ranges, so [details] is empty and the page shows the
  * difference itself.
@@ -91,7 +97,14 @@ internal class EditDistanceProvider(
                     else -> usable += source.id
                 }
             }
-            bigramsById = run.workers.all(usable.map { id -> { id to EditDistance.bigrams(solutionById.getValue(id)) } }).toMap()
+            bigramsById = run.workers.all(
+                usable.map { id ->
+                    {
+                        val solution = solutionById.getValue(id)
+                        id to run.preparing(request.language, prepareNanos(utf8Length(solution))) { EditDistance.bigrams(solution) }
+                    }
+                },
+            ).toMap()
             if (run.deadline.passed()) throw SimilarityTimedOut(run.budgetSec)
             return PreparedCohort(
                 language = request.language,

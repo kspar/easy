@@ -474,6 +474,7 @@
       "language": { "kind": "string" }
     },
     "core.ems.service.code.TeacherCheckSimilarityController.Req": {
+      "course_exercise_id": { "kind": "string", "nullable": true },
       "courses": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.ReqCourse" },
       "students": { "kind": "array", "nullable": true, "type": "core.ems.service.code.TeacherCheckSimilarityController.ReqStudent" },
       "submissions": { "kind": "array", "nullable": true, "type": "core.ems.service.code.TeacherCheckSimilarityController.ReqSubmission" }

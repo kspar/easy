@@ -994,6 +994,26 @@ class SimilarityServiceTest {
     }
 
     @Test
+    fun `the tokenising pace counts what each solution costs, so large ones first do not make a cohort that fits look long`() {
+        // Five large solutions and then 95 small ones, each taking what the cost model says it does: 3 s in
+        // all against a budget of ten. Counted by solutions, the pace read after the five large ones - a tenth
+        // of the budget - took them for a twentieth of the work and refused the cohort as taking 22 s.
+        val clock = ManualTicker()
+        val model = JPlagProvider(10_000, 1_000_000)
+        val slow = service(timeoutSec = 10, clock = clock).also {
+            it.threadsFor = { 1 }
+            it.tokenise = { language, id, solution, maxTokens ->
+                clock.advance(model.prepareNanos(utf8Length(solution)) / 1_000_000)
+                language.read(id, solution, maxTokens)
+            }
+        }
+        val large = "x = 1\n".repeat(17_000)
+        val sources = (1L..100L).map { SimilaritySource(it, (if (it <= 5) large else original + "\n") + "print($it)\n") }
+
+        slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100)
+    }
+
+    @Test
     fun `the budget is read again once every solution is tokenised`() {
         // The last solution starts inside the budget and ends past it. Nothing is left to compare - the
         // other is too small - so without the check after tokenising, the run past its budget answered

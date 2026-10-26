@@ -47,10 +47,16 @@ class TeacherCheckSimilarityController(
      * 3) exerciseId, courseId(s), studentIds — compare those students' submissions, the ones the
      *    attempts setting names: each one's latest, or each one's first. What the page sends.
      *
-     * Students and submissions are not both given: which attempts a named submission stands for is
-     * not a question - it is that one - and the students are named so the setting can answer it. Named
-     * by submission, under the first attempts, each was taken for its author and swapped for their
-     * first, so the same body meant two cohorts by a setting the caller may not have seen (EZ-1667).
+     * A named submission is that one - which attempt it is, is not a question - and students are named
+     * so that the setting can answer it. Named by submission, under the first attempts, each was taken for
+     * its author and swapped for their first, so the same body meant two cohorts by a setting the caller
+     * may not have seen (EZ-1667). The page sends the students' latest submissions as well, for a core
+     * older than students, which reads only those: given both, the students decide and the submissions
+     * are not read.
+     *
+     * A course exercise, when given, is the one the students and the course stand for: an exercise can be
+     * on a course twice, and the page lists - and links to - one of them. Without it, every course exercise
+     * of the exercise on the courses is compared, as it always was.
      *
      * Mode 1 used to compare every submission ever made, so a student appeared once per attempt and
      * matched themselves at ~100%; enough attempts filled the returned-pair cap and pushed the real
@@ -82,6 +88,9 @@ class TeacherCheckSimilarityController(
         @param:JsonProperty("students", required = false)
         @field:Valid
         val students: List<ReqStudent>? = null,
+        @param:JsonProperty("course_exercise_id", required = false)
+        @field:Size(max = 100)
+        val courseExercise: String? = null,
     )
 
     data class ReqCourse(
@@ -254,7 +263,7 @@ class TeacherCheckSimilarityController(
                     "${body.courses.size} course(s), ${body.submissions?.size ?: 0} explicit submission(s), " +
                     "${body.students?.size ?: 0} student(s)"
         }
-        val resolved = requests.resolve(exIdString, body.courses.map { it.id }, body.submissions?.map { it.id }, body.students?.map { it.id }, caller)
+        val resolved = requests.resolve(exIdString, body.courses.map { it.id }, body.courseExercise, body.submissions?.map { it.id }, body.students?.map { it.id }, caller)
         val binding = resolved.binding
         // Priced before the permit: a cohort the budget cannot cover is refused now, by name, rather
         // than after holding the one permit for the whole budget and timing out (EZ-1667).

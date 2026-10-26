@@ -167,9 +167,28 @@ class SimilarityService(
      */
     fun estimate(binding: SimilarityBinding, sources: List<SizedSource>): SimilarityEstimate {
         val provider = checkNotNull(registry.provider(binding.provider)) { "No similarity provider ${binding.provider}" }
-        // Comparands as [comparands] makes them, with the authors of each. Collapsing every identical text
-        // instead priced fifty pairs of identical solutions as fifty comparands where the run compares a
-        // hundred - a quarter of the pairs, admitted to time out.
+        val language = provider.comparesAs(binding.language)
+        // The model's figures, scaled by how this server's runs have compared with them (see [Calibration]).
+        val prepareNanos = (sources.sumOf { provider.prepareNanos(it.bytes) } *
+                calibration.factor(provider.id, language, Calibration.Phase.PREPARE)).toLong()
+        val (pairs, pairNanos) = pairsOf(provider, language, sources)
+        val nanos = prepareNanos + pairNanos
+        val threads = threadsFor(sources.size)
+        // Optimised stops at the budget with the pairs it reached - but only once the cohort is prepared,
+        // and preparing is not stopped part way with anything to show: a cohort JPlag would spend the whole
+        // budget tokenising is priced, and refused, as a full run is. Unpriced, it held the permit for the
+        // budget and then timed out with nothing.
+        val prepared = prepareNanos / threads <= timeoutSec * 1_000_000_000L
+        return SimilarityEstimate(sources.size, pairs, threads, nanos / threads, timeoutSec, binding.optimised && bounds(provider) && prepared)
+    }
+
+    /**
+     * The pairs [sources] would make and one worker's time for them, by the model as this server's runs have
+     * scaled it: comparands as [comparands] makes them, with the authors of each. Collapsing every identical
+     * text instead priced fifty pairs of identical solutions as fifty comparands where the run compares a
+     * hundred - a quarter of the pairs, admitted to time out.
+     */
+    private fun pairsOf(provider: SimilarityProvider, language: SimilarityLanguage, sources: List<SizedSource>): Pair<Long, Long> {
         val comparands = sources.filter { provider.compares(it.bytes) }
             .groupBy { it.digest ?: "#${it.id}" }.values
             .flatMap { same ->
@@ -177,9 +196,6 @@ class SimilarityService(
                 if (authors >= GROUP_AUTHORS) listOf(same.first().bytes to same.mapTo(mutableSetOf()) { it.owner })
                 else same.map { it.bytes to setOf(it.owner) }
             }
-        // The model's figures, scaled by how this server's runs have compared with them (see [Calibration]).
-        val prepareNanos = (sources.sumOf { provider.prepareNanos(it.bytes) } *
-                calibration.factor(provider.id, Calibration.Phase.PREPARE)).toLong()
         var pairNanos = 0L
         var pairs = 0L
         for (i in comparands.indices) for (j in i + 1 until comparands.size) {
@@ -190,14 +206,7 @@ class SimilarityService(
             pairs++
             pairNanos += provider.pairNanos(bytesA, bytesB)
         }
-        val nanos = prepareNanos + (pairNanos * calibration.factor(provider.id, Calibration.Phase.PAIRS)).toLong()
-        val threads = threadsFor(sources.size)
-        // Optimised stops at the budget with the pairs it reached - but only once the cohort is prepared,
-        // and preparing is not stopped part way with anything to show: a cohort JPlag would spend the whole
-        // budget tokenising is priced, and refused, as a full run is. Unpriced, it held the permit for the
-        // budget and then timed out with nothing.
-        val prepared = prepareNanos / threads <= timeoutSec * 1_000_000_000L
-        return SimilarityEstimate(sources.size, pairs, threads, nanos / threads, timeoutSec, binding.optimised && bounds(provider) && prepared)
+        return pairs to (pairNanos * calibration.factor(provider.id, language, Calibration.Phase.PAIRS)).toLong()
     }
 
     /**
@@ -303,15 +312,26 @@ class SimilarityService(
         val ownerById = sources.mapNotNull { source -> source.owner?.let { source.id to it } }.toMap()
         val threads = threadsFor(sources.size)
 
+        val bytesById = sources.associate { it.id to utf8Length(it.solution) }
+        // What the pairs would take once the cohort is prepared, for a refusal while preparing to say what the
+        // whole run would: priced as the estimate prices them, the text itself standing for its fingerprint.
+        val (pairsAfter, pairNanosAfter) = pairsOf(provider, language, sources.map { SizedSource(it.id, bytesById.getValue(it.id), it.owner, it.solution) })
+
         SimilarityWorkers(threads, WORKER_STACK_BYTES).use { workers ->
-            provider.open(ProviderRequest(language, sources, baseCode, textAllowed), RunContext(workers, deadline, timeoutSec, projectRuns)).use { session ->
-                val bytesById = sources.associate { it.id to utf8Length(it.solution) }
+            val context = RunContext(workers, deadline, timeoutSec, projectRuns) { wall ->
+                SimilarityEstimate(sources.size, pairsAfter, threads, wall + pairNanosAfter / threads, timeoutSec)
+            }
+            provider.open(ProviderRequest(language, sources, baseCode, textAllowed), context).use { session ->
                 val prepareStart = ticker.nanos()
-                val cohort = session.prepare()
-                val prepareNanos = ticker.nanos() - prepareStart
-                val prepareMs = prepareNanos / 1_000_000
-                // The whole pool's time, as the model's figures are one worker's.
-                calibration.observe(provider.id, Calibration.Phase.PREPARE, prepareNanos * threads, sources.sumOf { provider.prepareNanos(bytesById.getValue(it.id)) })
+                val cohort = try {
+                    session.prepare()
+                } finally {
+                    // However preparing ends: refused at its pace, it is the run that says most about the model.
+                    context.prepared.forEach { (compared, spent) ->
+                        calibration.observe(provider.id, compared, Calibration.Phase.PREPARE, spent.measured.get(), spent.predicted.get())
+                    }
+                }
+                val prepareMs = (ticker.nanos() - prepareStart) / 1_000_000
 
                 if (cohort.usable.size < 2) {
                     log.info { "Nothing to compare: ${cohort.usable.size} usable of ${sources.size}, ${cohort.skipped.size} skipped" }
@@ -329,7 +349,7 @@ class SimilarityService(
                 val ranking = try {
                     if (bounded) ranker.rankBounded(session, comparands, topN, partial = true) else ranker.rank(session, comparands, topN)
                 } finally {
-                    calibration.observe(provider.id, Calibration.Phase.PAIRS, ranker.scoredNanos.get(), ranker.predictedNanos.get())
+                    calibration.observe(provider.id, cohort.language, Calibration.Phase.PAIRS, ranker.scored.measured.get(), ranker.scored.predicted.get())
                 }
                 ranking.boundsViolation?.let { violation ->
                     untrustedBounds += provider.id

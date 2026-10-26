@@ -74,7 +74,7 @@ class TeacherEstimateSimilarityController(
                     "${body.courses.size} course(s), ${body.submissions?.size ?: 0} explicit submission(s), " +
                     "${body.students?.size ?: 0} student(s)"
         }
-        val resolved = requests.resolve(exIdString, body.courses.map { it.id }, body.submissions?.map { it.id }, body.students?.map { it.id }, caller)
+        val resolved = requests.resolve(exIdString, body.courses.map { it.id }, body.courseExercise, body.submissions?.map { it.id }, body.students?.map { it.id }, caller)
         val estimate = requests.estimate(resolved)
         val provider = checkNotNull(similarityService.registry.provider(resolved.binding.provider))
         return Resp(

@@ -110,8 +110,9 @@ data class SimilarityRun<T>(val rows: List<T>, val outcome: SimilarityOutcome)
 
 /**
  * A submission as the estimate sees it: its size in UTF-8 bytes as every provider counts it, its author, and a fingerprint of its
- * text - never the text, so a cohort can be priced without loading it. Equal fingerprints are compared
- * once, as identical texts are; null is a text of its own.
+ * text - never the text, so a cohort can be priced without loading it; only a run, which has loaded it,
+ * passes the text itself. Equal fingerprints are compared once, as identical texts are; null is a text of
+ * its own.
  */
 data class SizedSource(val id: Long, val bytes: Int, val owner: String? = null, val digest: String? = null)
 

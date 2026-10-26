@@ -423,11 +423,15 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
     )
 
     /** What the page sends: the students it lists, for the attempts setting to choose among. */
-    private fun checkStudents(students: List<String>, path: String = "") = api.post(
+    private fun checkStudents(students: List<String>, path: String = "", courseExercise: Long? = null, submissions: List<Long>? = null) = api.post(
         "/v2/exercises/$exercise/similarity$path",
         api.body(
-            "courses" to listOf(mapOf("id" to course.toString())),
-            "students" to students.map { mapOf("id" to it) },
+            *listOfNotNull(
+                "courses" to listOf(mapOf("id" to course.toString())),
+                "students" to students.map { mapOf("id" to it) },
+                courseExercise?.let { "course_exercise_id" to it.toString() },
+                submissions?.let { ids -> "submissions" to ids.map { mapOf("id" to it.toString()) } },
+            ).toTypedArray(),
         ),
         Auth.asTeacher(teacher),
     )
@@ -521,18 +525,30 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
-    fun `a student on the exercise twice brings the submission the setting names from each, as asking for everyone does`() {
-        // The exercise on the course twice, student-1 with an attempt under both: each is a course
-        // exercise of its own, as the check without students has them, and student-1's two are never
-        // compared with each other.
-        transaction {
-            val again = Fixtures.courseExercise(course, exercise)
-            Fixtures.submission(again, "student-1", number = 1, solution = "print('elsewhere')")
+    fun `a student on the exercise twice brings a submission from each, unless the request names the course exercise`() {
+        // The exercise on the course twice, student-1 with an attempt under both: each is a course exercise
+        // of its own, as the check without students has them, and student-1's two are never compared with
+        // each other. The page lists one of them and links to it, so it names it, and the other's submissions
+        // stay out: brought in, the count disagreed with the page's and their links opened another submission.
+        val again = transaction {
+            Fixtures.courseExercise(course, exercise).also { Fixtures.submission(it, "student-1", number = 1, solution = "print('elsewhere')") }
         }
         assertEquals(200, putSettings(null, attempts = "first").status)
-        val json = checkStudents(listOf("student-1", "student-2")).jsonOrNull!!
-        assertEquals(3, json.get("compared").asInt())
-        assertEquals(2, json.get("pairs_total").asInt())
+        val both = checkStudents(listOf("student-1", "student-2")).jsonOrNull!!
+        assertEquals(3, both.get("compared").asInt())
+        assertEquals(2, both.get("pairs_total").asInt())
+
+        val listed = checkStudents(listOf("student-1", "student-2"), courseExercise = courseExercise).jsonOrNull!!
+        assertEquals(2, listed.get("compared").asInt())
+        assertEquals(setOf(submissions[0].toString(), submissions[1].toString()), listed.get("submissions").toList().map { it.get("id").asString() }.toSet())
+        assertEquals(2, checkStudents(listOf("student-1", "student-2"), "/estimate", courseExercise = courseExercise).jsonOrNull!!.get("submissions").asInt())
+        // The other one's, named, has student-2 with nothing handed in.
+        assertEquals("ENTITY_WITH_ID_NOT_FOUND", checkStudents(listOf("student-1", "student-2"), courseExercise = again).field("code"))
+        // One of another exercise is refused, not taken for an empty cohort.
+        val elsewhere = transaction { Fixtures.courseExercise(course, Fixtures.exercise("Other", teacher)) }
+        val refused = checkStudents(listOf("student-1", "student-2"), courseExercise = elsewhere)
+        assertEquals(400, refused.status)
+        assertEquals("ENTITY_WITH_ID_NOT_FOUND", refused.field("code"))
     }
 
     @Test
@@ -550,18 +566,15 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
-    fun `students and submissions are not named together, and more students than the cap are refused unread`() {
-        val both = api.post(
-            "/v2/exercises/$exercise/similarity",
-            api.body(
-                "courses" to listOf(mapOf("id" to course.toString())),
-                "submissions" to submissions.map { mapOf("id" to it.toString()) },
-                "students" to listOf(mapOf("id" to "student-1")),
-            ),
-            Auth.asTeacher(teacher),
-        )
-        assertEquals(400, both.status)
-        assertEquals("INVALID_PARAMETER_VALUE", both.field("code"))
+    fun `named with their latest submissions as well, the students decide, and more of them than the cap are refused unread`() {
+        // The page sends the students' latest submissions beside them, for a core older than students, which
+        // reads only those and so keeps the group filter. Here the students decide: under the first attempts,
+        // their first is compared, not the latest named beside them.
+        val latest = rewrittenCopy()
+        assertEquals(200, putSettings(null, attempts = "first").status)
+        val both = checkStudents(listOf("student-1", "student-2"), submissions = listOf(latest, submissions[1])).jsonOrNull!!
+        assertEquals("first", both.get("attempts").asString())
+        assertEquals(setOf(submissions[0].toString(), submissions[1].toString()), both.get("submissions").toList().map { it.get("id").asString() }.toSet())
         // Four against the test config's cap of three, two of whom do not exist: refused by count, not
         // looked up and refused as missing.
         val tooMany = checkStudents(listOf("student-1", "student-2", "nobody-1", "nobody-2"))

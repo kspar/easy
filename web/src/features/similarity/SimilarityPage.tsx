@@ -50,6 +50,7 @@ import type { SkippedReason } from './similaritySkipped.ts'
 import { highlightFileName } from './similarityLanguage.ts'
 import { capped, comparedBy, coverage, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
 import { comparesFirstAttempts, estimateRefusal, estimateView, formatDuration, ownSettings } from './similarityEstimate.ts'
+import { similarityRequest } from './similarityRequest.ts'
 import type { ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
 import CourseSimilaritySettingsDialog from '../course-settings/CourseSimilaritySettingsDialog.tsx'
@@ -118,9 +119,9 @@ export default function SimilarityPage() {
 
   // What core says the check would take, before it is asked for (EZ-1667): pairs, about how long, and
   // whether it would be refused as too costly - so the refusal comes before the click, not after it.
-  // The students are the ones `run` sends, memoised so the query's key holds still between renders.
-  const submittedStudents = useMemo(() => submitted.map((r) => r.student_id), [submitted])
-  const { data: estimateData, error: estimateError } = useSimilarityEstimate(selected ? exerciseId : undefined, courseId!, submittedStudents)
+  // The body is the one `run` sends, memoised so the query's key holds still between renders.
+  const request = useMemo(() => similarityRequest(courseId!, selected?.course_exercise_id ?? '', submitted), [courseId, selected, submitted])
+  const { data: estimateData, error: estimateError } = useSimilarityEstimate(selected ? exerciseId : undefined, request)
   const estimate = estimateView(estimateData)
   // A refusal the check would give too: said now, with Find off, rather than after the click.
   const refusedAhead = estimateRefusal(estimateError) !== null
@@ -279,10 +280,7 @@ export default function SimilarityPage() {
   const run = () => {
     if (!selected) return
     setRanOver({ exerciseId, group, submitted })
-    check.mutate({
-      courseIds: [courseId!],
-      studentIds: submitted.map((r) => r.student_id),
-    })
+    check.mutate(similarityRequest(courseId!, selected.course_exercise_id, submitted))
   }
 
   const studentLink = (submissionId: string) => {

@@ -60,13 +60,13 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         val modeFrom: SettingsSource = SettingsSource.DEFAULT,
         /**
          * Which of each student's submissions [submissionIds] are, and where that came from: the setting's,
-         * unless the request named the submissions, which then are what they are ([SettingsSource.REQUEST]).
+         * or null when the request named the submissions, which then are what they are ([SettingsSource.REQUEST]).
          */
-        val attempts: SimilarityAttempts = SimilarityAttempts.LATEST,
+        val attempts: SimilarityAttempts? = SimilarityAttempts.LATEST,
         val attemptsFrom: SettingsSource = SettingsSource.DEFAULT,
     ) {
         /** [attempts] on the wire: `latest`, `first`, or `named` for submissions the request named. */
-        val attemptsName: String get() = if (attemptsFrom == SettingsSource.REQUEST) "named" else attempts.name.lowercase()
+        val attemptsName: String get() = attempts?.name?.lowercase() ?: "named"
     }
 
     /** Where a setting came from. [REQUEST] only for attempts: the submissions were named. */
@@ -75,6 +75,7 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
     fun resolve(
         exIdString: String,
         courseIds: List<String>,
+        courseExerciseId: String?,
         submissionIds: List<String>?,
         studentIds: List<String>?,
         caller: EasyUser,
@@ -88,21 +89,21 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         if (courses.isEmpty()) throw InvalidRequestException(
             "At least one course must be given.", ReqError.INVALID_PARAMETER_VALUE, notify = false
         )
-        if (submissionIds != null && studentIds != null) throw InvalidRequestException(
-            "Name either submissions or students, not both.", ReqError.INVALID_PARAMETER_VALUE, notify = false
-        )
 
         caller.assertAccess {
             courses.forEach { teacherOnCourse(it) }
         }
+        // The one the page lists, when it says: the exercise can be on a course twice, and the students'
+        // submissions to the other are not the ones it shows or links to.
+        val courseExercise = courseExerciseId?.idToLongOrInvalidReq()?.also { assertCourseExercise(exerciseId, courses, it) }
 
         // Resolved to concrete ids before anything else happens, which is what lets the cap be
         // checked without a COUNT and without a window in which rows can appear between counting and
         // selecting. Without explicit ids this now means the *latest* submission per student, not
         // every attempt ever made: comparing all of them let one student's resubmissions pair with
         // each other at ~100% and, at fifteen attempts, fill the whole top-N cap with self-pairs and
-        // push every real finding out of the response. The page always sent explicit ids and so
-        // never saw this; the endpoint is documented as callable without them.
+        // push every real finding out of the response. The page always named its cohort - by ids, now by
+        // students - and so never saw this; the endpoint is documented as callable without them.
         //
         // Distinct, because the query below answers a repeated id with one row: counted twice, it
         // failed the found-count check and was reported as not found although it plainly exists, and
@@ -113,17 +114,18 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         // exercise's own, where it has them, come before the course's, each setting on its own. Read here,
         // because which attempts are compared decides the ids.
         val courseSettings = courses.singleOrNull()?.let(::selectCourseSettings)
-        val exerciseSettings = courses.singleOrNull()?.let { selectExerciseSettings(exerciseId, it) }
+        val exerciseSettings = courses.singleOrNull()?.let { selectExerciseSettings(exerciseId, it, courseExercise) }
         val attempts = exerciseSettings?.attempts ?: courseSettings?.attempts ?: SimilarityAttempts.LATEST
-        val named = submissionIds?.map { it.idToLongOrInvalidReq() }?.distinct()
         val students = studentIds?.distinct()
+        // Sent beside the students only for a core that reads no students: here, those decide.
+        val named = if (students != null) null else submissionIds?.map { it.idToLongOrInvalidReq() }?.distinct()
         // A list of students is capped before it reaches a query, as a list of ids is: each brings at least
         // one submission, so more of them than the cap is refused whatever they have handed in.
         students?.let { assertWithinLimit(it.size) }
         val ids = when {
             named != null -> named
-            students != null -> selectAttemptsOf(exerciseId, courses, attempts, students)
-            else -> selectSubmissionIds(exerciseId, courses, attempts).values.toList()
+            students != null -> selectAttemptsOf(exerciseId, courses, courseExercise, attempts, students)
+            else -> selectSubmissionIds(exerciseId, courses, courseExercise, attempts).values.toList()
         }
 
         // The cap exists to stop a huge cohort reaching the heap at all, so it is checked before any
@@ -161,7 +163,7 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
                 courseSettings != null -> SettingsSource.COURSE
                 else -> SettingsSource.DEFAULT
             },
-            attempts = attempts,
+            attempts = attempts.takeIf { named == null },
             attemptsFrom = when {
                 named != null -> SettingsSource.REQUEST
                 exerciseSettings?.attempts != null -> SettingsSource.EXERCISE
@@ -229,12 +231,17 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
     private class ExerciseSettings(val ownProvider: Boolean, val provider: String?, val mode: SimilarityMode?, val attempts: SimilarityAttempts?)
 
     /**
-     * The exercise's own settings on [courseId], if it has any. Should the exercise be on the course twice,
-     * the first course exercise's settings are the ones read, every time.
+     * The exercise's own settings on [courseId], if it has any: [courseExercise]'s, when the request names
+     * it. Should the exercise be on the course twice and the request not say which, the first course
+     * exercise's settings are the ones read, every time.
      */
-    private fun selectExerciseSettings(exerciseId: Long, courseId: Long): ExerciseSettings? = transaction {
+    private fun selectExerciseSettings(exerciseId: Long, courseId: Long, courseExercise: Long?): ExerciseSettings? = transaction {
         (CourseExerciseSimilaritySettings innerJoin CourseExercise).selectAll()
-            .where { CourseExercise.exercise eq exerciseId and (CourseExercise.course eq courseId) }
+            .where {
+                var where = CourseExercise.exercise eq exerciseId and (CourseExercise.course eq courseId)
+                if (courseExercise != null) where = where and (CourseExercise.id eq courseExercise)
+                where
+            }
             .orderBy(CourseExercise.id)
             .firstOrNull()
             ?.let {
@@ -292,6 +299,7 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
     private fun selectSubmissionIds(
         exerciseId: Long,
         courses: List<Long>,
+        courseExercise: Long?,
         attempts: SimilarityAttempts,
         students: List<String>? = null,
     ): Map<Pair<Long, String>, Long> = transaction {
@@ -300,6 +308,7 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
             .select(Submission.id, Submission.student, Submission.courseExercise)
             .where {
                 var where = CourseExercise.exercise eq exerciseId and (CourseExercise.course inList courses)
+                if (courseExercise != null) where = where and (CourseExercise.id eq courseExercise)
                 if (students != null) where = where and (Submission.student inList students)
                 where
             }
@@ -309,11 +318,18 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
 
     /**
      * The submission of each of [students] that [attempts] names, on each course exercise they handed in
-     * on. Refused like the loader refuses an id it cannot find: a student with nothing handed in here,
-     * dropped, would have the check answer for fewer students than were asked for and not say so.
+     * on - or on [courseExercise] alone. Refused like the loader refuses an id it cannot find: a student
+     * with nothing handed in here, dropped, would have the check answer for fewer students than were asked
+     * for and not say so.
      */
-    private fun selectAttemptsOf(exerciseId: Long, courses: List<Long>, attempts: SimilarityAttempts, students: List<String>): List<Long> {
-        val chosen = selectSubmissionIds(exerciseId, courses, attempts, students)
+    private fun selectAttemptsOf(
+        exerciseId: Long,
+        courses: List<Long>,
+        courseExercise: Long?,
+        attempts: SimilarityAttempts,
+        students: List<String>,
+    ): List<Long> {
+        val chosen = selectSubmissionIds(exerciseId, courses, courseExercise, attempts, students)
         val found = chosen.keys.mapTo(HashSet()) { it.second }
         if (found.size < students.size) throw InvalidRequestException(
             "Number of students '${students.size}' requested to analyze does not equal to the number of students with a submission: '${found.size}'.",
@@ -321,6 +337,16 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
             notify = false,
         )
         return chosen.values.toList()
+    }
+
+    /** Refused unless [courseExercise] is [exerciseId] on one of [courses], which the caller was asserted on. */
+    private fun assertCourseExercise(exerciseId: Long, courses: List<Long>, courseExercise: Long) = transaction {
+        val found = CourseExercise.select(CourseExercise.id).where {
+            CourseExercise.id eq courseExercise and (CourseExercise.exercise eq exerciseId) and (CourseExercise.course inList courses)
+        }.empty().not()
+        if (!found) throw InvalidRequestException(
+            "Course exercise $courseExercise not found", ReqError.ENTITY_WITH_ID_NOT_FOUND, notify = false
+        )
     }
 
     /**

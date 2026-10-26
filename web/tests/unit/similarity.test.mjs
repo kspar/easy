@@ -26,6 +26,7 @@ import { highlightFileName, languageNote } from '../../src/features/similarity/s
 import { ApiResponseError } from '../../src/api/client.ts'
 import { errorMessage } from '../../src/api/errorMessage.ts'
 import { groupAuthors, identicalOthers } from '../../src/features/similarity/similarityGroups.ts'
+import { similarityRequest } from '../../src/features/similarity/similarityRequest.ts'
 
 describe('identical groups', () => {
   test('students are counted, not submissions: one student\'s two attempts are one author', () => {
@@ -379,6 +380,24 @@ describe('shared code from the diff', () => {
  * check that would run, or offers one core is about to refuse - and an older core's missing estimate
  * must read as "no estimate", never as "about NaN s".
  */
+describe('the request', () => {
+  // Students, so core's setting picks their latest or first; their course exercise, as the exercise can be
+  // on the course twice; and their latest submissions, which only a core older than students reads - sent
+  // without them, such a core compared the whole course and the group filter was lost.
+  test('names the students listed, their course exercise, and their latest submissions for an older core', () => {
+    const rows = [
+      { student_id: 's1', submission: { id: '101' } },
+      { student_id: 's2', submission: { id: '102' } },
+    ]
+    expect(similarityRequest('7', '42', rows)).toEqual({
+      courses: [{ id: '7' }],
+      course_exercise_id: '42',
+      students: [{ id: 's1' }, { id: 's2' }],
+      submissions: [{ id: '101' }, { id: '102' }],
+    })
+  })
+})
+
 describe('the estimate', () => {
   const fits = { submissions: 30, pairs: 435, provider: 'edit-distance', language: 'python', mode: 'optimised', provider_fallback: null, estimated_sec: 12, budget_sec: 120, within_budget: true }
 

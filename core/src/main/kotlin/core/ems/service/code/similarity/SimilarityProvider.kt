@@ -1,5 +1,7 @@
 package core.ems.service.code.similarity
 
+import java.util.concurrent.ConcurrentHashMap
+
 /**
  * One way of measuring how alike a cohort's submissions are: a similarity *provider*.
  *
@@ -90,7 +92,30 @@ internal class RunContext(
     val budgetSec: Long,
     /** Whether work that would only time out is refused at its pace; see [RunPace]. Off only in a test of the deadline itself. */
     val project: Boolean = true,
-)
+    /**
+     * The refusal for a run whose preparing, at its pace, would take [projectedNanos] of wall time: with
+     * what its pairs would take after it, by the estimate, so that the figure a teacher is given is the
+     * whole run's. Preparing's alone, a group two-thirds the size looked as if it would fit, and did not.
+     */
+    val tooCostlyPreparing: (projectedNanos: Long) -> SimilarityEstimate =
+        { wall -> SimilarityEstimate(0, 0, workers.threads, wall, budgetSec) },
+) {
+    /**
+     * One worker's time spent preparing solutions in each language, beside what the cost model predicted
+     * for the same solutions: what [Calibration] learns preparing from. Timed solution by solution on the
+     * worker that prepared it, not as the phase's wall time times the pool, which counted every idle worker
+     * - waiting on one slow solution, or on the language sample - as work.
+     */
+    val prepared = ConcurrentHashMap<SimilarityLanguage, Spent>()
+
+    /** [work], one solution's preparing as [language], which the model prices at [predictedNanos]: timed into [prepared]. */
+    fun <T> preparing(language: SimilarityLanguage, predictedNanos: Long, work: () -> T): T {
+        val started = deadline.ticker.nanos()
+        val result = work()
+        prepared.computeIfAbsent(language) { Spent() }.add(deadline.ticker.nanos() - started, predictedNanos)
+        return result
+    }
+}
 
 /**
  * One cohort, from preparing it to the last pair's details.
@@ -127,14 +152,15 @@ internal interface ProviderSession : AutoCloseable {
      * Looser bounds than [bound], and cheap - a small part of a pair's [score] - for ordering every pair
      * before any is scored: the optimised mode sorts by these, [PairBound.rank] first, and computes [bound]
      * only for the pairs it reaches, in parallel and under the deadline. Never below [bound], and about the
-     * texts, not only their sizes, or the order is not the likeliest first. Bounding every pair exactly up
-     * front was a phase of its own that one worker could not finish inside the budget at the cap.
+     * texts, not only their sizes, or the order is not the likeliest first. Where [bound] is itself cheap -
+     * both providers' are, two merges of sorted lists - it is the quick one too: the ordering runs on the
+     * workers and stops at the deadline, and at the cap it takes a few seconds of the budget.
      */
     fun quickBound(a: Long, b: Long): PairBound? = bound(a, b)
 
     /**
      * Whether [quickBound] is already [bound]: then the optimised mode does not bound a pair it reaches a
-     * second time. JPlag's is; edit distance's quick one is from sizes and Dice, its exact one tighter.
+     * second time. Both providers' are; one whose quick bound is looser than its exact one says false.
      */
     val quickBoundIsExact: Boolean get() = false
 

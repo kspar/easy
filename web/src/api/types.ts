@@ -636,6 +636,23 @@ export interface SimilaritySkippedResp {
   reason: string
 }
 
+/**
+ * The body of a similarity check, and of its estimate (EZ-1667). `students` are who it is about: which of
+ * each one's submissions is compared, the latest or the first, is the course's setting, and core answers
+ * it. `course_exercise_id` is the one the page lists, of an exercise that can be on a course twice.
+ * `submissions` are the same students' latest, for a core older than `students`, which ignores those and
+ * reads these, so the group filter holds against it too; a newer core reads the students, not these.
+ *
+ * @requestBody POST /v2/exercises/{exerciseId}/similarity
+ * @requestBody POST /v2/exercises/{exerciseId}/similarity/estimate
+ */
+export interface SimilarityReq {
+  courses: { id: string }[]
+  course_exercise_id?: string
+  students?: { id: string }[]
+  submissions?: { id: string }[]
+}
+
 /** @endpoint POST /v2/exercises/{exerciseId}/similarity -> (root) */
 export interface SimilarityResp {
   submissions: SimilarSubmissionResp[]

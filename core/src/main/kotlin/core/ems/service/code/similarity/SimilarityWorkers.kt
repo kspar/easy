@@ -118,8 +118,11 @@ internal class SimilarityWorkers(val threads: Int, stackBytes: Long) : AutoClose
         private val RUNS = AtomicInteger()
 
         /**
-         * The failure to report: an Error first, then any exception but a timeout, then the timeout;
-         * the first of the worst kind, so the answer does not depend on scheduling. The rest are
+         * The failure to report: an Error first, then any exception but a refusal for time, then a refusal
+         * at the run's pace, then the timeout; the first of the worst kind, so the answer does not depend on
+         * scheduling. The pace before the timeout, as the earlier decision and the one with an estimate to
+         * give: the other workers see one worker's refusal only once it has left that worker, and one that
+         * reached the deadline meanwhile was reported over it, by list order. The rest are
          * attached to it as suppressed. That includes the reported failure itself, which Kotlin's
          * `addSuppressed` skips where Java's would throw - and it does come up, since the JVM hands out
          * preallocated errors and two tasks can fail with the same instance.
@@ -132,7 +135,8 @@ internal class SimilarityWorkers(val threads: Int, stackBytes: Long) : AutoClose
 
         private fun severity(failure: Throwable): Int = when (failure) {
             is Error -> 0
-            is SimilarityTimedOut, is SimilarityTooCostly -> 2
+            is SimilarityTooCostly -> 2
+            is SimilarityTimedOut -> 3
             else -> 1
         }
     }

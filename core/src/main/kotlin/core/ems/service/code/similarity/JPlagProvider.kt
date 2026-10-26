@@ -221,15 +221,18 @@ internal class JPlagProvider(
             // is refused at its pace, not at the deadline: the estimate prices it from a model of one
             // machine's speed, and on a slower server - or with solutions slower to parse than their size
             // says - a run spent the whole budget here and found nothing.
-            fun pace() = if (!run.project) null else RunPace(run.deadline, run.budgetSec, sources.size.toLong(), "solutions tokenised") { wall ->
-                SimilarityEstimate(sources.size, 0, run.workers.threads, wall, run.budgetSec)
-            }
+            // Each solution counted at what the cost model prices it, by the pace and by the calibration both.
+            val predicted = LongArray(sources.size) { prepareNanos(utf8Length(sources[it].solution)) }
+            fun pace() = if (!run.project) null else RunPace(run.deadline, run.budgetSec, predicted.sum(), "tokenising", run.tooCostlyPreparing)
             var pace = pace()
             // The template too, when there is one, on the pool like everything else: it is parsed inside
             // the permit, cannot be interrupted, and needs the pool's stack as much as a submission does.
             fun tokenise(language: SimilarityLanguage, indices: IntRange, withTemplate: Boolean) = run.workers.all(
                 indices.map { i ->
-                    { tokeniseOne("Submission ${sources[i].id}", files[i], sources[i].solution, language, run).also { pace?.done() } }
+                    {
+                        run.preparing(language, predicted[i]) { tokeniseOne("Submission ${sources[i].id}", files[i], sources[i].solution, language, run) }
+                            .also { pace?.done(predicted[i]) }
+                    }
                 } + listOfNotNull(template?.takeIf { withTemplate }?.let { { tokeniseOne("The exercise template", BASE_CODE, it, language, run) } }),
             )
 
