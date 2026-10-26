@@ -117,6 +117,33 @@ class OptimisedRankingTest {
 
     private val unbounded = SimilarityBinding("unbounded", SimilarityLanguage.PYTHON, optimised = true)
 
+    /** Edit distance with its bounds at half what they are: wrong, as a provider's could be after an upgrade. */
+    private class Unsound(private val inner: SimilarityProvider = EditDistanceProvider()) : SimilarityProvider by inner {
+        override val id = "unsound"
+
+        override fun open(request: ProviderRequest, run: RunContext): ProviderSession {
+            val session = inner.open(request, run)
+            return object : ProviderSession by session {
+                override fun bound(a: Long, b: Long) = session.bound(a, b)?.let { PairBound(it.score / 2, it.rank / 2, it.similarity / 2) }
+                override fun quickBound(a: Long, b: Long) = bound(a, b)
+            }
+        }
+    }
+
+    @Test
+    fun `a provider caught bounding below a score keeps its result exact, and is not trusted to bound again`() {
+        val sources = cohort(2, 40)
+        val service = service().also { it.registry = SimilarityRegistry(listOf(Unsound())) }
+        val unsound = SimilarityBinding("unsound", SimilarityLanguage.PYTHON, optimised = true)
+        val full = service().compare({ sources }, { it }, editDistance, null, 10).outcome
+        val caught = service.compare({ sources }, { it }, unsound, null, 10).outcome
+        assertEquals(signature(full), signature(caught))
+        // Caught once, its next check compares every pair, and is priced as one that does.
+        val next = service.compare({ sources }, { it }, unsound, null, 10).outcome
+        assertEquals(next.pairsTotal, next.pairsCompared)
+        assertFalse(service.estimate(unsound, sources.map { SizedSource(it.id, it.solution.length, it.owner) }).optimised)
+    }
+
     private fun unboundedService(timeoutSec: Long = 120) =
         service(timeoutSec).also { it.registry = SimilarityRegistry(listOf(Unbounded())) }
 

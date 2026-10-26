@@ -31,6 +31,13 @@ class PairRankingTest {
         private val quickIsExact: Boolean = false,
         /** The clock [scoreMs] and [boundMs] are spent on. */
         private val clock: ManualTicker = ManualTicker(),
+        /** Bounds at half the real values: wrong, as a provider's bounds could be after an upgrade. */
+        private val unsound: Boolean = false,
+        /**
+         * Exact bounds a hair below the real values for pairs less alike than this, and sound for the rest:
+         * the pairs reached first, so a run has set its floors and ruled pairs out before one is caught.
+         */
+        private val unsoundBelow: Double = 0.0,
     ) : ProviderSession {
         override val quickBoundIsExact get() = quickIsExact
 
@@ -63,12 +70,15 @@ class PairRankingTest {
             bounds.incrementAndGet()
             if (boundMs > 0) clock.advance(boundMs)
             val (score, rank, similarity) = of(a, b)
+            if (unsound) return PairBound(score / 2, rank / 2, similarity / 2)
+            if (similarity < unsoundBelow) return PairBound(score - 0.001, rank - 0.001, similarity - 0.001)
             return PairBound(score, rank, similarity)
         }
 
         /** Looser than [bound], as a quick bound is: the pair's own values, raised - the similarity without ties at 1. */
         override fun quickBound(a: Long, b: Long): PairBound {
             val (score, rank, similarity) = of(a, b)
+            if (unsound) return PairBound(score / 2, rank / 2, similarity / 2)
             if (quickIsExact) return PairBound(score, rank, similarity)
             return PairBound(minOf(1.0, score + 0.2), rank + 100, 0.5 + similarity / 2)
         }
@@ -88,6 +98,34 @@ class PairRankingTest {
             val bounded = ranking(threads) { it.rankBounded(Drawn(seed), comparands(40), 5, partial = false) }
             assertEquals(ids(full), ids(bounded), "seed $seed on $threads thread(s)")
             assertEquals(780, bounded.total)
+            assertEquals(null, bounded.boundsViolation)
+        }
+    }
+
+    @Test
+    fun `bounds caught below a score are not trusted, and the run's result is exact`() {
+        // Half the real values: the first pair scored is above its bound, and pairs that would be ruled out
+        // after it may belong in the top. Ruled out as before, the top was wrong.
+        for (threads in listOf(1, 3)) {
+            val full = ranking(threads) { it.rank(Drawn(seed = 7), comparands(40), 5) }
+            val caught = ranking(threads) { it.rankBounded(Drawn(seed = 7, unsound = true), comparands(40), 5, partial = false) }
+            assertEquals(ids(full), ids(caught), "on $threads thread(s)")
+            assertTrue(caught.boundsViolation != null)
+            assertEquals(780, caught.compared)
+        }
+    }
+
+    @Test
+    fun `bounds caught wrong part way through a run have every pair they passed over scored after all`() {
+        // Sound for the pairs reached first, so the floors are set and pairs ruled out before the first wrong
+        // bound is caught: by a bound no more trustworthy, so any of them could belong in the top. Only the
+        // pairs after it were scored, and the run came back short of those before.
+        for (threads in listOf(1, 3)) {
+            val full = ranking(threads) { it.rank(Drawn(seed = 7), comparands(40), 5) }
+            val caught = ranking(threads) { it.rankBounded(Drawn(seed = 7, unsoundBelow = 0.75), comparands(40), 5, partial = false) }
+            assertEquals(ids(full), ids(caught), "on $threads thread(s)")
+            assertTrue(caught.boundsViolation != null, "on $threads thread(s)")
+            assertEquals(780, caught.compared, "on $threads thread(s)")
         }
     }
 

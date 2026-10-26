@@ -3,6 +3,7 @@ package core.ems.service.code.similarity
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -87,6 +88,16 @@ class SimilarityService(
 
     /** Whether a full run is refused once its pace says it cannot finish; see `PairRanking.Pace`. Off only in a test of the deadline. */
     internal var projectRuns = true
+
+    /**
+     * Providers whose bounds a run has caught below a score (see [PairRanking.rankBounded]): not trusted
+     * again until the server restarts, so their checks compare every pair. Kept here, not stored: a wrong
+     * bound is a bug in this version, which the next deploy fixes or does not.
+     */
+    private val untrustedBounds: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    /** Whether [provider]'s bounds may rule pairs out: it has them, and no run has caught one wrong. */
+    private fun bounds(provider: SimilarityProvider) = provider.bounds && provider.id !in untrustedBounds
 
     /** [JPlagProvider.tokenise], replaceable only by a test. */
     internal var tokenise by jplag::tokenise
@@ -180,7 +191,7 @@ class SimilarityService(
         // budget tokenising is priced, and refused, as a full run is. Unpriced, it held the permit for the
         // budget and then timed out with nothing.
         val prepared = prepareNanos / threads <= timeoutSec * 1_000_000_000L
-        return SimilarityEstimate(sources.size, pairs, threads, nanos / threads, timeoutSec, binding.optimised && provider.bounds && prepared)
+        return SimilarityEstimate(sources.size, pairs, threads, nanos / threads, timeoutSec, binding.optimised && bounds(provider) && prepared)
     }
 
     /**
@@ -220,7 +231,7 @@ class SimilarityService(
             // Optimised - [SimilarityBinding.optimised] - rules out the pairs that cannot be among the top N,
             // and stops at the deadline with the likeliest found rather than refuse, where the provider can
             // bound its pairs ([SimilarityProvider.bounds]); one that cannot compares every pair either way.
-            return SimilarityRun(rows, run(provider, rows.map(asSource), compared, baseCode, topN, binding.optimised && provider.bounds, binding.textAllowed))
+            return SimilarityRun(rows, run(provider, rows.map(asSource), compared, baseCode, topN, binding.optimised && bounds(provider), binding.textAllowed))
         } finally {
             oneAtATime.release()
         }
@@ -303,6 +314,13 @@ class SimilarityService(
                 session.ready(comparands.map { it.representative })
                 val ranking = PairRanking(workers, deadline, timeoutSec, projectRuns).let {
                     if (bounded) it.rankBounded(session, comparands, topN, partial = true) else it.rank(session, comparands, topN)
+                }
+                ranking.boundsViolation?.let { violation ->
+                    untrustedBounds += provider.id
+                    log.error {
+                        "Similarity provider ${provider.id} bounded a pair below its score ($violation); the pairs it ruled " +
+                                "out were compared after all, and its bounds are not used again until restart"
+                    }
                 }
                 val compareMs = (ticker.nanos() - compareStart) / 1_000_000
 

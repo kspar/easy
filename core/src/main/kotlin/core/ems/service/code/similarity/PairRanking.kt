@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.PriorityQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * What one pair is compared as: a submission, or a group of identical ones compared once (see
@@ -35,6 +36,8 @@ internal class Ranking(
     val total: Int = compared,
     val complete: Boolean = true,
     val mayHaveMore: Boolean = false,
+    /** The first pair that scored above its bound, said, if one did; see [PairRanking.rankBounded]. */
+    val boundsViolation: String? = null,
 )
 
 /**
@@ -111,6 +114,12 @@ internal class PairRanking(
      *
      * With [partial], the deadline ends the run with what it has, flagged incomplete, instead of refusing
      * it: the likeliest pairs having gone first, what is kept by then is the best the budget could find.
+     *
+     * The bounds are checked as the run goes: every scored pair against the bounds it was let through on.
+     * One scoring above them means the provider's bounds are wrong - a JPlag upgrade that changed how it
+     * divides, say, which no test of ours saw - and the pairs they ruled out may belong in the top. Then
+     * nothing more is ruled out, every pair passed over so far is scored after all, and the run says so in
+     * [Ranking.boundsViolation]: the result is exact again, or stops at the deadline flagged incomplete.
      */
     fun rankBounded(session: ProviderSession, comparands: List<Comparand>, topN: Int, partial: Boolean): Ranking {
         // Ordered by the quick bounds, which cost little; the exact ones are computed by the workers, pair by
@@ -133,35 +142,41 @@ internal class PairRanking(
         if (!complete && !partial) throw SimilarityTimedOut(budgetSec)
         var next = 0
         val batchSize = workers.threads * BATCH_PER_THREAD
+        // The pairs still to take, and those the bounds passed over: scored after all should a bound prove wrong.
+        val work = ArrayList(candidates)
+        val passedOver = ArrayList<Worked>()
+        var pruning = true
+        val violation = AtomicReference<String?>()
 
-        while (complete && next < candidates.size) {
+        while (complete && next < work.size) {
             if (deadline.passed()) {
                 if (!partial) throw SimilarityTimedOut(budgetSec)
                 complete = false
                 break
             }
             // The floors as they stand: a pair below both cannot be kept by either order.
-            val floors = Floors(
+            val floors = if (!pruning) Floors.NONE else Floors(
                 rank = if (byShared.size >= topN) byShared.peek().pair.rank else Double.NEGATIVE_INFINITY,
                 score = if (byPercent.size >= topN) byPercent.peek().pair.score else Double.NEGATIVE_INFINITY,
             )
             val batch = mutableListOf<Candidate>()
-            while (next < candidates.size && batch.size < batchSize) {
-                val candidate = candidates[next++]
+            while (next < work.size && batch.size < batchSize) {
+                val candidate = work[next++]
                 when {
-                    candidate.bound.score < MIN_REPORTED_SIMILARITY -> Unit
-                    floors.rulesOut(candidate.bound) -> mayHaveMore = true
+                    pruning && candidate.bound.score < MIN_REPORTED_SIMILARITY -> passedOver += Worked(candidate, null, skipped = true, ruledOut = false)
+                    pruning && floors.rulesOut(candidate.bound) -> passedOver += Worked(candidate, null, skipped = true, ruledOut = true)
                     else -> batch += candidate
                 }
             }
             if (batch.isEmpty()) continue
             val chunks = batch.chunked((batch.size + workers.threads - 1) / workers.threads)
-            val worked = workers.all(chunks.map { chunk -> { scoreUntilDeadline(session, chunk, floors, partial) } })
+            val prune = pruning
+            val worked = workers.all(chunks.map { chunk -> { scoreUntilDeadline(session, chunk, floors, partial, prune, violation) } })
             // A worker that stopped at the deadline keeps the pairs it finished; the rest of its chunk is lost.
             if (worked.zip(chunks).any { (done, chunk) -> done.size < chunk.size }) complete = false
             for (result in worked.flatten()) {
-                if (result.ruledOut) {
-                    mayHaveMore = true
+                if (result.skipped) {
+                    passedOver += result
                     continue
                 }
                 compared++
@@ -174,22 +189,36 @@ internal class PairRanking(
                 byPercent += ranked
                 if (byPercent.size > topN) byPercent.poll()
             }
+            if (pruning && violation.get() != null) {
+                pruning = false
+                work.addAll(passedOver.map { it.candidate })
+                passedOver.clear()
+            }
         }
-        // A run stopped short may have missed anything, and `truncated` is all a page older than `complete`
-        // can be told; the current page shows its own warning for `complete` instead of the cap notice.
-        if (!complete) mayHaveMore = true
+        // Ruled out, a pair could still have scored, though not into either top N; and a run stopped short may
+        // have missed anything - `truncated` is all a page older than `complete` can be told of that, and the
+        // current page shows its own warning for `complete` instead of the cap notice.
+        if (passedOver.any { it.ruledOut } || !complete) mayHaveMore = true
 
         val top = (byShared.toList() + byPercent.toList()).distinct().sortedWith(BEST_FIRST)
-        return Ranking(top, scoring, compared, total, complete, mayHaveMore)
+        return Ranking(top, scoring, compared, total, complete, mayHaveMore, violation.get())
     }
 
     /** The N-th kept in each order: a pair bounded below both cannot be kept by either, then or later. */
     private class Floors(val rank: Double, val score: Double) {
         fun rulesOut(bound: PairBound): Boolean = bound.rank < rank && bound.score < score
+
+        companion object {
+            /** No floor at all: once the bounds are not trusted, nothing is ruled out. */
+            val NONE = Floors(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY)
+        }
     }
 
-    /** A pair a worker reached: ruled out by its exact bound, or scored. */
-    private class Worked(val candidate: Candidate, val pair: PairScore?, val ruledOut: Boolean)
+    /**
+     * A pair a worker reached, or the run passed over: scored, or [skipped] by its bound - [ruledOut] by
+     * the floors, or else below what the page shows as 1%.
+     */
+    private class Worked(val candidate: Candidate, val pair: PairScore?, val skipped: Boolean = false, val ruledOut: Boolean = false)
 
     /**
      * [chunk]'s pairs in order: each bounded exactly, and scored unless that rules it out against [floors] -
@@ -198,16 +227,27 @@ internal class PairRanking(
      * by throwing - and returns those it finished: thrown, the timeout lost the whole batch, and on a cold
      * JVM, whose first pairs are slow, that was every pair.
      */
-    private fun scoreUntilDeadline(session: ProviderSession, chunk: List<Candidate>, floors: Floors, partial: Boolean): List<Worked> {
+    private fun scoreUntilDeadline(
+        session: ProviderSession,
+        chunk: List<Candidate>,
+        floors: Floors,
+        partial: Boolean,
+        prune: Boolean,
+        violation: AtomicReference<String?>,
+    ): List<Worked> {
         val done = mutableListOf<Worked>()
         for (candidate in chunk) {
             if (deadline.passed()) {
                 if (partial) break
                 throw SimilarityTimedOut(budgetSec)
             }
-            val exact = if (session.quickBoundIsExact) candidate.bound else session.bound(candidate.a, candidate.b) ?: candidate.bound
-            if (exact.score < MIN_REPORTED_SIMILARITY || floors.rulesOut(exact)) {
-                done += Worked(candidate, null, ruledOut = exact.score >= MIN_REPORTED_SIMILARITY)
+            val exact = when {
+                !prune -> null
+                session.quickBoundIsExact -> candidate.bound
+                else -> session.bound(candidate.a, candidate.b) ?: candidate.bound
+            }
+            if (exact != null && (exact.score < MIN_REPORTED_SIMILARITY || floors.rulesOut(exact))) {
+                done += Worked(candidate, null, skipped = true, ruledOut = exact.score >= MIN_REPORTED_SIMILARITY)
                 continue
             }
             val pair = try {
@@ -216,9 +256,20 @@ internal class PairRanking(
                 if (partial) break
                 throw e
             }
-            done += Worked(candidate, pair, ruledOut = false)
+            // Against both bounds it passed on: the quick one let it into the batch, the exact one into scoring.
+            val wrong = if (pair == null || exact == null) null else above(pair, candidate.bound) ?: above(pair, exact)
+            if (wrong != null) violation.compareAndSet(null, "${candidate.a}-${candidate.b}: $wrong")
+            done += Worked(candidate, pair)
         }
         return done
+    }
+
+    /** What of [pair] scored above [bound], said, or null when nothing did. */
+    private fun above(pair: PairScore, bound: PairBound): String? = when {
+        pair.score > bound.score + BOUND_SLACK -> "score ${pair.score} over a bound of ${bound.score}"
+        pair.rank > bound.rank + BOUND_SLACK -> "rank ${pair.rank} over a bound of ${bound.rank}"
+        pair.similarity > bound.similarity + BOUND_SLACK -> "similarity ${pair.similarity} over a bound of ${bound.similarity}"
+        else -> null
     }
 
     /** A pair worth comparing, and how high it could score, by [ProviderSession.quickBound]. */
@@ -330,6 +381,9 @@ internal class PairRanking(
     }
 
     companion object {
+        /** What a bound may fall short of a score by, in rounding, before it is taken for wrong. */
+        private const val BOUND_SLACK = 1e-9
+
         /** [Pace] is read once this share of the time left is spent: a tenth. */
         private const val PROJECT_AFTER_SHARE = 10
 
