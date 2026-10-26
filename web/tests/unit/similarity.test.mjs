@@ -17,7 +17,7 @@ import { expect, test, describe } from 'vitest'
 import { isSimilarityRefusal } from '../../src/features/similarity/similarityError.ts'
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
-import { capped, comparedBy, coverage, pairMetrics, providerName, resultNotes, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
+import { capped, comparedBy, coverage, forReference, orderPairs, pairMetrics, providerName, ranksBySharedCode, resultNotes, rowMetrics, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
 import { comparesFirstAttempts, estimateRefusal, estimateView, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
@@ -305,6 +305,34 @@ describe('the provider', () => {
     const legacy = [{ id: 'similarity', value: 72, unit: 'percent' }, { id: 'max_similarity', value: 81, unit: 'percent' }]
     expect(pairMetrics({ similarity: 72, max_similarity: 81 })).toEqual(legacy)
     expect(pairMetrics({ similarity: 72, max_similarity: 81, metrics: [] })).toEqual(legacy)
+  })
+
+  test('Dice is shown for reference in the opened pair, not in the row beside the score', () => {
+    // 94% beside a text similarity of 55% read as a second opinion: Dice is high for any two programs
+    // in one language.
+    const score = { similarity: 55, max_similarity: 55, metrics: [{ id: 'levenshtein', value: 55, unit: 'percent' }, { id: 'dice', value: 94, unit: 'percent' }] }
+    expect(rowMetrics(score).map((m) => m.id)).toEqual(['levenshtein'])
+    expect(pairMetrics(score).filter(forReference).map((m) => m.id)).toEqual(['dice'])
+    // JPlag's three all stay in the row.
+    const jplag = { similarity: 72, max_similarity: 81, metrics: [{ id: 'similarity', value: 72, unit: 'percent' }, { id: 'max_similarity', value: 81, unit: 'percent' }, { id: 'shared_tokens', value: 40, unit: 'count' }] }
+    expect(rowMetrics(jplag)).toHaveLength(3)
+  })
+
+  test('ordering by score is offered where pairs rank by shared code, and keeps core order between equals', () => {
+    const shared = { id: 'shared_tokens', value: 1, unit: 'count' }
+    expect(ranksBySharedCode({ scores: [{ metrics: [shared] }] })).toBe(true)
+    expect(ranksBySharedCode({ scores: [{ metrics: [{ id: 'levenshtein', value: 5, unit: 'percent' }] }] })).toBe(false)
+    // An older core sends no metrics: nothing to tell apart.
+    expect(ranksBySharedCode({ scores: [{}] })).toBe(false)
+    // Core's order is most shared code first: a long pair at 75% before a short copy at 100%.
+    const scores = [
+      { sub_1: 'long', max_similarity: 75, similarity: 74 },
+      { sub_1: 'tie-a', max_similarity: 90, similarity: 80 },
+      { sub_1: 'copy', max_similarity: 100, similarity: 100 },
+      { sub_1: 'tie-b', max_similarity: 90, similarity: 80 },
+    ]
+    expect(orderPairs(scores, 'shared')).toBe(scores)
+    expect(orderPairs(scores, 'score').map((s) => s.sub_1)).toEqual(['copy', 'tie-a', 'tie-b', 'long'])
   })
 
   test('a provider the page has no words for is named by its id, not passed off as a known one', () => {

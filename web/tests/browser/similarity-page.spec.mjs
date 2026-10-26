@@ -348,9 +348,9 @@ test('similarity-page', async ({ launch, check }) => {
   requests.length = 0
   await page.getByRole('button', { name: /Find similarities/i }).click()
   check(
-    'an edit-distance pair shows its own two numbers, named',
+    'an edit-distance pair shows its text similarity in the row, and Dice only for reference once opened',
     await waitUntil(async () =>
-      (await page.getByText('Edit distance 64%').isVisible()) && (await page.getByText('Shared text 81%').isVisible())),
+      (await page.getByText('Text similarity 64%').isVisible()) && (await page.getByText('Shared text 81%').count()) === 0),
   )
   check(
     'a pinned provider passed over is said rather than shown as the course\'s choice',

@@ -16,6 +16,8 @@ import {
   MenuItem,
   Select,
   Slider,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
   Typography,
 } from '@mui/material'
@@ -48,10 +50,21 @@ import { emptyReason, hasUnreadableScores } from './similarityEmptyState.ts'
 import { skippedByReason } from './similaritySkipped.ts'
 import type { SkippedReason } from './similaritySkipped.ts'
 import { highlightFileName } from './similarityLanguage.ts'
-import { capped, comparedBy, coverage, pairMetrics, resultNotes, usesMatchRanges } from './similarityProvider.ts'
+import {
+  capped,
+  comparedBy,
+  coverage,
+  forReference,
+  orderPairs,
+  pairMetrics,
+  ranksBySharedCode,
+  resultNotes,
+  rowMetrics,
+  usesMatchRanges,
+} from './similarityProvider.ts'
 import { comparesFirstAttempts, estimateRefusal, estimateView, formatDuration, ownSettings } from './similarityEstimate.ts'
 import { similarityRequest } from './similarityRequest.ts'
-import type { ResultNote } from './similarityProvider.ts'
+import type { PairOrder, ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
 import CourseSimilaritySettingsDialog from '../course-settings/CourseSimilaritySettingsDialog.tsx'
 import { errorMessage } from '../../api/errorMessage.ts'
@@ -97,6 +110,7 @@ export default function SimilarityPage() {
 
   const [group, setGroup] = useSavedGroup(courseId!)
   const [minScore, setMinScore] = useState(0)
+  const [order, setOrder] = useState<PairOrder>('shared')
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const { data: exercises, isLoading: exercisesLoading } = useTeacherCourseExercises(courseId)
@@ -170,8 +184,8 @@ export default function SimilarityPage() {
   )
 
   const pairs = useMemo(
-    () => aboveThreshold.filter((s) => submissionsById.has(s.sub_1) && submissionsById.has(s.sub_2)),
-    [aboveThreshold, submissionsById],
+    () => orderPairs(aboveThreshold.filter((s) => submissionsById.has(s.sub_1) && submissionsById.has(s.sub_2)), order),
+    [aboveThreshold, submissionsById, order],
   )
 
   // Memoised per score, because these arrays are props of SimilarityDiff and sit in its effect's
@@ -448,8 +462,11 @@ export default function SimilarityPage() {
             </Typography>
             {result.scores.length > 0 && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 260 }}>
+                {/* The value in the words, always: shown only while dragged, "Min max similarity" with no
+                    number was a filter nobody could read back, and it named JPlag's score on edit
+                    distance's results. */}
                 <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                  {t('similarity.minScore')}
+                  {t('similarity.minScore', { value: minScore })}
                 </Typography>
                 {/* The caption beside it is a sibling, not a label, so without this the control
                     announces as "0, slider" with no indication of what it filters — measured in the
@@ -460,12 +477,28 @@ export default function SimilarityPage() {
                   value={minScore}
                   onChange={(_, v) => setMinScore(v as number)}
                   valueLabelDisplay="auto"
+                  valueLabelFormat={(v) => `${v}%`}
+                  getAriaValueText={(v) => `${v}%`}
                   min={0}
                   max={100}
-                  aria-label={t('similarity.minScore')}
+                  aria-label={t('similarity.minScoreName')}
                   sx={{ maxWidth: 160 }}
                 />
               </Box>
+            )}
+            {/* Offered where the order is not the score's: JPlag ranks by shared code, which puts a short
+                copy at 100% below long pairs at 75%, and said so only in a tooltip. */}
+            {ranksBySharedCode(result) && (
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={order}
+                onChange={(_, next: PairOrder | null) => next && setOrder(next)}
+                aria-label={t('similarity.orderName')}
+              >
+                <ToggleButton value="shared" sx={{ textTransform: 'none' }}>{t('similarity.orderShared')}</ToggleButton>
+                <ToggleButton value="score" sx={{ textTransform: 'none' }}>{t('similarity.orderScore')}</ToggleButton>
+              </ToggleButtonGroup>
             )}
           </Box>
 
@@ -643,7 +676,7 @@ export default function SimilarityPage() {
                           than for the algorithm; the algorithm is in the tooltip, for the reader
                           who wants to know how the number was arrived at. Whatever the provider
                           measured, in the order it sent them, the first filled. */}
-                      {pairMetrics(score).map((metric, index) => (
+                      {rowMetrics(score).map((metric, index) => (
                         <Tooltip key={metric.id} title={metricTooltip(metric.id)}>
                           <Chip size="small" variant={index === 0 ? 'filled' : 'outlined'} label={metricLabel(metric)} />
                         </Tooltip>
@@ -683,6 +716,24 @@ export default function SimilarityPage() {
                           {formatDateTime(new Date(sub.created_at), dateFnsLocale)}
                         </Typography>
                       </Box>
+                    ))}
+                  </Box>
+                  {/* What each number means, in the page rather than only in a tooltip, which a keyboard
+                      cannot reach: the chips sit inside the row's button and cannot take focus of their
+                      own. With the numbers shown for reference only, which the row leaves out. */}
+                  <Typography variant="caption" color="text.secondary" component="div" sx={{ fontWeight: 500 }}>
+                    {t('similarity.metricsTitle')}
+                  </Typography>
+                  <Box component="dl" sx={{ m: 0, mb: 1.5 }}>
+                    {pairMetrics(score).map((metric) => (
+                      <Typography key={metric.id} variant="caption" color="text.secondary" component="div">
+                        <Box component="dt" sx={{ display: 'inline', fontWeight: 500 }}>{metricLabel(metric)}</Box>
+                        {' — '}
+                        <Box component="dd" sx={{ display: 'inline', m: 0 }}>
+                          {metricTooltip(metric.id)}
+                          {forReference(metric) && ` ${t('similarity.forReference')}`}
+                        </Box>
+                      </Typography>
                     ))}
                   </Box>
                   {/*

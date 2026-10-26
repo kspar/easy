@@ -148,3 +148,40 @@ export function pairMetrics(score: Pick<SimilarityScoreResp, 'metrics' | 'simila
     { id: 'max_similarity', value: score.max_similarity, unit: 'percent' },
   ]
 }
+
+/**
+ * Numbers measured but shown for reference only, in the opened pair rather than its row. Dice over bigram
+ * sets is high for any two programs in one language - they share their keywords and indentation - so in
+ * the row, as a chip like the score's, it read as a second opinion: 94% beside a text similarity of 55%.
+ */
+const FOR_REFERENCE = new Set(['dice'])
+
+export function forReference(metric: Pick<SimilarityMetricResp, 'id'>): boolean {
+  return FOR_REFERENCE.has(metric.id)
+}
+
+/** The numbers in a pair's row: [pairMetrics], less those for reference only. */
+export function rowMetrics(score: Pick<SimilarityScoreResp, 'metrics' | 'similarity' | 'max_similarity'>): SimilarityMetricResp[] {
+  return pairMetrics(score).filter((metric) => !forReference(metric))
+}
+
+/** The pairs in core's order - most shared code first - or by the score the threshold filters on. */
+export type PairOrder = 'shared' | 'score'
+
+/**
+ * Whether the pairs are ranked by shared code rather than by score, so that ordering by score is worth
+ * offering: JPlag's are, and a short copy at 100% sat below long pairs at 75%, with the reason only in a
+ * tooltip. Edit distance's rank is its score, and an older core says nothing either way.
+ */
+export function ranksBySharedCode(result: Pick<SimilarityResp, 'scores'>): boolean {
+  return result.scores.some((score) => (score.metrics ?? []).some((metric) => metric.id === 'shared_tokens'))
+}
+
+/**
+ * [scores] in [order]. By score, the highest maximum first and then the higher average; pairs alike in both
+ * keep core's order between them, which is shared code first, so the answer is the same on every render.
+ */
+export function orderPairs<T extends Pick<SimilarityScoreResp, 'max_similarity' | 'similarity'>>(scores: T[], order: PairOrder): T[] {
+  if (order === 'shared') return scores
+  return [...scores].sort((x, y) => y.max_similarity - x.max_similarity || y.similarity - x.similarity)
+}
