@@ -486,6 +486,28 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(120, json.get("budget_sec").asInt())
         assertTrue(json.get("within_budget").asBoolean())
         assertTrue(json.get("estimated_sec").asInt() in 1..120, "estimated ${json.get("estimated_sec")}")
+        assertEquals(0, json.get("not_compared").asInt())
+    }
+
+    @Test
+    fun `the estimate leaves a blank answer out of its pairs and counts it, as the check skips it`() {
+        val exercise = transaction {
+            val exercise = Fixtures.exercise("Blanks", teacher)
+            val courseExercise = Fixtures.courseExercise(myCourse, exercise)
+            listOf("print(1)", "print(22)", " \n\t \n").forEachIndexed { n, solution ->
+                val student = Fixtures.student("blank-$n").also { Fixtures.enrolStudent(myCourse, it) }
+                Fixtures.submission(courseExercise, student, number = 1, solution = solution)
+            }
+            exercise
+        }
+        val json = api.post(
+            "/v2/exercises/$exercise/similarity/estimate",
+            api.body("courses" to listOf(mapOf("id" to myCourse.toString()))),
+            Auth.asTeacher(teacher),
+        ).jsonOrNull!!
+        assertEquals(3, json.get("submissions").asInt())
+        assertEquals(1, json.get("pairs").asInt())
+        assertEquals(1, json.get("not_compared").asInt())
     }
 
     @Test

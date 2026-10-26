@@ -381,11 +381,26 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
             )
         }
 
+        // Blank ones, which no provider compares: priced, a whitespace-only answer made pairs the run then
+        // skipped, and the count before Find disagreed with the one after. Only the short texts are read for
+        // it, so pricing still costs the database next to nothing; a blank one longer than this is rare
+        // enough to be priced as it is.
+        val short = chosen.filter { it.third <= BLANK_READ_BYTES }.map { it.first }
+        val blank = if (short.isEmpty()) emptySet() else Submission.select(Submission.id, Submission.solution)
+            .where { Submission.id inList short }
+            .filter { it[Submission.solution].isBlank() }
+            .mapTo(HashSet()) { it[Submission.id].value }
+
         val alike = chosen.groupBy { it.third }.values.filter { it.size > 1 }.flatten().map { it.first }
         val digest = CustomFunction("md5", TextColumnType(), Submission.solution)
         val digests = if (alike.isEmpty()) emptyMap() else Submission.select(Submission.id, digest)
             .where { Submission.id inList alike }
             .associate { it[Submission.id].value to it[digest] }
-        chosen.map { (id, owner, length) -> SizedSource(id, length, owner, digests[id]) }
+        chosen.map { (id, owner, length) -> SizedSource(id, length, owner, digests[id], id in blank) }
+    }
+
+    private companion object {
+        /** The longest solution read to see whether it is blank, in UTF-8 bytes. */
+        const val BLANK_READ_BYTES = 1_000
     }
 }

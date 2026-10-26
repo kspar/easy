@@ -42,7 +42,7 @@ test('similarity-page', async ({ launch, check }) => {
       const n = body?.students?.length ?? 0
       return {
         submissions: n, pairs: (n * (n - 1)) / 2, provider, language: 'python', mode: 'full',
-        provider_fallback: null, estimated_sec: 2, budget_sec: 120, within_budget: true, optimised: false,
+        provider_fallback: null, estimated_sec: 2, budget_sec: 120, within_budget: true, optimised: false, not_compared: 0,
       }
     }],
 

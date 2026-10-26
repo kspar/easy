@@ -38,8 +38,8 @@ function flatten(obj, prefix = '') {
 const EN = flatten(en)
 const ET = flatten(et)
 
-/** The `{{name}}` slots in a string, sorted so order is not part of the comparison. */
-const placeholders = (s) => [...String(s).matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]).sort()
+/** The `{{name}}` slots in a string - `{{name, format}}` too, by its name - sorted so order is not part of the comparison. */
+const placeholders = (s) => [...String(s).matchAll(/\{\{(\w+)(?:,[^}]*)?\}\}/g)].map((m) => m[1]).sort()
 
 describe('the two languages describe the same strings', () => {
   test('there are strings at all', () => {

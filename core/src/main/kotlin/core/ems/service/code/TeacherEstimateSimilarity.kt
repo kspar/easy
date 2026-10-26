@@ -59,6 +59,8 @@ class TeacherEstimateSimilarityController(
         @get:JsonProperty("attempts") val attempts: String,
         /** `exercise`, `course` or `default` - or `request`, for submissions it named. */
         @get:JsonProperty("attempts_from") val attemptsFrom: String,
+        /** Submissions in no pair: blank, or too long or short for the provider. Said with the count, which leaves them out. */
+        @get:JsonProperty("not_compared") val notCompared: Int,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -92,6 +94,7 @@ class TeacherEstimateSimilarityController(
             resolved.modeFrom.name.lowercase(),
             resolved.attemptsName,
             resolved.attemptsFrom.name.lowercase(),
+            estimate.notCompared,
         )
     }
 }

@@ -114,7 +114,14 @@ data class SimilarityRun<T>(val rows: List<T>, val outcome: SimilarityOutcome)
  * passes the text itself. Equal fingerprints are compared once, as identical texts are; null is a text of
  * its own.
  */
-data class SizedSource(val id: Long, val bytes: Int, val owner: String? = null, val digest: String? = null)
+data class SizedSource(
+    val id: Long,
+    val bytes: Int,
+    val owner: String? = null,
+    val digest: String? = null,
+    /** Whitespace only, which no provider compares: priced, it made pairs the run skipped as too short. */
+    val blank: Boolean = false,
+)
 
 /**
  * What a comparison would take: how many pairs it would score, and how long on this server's pool,
@@ -132,6 +139,8 @@ data class SimilarityEstimate(
      * refused for being over.
      */
     val optimised: Boolean = false,
+    /** Submissions in no pair at all - blank, or a size the provider does not compare - for the page to say so. */
+    val notCompared: Int = 0,
 ) {
     val withinBudget: Boolean get() = wallNanos <= budgetSec * 1_000_000_000L
 

@@ -427,6 +427,9 @@ export default function SimilarityPage() {
               count: estimate.pairs,
               duration: formatDuration(estimate.seconds, t),
             })}
+          {estimate.kind !== 'unknown' && estimate.notCompared > 0 && (
+            <Box component="span" sx={{ display: 'block' }}>{t('similarity.estimateNotCompared', { count: estimate.notCompared })}</Box>
+          )}
           {/* A line of their own: run on after the estimate, "about 2 s This exercise has…" read as one
               sentence with its full stop missing. */}
           {comparesFirstAttempts(estimateData) && <Box component="span" sx={{ display: 'block' }}>{t('similarity.firstAttemptsNote')}</Box>}

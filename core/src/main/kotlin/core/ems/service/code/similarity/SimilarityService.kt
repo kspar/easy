@@ -179,7 +179,10 @@ class SimilarityService(
         // budget tokenising is priced, and refused, as a full run is. Unpriced, it held the permit for the
         // budget and then timed out with nothing.
         val prepared = prepareNanos / threads <= timeoutSec * 1_000_000_000L
-        return SimilarityEstimate(sources.size, pairs, threads, nanos / threads, timeoutSec, binding.optimised && bounds(provider) && prepared)
+        return SimilarityEstimate(
+            sources.size, pairs, threads, nanos / threads, timeoutSec, binding.optimised && bounds(provider) && prepared,
+            notCompared = sources.count { !compares(provider, it) },
+        )
     }
 
     /**
@@ -189,7 +192,7 @@ class SimilarityService(
      * hundred - a quarter of the pairs, admitted to time out.
      */
     private fun pairsOf(provider: SimilarityProvider, language: SimilarityLanguage, sources: List<SizedSource>): Pair<Long, Long> {
-        val comparands = sources.filter { provider.compares(it.bytes) }
+        val comparands = sources.filter { compares(provider, it) }
             .groupBy { it.digest ?: "#${it.id}" }.values
             .flatMap { same ->
                 val authors = same.mapNotNull { it.owner }.distinct().size + same.count { it.owner == null }
@@ -208,6 +211,9 @@ class SimilarityService(
         }
         return pairs to (pairNanos * calibration.factor(provider.id, language, Calibration.Phase.PAIRS)).toLong()
     }
+
+    /** Whether [source] is in any pair: not blank, which every provider skips, and of a size [provider] compares. */
+    private fun compares(provider: SimilarityProvider, source: SizedSource) = !source.blank && provider.compares(source.bytes)
 
     /**
      * [estimate], refused with [SimilarityTooCostly] when it is over the budget - unless it would run
@@ -315,7 +321,9 @@ class SimilarityService(
         val bytesById = sources.associate { it.id to utf8Length(it.solution) }
         // What the pairs would take once the cohort is prepared, for a refusal while preparing to say what the
         // whole run would: priced as the estimate prices them, the text itself standing for its fingerprint.
-        val (pairsAfter, pairNanosAfter) = pairsOf(provider, language, sources.map { SizedSource(it.id, bytesById.getValue(it.id), it.owner, it.solution) })
+        val (pairsAfter, pairNanosAfter) = pairsOf(provider, language, sources.map {
+            SizedSource(it.id, bytesById.getValue(it.id), it.owner, it.solution, it.solution.isBlank())
+        })
 
         SimilarityWorkers(threads, WORKER_STACK_BYTES).use { workers ->
             val context = RunContext(workers, deadline, timeoutSec, projectRuns) { wall ->

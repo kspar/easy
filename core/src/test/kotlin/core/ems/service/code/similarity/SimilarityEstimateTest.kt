@@ -55,6 +55,17 @@ class SimilarityEstimateTest {
     }
 
     @Test
+    fun `a blank solution is in no pair, and the submissions in none are counted`() {
+        // Whitespace only is skipped as too short by every provider; priced, it made pairs the run skipped,
+        // and the count before Find disagreed with the one after it.
+        val sources = listOf(SizedSource(1, 100, "ann"), SizedSource(2, 120, "ben"), SizedSource(3, 4, "cid", blank = true), SizedSource(4, 50_000, "dan"))
+        val estimate = service().estimate(editDistance, sources)
+        assertEquals(1, estimate.pairs)
+        assertEquals(2, estimate.notCompared)
+        assertEquals(1, service().estimate(jplag, sources).notCompared)
+    }
+
+    @Test
     fun `a solution the provider skips for its size is in no pair`() {
         val sources = listOf(SizedSource(1, 0), SizedSource(2, 50_000), SizedSource(3, 100), SizedSource(4, 120))
         assertEquals(1, service().estimate(editDistance, sources).pairs)

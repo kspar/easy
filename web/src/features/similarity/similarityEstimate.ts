@@ -12,10 +12,10 @@ import type { SimilarityEstimateResp } from '../../api/types.ts'
  */
 export type EstimateView =
   | { kind: 'unknown' }
-  | { kind: 'nothing'; submissions: number }
-  | { kind: 'fits'; submissions: number; pairs: number; seconds: number }
-  | { kind: 'tooCostly'; submissions: number; pairs: number; seconds: number; budget: number }
-  | { kind: 'partial'; submissions: number; pairs: number; seconds: number; budget: number }
+  | { kind: 'nothing'; submissions: number; notCompared: number }
+  | { kind: 'fits'; submissions: number; pairs: number; seconds: number; notCompared: number }
+  | { kind: 'tooCostly'; submissions: number; pairs: number; seconds: number; budget: number; notCompared: number }
+  | { kind: 'partial'; submissions: number; pairs: number; seconds: number; budget: number; notCompared: number }
 
 const isCount = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0
 
@@ -23,14 +23,17 @@ export function estimateView(estimate: Partial<SimilarityEstimateResp> | undefin
   if (!estimate) return { kind: 'unknown' }
   const { submissions, pairs, estimated_sec: seconds, budget_sec: budget, within_budget: fits, optimised } = estimate
   if (!isCount(submissions) || !isCount(pairs) || !isCount(seconds) || typeof fits !== 'boolean') return { kind: 'unknown' }
+  // Those in no pair, said with the count that leaves them out: 27 submissions and 120 pairs, with nothing
+  // on why not 351, and after the run 91. An older core does not say, and is taken to compare them all.
+  const notCompared = isCount(estimate.not_compared) ? estimate.not_compared : 0
   // No pair at all - every solution blank, too long for this provider, or one text three or more authors
   // handed in, which is one comparand - is not "about 0 s". Find still runs it: the result names who could
   // not be compared and why, or the group that handed in the same text.
-  if (pairs === 0) return { kind: 'nothing', submissions }
-  if (fits) return { kind: 'fits', submissions, pairs, seconds }
+  if (pairs === 0) return { kind: 'nothing', submissions, notCompared }
+  if (fits) return { kind: 'fits', submissions, pairs, seconds, notCompared }
   // Over the budget, optimised is not refused: it stops at the budget with the likeliest pairs found.
-  if (optimised === true) return { kind: 'partial', submissions, pairs, seconds, budget: isCount(budget) ? budget : 0 }
-  return { kind: 'tooCostly', submissions, pairs, seconds, budget: isCount(budget) ? budget : 0 }
+  if (optimised === true) return { kind: 'partial', submissions, pairs, seconds, budget: isCount(budget) ? budget : 0, notCompared }
+  return { kind: 'tooCostly', submissions, pairs, seconds, budget: isCount(budget) ? budget : 0, notCompared }
 }
 
 /** Whether the check compares each student's first attempt rather than the latest (EZ-1667). */

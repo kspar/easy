@@ -448,16 +448,16 @@ describe('the estimate', () => {
   const fits = { submissions: 30, pairs: 435, provider: 'edit-distance', language: 'python', mode: 'optimised', provider_fallback: null, estimated_sec: 12, budget_sec: 120, within_budget: true }
 
   test('within the budget it is a duration to show, and over it a refusal to say before the click', () => {
-    expect(estimateView(fits)).toEqual({ kind: 'fits', submissions: 30, pairs: 435, seconds: 12 })
+    expect(estimateView(fits)).toEqual({ kind: 'fits', submissions: 30, pairs: 435, seconds: 12, notCompared: 0 })
     expect(estimateView({ ...fits, estimated_sec: 540, within_budget: false }))
-      .toEqual({ kind: 'tooCostly', submissions: 30, pairs: 435, seconds: 540, budget: 120 })
+      .toEqual({ kind: 'tooCostly', submissions: 30, pairs: 435, seconds: 540, budget: 120, notCompared: 0 })
   })
 
   test('optimised, a cohort over the budget is not refused: it stops at the budget with the likeliest pairs', () => {
     expect(estimateView({ ...fits, estimated_sec: 540, within_budget: false, optimised: true }))
-      .toEqual({ kind: 'partial', submissions: 30, pairs: 435, seconds: 540, budget: 120 })
+      .toEqual({ kind: 'partial', submissions: 30, pairs: 435, seconds: 540, budget: 120, notCompared: 0 })
     // Within the budget it is a duration like any other, an upper bound though it is.
-    expect(estimateView({ ...fits, optimised: true })).toEqual({ kind: 'fits', submissions: 30, pairs: 435, seconds: 12 })
+    expect(estimateView({ ...fits, optimised: true })).toEqual({ kind: 'fits', submissions: 30, pairs: 435, seconds: 12, notCompared: 0 })
   })
 
   test('a result that did not compare every pair says how many it did, and why', () => {
@@ -508,8 +508,15 @@ describe('the estimate', () => {
 
   test('a cohort with no pair to compare says so, rather than "about 0 s"', () => {
     // Every solution blank, or too long for the provider: Find still runs it, to name who was skipped.
-    expect(estimateView({ ...fits, pairs: 0, estimated_sec: 0 })).toEqual({ kind: 'nothing', submissions: 30 })
-    expect(estimateView({ ...fits, pairs: 0, estimated_sec: 0, within_budget: false })).toEqual({ kind: 'nothing', submissions: 30 })
+    expect(estimateView({ ...fits, pairs: 0, estimated_sec: 0 })).toEqual({ kind: 'nothing', submissions: 30, notCompared: 0 })
+    expect(estimateView({ ...fits, pairs: 0, estimated_sec: 0, within_budget: false })).toEqual({ kind: 'nothing', submissions: 30, notCompared: 0 })
+  })
+
+  test('those in no pair are counted with the estimate, and an older core is taken to compare them all', () => {
+    // 27 submissions and 120 pairs said nothing of why not 351, and after the run there were 91.
+    expect(estimateView({ ...fits, not_compared: 9 })).toMatchObject({ kind: 'fits', notCompared: 9 })
+    expect(estimateView({ ...fits, not_compared: -1 })).toMatchObject({ notCompared: 0 })
+    expect(estimateView(fits)).toMatchObject({ notCompared: 0 })
   })
 
   test('no estimate, or one the page cannot read, falls back to what the page said before estimates', () => {

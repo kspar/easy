@@ -552,6 +552,7 @@
       "language": { "kind": "string" },
       "mode": { "kind": "string" },
       "mode_from": { "kind": "string" },
+      "not_compared": { "kind": "number" },
       "optimised": { "kind": "boolean" },
       "pairs": { "kind": "number" },
       "provider": { "kind": "string" },

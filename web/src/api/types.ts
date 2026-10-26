@@ -753,6 +753,8 @@ export interface SimilarityEstimateResp {
    */
   attempts?: string
   attempts_from?: string
+  /** Submissions in no pair - blank, or a size the provider does not compare. Absent from an older core. */
+  not_compared?: number
 }
 
 /**
