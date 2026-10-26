@@ -407,6 +407,7 @@ export default function SimilarityPage() {
         onClose={() => setSettingsOpen(false)}
         exercise={selected}
         exercises={exercises}
+        language={estimateData?.language}
       />
 
       {/* Where to start, said: the page was a heading, two selects and an empty screen. */}

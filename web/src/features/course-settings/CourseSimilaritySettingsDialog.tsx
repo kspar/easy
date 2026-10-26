@@ -25,6 +25,7 @@ import {
 import { errorMessage } from '../../api/errorMessage.ts'
 import { languageName, providerHelp, providerName } from '../similarity/similarityProvider.ts'
 import {
+  automaticFor,
   AUTOMATIC,
   canSave,
   exerciseCanSave,
@@ -63,6 +64,7 @@ export default function CourseSimilaritySettingsDialog({
   onClose,
   exercise,
   exercises = [],
+  language,
 }: {
   courseId: string
   open: boolean
@@ -71,6 +73,8 @@ export default function CourseSimilaritySettingsDialog({
   exercise?: CourseExerciseRef
   /** The course's exercises, to name those with settings of their own. */
   exercises?: CourseExerciseRef[]
+  /** The language the selected exercise is compared in, to say what Automatic means for it now. */
+  language?: string
 }) {
   const { t } = useTranslation()
   const { data: settings, isLoading, isFetching, isError, error } = useCourseSimilaritySettings(courseId, open)
@@ -81,7 +85,10 @@ export default function CourseSimilaritySettingsDialog({
   const [picked, setPicked] = useState<string | null>(null)
   const [pickedMode, setPickedMode] = useState<ExerciseMode | null>(null)
   const [pickedAttempts, setPickedAttempts] = useState<ExerciseAttempts | null>(null)
-  const [scope, setScope] = useState<'course' | 'exercise'>('course')
+  // Opened from an exercise, on that exercise: on the whole course, a change meant for one exercise was
+  // made for all of them by a teacher who had not noticed the switch above the choices.
+  const [pickedScope, setPickedScope] = useState<'course' | 'exercise' | null>(null)
+  const scope = pickedScope ?? (exercise ? 'exercise' : 'course')
   const [saved, setSaved] = useState(false)
   const forExercise = scope === 'exercise' && exercise !== undefined
   const exerciseId = exercise?.course_exercise_id ?? ''
@@ -102,6 +109,7 @@ export default function CourseSimilaritySettingsDialog({
     : mode !== FROM_COURSE && attempts !== FROM_COURSE && canSave(settings, choice, mode, attempts))
   const update = forExercise ? updateExercise : updateCourse
   const ownTitles = settings && !forExercise ? exercisesWithOwnSettings(settings, exercises) : []
+  const automaticNow = settings ? automaticFor(settings, language) : null
   const modeChoices: ExerciseMode[] = forExercise ? [FROM_COURSE, 'optimised', 'full'] : ['optimised', 'full']
   const attemptsChoices: ExerciseAttempts[] = forExercise ? [FROM_COURSE, 'latest', 'first'] : ['latest', 'first']
 
@@ -109,7 +117,7 @@ export default function CourseSimilaritySettingsDialog({
     setPicked(null)
     setPickedMode(null)
     setPickedAttempts(null)
-    setScope('course')
+    setPickedScope(null)
     onClose()
   }
 
@@ -119,7 +127,7 @@ export default function CourseSimilaritySettingsDialog({
     setPicked(null)
     setPickedMode(null)
     setPickedAttempts(null)
-    setScope(next)
+    setPickedScope(next)
   }
 
   function done() {
@@ -164,15 +172,18 @@ export default function CourseSimilaritySettingsDialog({
           {exercise && (
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t('similarity.settingsScope')}</Typography>
+              {/* In the title's own case and wrapping: upper-cased on one line, a long exercise title ran off
+                  the dialog. */}
               <ToggleButtonGroup
                 size="small"
                 exclusive
                 value={scope}
                 onChange={(_, next) => changeScope(next)}
                 aria-label={t('similarity.settingsScope')}
+                sx={{ '& .MuiToggleButton-root': { textTransform: 'none', whiteSpace: 'normal', textAlign: 'left' } }}
               >
-                <ToggleButton value="course">{t('similarity.settingsScopeCourse')}</ToggleButton>
                 <ToggleButton value="exercise">{t('similarity.settingsScopeExercise', { title: exercise.effective_title })}</ToggleButton>
+                <ToggleButton value="course">{t('similarity.settingsScopeCourse')}</ToggleButton>
               </ToggleButtonGroup>
             </Box>
           )}
@@ -218,6 +229,15 @@ export default function CourseSimilaritySettingsDialog({
                         {help && (
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                             {help}
+                          </Typography>
+                        )}
+                        {/* What it means for this exercise, by name: "the administrator's choice" alone
+                            left the teacher to guess what they were choosing. */}
+                        {automatic && automaticNow && language && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {automaticNow.asText
+                              ? t('similarity.settingsAutomaticNowText', { language: languageName(language, t), provider: providerName(automaticNow.provider, t) })
+                              : t('similarity.settingsAutomaticNow', { language: languageName(language, t), provider: providerName(automaticNow.provider, t) })}
                           </Typography>
                         )}
                         {c.languages.length > 0 && (

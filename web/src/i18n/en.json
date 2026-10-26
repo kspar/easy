@@ -770,7 +770,9 @@
     "nothingShared": "No line or run of text is the same in both, so nothing is marked: the score counts the characters the two have in common wherever they are, scattered through both.",
     "chooseExercise": "Choose an exercise to see how many solutions it has and how long comparing them takes.",
     "handedIn_one": "{{count}} handed in",
-    "handedIn_other": "{{count}} handed in"
+    "handedIn_other": "{{count}} handed in",
+    "settingsAutomaticNow": "For {{language}}, Automatic means {{provider}} now.",
+    "settingsAutomaticNowText": "For {{language}}, Automatic means {{provider}} now, as plain text."
   },
   "about": {
     "s1": "Lahendus is operated and developed by the",

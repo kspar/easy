@@ -770,7 +770,9 @@
     "nothingShared": "Ükski rida ega tekstilõik pole mõlemas sama, seega pole midagi märgitud: skoor loeb märke, mis on kahel ühised, ükskõik kus need mõlemas paiknevad.",
     "chooseExercise": "Vali ülesanne, et näha, mitu lahendust sellel on ja kui kaua nende võrdlemine võtab.",
     "handedIn_one": "{{count}} esitanud",
-    "handedIn_other": "{{count}} esitanud"
+    "handedIn_other": "{{count}} esitanud",
+    "settingsAutomaticNow": "Praegu tähendab Automaatne keele {{language}} jaoks: {{provider}}.",
+    "settingsAutomaticNowText": "Praegu tähendab Automaatne keele {{language}} jaoks: {{provider}}, tavalise tekstina."
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",

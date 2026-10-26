@@ -43,6 +43,20 @@ export function providerChoices(settings: CourseSimilaritySettings, pinned: stri
   return choices
 }
 
+/**
+ * What Automatic means for [language] now: the first provider in the admin's order that compares it, or
+ * failing that one that compares plain text, which is what the check then does. Said beside "Automatic",
+ * which named no method at all: the teacher could not tell what they would be choosing. Null when no
+ * provider would compare it, or the language is not known yet.
+ */
+export function automaticFor(settings: CourseSimilaritySettings, language: string | undefined): { provider: string; asText: boolean } | null {
+  if (!language) return null
+  const own = settings.providers.find((p) => p.languages.includes(language))
+  if (own) return { provider: own.id, asText: false }
+  const text = settings.providers.find((p) => p.languages.includes('text'))
+  return text ? { provider: text.id, asText: true } : null
+}
+
 /** What the dialog opens on: the stored pin, switched off or not - it is still what is stored. */
 export function initialChoice(settings: CourseSimilaritySettings): string {
   return settings.provider ?? AUTOMATIC

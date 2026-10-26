@@ -8,6 +8,7 @@
  */
 import { describe, expect, test } from 'vitest'
 import {
+  automaticFor,
   AUTOMATIC,
   canSave,
   exerciseCanSave,
@@ -134,5 +135,21 @@ describe('course similarity settings', () => {
       // An older core does not list them.
       expect(exercisesWithOwnSettings(course, exercises)).toEqual([])
     })
+  })
+})
+
+describe('what Automatic means now', () => {
+  // "Automatic" named no method: the teacher could not tell what they would be choosing.
+  test('the first in the admin order that compares the language, or one that compares plain text', () => {
+    const settings = { provider: null, mode: 'optimised', providers: [
+      { id: 'jplag', languages: ['java', 'python', 'text'] },
+      { id: 'edit-distance', languages: ['java', 'python', 'sql', 'text'] },
+    ] }
+    expect(automaticFor(settings, 'python')).toEqual({ provider: 'jplag', asText: false })
+    expect(automaticFor(settings, 'sql')).toEqual({ provider: 'edit-distance', asText: false })
+    expect(automaticFor({ ...settings, providers: [{ id: 'jplag', languages: ['python', 'text'] }] }, 'sql')).toEqual({ provider: 'jplag', asText: true })
+    expect(automaticFor({ ...settings, providers: [] }, 'python')).toBeNull()
+    // Before the estimate has said which language: nothing to say yet.
+    expect(automaticFor(settings, undefined)).toBeNull()
   })
 })

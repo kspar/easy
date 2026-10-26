@@ -330,6 +330,8 @@ test('similarity-page', async ({ launch, check }) => {
   // --- the course's comparison method (EZ-1667) ---------------------------------------------------------
   await page.getByRole('button', { name: 'Comparison method' }).click()
   const dialog = page.getByRole('dialog')
+  // Opened from an exercise, the dialog starts on that exercise's settings: the course's are a click away.
+  await dialog.getByRole('button', { name: 'The whole course' }).click()
   check(
     'the dialog opens on what the course stored, a pinned JPlag',
     await waitUntil(() => dialog.getByRole('radio', { name: /^JPlag/ }).isChecked()),
