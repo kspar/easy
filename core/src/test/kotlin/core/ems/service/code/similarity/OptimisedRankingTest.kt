@@ -162,14 +162,16 @@ class OptimisedRankingTest {
 
     @Test
     fun `optimised, a cohort over the budget is priced but not refused - unless its provider cannot bound`() {
-        val sources = listOf(SizedSource(1, 100, "ann"), SizedSource(2, 100, "ben"))
-        val noBudget = service(timeoutSec = 0)
-        val estimate = noBudget.assertAffordable(editDistance.copy(optimised = true), sources)
+        // 200 solutions of 5 KB: prepared in seconds by either provider, compared in well over ten.
+        val sources = (1L..200L).map { SizedSource(it, 5_000, "s$it") }
+        val tenSeconds = service(timeoutSec = 10)
+        val estimate = tenSeconds.assertAffordable(editDistance.copy(optimised = true), sources)
         assertTrue(estimate.optimised)
         assertFalse(estimate.withinBudget)
-        assertThrows<SimilarityTooCostly> { noBudget.assertAffordable(editDistance, sources) }
-        assertThrows<SimilarityTooCostly> { unboundedService(timeoutSec = 0).assertAffordable(unbounded, sources) }
+        assertThrows<SimilarityTooCostly> { tenSeconds.assertAffordable(editDistance, sources) }
+        assertThrows<SimilarityTooCostly> { unboundedService(timeoutSec = 10).assertAffordable(unbounded, sources) }
         // JPlag bounds its pairs, so it is not refused optimised either.
-        assertTrue(noBudget.assertAffordable(jplag.copy(optimised = true), sources).optimised)
+        val jplagEstimate = tenSeconds.assertAffordable(jplag.copy(optimised = true), sources)
+        assertTrue(jplagEstimate.optimised && !jplagEstimate.withinBudget)
     }
 }

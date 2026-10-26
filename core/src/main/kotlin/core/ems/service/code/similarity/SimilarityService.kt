@@ -161,7 +161,8 @@ class SimilarityService(
                 if (authors >= GROUP_AUTHORS) listOf(same.first().chars to same.mapTo(mutableSetOf()) { it.owner })
                 else same.map { it.chars to setOf(it.owner) }
             }
-        var nanos = sources.sumOf { provider.prepareNanos(it.chars) }
+        val prepareNanos = sources.sumOf { provider.prepareNanos(it.chars) }
+        var nanos = prepareNanos
         var pairs = 0L
         for (i in comparands.indices) for (j in i + 1 until comparands.size) {
             val (charsA, ownersA) = comparands[i]
@@ -172,7 +173,12 @@ class SimilarityService(
             nanos += provider.pairNanos(charsA, charsB)
         }
         val threads = threadsFor(sources.size)
-        return SimilarityEstimate(sources.size, pairs, threads, nanos / threads, timeoutSec, binding.optimised && provider.bounds)
+        // Optimised stops at the budget with the pairs it reached - but only once the cohort is prepared,
+        // and preparing is not stopped part way with anything to show: a cohort JPlag would spend the whole
+        // budget tokenising is priced, and refused, as a full run is. Unpriced, it held the permit for the
+        // budget and then timed out with nothing.
+        val prepared = prepareNanos / threads <= timeoutSec * 1_000_000_000L
+        return SimilarityEstimate(sources.size, pairs, threads, nanos / threads, timeoutSec, binding.optimised && provider.bounds && prepared)
     }
 
     /**

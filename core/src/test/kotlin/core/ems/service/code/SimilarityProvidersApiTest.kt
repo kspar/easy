@@ -104,9 +104,12 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
-    fun `optimised, a cohort over the budget is not refused up front, since it stops at the budget instead`() {
-        // With no budget at all, the full mode is refused as too costly before it runs; the optimised mode
-        // - the default, on edit distance - is let run, and here meets the deadline preparing.
+    fun `with no budget even to prepare the cohort, the optimised mode is refused up front as the full one is`() {
+        // Optimised stops at the budget with the pairs it reached - once the cohort is prepared. With no
+        // budget at all nothing can be, so it is refused before the permit, as too costly, like the full
+        // mode; let run, it held the permit to the deadline and timed out with nothing. That the optimised
+        // mode is let run past a budget its preparing fits is SimilarityEstimateTest's and
+        // OptimisedRankingTest's.
         val service = SimilarityService(maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = 0)
         val controller = TeacherCheckSimilarityController(service, SimilarityRequests(service))
         val request = TeacherCheckSimilarityController.Req(
@@ -114,7 +117,7 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
             submissions.map { TeacherCheckSimilarityController.ReqSubmission(it.toString()) },
         )
         val caller = Auth.easyUser(teacher, EasyRole.TEACHER)
-        assertEquals(ReqError.SIMILARITY_TIMEOUT, assertThrows<InvalidRequestException> { controller.controller(exercise.toString(), request, caller) }.code)
+        assertEquals(ReqError.SIMILARITY_TOO_COSTLY, assertThrows<InvalidRequestException> { controller.controller(exercise.toString(), request, caller) }.code)
         assertEquals(200, putSettings(null, mode = "full").status)
         assertEquals(ReqError.SIMILARITY_TOO_COSTLY, assertThrows<InvalidRequestException> { controller.controller(exercise.toString(), request, caller) }.code)
     }

@@ -205,7 +205,7 @@ internal class PairRanking(
                 if (partial) break
                 throw SimilarityTimedOut(budgetSec)
             }
-            val exact = session.bound(candidate.a, candidate.b) ?: candidate.bound
+            val exact = if (session.quickBoundIsExact) candidate.bound else session.bound(candidate.a, candidate.b) ?: candidate.bound
             if (exact.score < MIN_REPORTED_SIMILARITY || floors.rulesOut(exact)) {
                 done += Worked(candidate, null, ruledOut = exact.score >= MIN_REPORTED_SIMILARITY)
                 continue
@@ -304,7 +304,14 @@ internal class PairRanking(
         private val left = deadline.remainingNanos()
         private val checkAfter = left / PROJECT_AFTER_SHARE
         private val submissions = comparands.size
-        private val total = comparands.indices.sumOf { i -> (i + 1 until comparands.size).count { j -> comparands[i].apartFrom(comparands[j]) }.toLong() }
+        /**
+         * Every pair but a single author's own: two comparands are not apart only when each is one known
+         * author's, the same one ([Comparand.apartFrom]). Counted from how many each author has, rather than
+         * by walking the triangle the stripes are about to walk.
+         */
+        private val total = comparands.size.toLong() * (comparands.size - 1) / 2 -
+            comparands.mapNotNull { c -> c.owners.distinct().singleOrNull() }
+                .groupingBy { it }.eachCount().values.sumOf { n -> n.toLong() * (n - 1) / 2 }
         private val done = AtomicLong()
         private val checked = AtomicBoolean()
 

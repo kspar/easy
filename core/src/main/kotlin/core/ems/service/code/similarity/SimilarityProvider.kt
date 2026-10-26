@@ -127,6 +127,12 @@ internal interface ProviderSession : AutoCloseable {
     fun quickBound(a: Long, b: Long): PairBound? = bound(a, b)
 
     /**
+     * Whether [quickBound] is already [bound]: then the optimised mode does not bound a pair it reaches a
+     * second time. JPlag's is; edit distance's quick one is from sizes and Dice, its exact one tighter.
+     */
+    val quickBoundIsExact: Boolean get() = false
+
+    /**
      * Where [pair]'s two sides match, as line ranges, read from [shownFirst] and [shownSecond]: the
      * submissions the outcome names for [PairScore.first] and [PairScore.second], which for a group can
      * be another member than the one compared. Called only for pairs that are returned.

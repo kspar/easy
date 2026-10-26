@@ -195,7 +195,10 @@ internal class JPlagProvider(
         private lateinit var gst: GreedyStringTiling
 
         /** Token types as small numbers, for [TokenRuns]; one session's own, so the numbers stay small. */
-        private val typeIds = ConcurrentHashMap<TokenType, Int>()
+        private val typeIds = Numbering<TokenType>()
+
+        /** Its quick bound is [bound] itself: nothing tighter to compute for a pair once it is reached. */
+        override val quickBoundIsExact = true
 
         /**
          * Built on a submission's first [bound], as edit distance's profiles are: only the optimised mode reads
@@ -207,7 +210,7 @@ internal class JPlagProvider(
             val tokens = submissionById.getValue(it).tokenList
             val ids = IntArray(tokens.size) { i ->
                 val type = tokens[i].type
-                if (type.isExcludedFromMatching()) -1 else typeIds.computeIfAbsent(type) { typeIds.size }
+                if (type.isExcludedFromMatching()) -1 else typeIds.of(type)
             }
             TokenRuns.of(ids, options.minimumTokenMatch())
         }

@@ -27,7 +27,11 @@ class PairRankingTest {
         private val scoreMs: Long = 0,
         /** Only the first this many pairs take [scoreMs]: a cold start. */
         private val slowPairs: Int = Int.MAX_VALUE,
+        /** A quick bound that is the exact one, as JPlag's is. */
+        private val quickIsExact: Boolean = false,
     ) : ProviderSession {
+        override val quickBoundIsExact get() = quickIsExact
+
         val calls = AtomicInteger()
         val bounds = AtomicInteger()
 
@@ -61,11 +65,12 @@ class PairRankingTest {
         /** Looser than [bound], as a quick bound is: the pair's own values, raised - the similarity without ties at 1. */
         override fun quickBound(a: Long, b: Long): PairBound {
             val (score, rank, similarity) = of(a, b)
+            if (quickIsExact) return PairBound(score, rank, similarity)
             return PairBound(minOf(1.0, score + 0.2), rank + 100, 0.5 + similarity / 2)
         }
     }
 
-    private fun comparands(n: Int) = (1L..n).map { Comparand(it, listOf(it), listOf("s$it")) }
+    private fun comparands(n: Int, authors: Int = n) = (1L..n).map { Comparand(it, listOf(it), listOf("s${it % authors}")) }
 
     private fun <R> ranking(threads: Int, budgetMs: Long = 60_000, block: (PairRanking) -> R): R =
         SimilarityWorkers(threads, 1L shl 20).use { block(PairRanking(it, Deadline.after(TimeUnit.MILLISECONDS.toNanos(budgetMs)), 60)) }
@@ -137,6 +142,23 @@ class PairRankingTest {
         // read once a tenth of the budget is spent, it is what it is.
         val ranked = ranking(1, budgetMs = 1_000) { it.rank(Drawn(seed = 3, scoreMs = 30, slowPairs = 3), comparands(20), 5) }
         assertEquals(190, ranked.compared)
+    }
+
+    @Test
+    fun `the pace counts every pair but an author's own, as the stripes compare them`() {
+        // 20 comparands by 5 authors, four each: 190 pairs less 5 times the 6 among each author's own.
+        val refused = assertThrows<SimilarityTooCostly> {
+            ranking(1, budgetMs = 1_000) { it.rank(Drawn(seed = 3, scoreMs = 20), comparands(20, authors = 5), 5) }
+        }
+        assertEquals(160, refused.estimate.pairs)
+    }
+
+    @Test
+    fun `a quick bound that is the exact one is not computed again for a pair reached`() {
+        val session = Drawn(seed = 4, quickIsExact = true)
+        val ranked = ranking(2) { it.rankBounded(session, comparands(40), 3, partial = false) }
+        assertEquals(0, session.bounds.get(), "bounded again ${session.bounds.get()} times")
+        assertEquals(ids(ranking(2) { it.rank(Drawn(seed = 4), comparands(40), 3) }), ids(ranked))
     }
 
     @Test

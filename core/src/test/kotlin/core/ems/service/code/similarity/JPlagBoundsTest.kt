@@ -90,6 +90,17 @@ class JPlagBoundsTest {
     }
 
     @Test
+    fun `keys first seen on many threads at once are each numbered on their own`() {
+        // Numbered from a map's size, two first seen at once could take one number between them.
+        val numbering = Numbering<String>()
+        val keys = (1..2_000).map { "type-$it" }
+        val threads = (0 until 8).map { t -> Thread { for (key in keys.shuffled(Random(t))) numbering.of(key) } }
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+        assertEquals((0 until keys.size).toSet(), keys.map { numbering.of(it) }.toSet())
+    }
+
+    @Test
     fun `a window that crosses a token excluded from matching is no run, and the bound counts types it shares`() {
         // Types 1,2,3 then an excluded token then 1,2,3: with runs of three, each side has the run 1,2,3.
         val a = TokenRuns.of(intArrayOf(1, 2, 3, -1, 1, 2, 3), 3)

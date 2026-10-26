@@ -31,14 +31,14 @@ fun insertAutoExercise(
     // with no code and the default notify, so the caller got `code: null` and no clue which field,
     // and ops got a system notification mail for every such attempt. Named by wire name, all at
     // once, so one retry is enough.
-    val missing = listOfNotNull(
-        "grading_script".takeIf { gradingScript == null },
-        "container_image".takeIf { containerImage == null },
-        "max_time_sec".takeIf { maxTime == null },
-        "max_mem_mb".takeIf { maxMem == null },
-        "assets".takeIf { assets == null },
-    )
-    if (gradingScript == null || containerImage == null || maxTime == null || maxMem == null || assets == null) {
+    val missing = mapOf(
+        "grading_script" to gradingScript,
+        "container_image" to containerImage,
+        "max_time_sec" to maxTime,
+        "max_mem_mb" to maxMem,
+        "assets" to assets,
+    ).filterValues { it == null }.keys
+    if (missing.isNotEmpty()) {
         throw InvalidRequestException(
             "Parameters for autoassessable exercise are missing: ${missing.joinToString()}.",
             ReqError.INVALID_PARAMETER_VALUE,
@@ -47,22 +47,24 @@ fun insertAutoExercise(
         )
     }
 
-    if (ContainerImage.selectAll().where { ContainerImage.id eq containerImage }.count() == 0L) {
+    // Each is present, as the check above says; the compiler cannot read that from the map.
+    val image = containerImage!!
+    if (ContainerImage.selectAll().where { ContainerImage.id eq image }.count() == 0L) {
         throw InvalidRequestException(
-            "Container image '$containerImage' does not exist.",
+            "Container image '$image' does not exist.",
             ReqError.ENTITY_WITH_ID_NOT_FOUND,
-            "container_image" to containerImage
+            "container_image" to image
         )
     }
 
     val autoExerciseId = AutoExercise.insertAndGetId {
-        it[AutoExercise.gradingScript] = gradingScript
-        it[AutoExercise.containerImage] = containerImage
-        it[AutoExercise.maxTime] = maxTime
-        it[AutoExercise.maxMem] = maxMem
+        it[AutoExercise.gradingScript] = gradingScript!!
+        it[AutoExercise.containerImage] = image
+        it[AutoExercise.maxTime] = maxTime!!
+        it[AutoExercise.maxMem] = maxMem!!
     }
 
-    Asset.batchInsert(assets) {
+    Asset.batchInsert(assets!!) {
         this[Asset.autoExercise] = autoExerciseId
         this[Asset.fileName] = it.first
         this[Asset.fileContent] = it.second

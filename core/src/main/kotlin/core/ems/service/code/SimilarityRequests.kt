@@ -172,12 +172,11 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
      * what the budget is, so the page can say "about 9 minutes; try a group" rather than wait two minutes
      * for a timeout that was certain from the start.
      *
-     * Not priced at all when nothing could be refused - optimised, on a provider that bounds its pairs,
-     * which stops at the budget instead - since pricing reads every chosen solution's size, and the
-     * default check read the cohort for an answer it then threw away.
+     * Priced optimised too: a run that stops at the budget with the pairs it reached still has to prepare
+     * the cohort first, and JPlag's tokenising alone can outlast the budget. The sizes are read from each
+     * value's header (see [selectSizes]), so pricing costs the database little.
      */
     fun assertAffordable(resolved: Resolved) {
-        if (resolved.binding.optimised && similarityService.registry.provider(resolved.binding.provider)?.bounds == true) return
         try {
             similarityService.assertAffordable(resolved.binding, selectSizes(resolved))
         } catch (e: SimilarityTooCostly) {

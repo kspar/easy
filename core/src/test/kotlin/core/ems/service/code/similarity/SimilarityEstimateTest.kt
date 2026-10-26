@@ -81,6 +81,22 @@ class SimilarityEstimateTest {
     }
 
     @Test
+    fun `optimised, a cohort whose preparing alone outlasts the budget is refused, as nothing would be found by then`() {
+        // JPlag bounds its pairs, so optimised it stops at the budget with what it reached - after tokenising
+        // the cohort, which is not stopped part way with anything to show. 500 solutions at the submit limit
+        // of 500,000 characters are priced at some 128 s to tokenise on four threads: past the two minutes
+        // before any pair.
+        val optimised = jplag.copy(optimised = true)
+        val huge = (1L..500L).map { SizedSource(it, 500_000, "s$it") }
+        val estimate = service(threads = 4).estimate(optimised, huge)
+        assertFalse(estimate.optimised, "priced as stopping at the budget with something found")
+        assertThrows<SimilarityTooCostly> { service(threads = 4).assertAffordable(optimised, huge) }
+        // Ordinary solutions prepare in moments, and the same cohort's pairs past the budget are not refused.
+        val ordinary = (1L..500L).map { SizedSource(it, 19_000, "s$it") }
+        assertTrue(service(threads = 4).assertAffordable(optimised, ordinary).optimised)
+    }
+
+    @Test
     fun `JPlag prices a pair of large solutions at what tiling them costs, and an ordinary pair near what it costs`() {
         // Measured in the EZ-1667 stress test, on one of four threads: 21-29 ms a pair of 19 KB solutions,
         // which a model linear in their sizes priced at 0.2 ms - 300 of them at 7 s, against over 120 s.
