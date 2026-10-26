@@ -55,8 +55,9 @@ class TeacherEstimateSimilarityController(
         @get:JsonProperty("provider_from") val providerFrom: String,
         /** Where [mode] came from, likewise. */
         @get:JsonProperty("mode_from") val modeFrom: String,
-        /** `latest` or `first`: which of each student's submissions it would compare. */
+        /** `latest` or `first`: which of each student's submissions it would compare - or `named`, as on the check. */
         @get:JsonProperty("attempts") val attempts: String,
+        /** `exercise`, `course` or `default` - or `request`, for submissions it named. */
         @get:JsonProperty("attempts_from") val attemptsFrom: String,
     )
 
@@ -70,9 +71,10 @@ class TeacherEstimateSimilarityController(
         // Counts, not the body, for the reason the check gives: request text in a log line can forge one.
         log.info {
             "Estimate similarity for exercise '$exIdString' by ${caller.id} over " +
-                    "${body.courses.size} course(s), ${body.submissions?.size ?: 0} explicit submission(s)"
+                    "${body.courses.size} course(s), ${body.submissions?.size ?: 0} explicit submission(s), " +
+                    "${body.students?.size ?: 0} student(s)"
         }
-        val resolved = requests.resolve(exIdString, body.courses.map { it.id }, body.submissions?.map { it.id }, caller)
+        val resolved = requests.resolve(exIdString, body.courses.map { it.id }, body.submissions?.map { it.id }, body.students?.map { it.id }, caller)
         val estimate = requests.estimate(resolved)
         val provider = checkNotNull(similarityService.registry.provider(resolved.binding.provider))
         return Resp(
@@ -88,7 +90,7 @@ class TeacherEstimateSimilarityController(
             estimate.optimised,
             resolved.providerFrom.name.lowercase(),
             resolved.modeFrom.name.lowercase(),
-            resolved.attempts.name.lowercase(),
+            resolved.attemptsName,
             resolved.attemptsFrom.name.lowercase(),
         )
     }

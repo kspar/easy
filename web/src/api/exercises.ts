@@ -1166,18 +1166,20 @@ const SIMILARITY_REQUEST_TIMEOUT_MS = 300_000
  * the pair count up front so the wait is at least predictable.
  *
  * `exerciseId` is the *library* exercise id, not the course exercise id. `courses` scopes which
- * courses' submissions may be included, and `submissions` narrows it further — the page passes the
- * ids it got from the summaries query, which is how the group filter is applied.
+ * courses' submissions may be included, and `students` narrows it further — the page passes the
+ * students it got from the summaries query, which is how the group filter is applied. Students, not
+ * their submissions: which of each one's submissions is compared, the latest or the first, is the
+ * course's setting, and core answers it (EZ-1667).
  */
 export function useCheckSimilarity(exerciseId: string | undefined) {
   return useMutation({
     mutationKey: SIMILARITY_MUTATION_KEY,
-    mutationFn: ({ courseIds, submissionIds }: { courseIds: string[]; submissionIds: string[] }) =>
+    mutationFn: ({ courseIds, studentIds }: { courseIds: string[]; studentIds: string[] }) =>
       apiFetch<SimilarityResp>(`/exercises/${exerciseId}/similarity`, {
         method: 'POST',
         body: {
           courses: courseIds.map((id) => ({ id })),
-          submissions: submissionIds.map((id) => ({ id })),
+          students: studentIds.map((id) => ({ id })),
         },
         signal: AbortSignal.timeout(SIMILARITY_REQUEST_TIMEOUT_MS),
       }),
@@ -1193,18 +1195,18 @@ export function useCheckSimilarity(exerciseId: string | undefined) {
  * change is a new question. Not retried: an older core answers 404, and three retries only delay the
  * page's fallback to the plain pair count.
  */
-export function useSimilarityEstimate(exerciseId: string | undefined, courseId: string, submissionIds: string[]) {
+export function useSimilarityEstimate(exerciseId: string | undefined, courseId: string, studentIds: string[]) {
   return useQuery({
-    queryKey: ['similarity-estimate', exerciseId, courseId, submissionIds],
+    queryKey: ['similarity-estimate', exerciseId, courseId, studentIds],
     queryFn: () =>
       apiFetch<SimilarityEstimateResp>(`/exercises/${exerciseId}/similarity/estimate`, {
         method: 'POST',
         body: {
           courses: [{ id: courseId }],
-          submissions: submissionIds.map((id) => ({ id })),
+          students: studentIds.map((id) => ({ id })),
         },
       }),
-    enabled: !!exerciseId && submissionIds.length >= 2,
+    enabled: !!exerciseId && studentIds.length >= 2,
     retry: false,
     // Each answer has the database read the cohort's lengths, so not again on every return to the tab;
     // a changed selection is a new key, and a changed comparison method invalidates it.

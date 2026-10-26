@@ -422,32 +422,43 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         Auth.asTeacher(teacher),
     )
 
+    /** What the page sends: the students it lists, for the attempts setting to choose among. */
+    private fun checkStudents(students: List<String>, path: String = "") = api.post(
+        "/v2/exercises/$exercise/similarity$path",
+        api.body(
+            "courses" to listOf(mapOf("id" to course.toString())),
+            "students" to students.map { mapOf("id" to it) },
+        ),
+        Auth.asTeacher(teacher),
+    )
+
     @Test
     fun `with the first attempts, a copy later rewritten is found where the latest hide it`() {
         val latest = rewrittenCopy()
-        // A third student the page does not name - a group chosen, say - who must not come in with the swap.
+        // A third student the page does not name - a group chosen, say - who must not come in with them.
         transaction {
             Fixtures.student("student-3")
             Fixtures.enrolStudent(course, "student-3")
             Fixtures.submission(courseExercise, "student-3", number = 1, solution = "print(sum(map(int, input().split())))")
         }
-        // What the page sends: each student's latest.
-        val page = listOf(latest, submissions[1])
-        val latestRun = checkNamed(page).jsonOrNull!!
+        val page = listOf("student-1", "student-2")
+        val latestRun = checkStudents(page).jsonOrNull!!
         assertEquals("latest", latestRun.get("attempts").asString())
+        assertEquals(setOf(latest.toString(), submissions[1].toString()), latestRun.get("submissions").toList().map { it.get("id").asString() }.toSet())
         assertTrue(latestRun.get("scores").toList().none { it.get("max_similarity").asInt() > 50 }, "the rewrite still matched: $latestRun")
 
         assertEquals(200, putSettings(null, attempts = "first").status)
-        val firstRun = checkNamed(page)
+        val firstRun = checkStudents(page)
         assertEquals(200, firstRun.status)
         val json = firstRun.jsonOrNull!!
         assertEquals("first", json.get("attempts").asString())
         assertEquals(2, json.get("compared").asInt())
         assertEquals(100, json.get("scores").toList().single().get("max_similarity").asInt())
-        // Compared and returned: student-1's first attempt, said to be one.
-        val compared = json.get("submissions").toList().associate { it.get("id").asString() to it.get("number").asInt() }
-        assertEquals(mapOf(submissions[0].toString() to 1, submissions[1].toString() to 1), compared)
-        // Asked without ids, every student's first attempt.
+        // Compared and returned: student-1's first attempt, said to be one, and whose it is - the page's own
+        // list knows each student by their latest, which this is not.
+        val compared = json.get("submissions").toList().associate { it.get("id").asString() to (it.get("number").asInt() to it.get("student_id").asString()) }
+        assertEquals(mapOf(submissions[0].toString() to (1 to "student-1"), submissions[1].toString() to (1 to "student-2")), compared)
+        // Asked without students, every student's first attempt.
         val everyone = api.post(
             "/v2/exercises/$exercise/similarity",
             api.body("courses" to listOf(mapOf("id" to course.toString()))),
@@ -459,11 +470,40 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
             assertEquals("first", it.get("attempts").asString())
             assertEquals("course", it.get("attempts_from").asString())
         }
+        checkStudents(page, "/estimate").jsonOrNull!!.let {
+            assertEquals(2, it.get("submissions").asInt())
+            assertEquals("first", it.get("attempts").asString())
+        }
+    }
+
+    @Test
+    fun `named submissions are compared as named, whichever attempts the setting compares`() {
+        // Under the first attempts each named submission was taken for its author and swapped for their
+        // first, so a body naming two submissions compared two others, by a setting the caller may not
+        // have seen. Named, they are what is compared, and the answer says so.
+        val latest = rewrittenCopy()
+        assertEquals(200, putSettings(null, attempts = "first").status)
+        val response = checkNamed(listOf(latest, submissions[1]))
+        assertEquals(200, response.status)
+        val json = response.jsonOrNull!!
+        assertEquals("named", json.get("attempts").asString())
+        assertEquals(setOf(latest.toString(), submissions[1].toString()), json.get("submissions").toList().map { it.get("id").asString() }.toSet())
+        assertTrue(json.get("scores").toList().none { it.get("max_similarity").asInt() > 50 }, "a first attempt was compared: $json")
+        val estimated = api.post(
+            "/v2/exercises/$exercise/similarity/estimate",
+            api.body(
+                "courses" to listOf(mapOf("id" to course.toString())),
+                "submissions" to listOf(latest, submissions[1]).map { mapOf("id" to it.toString()) },
+            ),
+            Auth.asTeacher(teacher),
+        ).jsonOrNull!!
+        assertEquals("named", estimated.get("attempts").asString())
+        assertEquals("request", estimated.get("attempts_from").asString())
     }
 
     @Test
     fun `an exercise can compare first attempts while its course compares the latest, and a save without it keeps the course's`() {
-        val latest = rewrittenCopy()
+        rewrittenCopy()
         assertEquals(200, putSettings(null, attempts = "first").status)
         // Saved by a page that does not know of attempts: left as it was.
         assertEquals(200, putSettings("edit-distance").status)
@@ -472,7 +512,7 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(200, putExercise(ownProvider = false, provider = null, mode = null, attempts = "first").status)
         assertEquals("first", exerciseOverrides().single().get("attempts").asString())
         assertEquals("exercise", estimate().get("attempts_from").asString())
-        assertEquals(100, checkNamed(listOf(latest, submissions[1])).elements("scores").single().get("max_similarity").asInt())
+        assertEquals(100, checkStudents(listOf("student-1", "student-2")).elements("scores").single().get("max_similarity").asInt())
         // Attempts alone is a setting of its own: cleared, nothing is left.
         assertEquals(200, putExercise(ownProvider = false, provider = null, mode = null, attempts = null).status)
         assertEquals(0, exerciseOverrides().size)
@@ -481,28 +521,54 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
-    fun `with the first attempts, a student is swapped for their first on the same course exercise only`() {
-        // The exercise on the course twice, student-1 with attempts under both: naming their submission on
-        // one brings that one's first attempt, not the other's as well.
+    fun `a student on the exercise twice brings the submission the setting names from each, as asking for everyone does`() {
+        // The exercise on the course twice, student-1 with an attempt under both: each is a course
+        // exercise of its own, as the check without students has them, and student-1's two are never
+        // compared with each other.
         transaction {
             val again = Fixtures.courseExercise(course, exercise)
             Fixtures.submission(again, "student-1", number = 1, solution = "print('elsewhere')")
         }
         assertEquals(200, putSettings(null, attempts = "first").status)
-        val json = checkNamed(listOf(submissions[0], submissions[1])).jsonOrNull!!
-        assertEquals(2, json.get("compared").asInt())
+        val json = checkStudents(listOf("student-1", "student-2")).jsonOrNull!!
+        assertEquals(3, json.get("compared").asInt())
+        assertEquals(2, json.get("pairs_total").asInt())
     }
 
     @Test
-    fun `with the first attempts, a named submission that is not there is refused, not dropped`() {
+    fun `a named student with nothing handed in here is refused, not dropped`() {
         assertEquals(200, putSettings(null, attempts = "first").status)
-        val elsewhere = transaction {
+        transaction {
+            Fixtures.student("student-3")
+            Fixtures.enrolStudent(course, "student-3")
             val other = Fixtures.courseExercise(course, Fixtures.exercise("Other", teacher))
-            Fixtures.submission(other, "student-1", number = 1)
+            Fixtures.submission(other, "student-3", number = 1)
         }
-        val refused = checkNamed(listOf(submissions[0], elsewhere))
+        val refused = checkStudents(listOf("student-1", "student-3"))
         assertEquals(400, refused.status)
         assertEquals("ENTITY_WITH_ID_NOT_FOUND", refused.field("code"))
+    }
+
+    @Test
+    fun `students and submissions are not named together, and more students than the cap are refused unread`() {
+        val both = api.post(
+            "/v2/exercises/$exercise/similarity",
+            api.body(
+                "courses" to listOf(mapOf("id" to course.toString())),
+                "submissions" to submissions.map { mapOf("id" to it.toString()) },
+                "students" to listOf(mapOf("id" to "student-1")),
+            ),
+            Auth.asTeacher(teacher),
+        )
+        assertEquals(400, both.status)
+        assertEquals("INVALID_PARAMETER_VALUE", both.field("code"))
+        // Four against the test config's cap of three, two of whom do not exist: refused by count, not
+        // looked up and refused as missing.
+        val tooMany = checkStudents(listOf("student-1", "student-2", "nobody-1", "nobody-2"))
+        assertEquals(400, tooMany.status)
+        assertEquals("TOO_MANY_SUBMISSIONS", tooMany.field("code"))
+        // Named twice, a student is one.
+        assertEquals(1, checkStudents(listOf("student-1", "student-2", "student-1")).jsonOrNull!!.get("scores").toList().size)
     }
 
     @Test

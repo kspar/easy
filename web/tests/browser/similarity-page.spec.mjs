@@ -39,7 +39,7 @@ test('similarity-page', async ({ launch, check }) => {
     // Before '/similarity', which it also contains - the first needle that matches answers. Priced from
     // what was sent, as core does, so a group change is a new answer: n submissions, n(n-1)/2 pairs.
     ['/similarity/estimate', ({ body }) => {
-      const n = body?.submissions?.length ?? 0
+      const n = body?.students?.length ?? 0
       return {
         submissions: n, pairs: (n * (n - 1)) / 2, provider, language: 'python', mode: 'full',
         provider_fallback: null, estimated_sec: 2, budget_sec: 120, within_budget: true, optimised: false,
@@ -65,8 +65,8 @@ test('similarity-page', async ({ launch, check }) => {
       if (method === 'POST') requests.push({ url, body })
       if (provider === 'edit-distance') return {
         submissions: [
-          { id: '101', created_at: '2026-08-01T10:00:00.000Z', solution: '# loeb kaks arvu ja liidab\na = int(input())\nb = int(input())\nsumma = a + b\nprint(summa)\n', given_name: 'Mari', family_name: 'Maasikas', course_title: 'Programmeerimise alused' },
-          { id: '102', created_at: '2026-08-01T11:00:00.000Z', solution: '# loeb kaks arvu ja liidab\nx = int(input())\ny = int(input())\ntulemus = x + y\nprint(tulemus)\n', given_name: 'Jaan', family_name: 'Tamm', course_title: 'Programmeerimise alused' },
+          { id: '101', created_at: '2026-08-01T10:00:00.000Z', solution: '# loeb kaks arvu ja liidab\na = int(input())\nb = int(input())\nsumma = a + b\nprint(summa)\n', given_name: 'Mari', family_name: 'Maasikas', course_title: 'Programmeerimise alused', student_id: 's1' },
+          { id: '102', created_at: '2026-08-01T11:00:00.000Z', solution: '# loeb kaks arvu ja liidab\nx = int(input())\ny = int(input())\ntulemus = x + y\nprint(tulemus)\n', given_name: 'Jaan', family_name: 'Tamm', course_title: 'Programmeerimise alused', student_id: 's2' },
         ],
         // Edit distance sends no matches, and says so with match_ranges: false.
         scores: [
@@ -87,8 +87,8 @@ test('similarity-page', async ({ launch, check }) => {
       }
       return {
         submissions: [
-          { id: '101', created_at: '2026-08-01T10:00:00.000Z', solution: '# loeb kaks arvu ja liidab\na = int(input())\nb = int(input())\nsumma = a + b\nprint(summa)\n', given_name: 'Mari', family_name: 'Maasikas', course_title: 'Programmeerimise alused' },
-          { id: '102', created_at: '2026-08-01T11:00:00.000Z', solution: '# loeb kaks arvu ja liidab\n# teine lahendus\nx = int(input())\ny = int(input())\ntulemus = x + y\nprint(tulemus)\n', given_name: 'Jaan', family_name: 'Tamm', course_title: 'Programmeerimise alused' },
+          { id: '101', created_at: '2026-08-01T10:00:00.000Z', solution: '# loeb kaks arvu ja liidab\na = int(input())\nb = int(input())\nsumma = a + b\nprint(summa)\n', given_name: 'Mari', family_name: 'Maasikas', course_title: 'Programmeerimise alused', student_id: 's1' },
+          { id: '102', created_at: '2026-08-01T11:00:00.000Z', solution: '# loeb kaks arvu ja liidab\n# teine lahendus\nx = int(input())\ny = int(input())\ntulemus = x + y\nprint(tulemus)\n', given_name: 'Jaan', family_name: 'Tamm', course_title: 'Programmeerimise alused', student_id: 's2' },
         ],
         scores: [
           { sub_1: '101', sub_2: '102', similarity: 91, max_similarity: 94, matches: [{ start_line_1: 2, end_line_1: 5, start_line_2: 3, end_line_2: 6, tokens: 12 }], score_a: 91, score_b: 94,
@@ -167,7 +167,7 @@ test('similarity-page', async ({ launch, check }) => {
   )
   check(
     'sending only the students who actually submitted',
-    JSON.stringify(requests[0]?.body?.submissions) === JSON.stringify([{ id: '101' }, { id: '102' }, { id: '104' }]),
+    JSON.stringify(requests[0]?.body?.students) === JSON.stringify([{ id: 's1' }, { id: 's2' }, { id: 's4' }]),
   )
   check('and scoping to this course', JSON.stringify(requests[0]?.body?.courses) === JSON.stringify([{ id: COURSE }]))
 
@@ -321,10 +321,10 @@ test('similarity-page', async ({ launch, check }) => {
   await waitUntil(() => page.getByText('2 submissions, 1 pair to compare').isVisible())
   await page.getByRole('button', { name: /Find similarities/i }).click()
   check(
-    'picking a group sends only that group\'s submissions',
+    'picking a group sends only that group\'s students',
     await waitUntil(() =>
       requests.length === 1 &&
-      JSON.stringify(requests[0].body.submissions) === JSON.stringify([{ id: '101' }, { id: '102' }])),
+      JSON.stringify(requests[0].body.students) === JSON.stringify([{ id: 's1' }, { id: 's2' }])),
   )
 
   // --- the course's comparison method (EZ-1667) ---------------------------------------------------------

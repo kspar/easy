@@ -574,6 +574,11 @@ export interface SimilarSubmissionResp {
   given_name: string
   family_name: string
   course_title: string
+  /**
+   * Who handed it in. The page's own list names each student's latest submission, which with the first
+   * attempts compared these are not. Absent from an older core.
+   */
+  student_id?: string
   /** Which of the student's attempts this is, from 1. Absent from an older core. */
   number?: number
 }
@@ -689,7 +694,10 @@ export interface SimilarityResp {
    * pairs it reached, the likeliest first, and a more similar pair may be among the rest.
    */
   complete?: boolean
-  /** `latest` or `first`: which of each student's submissions were compared. Absent from an older core. */
+  /**
+   * `latest` or `first`: which of each student's submissions were compared - or `named`, for a request
+   * that named the submissions themselves. Absent from an older core.
+   */
   attempts?: string
 }
 
@@ -722,7 +730,10 @@ export interface SimilarityEstimateResp {
    */
   provider_from?: string
   mode_from?: string
-  /** `latest` or `first`: which of each student's submissions it would compare, and where that came from. */
+  /**
+   * `latest` or `first`: which of each student's submissions it would compare, and where that came from -
+   * or `named` and `request`, for a request that named the submissions themselves.
+   */
   attempts?: string
   attempts_from?: string
 }

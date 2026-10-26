@@ -475,9 +475,13 @@
     },
     "core.ems.service.code.TeacherCheckSimilarityController.Req": {
       "courses": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.ReqCourse" },
+      "students": { "kind": "array", "nullable": true, "type": "core.ems.service.code.TeacherCheckSimilarityController.ReqStudent" },
       "submissions": { "kind": "array", "nullable": true, "type": "core.ems.service.code.TeacherCheckSimilarityController.ReqSubmission" }
     },
     "core.ems.service.code.TeacherCheckSimilarityController.ReqCourse": {
+      "id": { "kind": "string" }
+    },
+    "core.ems.service.code.TeacherCheckSimilarityController.ReqStudent": {
       "id": { "kind": "string" }
     },
     "core.ems.service.code.TeacherCheckSimilarityController.ReqSubmission": {
@@ -536,7 +540,8 @@
       "given_name": { "kind": "string" },
       "id": { "kind": "string" },
       "number": { "kind": "number" },
-      "solution": { "kind": "string", "nullable": true }
+      "solution": { "kind": "string", "nullable": true },
+      "student_id": { "kind": "string" }
     },
     "core.ems.service.code.TeacherEstimateSimilarityController.Resp": {
       "attempts": { "kind": "string" },

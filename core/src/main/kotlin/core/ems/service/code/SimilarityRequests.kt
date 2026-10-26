@@ -58,14 +58,27 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         /** Where the provider choice came from, and the mode: the exercise's own, the course's, or the default. */
         val providerFrom: SettingsSource = SettingsSource.DEFAULT,
         val modeFrom: SettingsSource = SettingsSource.DEFAULT,
-        /** Which of each student's submissions [submissionIds] are, and where that came from. */
+        /**
+         * Which of each student's submissions [submissionIds] are, and where that came from: the setting's,
+         * unless the request named the submissions, which then are what they are ([SettingsSource.REQUEST]).
+         */
         val attempts: SimilarityAttempts = SimilarityAttempts.LATEST,
         val attemptsFrom: SettingsSource = SettingsSource.DEFAULT,
-    )
+    ) {
+        /** [attempts] on the wire: `latest`, `first`, or `named` for submissions the request named. */
+        val attemptsName: String get() = if (attemptsFrom == SettingsSource.REQUEST) "named" else attempts.name.lowercase()
+    }
 
-    enum class SettingsSource { EXERCISE, COURSE, DEFAULT }
+    /** Where a setting came from. [REQUEST] only for attempts: the submissions were named. */
+    enum class SettingsSource { EXERCISE, COURSE, DEFAULT, REQUEST }
 
-    fun resolve(exIdString: String, courseIds: List<String>, submissionIds: List<String>?, caller: EasyUser): Resolved {
+    fun resolve(
+        exIdString: String,
+        courseIds: List<String>,
+        submissionIds: List<String>?,
+        studentIds: List<String>?,
+        caller: EasyUser,
+    ): Resolved {
         val exerciseId = exIdString.idToLongOrInvalidReq()
         val courses = courseIds.map { it.idToLongOrInvalidReq() }
 
@@ -74,6 +87,9 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         // unauthorised, turning this endpoint into an existence oracle over the whole exercise table.
         if (courses.isEmpty()) throw InvalidRequestException(
             "At least one course must be given.", ReqError.INVALID_PARAMETER_VALUE, notify = false
+        )
+        if (submissionIds != null && studentIds != null) throw InvalidRequestException(
+            "Name either submissions or students, not both.", ReqError.INVALID_PARAMETER_VALUE, notify = false
         )
 
         caller.assertAccess {
@@ -100,29 +116,20 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         val exerciseSettings = courses.singleOrNull()?.let { selectExerciseSettings(exerciseId, it) }
         val attempts = exerciseSettings?.attempts ?: courseSettings?.attempts ?: SimilarityAttempts.LATEST
         val named = submissionIds?.map { it.idToLongOrInvalidReq() }?.distinct()
+        val students = studentIds?.distinct()
+        // A list of students is capped before it reaches a query, as a list of ids is: each brings at least
+        // one submission, so more of them than the cap is refused whatever they have handed in.
+        students?.let { assertWithinLimit(it.size) }
         val ids = when {
-            named == null -> selectSubmissionIds(exerciseId, courses, attempts)
-            // The page names each student's latest, which is what it lists.
-            attempts == SimilarityAttempts.LATEST -> named
-            // The ids name the students; their first attempts are what is compared.
-            else -> selectFirstAttemptsOf(exerciseId, courses, named)
+            named != null -> named
+            students != null -> selectAttemptsOf(exerciseId, courses, attempts, students)
+            else -> selectSubmissionIds(exerciseId, courses, attempts).values.toList()
         }
 
         // The cap exists to stop a huge cohort reaching the heap at all, so it is checked before any
         // solution text is read — and only here: the loader selects exactly these ids, so a second
-        // check after loading could never fire. Mapped here, because an unmapped TooManySubmissions
-        // would leave as a bare RuntimeException and reach the generic handler — a 500 with an empty
-        // body and a system-notification email, for a condition the API has a named 400 for.
-        try {
-            similarityService.assertWithinLimit(ids.size)
-        } catch (e: TooManySubmissions) {
-            throw InvalidRequestException(
-                "Similarity can compare at most ${e.limit} submissions at once, ${e.requested} were requested.",
-                ReqError.TOO_MANY_SUBMISSIONS,
-                "limit" to e.limit.toString(), "requested" to e.requested.toString(),
-                notify = false,
-            )
-        }
+        // check after loading could never fire.
+        assertWithinLimit(ids.size)
 
         // One cheap row, and it decides the tokeniser, so it is read before the permit is asked for.
         val exercise = selectExerciseMeta(exerciseId, courses)
@@ -156,11 +163,30 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
             },
             attempts = attempts,
             attemptsFrom = when {
+                named != null -> SettingsSource.REQUEST
                 exerciseSettings?.attempts != null -> SettingsSource.EXERCISE
                 courseSettings != null -> SettingsSource.COURSE
                 else -> SettingsSource.DEFAULT
             },
         )
+    }
+
+    /**
+     * Mapped here, because an unmapped TooManySubmissions would leave as a bare RuntimeException and reach
+     * the generic handler — a 500 with an empty body and a system-notification email, for a condition the
+     * API has a named 400 for.
+     */
+    private fun assertWithinLimit(requested: Int) {
+        try {
+            similarityService.assertWithinLimit(requested)
+        } catch (e: TooManySubmissions) {
+            throw InvalidRequestException(
+                "Similarity can compare at most ${e.limit} submissions at once, ${e.requested} were requested.",
+                ReqError.TOO_MANY_SUBMISSIONS,
+                "limit" to e.limit.toString(), "requested" to e.requested.toString(),
+                notify = false,
+            )
+        }
     }
 
     /** What running [resolved] would take, from the submissions' sizes; no text leaves the database. */
@@ -254,7 +280,7 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
 
     /**
      * The newest submission per student per course exercise - or with [SimilarityAttempts.FIRST] the
-     * oldest - ids only, of every author or of [authors] alone.
+     * oldest - ids only, by course exercise and student, of every author or of [students] alone.
      *
      * Deliberately selects no solution text: this runs before the cap is checked and before the
      * permit is taken, so it must not be the thing that puts a cohort on the heap. The ordering plus
@@ -267,43 +293,34 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         exerciseId: Long,
         courses: List<Long>,
         attempts: SimilarityAttempts,
-        authors: Set<Pair<Long, String>>? = null,
-    ): List<Long> = transaction {
+        students: List<String>? = null,
+    ): Map<Pair<Long, String>, Long> = transaction {
         val order = if (attempts == SimilarityAttempts.FIRST) SortOrder.DESC else SortOrder.ASC
         (CourseExercise innerJoin Submission)
             .select(Submission.id, Submission.student, Submission.courseExercise)
             .where {
                 var where = CourseExercise.exercise eq exerciseId and (CourseExercise.course inList courses)
-                if (authors != null) where = where and (Submission.student inList authors.map { it.second }.distinct())
+                if (students != null) where = where and (Submission.student inList students)
                 where
             }
             .orderBy(Submission.createdAt to order, Submission.number to order, Submission.id to order)
             .associate { (it[Submission.courseExercise].value to it[Submission.student].value) to it[Submission.id].value }
-            .filterKeys { authors == null || it in authors }
-            .values
-            .toList()
     }
 
     /**
-     * The first attempt of each student [named] submissions are by, on the same course exercise. Refused
-     * like the loader refuses when a named id is not on the exercise on the asserted courses: dropped, the
-     * check would answer for fewer students than were asked for and not say so.
+     * The submission of each of [students] that [attempts] names, on each course exercise they handed in
+     * on. Refused like the loader refuses an id it cannot find: a student with nothing handed in here,
+     * dropped, would have the check answer for fewer students than were asked for and not say so.
      */
-    private fun selectFirstAttemptsOf(exerciseId: Long, courses: List<Long>, named: List<Long>): List<Long> {
-        val authors = transaction {
-            (CourseExercise innerJoin Submission)
-                .select(Submission.courseExercise, Submission.student)
-                .where {
-                    CourseExercise.exercise eq exerciseId and (CourseExercise.course inList courses) and (Submission.id inList named)
-                }
-                .map { it[Submission.courseExercise].value to it[Submission.student].value }
-        }
-        if (authors.size < named.size) throw InvalidRequestException(
-            "Number of submissions '${named.size}' requested to analyze does not equal to the number of submissions found: '${authors.size}'.",
+    private fun selectAttemptsOf(exerciseId: Long, courses: List<Long>, attempts: SimilarityAttempts, students: List<String>): List<Long> {
+        val chosen = selectSubmissionIds(exerciseId, courses, attempts, students)
+        val found = chosen.keys.mapTo(HashSet()) { it.second }
+        if (found.size < students.size) throw InvalidRequestException(
+            "Number of students '${students.size}' requested to analyze does not equal to the number of students with a submission: '${found.size}'.",
             ReqError.ENTITY_WITH_ID_NOT_FOUND,
             notify = false,
         )
-        return selectSubmissionIds(exerciseId, courses, SimilarityAttempts.FIRST, authors.toSet())
+        return chosen.values.toList()
     }
 
     /**
