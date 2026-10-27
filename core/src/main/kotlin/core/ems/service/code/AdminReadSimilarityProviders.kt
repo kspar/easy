@@ -2,9 +2,16 @@ package core.ems.service.code
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import core.conf.security.EasyUser
+import core.db.CourseExerciseSimilaritySettings
+import core.db.CourseSimilaritySettings
 import core.ems.service.code.similarity.SimilarityLanguage
 import core.ems.service.code.similarity.SimilarityService
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -32,6 +39,12 @@ class AdminReadSimilarityProvidersController(private val similarityService: Simi
         @get:JsonProperty("default_priority") val defaultPriority: Int,
         @get:JsonProperty("overridden") val overridden: Boolean,
         @get:JsonProperty("languages") val languages: List<RespProviderLanguage>,
+        /**
+         * How many courses chose it for their checks, and how many course exercises for their own: what
+         * switching it off moves to Automatic, which the page says before the admin does it.
+         */
+        @get:JsonProperty("pinned_courses") val pinnedCourses: Int,
+        @get:JsonProperty("pinned_exercises") val pinnedExercises: Int,
     )
 
     data class RespProviderLanguage(
@@ -56,6 +69,7 @@ class AdminReadSimilarityProvidersController(private val similarityService: Simi
         log.info { "Read similarity providers by ${caller.id}" }
         val registry = similarityService.registry
         val settings = registry.settings()
+        val (pinnedCourses, pinnedExercises) = pinned()
         return Resp(
             registry.preferenceOrder(settings).map { provider ->
                 RespProvider(
@@ -72,6 +86,8 @@ class AdminReadSimilarityProvidersController(private val similarityService: Simi
                             (provider.id to language) in settings.providerLanguages,
                         )
                     },
+                    pinnedCourses[provider.id] ?: 0,
+                    pinnedExercises[provider.id] ?: 0,
                 )
             },
             SimilarityLanguage.entries.map { language ->
@@ -86,5 +102,18 @@ class AdminReadSimilarityProvidersController(private val similarityService: Simi
                 )
             },
         )
+    }
+
+    /** Each provider's count of the courses that chose it, and of the course exercises that chose it for their own. */
+    private fun pinned(): Pair<Map<String, Int>, Map<String, Int>> = transaction {
+        val courses = CourseSimilaritySettings.select(CourseSimilaritySettings.provider)
+            .where { CourseSimilaritySettings.provider.isNotNull() }
+            .mapNotNull { it[CourseSimilaritySettings.provider] }
+            .groupingBy { it }.eachCount()
+        val exercises = CourseExerciseSimilaritySettings.select(CourseExerciseSimilaritySettings.provider)
+            .where { (CourseExerciseSimilaritySettings.ownProvider eq true) and CourseExerciseSimilaritySettings.provider.isNotNull() }
+            .mapNotNull { it[CourseExerciseSimilaritySettings.provider] }
+            .groupingBy { it }.eachCount()
+        courses to exercises
     }
 }

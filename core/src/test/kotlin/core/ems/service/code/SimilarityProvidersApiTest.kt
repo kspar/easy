@@ -585,6 +585,19 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
+    fun `the admin page counts the courses and exercises that chose each provider, which switching it off moves`() {
+        assertEquals(200, putSettings("jplag").status)
+        assertEquals(200, putExercise(ownProvider = true, provider = "edit-distance", mode = null).status)
+        // An exercise following the course's choice has chosen nothing of its own.
+        transaction { Fixtures.courseExercise(course, Fixtures.exercise("Other", teacher)) }
+        val providers = api.get("/v2/admin/similarity-providers", Auth.asAdmin(admin)).elements("providers").associateBy { it.get("id").asString() }
+        assertEquals(1, providers.getValue("jplag").get("pinned_courses").asInt())
+        assertEquals(0, providers.getValue("jplag").get("pinned_exercises").asInt())
+        assertEquals(0, providers.getValue("edit-distance").get("pinned_courses").asInt())
+        assertEquals(1, providers.getValue("edit-distance").get("pinned_exercises").asInt())
+    }
+
+    @Test
     fun `providers are code, so an unknown one or a language it does not compare is refused`() {
         assertEquals(400, putProvider("moss", enabled = true, priority = 10).status)
         assertEquals(400, putProvider("jplag", enabled = true, priority = 10, languages = listOf("cobol" to true)).status)

@@ -35,13 +35,6 @@ export function parsedPriority(draft: ProviderDraft): number | null {
   return value <= MAX_PRIORITY ? value : null
 }
 
-export function isChanged(provider: AdminSimilarityProvider, draft: ProviderDraft): boolean {
-  const current = draftOf(provider)
-  return draft.enabled !== current.enabled ||
-    parsedPriority(draft) !== provider.priority ||
-    provider.languages.some((l) => draft.languages[l.language] !== l.enabled)
-}
-
 /** What a language is on by default: stable ones are, experimental ones wait for an admin. */
 function languageDefault(support: string): boolean {
   return support === 'stable'
@@ -73,6 +66,30 @@ export function defaultsRequest(provider: AdminSimilarityProvider): AdminSimilar
 export function differsFromDefaults(provider: AdminSimilarityProvider): boolean {
   return !provider.enabled || provider.priority !== provider.default_priority ||
     provider.languages.some((l) => l.enabled !== languageDefault(l.support))
+}
+
+/**
+ * What moves [providers]`[index]` one place up the order, which is by priority and then by id: the two
+ * priorities swapped where they differ, so no other provider moves; where they are equal, the moved one
+ * raised by one - or, at the top of the range, the other lowered. A number from 0 to 1000 was the control
+ * for ordering two providers, and an admin had to work out which way was up.
+ */
+export function moveUpRequests(providers: AdminSimilarityProvider[], index: number): { id: string; body: AdminSimilarityProviderReq }[] {
+  if (index <= 0 || index >= providers.length) return []
+  const moved = providers[index]
+  const above = providers[index - 1]
+  const at = (provider: AdminSimilarityProvider, priority: number) => {
+    const body = updateRequest(provider, draftOf(provider))
+    return body ? [{ id: provider.id, body: { ...body, priority } }] : []
+  }
+  if (moved.priority < above.priority) return [...at(moved, above.priority), ...at(above, moved.priority)]
+  if (above.priority < MAX_PRIORITY) return at(moved, above.priority + 1)
+  return at(above, above.priority - 1)
+}
+
+/** How many courses and course exercises chose [provider]: none for an older core, which does not say. */
+export function pinnedCount(provider: AdminSimilarityProvider): number {
+  return (provider.pinned_courses ?? 0) + (provider.pinned_exercises ?? 0)
 }
 
 /** What a language row says about who compares it. */

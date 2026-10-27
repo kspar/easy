@@ -825,6 +825,9 @@ export interface AdminSimilarityProviders {
 
 /** @endpoint GET /v2/admin/similarity-providers -> providers[] */
 export interface AdminSimilarityProvider {
+  /** Courses that chose it, and course exercises that chose it for their own. Absent from an older core. */
+  pinned_courses?: number
+  pinned_exercises?: number
   id: string
   enabled: boolean
   /** Higher is offered a language first; equal priorities go by id. */

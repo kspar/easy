@@ -1175,16 +1175,17 @@
       "nobody": "No method takes it: checks are refused",
       "byAsText": "{{provider}}, as plain text",
       "providersTitle": "Methods",
-      "providersHelp": "In the order a language is offered to them, highest priority first. An experimental language is off until switched on here.",
+      "providersHelp": "In the order a language is offered to them: the first that is on, and has the language on, compares it. Each change applies at once. An experimental language is off until switched on here.",
       "providerOn": "On",
-      "priority": "Priority",
       "providerSwitchName": "{{provider}}: on",
-      "priorityName": "{{provider}}: priority",
       "providerLanguageName": "{{provider}}: {{language}}",
-      "priorityHelp": "Default {{value}}. Higher is offered languages first; 0 to {{max}}.",
       "experimental": "experimental",
       "restoreDefaults": "Restore defaults",
-      "saved": "Similarity method saved"
+      "saved": "Similarity method saved",
+      "moveUp": "Move {{provider}} up",
+      "moveDown": "Move {{provider}} down",
+      "pinned_one": "{{count, number}} course or course exercise chose this method. Switched off, it compares by Automatic instead.",
+      "pinned_other": "{{count, number}} courses and course exercises chose this method. Switched off, they compare by Automatic instead."
     }
   },
   "bugReport": {

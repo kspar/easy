@@ -1175,16 +1175,17 @@
       "nobody": "Ükski meetod seda ei võta: kontrollid lükatakse tagasi",
       "byAsText": "{{provider}}, tavalise tekstina",
       "providersTitle": "Meetodid",
-      "providersHelp": "Järjekorras, milles neile keeli pakutakse, kõrgeim prioriteet enne. Katseline keel on väljas, kuni see siin sisse lülitatakse.",
+      "providersHelp": "Järjekorras, milles neile keeli pakutakse: keelt võrdleb esimene, mis on sees ja kus see keel on sees. Iga muudatus kehtib kohe. Katseline keel on väljas, kuni see siin sisse lülitatakse.",
       "providerOn": "Sees",
-      "priority": "Prioriteet",
       "providerSwitchName": "{{provider}}: sees",
-      "priorityName": "{{provider}}: prioriteet",
       "providerLanguageName": "{{provider}}: {{language}}",
-      "priorityHelp": "Vaikimisi {{value}}. Kõrgemale pakutakse keeli enne; 0 kuni {{max}}.",
       "experimental": "katseline",
       "restoreDefaults": "Taasta vaikeväärtused",
-      "saved": "Võrdlusmeetod salvestatud"
+      "saved": "Võrdlusmeetod salvestatud",
+      "moveUp": "Tõsta {{provider}} ettepoole",
+      "moveDown": "Vii {{provider}} tahapoole",
+      "pinned_one": "{{count, number}} kursus või kursuse ülesanne on valinud selle meetodi. Välja lülitatuna võrdleb see hoopis automaatselt.",
+      "pinned_other": "{{count, number}} kursust ja kursuse ülesannet on valinud selle meetodi. Välja lülitatuna võrdlevad need hoopis automaatselt."
     }
   },
   "bugReport": {

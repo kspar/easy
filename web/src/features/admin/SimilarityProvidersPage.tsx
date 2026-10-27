@@ -7,6 +7,7 @@ import {
   Chip,
   CircularProgress,
   FormControlLabel,
+  IconButton,
   Paper,
   Snackbar,
   Stack,
@@ -16,9 +17,9 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@mui/material'
+import { ArrowDownwardOutlined, ArrowUpwardOutlined } from '@mui/icons-material'
 import { useAdminSimilarityProviders, useUpdateSimilarityLanguage, useUpdateSimilarityProvider } from '../../api/similarityProviders.ts'
 import type { AdminSimilarityProvider } from '../../api/types.ts'
 import { errorMessage } from '../../api/errorMessage.ts'
@@ -28,10 +29,9 @@ import {
   defaultsRequest,
   differsFromDefaults,
   draftOf,
-  isChanged,
   languageVerdict,
-  MAX_PRIORITY,
-  parsedPriority,
+  moveUpRequests,
+  pinnedCount,
   updateRequest,
 } from './similarityProvidersAdmin.ts'
 import type { ProviderDraft } from './similarityProvidersAdmin.ts'
@@ -117,8 +117,14 @@ export default function SimilarityProvidersPage() {
             {t('admin.similarity.providersHelp')}
           </Typography>
           <Stack spacing={2}>
-            {data.providers.map((provider) => (
-              <ProviderCard key={provider.id} provider={provider} onSaved={() => setSaved(true)} />
+            {data.providers.map((provider, index) => (
+              <ProviderCard
+                key={provider.id}
+                provider={provider}
+                providers={data.providers}
+                index={index}
+                onSaved={() => setSaved(true)}
+              />
             ))}
           </Stack>
         </>
@@ -129,58 +135,82 @@ export default function SimilarityProvidersPage() {
   )
 }
 
-/** One provider's settings, edited in place and saved on their own. */
-function ProviderCard({ provider, onSaved }: { provider: AdminSimilarityProvider; onSaved: () => void }) {
+/**
+ * One provider's settings, each change saved as it is made - as the languages above are: a card that
+ * waited for its own Save beside a table that did not left an admin unsure which of their changes had
+ * applied. Its place in the order is moved up or down rather than typed as a number.
+ */
+function ProviderCard({
+  provider,
+  providers,
+  index,
+  onSaved,
+}: {
+  provider: AdminSimilarityProvider
+  providers: AdminSimilarityProvider[]
+  index: number
+  onSaved: () => void
+}) {
   const { t } = useTranslation()
   const update = useUpdateSimilarityProvider()
-  // Null until edited: until then the card shows what core has, refetched after any save.
-  const [edited, setEdited] = useState<ProviderDraft | null>(null)
-  const draft = edited ?? draftOf(provider)
-  const priorityValid = parsedPriority(draft) !== null
-  const changed = isChanged(provider, draft)
+  const draft = draftOf(provider)
   const help = providerHelp(provider.id, t)
-  // Every card has an "On" switch, a priority and the same languages: named by their labels alone, a
+  // Every card has an "On" switch, order buttons and the same languages: named by their labels alone, a
   // screen reader could not say whose they are.
   const name = providerName(provider.id, t)
+  const pinned = pinnedCount(provider)
 
-  function save(body: ReturnType<typeof updateRequest>) {
-    if (!body) return
-    update.mutate({ id: provider.id, body }, {
-      onSuccess: () => {
-        setEdited(null)
-        onSaved()
-      },
-    })
+  function save(edited: ProviderDraft) {
+    const body = updateRequest(provider, edited)
+    if (body) update.mutate({ id: provider.id, body }, { onSuccess: onSaved })
+  }
+
+  async function move(requests: ReturnType<typeof moveUpRequests>) {
+    // One after the other: the second is read against the order the first left.
+    for (const request of requests) await update.mutateAsync(request)
+    if (requests.length > 0) onSaved()
   }
 
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-        <Typography variant="subtitle2" sx={{ flex: '1 1 auto' }}>{name}</Typography>
+        <Typography variant="subtitle2" sx={{ flex: '1 1 auto' }}>{`${index + 1}. ${name}`}</Typography>
+        <IconButton
+          size="small"
+          disabled={index === 0 || update.isPending}
+          onClick={() => move(moveUpRequests(providers, index))}
+          aria-label={t('admin.similarity.moveUp', { provider: name })}
+        >
+          <ArrowUpwardOutlined fontSize="small" />
+        </IconButton>
+        <IconButton
+          size="small"
+          disabled={index === providers.length - 1 || update.isPending}
+          onClick={() => move(moveUpRequests(providers, index + 1))}
+          aria-label={t('admin.similarity.moveDown', { provider: name })}
+        >
+          <ArrowDownwardOutlined fontSize="small" />
+        </IconButton>
         <FormControlLabel
           control={
             <Switch
               size="small"
               checked={draft.enabled}
-              onChange={(e) => setEdited({ ...draft, enabled: e.target.checked })}
+              disabled={update.isPending}
+              onChange={(e) => save({ ...draft, enabled: e.target.checked })}
               slotProps={{ input: { 'aria-label': t('admin.similarity.providerSwitchName', { provider: name }) } }}
             />
           }
           label={t('admin.similarity.providerOn')}
         />
       </Box>
-      {help && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>{help}</Typography>}
-
-      <TextField
-        label={t('admin.similarity.priority')}
-        value={draft.priority}
-        onChange={(e) => setEdited({ ...draft, priority: e.target.value })}
-        size="small"
-        error={!priorityValid}
-        helperText={t('admin.similarity.priorityHelp', { value: provider.default_priority, max: MAX_PRIORITY })}
-        inputProps={{ inputMode: 'numeric', maxLength: 4, 'aria-label': t('admin.similarity.priorityName', { provider: name }) }}
-        sx={{ maxWidth: 360, mb: 1 }}
-      />
+      {help && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>{help}</Typography>}
+      {/* Said before the switch is used: courses that chose it would move to Automatic without a word. */}
+      {pinned > 0 && (
+        <Typography variant="caption" color="warning.main" sx={{ display: 'block', mb: 1 }}>
+          {t('admin.similarity.pinned', { count: pinned })}
+        </Typography>
+      )}
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 3 }}>
         {provider.languages.map((language) => (
@@ -190,7 +220,8 @@ function ProviderCard({ provider, onSaved }: { provider: AdminSimilarityProvider
               <Switch
                 size="small"
                 checked={draft.languages[language.language] ?? language.enabled}
-                onChange={(e) => setEdited({ ...draft, languages: { ...draft.languages, [language.language]: e.target.checked } })}
+                disabled={update.isPending}
+                onChange={(e) => save({ ...draft, languages: { ...draft.languages, [language.language]: e.target.checked } })}
                 slotProps={{ input: { 'aria-label': t('admin.similarity.providerLanguageName', { provider: name, language: languageName(language.language, t) }) } }}
               />
             }
@@ -211,18 +242,10 @@ function ProviderCard({ provider, onSaved }: { provider: AdminSimilarityProvider
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
         <Button
           size="small"
-          onClick={() => save(defaultsRequest(provider))}
-          disabled={update.isPending || (!differsFromDefaults(provider) && !changed)}
+          onClick={() => update.mutate({ id: provider.id, body: defaultsRequest(provider) }, { onSuccess: onSaved })}
+          disabled={update.isPending || !differsFromDefaults(provider)}
         >
           {t('admin.similarity.restoreDefaults')}
-        </Button>
-        <Button
-          size="small"
-          variant="contained"
-          onClick={() => save(updateRequest(provider, draft))}
-          disabled={update.isPending || !changed || !priorityValid}
-        >
-          {update.isPending ? t('general.saving') : t('general.save')}
         </Button>
       </Box>
     </Paper>

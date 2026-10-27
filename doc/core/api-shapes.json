@@ -454,6 +454,8 @@
       "id": { "kind": "string" },
       "languages": { "kind": "array", "type": "core.ems.service.code.AdminReadSimilarityProvidersController.RespProviderLanguage" },
       "overridden": { "kind": "boolean" },
+      "pinned_courses": { "kind": "number" },
+      "pinned_exercises": { "kind": "number" },
       "priority": { "kind": "number" }
     },
     "core.ems.service.code.AdminReadSimilarityProvidersController.RespProviderLanguage": {
