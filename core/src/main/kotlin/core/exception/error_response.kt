@@ -57,7 +57,8 @@ enum class ReqError(val errorCodeStr: String) {
     SIMILARITY_UNAVAILABLE("SIMILARITY_UNAVAILABLE"),
     // The run's own pace, read a tenth of the way into its budget, says it cannot finish within it.
     // Attributes `estimated_sec`, what that pace projects, `budget_sec`, and `phase`: `comparing`, or
-    // `preparing` when it was still reading the solutions - then `estimated_sec` is that reading's alone.
+    // `preparing` when it was still reading the solutions - then `estimated_sec` runs only to the end of that
+    // reading, the least the check would take.
     SIMILARITY_TOO_COSTLY("SIMILARITY_TOO_COSTLY")
 }
 

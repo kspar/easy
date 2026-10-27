@@ -556,7 +556,7 @@ describe('the estimate', () => {
       .toBe('errors.similarityTooCostlyMinutes {"estimated":9,"budget":2}')
     expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY', { estimated_sec: '540', budget_sec: '120', phase: 'comparing' }), t))
       .toBe('errors.similarityTooCostlyMinutes {"estimated":9,"budget":2}')
-    // Stopped while still reading: the time is the reading's alone, and is not said as the whole check's.
+    // Stopped while still reading: the time runs only to the end of the reading, and is not said as the whole check's.
     expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY', { estimated_sec: '180', budget_sec: '120', phase: 'preparing' }), t))
       .toBe('errors.similarityTooCostlyReading {"estimated":3,"budget":2}')
     expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY'), t)).toBe('errors.similarityTooCostly {}')

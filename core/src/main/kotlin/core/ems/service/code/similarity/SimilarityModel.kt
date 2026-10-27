@@ -135,10 +135,11 @@ data class SimilarityCohort(val submissions: Int, val pairs: Long, val notCompar
  * How long a run would take at the pace it was measured at part way through (see [RunPace]): the refusal of
  * one that cannot finish inside its budget.
  *
- * [preparing] when it was refused while still preparing its cohort. [wallNanos] is then preparing's alone,
- * the least the run would take: how long its pairs would add is not known until they start, and said as the
- * whole run's, a teacher who chose a group by it - two-thirds the size for "about 3 min" of a two-minute
- * budget - waited out that budget again and timed out on the pairs.
+ * [preparing] when it was refused while still preparing its cohort. [wallNanos] then runs only to the end of
+ * preparing - what the run had spent, a first pass in a language the cohort turned out not to be in among it,
+ * and the rest at its pace - the least the run would take: how long its pairs would add is not known until
+ * they start, and said as the whole run's, a teacher who chose a group by it - two-thirds the size for
+ * "about 3 min" of a two-minute budget - waited out that budget again and timed out on the pairs.
  */
 data class SimilarityProjection(
     val wallNanos: Long,

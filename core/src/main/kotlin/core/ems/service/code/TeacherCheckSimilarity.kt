@@ -19,9 +19,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
-import org.jetbrains.exposed.v1.core.and
-import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
@@ -397,11 +394,7 @@ class TeacherCheckSimilarityController(
                 Account.givenName,
                 Account.familyName
             )
-            .where {
-                CourseExercise.exercise eq exerciseId and
-                        (CourseExercise.course inList courses) and
-                        (Submission.id inList submissionIds)
-            }
+            .where { submittedTo(exerciseId, courses, submissionIds) }
 
         val rows = query.map {
             SubmissionRow(
@@ -420,18 +413,8 @@ class TeacherCheckSimilarityController(
             )
         }
 
-        // Still checked, and still the caller's error: an id the caller named that is not on one of
-        // the courses they were asserted on must not be silently dropped, or the endpoint answers
-        // about a smaller set than was asked for without saying so. notify = false like the other
-        // refusals here: a client naming the wrong id is not an operator alert, and every one of
-        // these was mailed to ops.
-        if (rows.size < submissionIds.size) {
-            throw InvalidRequestException(
-                "Number of submissions '${submissionIds.size}' requested to analyze does not equal to the number of submissions found: '${rows.size}'.",
-                ReqError.ENTITY_WITH_ID_NOT_FOUND,
-                notify = false,
-            )
-        }
+        // Still checked, although named ids were before the permit: one can be deleted in between.
+        if (rows.size < submissionIds.size) throw namedNotFound(submissionIds.size, rows.size.toLong())
         rows
     }
 

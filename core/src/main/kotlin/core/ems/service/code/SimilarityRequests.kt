@@ -24,6 +24,7 @@ import core.exception.InvalidRequestException
 import core.exception.ReqError
 import org.jetbrains.exposed.v1.core.CustomFunction
 import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.IntegerColumnType
 import org.jetbrains.exposed.v1.core.TextColumnType
@@ -320,16 +321,9 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
      * was asserted on - so one on another course is refused as if it were not there, as the loader refuses it.
      */
     private fun assertNamedFound(exerciseId: Long, courses: List<Long>, named: List<Long>) = transaction {
-        val found = (CourseExercise innerJoin Submission).select(Submission.id).where {
-            CourseExercise.exercise eq exerciseId and
-                    (CourseExercise.course inList courses) and
-                    (Submission.id inList named)
-        }.count()
-        if (found < named.size) throw InvalidRequestException(
-            "Number of submissions '${named.size}' requested to analyze does not equal to the number of submissions found: '$found'.",
-            ReqError.ENTITY_WITH_ID_NOT_FOUND,
-            notify = false,
-        )
+        val found = (CourseExercise innerJoin Submission).select(Submission.id)
+            .where { submittedTo(exerciseId, courses, named) }.count()
+        if (found < named.size) throw namedNotFound(named.size, found)
     }
 
     /** Refused unless [courseExercise] is [exerciseId] on one of [courses], which the caller was asserted on. */
@@ -360,11 +354,9 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
     private fun selectSizes(resolved: Resolved): List<SizedSource> = transaction {
         if (resolved.submissionIds.isEmpty()) return@transaction emptyList()
         val bytes = CustomFunction("octet_length", IntegerColumnType(), Submission.solution)
-        val chosen = (CourseExercise innerJoin Submission).select(Submission.id, Submission.student, bytes).where {
-            CourseExercise.exercise eq resolved.exerciseId and
-                    (CourseExercise.course inList resolved.courses) and
-                    (Submission.id inList resolved.submissionIds)
-        }.map { Triple(it[Submission.id].value, it[Submission.student].value, it[bytes] ?: 0) }
+        val chosen = (CourseExercise innerJoin Submission).select(Submission.id, Submission.student, bytes)
+            .where { submittedTo(resolved.exerciseId, resolved.courses, resolved.submissionIds) }
+            .map { Triple(it[Submission.id].value, it[Submission.student].value, it[bytes] ?: 0) }
 
         // Blank ones, which no provider compares: counted, a whitespace-only answer made pairs the run then
         // skipped, and the count before Find disagreed with the one after. Only the short texts are read for
@@ -389,3 +381,23 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         const val BLANK_READ_BYTES = 1_000
     }
 }
+
+/**
+ * The submissions among [ids] to [exerciseId] on one of [courses], which the caller was asserted on: one on
+ * another course is as if it were not there. One condition for the check of named ids before the permit, the
+ * count and the loader, as three copies could drift apart - and an id the first let through and the loader
+ * refused was refused after the permit, behind a running check.
+ */
+internal fun submittedTo(exerciseId: Long, courses: List<Long>, ids: List<Long>): Op<Boolean> =
+    CourseExercise.exercise eq exerciseId and (CourseExercise.course inList courses) and (Submission.id inList ids)
+
+/**
+ * An id the caller named that [submittedTo] did not find: the caller's error, and not silently dropped, or a
+ * check answers about fewer submissions than were asked for without saying so. Not mailed to ops - a client
+ * naming a wrong id is not an operator alert.
+ */
+internal fun namedNotFound(requested: Int, found: Long) = InvalidRequestException(
+    "Number of submissions '$requested' requested to analyze does not equal to the number of submissions found: '$found'.",
+    ReqError.ENTITY_WITH_ID_NOT_FOUND,
+    notify = false,
+)

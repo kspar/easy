@@ -179,9 +179,14 @@ export default function SimilarityPage() {
   const elapsed = progress?.running ? progress.elapsed_sec : Math.max(0, Math.round((now - startedAt) / 1000))
   const budget = progress?.running ? progress.budget_sec : estimateData?.budget_sec
   const comparing = progress?.running === true && progress.phase === 'comparing' && progress.total > 0
-  // Named apart from an ordinary run: after a group or exercise change this is the run the page left
-  // behind, still holding core's one permit, and its result will not be shown.
-  const findLabel = !running ? t('similarity.find') : check.isPending && current ? t('similarity.searching') : t('similarity.waitingPrevious')
+  // "Comparing" only for this page's own run. A run it left behind (a group or exercise change mid-run) still
+  // holds core's one permit, but its result will not be shown: the button then says what it will do once
+  // that run is over, and the line below it why it cannot yet - said on the button, the longest label of
+  // the three widened it, and narrowed it again the moment it could be pressed, from under the pointer.
+  const findLabel = waiting ? t('similarity.searching') : t('similarity.find')
+  // What every wording of the count before Find says, whichever the mode.
+  const scopeArgs = (counted: { submissions: number; pairs: number; budget: number }) =>
+    ({ submissions: counted.submissions, count: counted.pairs, budget: formatDuration(counted.budget, t) })
 
   // submission id -> student id, so each side of a pair can link to that student's grading view. Core
   // says whose each compared submission is; the list the run was over knows each student only by their
@@ -416,14 +421,12 @@ export default function SimilarityPage() {
           // Said outright: the label below is two stacked, and a name read from them depends on what reads it.
           aria-label={findLabel}
         >
-          {running && !(check.isPending && current) ? findLabel : (
-            // Both labels in one cell, the one not current hidden: the button keeps the wider one's width, so
-            // starting a run does not wrap the row afresh and move the button out from under the pointer.
-            <Box component="span" aria-hidden sx={{ display: 'inline-grid' }}>
-              <Box component="span" sx={{ gridArea: '1 / 1', visibility: running ? 'hidden' : 'visible' }}>{t('similarity.find')}</Box>
-              <Box component="span" sx={{ gridArea: '1 / 1', visibility: running ? 'visible' : 'hidden' }}>{t('similarity.searching')}</Box>
-            </Box>
-          )}
+          {/* Both labels in one cell, the one not current hidden: the button keeps the wider one's width, so
+              starting a run does not wrap the row afresh and move the button out from under the pointer. */}
+          <Box component="span" aria-hidden sx={{ display: 'inline-grid' }}>
+            <Box component="span" sx={{ gridArea: '1 / 1', visibility: waiting ? 'hidden' : 'visible' }}>{t('similarity.find')}</Box>
+            <Box component="span" sx={{ gridArea: '1 / 1', visibility: waiting ? 'visible' : 'hidden' }}>{t('similarity.searching')}</Box>
+          </Box>
         </Button>
 
         <Button variant="text" startIcon={<TuneOutlined />} onClick={() => setSettingsOpen(true)}>
@@ -445,6 +448,13 @@ export default function SimilarityPage() {
         <Typography color="text.secondary" sx={{ mt: 3 }}>{t('similarity.chooseExercise')}</Typography>
       )}
 
+      {/* Why Find is off while a run this page left behind finishes: see [findLabel]. */}
+      {running && !waiting && (
+        <Typography variant="caption" color="text.secondary" role="status" sx={{ display: 'block', mb: 1 }}>
+          {t('similarity.waitingPrevious')}
+        </Typography>
+      )}
+
       {/* What is about to be compared, before committing to the wait, and the longest the wait can be. */}
       {selected && !rowsLoading && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
@@ -455,10 +465,10 @@ export default function SimilarityPage() {
               // With what happens if the budget runs out, which the mode decides: the same "at most 2 min"
               // ended one check with the pairs it found and another with nothing.
               : estimate.mode === 'optimised'
-                ? t('similarity.estimateScopeOptimised', { submissions: estimate.submissions, count: estimate.pairs, budget: formatDuration(estimate.budget, t) })
+                ? t('similarity.estimateScopeOptimised', scopeArgs(estimate))
                 : estimate.mode === 'full'
-                  ? t('similarity.estimateScopeFull', { submissions: estimate.submissions, count: estimate.pairs, budget: formatDuration(estimate.budget, t) })
-                  : t('similarity.estimateScope', { submissions: estimate.submissions, count: estimate.pairs, budget: formatDuration(estimate.budget, t) })}
+                  ? t('similarity.estimateScopeFull', scopeArgs(estimate))
+                  : t('similarity.estimateScope', scopeArgs(estimate))}
           {estimate.kind !== 'unknown' && estimate.notCompared > 0 && (
             <Box component="span" sx={{ display: 'block' }}>{t('similarity.estimateNotCompared', { count: estimate.notCompared })}</Box>
           )}

@@ -20,6 +20,11 @@ const settingsWrites = []
 // Which provider the stubbed check answers as. JPlag first, as the rest of the spec reads; edit distance
 // at the end, for what changes when a provider says how alike two texts are but not where (EZ-1667).
 let provider = 'jplag'
+// While set, a check is answered only once it settles: the page is looked at with the check running.
+let hold = null
+
+// Where a button is and how big, to the half pixel: what must not change when a check starts.
+const sameBox = (a, b) => a !== null && b !== null && ['x', 'y', 'width', 'height'].every((k) => Math.abs(a[k] - b[k]) < 0.5)
 
 const rowsAll = [
   { student_id: 's1', given_name: 'Mari', family_name: 'Maasikas', status: 'COMPLETED', groups: [{ id: GROUP, name: 'Rühm A' }], submission: { id: '101', submission_number: 1, time: '2026-08-01T10:00:00.000Z', grade: null, seen: true, flagged: false } },
@@ -64,8 +69,9 @@ test('similarity-page', async ({ launch, check }) => {
       }
     }],
 
-    ['/similarity', ({ method, url, body }) => {
+    ['/similarity', async ({ method, url, body }) => {
       if (method === 'POST') requests.push({ url, body })
+      if (method === 'POST' && hold) await hold
       if (provider === 'edit-distance') return {
         submissions: [
           { id: '101', created_at: '2026-08-01T10:00:00.000Z', solution: '# loeb kaks arvu ja liidab\na = int(input())\nb = int(input())\nsumma = a + b\nprint(summa)\n', given_name: 'Mari', family_name: 'Maasikas', course_title: 'Programmeerimise alused', student_id: 's1' },
@@ -161,6 +167,10 @@ test('similarity-page', async ({ launch, check }) => {
   )
 
   await shot('01-ready')
+  const box = (name) => page.getByRole('button', { name }).boundingBox()
+  const ready = { find: await box(/Find similarities/i), method: await box('Comparison method') }
+  let release
+  hold = new Promise((resolve) => { release = resolve })
   await findButton.click()
 
   check('the comparison is requested once', await waitUntil(() => requests.length === 1))
@@ -173,6 +183,19 @@ test('similarity-page', async ({ launch, check }) => {
     JSON.stringify(requests[0]?.body?.students) === JSON.stringify([{ id: 's1' }, { id: 's2' }, { id: 's4' }]),
   )
   check('and scoping to this course', JSON.stringify(requests[0]?.body?.courses) === JSON.stringify([{ id: COURSE }]))
+
+  // The two labels share one cell, and the spinner the icon's 20 px: a button that grew when it was pressed
+  // rewrapped the row and moved itself, and the button beside it, out from under the pointer.
+  check(
+    'while it runs, the button says so by name',
+    await waitUntil(() => page.getByRole('button', { name: 'Comparing…' }).isVisible()),
+  )
+  check(
+    'and neither it nor the button beside it moves or changes size',
+    sameBox(ready.find, await box('Comparing…')) && sameBox(ready.method, await box('Comparison method')),
+  )
+  release()
+  hold = null
 
   check(
     'the pair is listed with both scores labelled',
@@ -322,12 +345,35 @@ test('similarity-page', async ({ launch, check }) => {
   await page.getByRole('option', { name: 'Rühm A' }).click()
   // `scope_one`'s text: '1 pairs' never renders, so this waited out its 8 s and asserted nothing.
   await waitUntil(() => page.getByText('2 submissions, 1 pair to compare').isVisible())
+  hold = new Promise((resolve) => { release = resolve })
   await page.getByRole('button', { name: /Find similarities/i }).click()
   check(
     'picking a group sends only that group\'s students',
     await waitUntil(() =>
       requests.length === 1 &&
       JSON.stringify(requests[0].body.students) === JSON.stringify([{ id: 's1' }, { id: 's2' }])),
+  )
+
+  // --- a run the page leaves behind ---------------------------------------------------------------------
+  // Still holding core's one permit after the group changes, but not this selection's: the button says what
+  // it will do and stays off, and a line says why - on the button, the longest label of the three widened it
+  // and narrowed it again the moment it could be pressed.
+  await waitUntil(() => page.getByRole('button', { name: 'Comparing…' }).isVisible())
+  const comparing = await box('Comparing…')
+  await page.getByRole('combobox', { name: 'Group' }).click()
+  await page.getByRole('option', { name: 'All students' }).click()
+  check(
+    'a run left behind by a group change keeps Find off, and says why beside it',
+    await waitUntil(async () =>
+      (await page.getByRole('button', { name: /Find similarities/i }).isDisabled()) &&
+      (await page.getByText('Waiting for the previous comparison to finish; then this one can be started.').isVisible())),
+  )
+  check('without the button changing size', sameBox(comparing, await box(/Find similarities/i)))
+  release()
+  hold = null
+  check(
+    'and Find is back once that run is over',
+    await waitUntil(() => page.getByRole('button', { name: /Find similarities/i }).isEnabled()),
   )
 
   // --- the course's comparison method (EZ-1667) ---------------------------------------------------------
