@@ -12,8 +12,9 @@ import java.util.concurrent.atomic.AtomicLong
  * say: nothing is predicted from sizes. A model that did, measured on one machine, was out by a hundred
  * times for JPlag on large solutions and by four for edit distance in the stress test of EZ-1667.
  *
- * Counted in pieces, which differ in cost, so the first tenth must be a fair share of them: JPlag tokenises
- * in an order shuffled by id, as the database's could put a cohort's few large solutions all first.
+ * Counted in pieces, which differ in cost, so the first tenth must be a fair share of them: the work it
+ * counts is walked in [fairOrder] - JPlag's tokenising, a full run's pairs - as the database's order could
+ * put a cohort's few large solutions all first, and their pieces be read as the pace of the whole.
  *
  * Only for work that would be refused anyway: a run that stops at the deadline with what it found -
  * [PairRanking.rankBounded] - has no use for it. Checked once, and only past [MARGIN] times the time left,
@@ -25,8 +26,8 @@ internal class RunPace(
     private val total: Long,
     /** What is counted, for the log line: "pairs", "tokenising". */
     private val what: String,
-    /** The refusal, from the whole run's projected wall time. */
-    private val estimate: (projectedNanos: Long) -> SimilarityEstimate,
+    /** Whether this is preparing, before any pair: then what it projects is the least the run would take. */
+    private val preparing: Boolean,
 ) {
     private val log = KotlinLogging.logger {}
 
@@ -44,12 +45,24 @@ internal class RunPace(
         if (elapsed < checkAfter || !checked.compareAndSet(false, true)) return
         val projected = elapsed * (total.toDouble() / n)
         if (projected <= left * MARGIN) return
-        val refused = estimate(budgetSec * 1_000_000_000L - left + projected.toLong())
-        log.info { "Refusing a comparison at its pace: ${n * 100 / total}% of its $what in ${elapsed / 1_000_000}ms, so about ${refused.seconds}s in all, over the ${budgetSec}s budget" }
+        val refused = SimilarityProjection(budgetSec * 1_000_000_000L - left + projected.toLong(), budgetSec, preparing)
+        log.info {
+            "Refusing a comparison at its pace: ${n * 100 / total}% of its $what in ${elapsed / 1_000_000}ms, so about " +
+                "${refused.seconds}s ${if (preparing) "before any pair" else "in all"}, over the ${budgetSec}s budget"
+        }
         throw SimilarityTooCostly(refused)
     }
 
     companion object {
+        /**
+         * The order to walk [size] pieces of work in, the [n]th known by [id], for the pace to read a fair share
+         * of them first: shuffled by id, and the same every time, for the same answer every time.
+         */
+        fun fairOrder(size: Int, id: (n: Int) -> Long): List<Int> = (0 until size).sortedBy { id(it) * SHUFFLE }
+
+        /** An odd multiplier near 2^64 over the golden ratio: ids in a row, multiplied by it, land far apart. */
+        private const val SHUFFLE = -7046029254386353131L
+
         /** The pace is read once this share of the time left is spent: a tenth. */
         private const val CHECK_AFTER_SHARE = 10
 

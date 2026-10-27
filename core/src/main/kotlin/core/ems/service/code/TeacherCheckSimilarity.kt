@@ -302,12 +302,14 @@ class TeacherCheckSimilarityController(
             )
         } catch (e: SimilarityTooCostly) {
             // Measured as it ran: at its pace it would not have finished, so it was stopped early, with what
-            // it measured, rather than at the deadline.
+            // it measured, rather than at the deadline. Which part was measured, so the page does not say a
+            // projection of preparing alone as the whole run's - nor advise a mode that changes only the pairs.
             throw InvalidRequestException(
-                "Similarity comparison would take about ${e.estimate.seconds}s, over the ${e.estimate.budgetSec}s budget; try a smaller group.",
+                "${e.message}; try a smaller group.",
                 ReqError.SIMILARITY_TOO_COSTLY,
-                "estimated_sec" to e.estimate.seconds.toString(),
-                "budget_sec" to e.estimate.budgetSec.toString(),
+                "estimated_sec" to e.projection.seconds.toString(),
+                "budget_sec" to e.projection.budgetSec.toString(),
+                "phase" to if (e.projection.preparing) "preparing" else "comparing",
                 notify = false,
             )
         } catch (e: SimilarityTimedOut) {

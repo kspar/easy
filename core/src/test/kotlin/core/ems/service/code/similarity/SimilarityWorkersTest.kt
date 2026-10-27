@@ -136,7 +136,7 @@ class SimilarityWorkersTest {
         assertTrue(bug.suppressed.contains(late), "the timeout was not attached to what was reported")
         // And a refusal at the run's pace over a timeout, in either order: one worker's refusal reaches the
         // others only once it has left it, and one that hit the deadline meanwhile was reported instead.
-        val costly = SimilarityTooCostly(SimilarityEstimate(2, 1, 1, 2_000_000_000L, 1))
+        val costly = SimilarityTooCostly(SimilarityProjection(2_000_000_000L, 1, preparing = false))
         for (order in listOf(listOf<Throwable>(late, costly), listOf(costly, late))) {
             val both = CountDownLatch(2)
             val reported = failureOf { workers(2).use { workers -> workers.all(order.map { failure -> { both.countDown(); both.await(); throw failure } }) } }

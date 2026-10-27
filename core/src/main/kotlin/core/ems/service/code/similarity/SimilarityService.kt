@@ -318,16 +318,8 @@ class SimilarityService(
         val ownerById = sources.mapNotNull { source -> source.owner?.let { source.id to it } }.toMap()
         val threads = threadsFor(sources.size)
 
-        // How many pairs would follow preparing, for a refusal while preparing to say: counted as the page
-        // counts them, the text itself standing for its fingerprint.
-        val pairsAfter = pairsAmong(provider, sources.map {
-            SizedSource(it.id, utf8Length(it.solution), it.owner, it.solution, it.solution.isBlank())
-        })
-
         SimilarityWorkers(threads, WORKER_STACK_BYTES).use { workers ->
-            val context = RunContext(workers, deadline, timeoutSec, projectRuns) { wall ->
-                SimilarityEstimate(sources.size, pairsAfter, threads, wall, timeoutSec)
-            }
+            val context = RunContext(workers, deadline, timeoutSec, projectRuns)
             provider.open(ProviderRequest(language, sources, baseCode, textAllowed), context).use { session ->
                 val prepareStart = ticker.nanos()
                 val cohort = session.prepare()

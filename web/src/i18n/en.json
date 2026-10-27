@@ -46,7 +46,8 @@
     "tooManySubmissions": "Too many submissions to compare at once. Narrow the selection to a single group.",
     "tooManySubmissionsLimit": "At most {{value}} submissions can be compared at once. Narrow the selection to a single group.",
     "similarityTooCostly": "Comparing these would take longer than one check may run. Choose a group to compare fewer solutions.",
-    "similarityTooCostlyMinutes": "Stopped early: at its pace, comparing these would take about {{estimated}} min, longer than the {{budget}} min one check may run. Choose a group to compare fewer solutions."
+    "similarityTooCostlyMinutes": "Stopped early: at its pace, comparing every pair would take about {{estimated}} min, longer than the {{budget}} min one check may run. Choose a group, or under Comparison method choose Likeliest pairs first, which shows the most similar pairs it finds in time.",
+    "similarityTooCostlyReading": "Stopped early: at its pace, just reading these solutions would take about {{estimated}} min, longer than the {{budget}} min one check may run. Choose a group to compare fewer solutions."
   },
   "general": {
     "add": "Add",
@@ -737,6 +738,10 @@
     "sharedTokensTooltip": "Shared tokens — how much code the two have in common, whatever share of either that is. Pairs are listed most shared first.",
     "estimateScope_one": "{{submissions, number}} submissions, {{count, number}} pair to compare · at most {{budget}}",
     "estimateScope_other": "{{submissions, number}} submissions, {{count, number}} pairs to compare · at most {{budget}}",
+    "estimateScopeOptimised_one": "{{submissions, number}} submissions, {{count, number}} pair to compare · at most {{budget}}, likeliest first; if time runs out, it shows what it found",
+    "estimateScopeOptimised_other": "{{submissions, number}} submissions, {{count, number}} pairs to compare · at most {{budget}}, likeliest first; if time runs out, it shows what it found",
+    "estimateScopeFull_one": "{{submissions, number}} submissions, {{count, number}} pair to compare · at most {{budget}}; stopped early, without results, if it cannot compare them all",
+    "estimateScopeFull_other": "{{submissions, number}} submissions, {{count, number}} pairs to compare · at most {{budget}}; stopped early, without results, if it cannot compare them all",
     "durationSeconds": "{{value}} s",
     "durationMinutes": "{{value}} min",
     "estimateNothing": "{{submissions, number}} submissions, but no pair is left to compare: each is blank, too long for this method, or the same text others handed in. Find shows them.",
@@ -766,7 +771,7 @@
     "matchesMore_one": "and {{count, number}} smaller",
     "matchesMore_other": "and {{count, number}} smaller",
     "nothingShared": "No line or run of text is the same in both, so nothing is marked: the score counts the characters the two have in common wherever they are, scattered through both.",
-    "chooseExercise": "Choose an exercise to see how many solutions it has and how long comparing them takes.",
+    "chooseExercise": "Choose an exercise to see how many solutions it has and how many pairs a check compares.",
     "handedIn_one": "{{count, number}} handed in",
     "handedIn_other": "{{count, number}} handed in",
     "settingsAutomaticNow": "For {{language}}, Automatic means {{provider}} now.",

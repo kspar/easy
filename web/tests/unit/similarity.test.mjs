@@ -448,13 +448,20 @@ describe('the estimate', () => {
   const counted = { submissions: 30, pairs: 435, provider: 'edit-distance', language: 'python', mode: 'optimised', provider_fallback: null, budget_sec: 120 }
 
   test('it is what Find would compare, and the most a check may take', () => {
-    expect(estimateView(counted)).toEqual({ kind: 'counted', submissions: 30, pairs: 435, budget: 120, notCompared: 0 })
+    expect(estimateView(counted)).toEqual({ kind: 'counted', submissions: 30, pairs: 435, budget: 120, notCompared: 0, mode: 'optimised' })
+  })
+
+  test('with the mode, which decides what happens when the budget runs out', () => {
+    expect(estimateView({ ...counted, mode: 'full' })).toMatchObject({ mode: 'full' })
+    // One the page does not know - a newer core's - says nothing of it, rather than the wrong one.
+    expect(estimateView({ ...counted, mode: 'sampled' })).toMatchObject({ kind: 'counted', mode: null })
+    expect(estimateView({ ...counted, mode: undefined })).toMatchObject({ kind: 'counted', mode: null })
   })
 
   test('the time and verdict an older core sends are not read, so a check this core would run is never refused ahead', () => {
     // "Too costly" from a model out by four to a hundred times switched Find off for checks that ran.
     expect(estimateView({ ...counted, estimated_sec: 540, within_budget: false, optimised: false }))
-      .toEqual({ kind: 'counted', submissions: 30, pairs: 435, budget: 120, notCompared: 0 })
+      .toEqual({ kind: 'counted', submissions: 30, pairs: 435, budget: 120, notCompared: 0, mode: 'optimised' })
   })
 
   test('a result that did not compare every pair says how many it did, and why', () => {
@@ -547,6 +554,11 @@ describe('the estimate', () => {
     const t = (key, options) => `${key} ${JSON.stringify(options ?? {})}`
     expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY', { estimated_sec: '540', budget_sec: '120' }), t))
       .toBe('errors.similarityTooCostlyMinutes {"estimated":9,"budget":2}')
+    expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY', { estimated_sec: '540', budget_sec: '120', phase: 'comparing' }), t))
+      .toBe('errors.similarityTooCostlyMinutes {"estimated":9,"budget":2}')
+    // Stopped while still reading: the time is the reading's alone, and is not said as the whole check's.
+    expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY', { estimated_sec: '180', budget_sec: '120', phase: 'preparing' }), t))
+      .toBe('errors.similarityTooCostlyReading {"estimated":3,"budget":2}')
     expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY'), t)).toBe('errors.similarityTooCostly {}')
   })
 })

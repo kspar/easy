@@ -98,11 +98,14 @@ internal class PairRanking(
     fun rank(session: ProviderSession, comparands: List<Comparand>, topN: Int): Ranking {
         val total = pairsWorthComparing(comparands)
         pairsToSettle = total
-        val pace = if (!project) null else RunPace(deadline, budgetSec, total, "pairs") { wall ->
-            SimilarityEstimate(comparands.size, total, workers.threads, wall, budgetSec)
-        }
+        val pace = if (!project) null else RunPace(deadline, budgetSec, total, "pairs", preparing = false)
+        // Each row is one comparand against every later one, and the first rows are the longest: walked in the
+        // cohort's order, the first tenth of the pairs was every pair of its first few submissions, and a cohort
+        // whose few large ones came first was refused although it fit. In the pace's fair order, those rows are
+        // a fair share of the cohort; the pairs and their answer are the same.
+        val rows = RunPace.fairOrder(comparands.size) { comparands[it].representative }
         val stripes = workers.all(
-            (0 until workers.threads).map { stripe -> { stripe(stripe, session, comparands, topN, pace) } },
+            (0 until workers.threads).map { stripe -> { stripe(stripe, session, comparands, rows, topN, pace) } },
         )
         val byShared = stripes.flatMap { it.byShared }.sortedWith(BEST_FIRST).take(topN)
         val byPercent = stripes.flatMap { it.byPercent }.sortedWith(HIGHEST_FIRST).take(topN)
@@ -347,13 +350,16 @@ internal class PairRanking(
      * Keeps its own [topN] by each order, which is enough: every pair of either global top N is in that
      * order's top N of the stripe it was compared in.
      */
-    private fun stripe(first: Int, session: ProviderSession, comparands: List<Comparand>, topN: Int, pace: RunPace?): Stripe {
+    private fun stripe(first: Int, session: ProviderSession, comparands: List<Comparand>, rows: List<Int>, topN: Int, pace: RunPace?): Stripe {
         val byShared = PriorityQueue(BEST_FIRST.reversed())
         val byPercent = PriorityQueue(HIGHEST_FIRST.reversed())
         var compared = 0
         var scoring = 0
-        for (i in first until comparands.size step workers.threads) {
-            for (j in i + 1 until comparands.size) {
+        for (k in first until rows.size step workers.threads) {
+            for (l in k + 1 until rows.size) {
+                // Asked the way round the cohort's order has it, whichever came first in the walk.
+                val i = minOf(rows[k], rows[l])
+                val j = maxOf(rows[k], rows[l])
                 if (!comparands[i].apartFrom(comparands[j])) continue
                 // Another worker failed: this stripe's answer will be thrown away, so stop making it.
                 if (workers.stopped) return Stripe(emptyList(), emptyList(), compared, scoring)

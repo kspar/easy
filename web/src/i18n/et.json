@@ -46,7 +46,8 @@
     "tooManySubmissions": "Korraga on liiga palju esitusi võrrelda. Kitsenda valik ühele rühmale.",
     "tooManySubmissionsLimit": "Korraga saab võrrelda kõige rohkem {{value}} esitust. Kitsenda valik ühele rühmale.",
     "similarityTooCostly": "Nende võrdlemine võtaks kauem, kui üks kontroll tohib kesta. Vali rühm, et võrrelda vähem lahendusi.",
-    "similarityTooCostlyMinutes": "Peatatud varakult: selle tempoga võtaks nende võrdlemine umbes {{estimated}} min, kauem kui üks kontroll tohib kesta ({{budget}} min). Vali rühm, et võrrelda vähem lahendusi."
+    "similarityTooCostlyMinutes": "Peatatud varakult: selle tempoga võtaks kõigi paaride võrdlemine umbes {{estimated}} min, kauem kui üks kontroll tohib kesta ({{budget}} min). Vali rühm või vali Võrdlusmeetodi alt „Tõenäolisemad paarid enne“, mis näitab aja jooksul leitud kõige sarnasemaid paare.",
+    "similarityTooCostlyReading": "Peatatud varakult: selle tempoga võtaks juba lahenduste lugemine umbes {{estimated}} min, kauem kui üks kontroll tohib kesta ({{budget}} min). Vali rühm, et võrrelda vähem lahendusi."
   },
   "general": {
     "add": "Lisa",
@@ -737,6 +738,10 @@
     "sharedTokensTooltip": "Ühised sümbolid — kui palju koodi on kahel lahendusel ühist, sõltumata sellest, kui suure osa see kummastki moodustab. Paarid on järjestatud enim ühist koodi jagavast alates.",
     "estimateScope_one": "{{submissions, number}} esitust, {{count, number}} võrreldav paar · kuni {{budget}}",
     "estimateScope_other": "{{submissions, number}} esitust, {{count, number}} võrreldavat paari · kuni {{budget}}",
+    "estimateScopeOptimised_one": "{{submissions, number}} esitust, {{count, number}} võrreldav paar · kuni {{budget}}, tõenäolisemad enne; kui aeg saab otsa, näitab leitut",
+    "estimateScopeOptimised_other": "{{submissions, number}} esitust, {{count, number}} võrreldavat paari · kuni {{budget}}, tõenäolisemad enne; kui aeg saab otsa, näitab leitut",
+    "estimateScopeFull_one": "{{submissions, number}} esitust, {{count, number}} võrreldav paar · kuni {{budget}}; kui kõiki ei jõua võrrelda, peatatakse varakult tulemusteta",
+    "estimateScopeFull_other": "{{submissions, number}} esitust, {{count, number}} võrreldavat paari · kuni {{budget}}; kui kõiki ei jõua võrrelda, peatatakse varakult tulemusteta",
     "durationSeconds": "{{value}} s",
     "durationMinutes": "{{value}} min",
     "estimateNothing": "{{submissions, number}} esitust, kuid võrrelda pole ühtegi paari: kõik on tühjad, selle meetodi jaoks liiga pikad või sama tekst, mille esitasid teised. Otsing näitab need.",
@@ -766,7 +771,7 @@
     "matchesMore_one": "ja {{count, number}} väiksem",
     "matchesMore_other": "ja {{count, number}} väiksemat",
     "nothingShared": "Ükski rida ega tekstilõik pole mõlemas sama, seega pole midagi märgitud: skoor loeb märke, mis on kahel ühised, ükskõik kus need mõlemas paiknevad.",
-    "chooseExercise": "Vali ülesanne, et näha, mitu lahendust sellel on ja kui kaua nende võrdlemine võtab.",
+    "chooseExercise": "Vali ülesanne, et näha, mitu lahendust sellel on ja mitu paari kontroll võrdleb.",
     "handedIn_one": "{{count, number}} esitanud",
     "handedIn_other": "{{count, number}} esitanud",
     "settingsAutomaticNow": "Praegu tähendab Automaatne keele {{language}} jaoks: {{provider}}.",

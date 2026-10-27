@@ -78,13 +78,6 @@ internal class RunContext(
     val budgetSec: Long,
     /** Whether work that would only time out is refused at its pace; see [RunPace]. Off only in a test of the deadline itself. */
     val project: Boolean = true,
-    /**
-     * The refusal for a run whose preparing, at its pace, would take [projectedNanos] of wall time: with how
-     * many pairs would follow it, so the teacher knows preparing was only the start. The time is preparing's
-     * alone, the least the whole run would take; how long the pairs would add is the run's to find out.
-     */
-    val tooCostlyPreparing: (projectedNanos: Long) -> SimilarityEstimate =
-        { wall -> SimilarityEstimate(0, 0, workers.threads, wall, budgetSec) },
 )
 
 /**

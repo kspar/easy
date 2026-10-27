@@ -132,15 +132,18 @@ data class SizedSource(
 data class SimilarityCohort(val submissions: Int, val pairs: Long, val notCompared: Int)
 
 /**
- * What a run would take in all, measured at its own pace part way through (see [RunPace]): the refusal of
+ * How long a run would take at the pace it was measured at part way through (see [RunPace]): the refusal of
  * one that cannot finish inside its budget.
+ *
+ * [preparing] when it was refused while still preparing its cohort. [wallNanos] is then preparing's alone,
+ * the least the run would take: how long its pairs would add is not known until they start, and said as the
+ * whole run's, a teacher who chose a group by it - two-thirds the size for "about 3 min" of a two-minute
+ * budget - waited out that budget again and timed out on the pairs.
  */
-data class SimilarityEstimate(
-    val submissions: Int,
-    val pairs: Long,
-    val threads: Int,
+data class SimilarityProjection(
     val wallNanos: Long,
     val budgetSec: Long,
+    val preparing: Boolean,
 ) {
     /** Whole seconds, rounded up: "about 0 s" is not something to tell a teacher about a real run. */
     val seconds: Long get() = (wallNanos + 999_999_999L) / 1_000_000_000L
@@ -153,8 +156,11 @@ data class SimilarityEstimate(
 data class SimilarityProgress(val comparing: Boolean, val done: Long, val total: Long, val elapsedSec: Long, val budgetSec: Long)
 
 /** Refused part way, at the run's pace: it would only have run to the end of its budget and timed out. */
-class SimilarityTooCostly(val estimate: SimilarityEstimate) :
-    RuntimeException("Similarity comparison would take about ${estimate.seconds}s, over the ${estimate.budgetSec}s budget")
+class SimilarityTooCostly(val projection: SimilarityProjection) :
+    RuntimeException(
+        "Similarity ${if (projection.preparing) "preparing alone" else "comparison"} would take about " +
+            "${projection.seconds}s, over the ${projection.budgetSec}s budget",
+    )
 
 class TooManySubmissions(val requested: Int, val limit: Int) :
     RuntimeException("Similarity requested for $requested submissions, limit is $limit")

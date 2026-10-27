@@ -204,13 +204,13 @@ internal class JPlagProvider(
             // Tokenising cannot stop part way with anything to show, so a cohort it would spend the budget on
             // is refused at its pace (see [RunPace]), not at the deadline: on a slower server, or with
             // solutions slower to parse than anyone expected, a run spent the whole budget here and found nothing.
-            fun pace() = if (!run.project) null else RunPace(run.deadline, run.budgetSec, sources.size.toLong(), "tokenising", run.tooCostlyPreparing)
+            fun pace() = if (!run.project) null else RunPace(run.deadline, run.budgetSec, sources.size.toLong(), "tokenising", preparing = true)
             var pace = pace()
-            // In an order shuffled by id, not the loader's: the pace reads the first tenth of the time as that
+            // In the pace's fair order, not the loader's: the pace reads the first tenth of the time as that
             // share of the cohort, and in the database's order a cohort's few large solutions could all come
             // first - one that fits refused - or all last. The language sample below is the same first share,
-            // so it is a fair one too. The same order every time, for the same answer every time.
-            val order = sources.indices.sortedBy { sources[it].id * SHUFFLE }
+            // so it is a fair one too.
+            val order = RunPace.fairOrder(sources.size) { sources[it].id }
             val tokenised = arrayOfNulls<TokeniseResult>(sources.size)
             var templateResult: TokeniseResult? = null
             // The template too, when there is one, on the pool like everything else: it is parsed inside
@@ -613,9 +613,6 @@ internal class JPlagProvider(
 
         /** How many solutions decide alone that a cohort is not in its language; see [Session.prepare]. */
         private const val LANGUAGE_SAMPLE = 20
-
-        /** An odd multiplier near 2^64 over the golden ratio: ids in a row, multiplied by it, land far apart. */
-        private const val SHUFFLE = -7046029254386353131L
 
         private val LAYOUT = Regex("\\s+")
 

@@ -179,6 +179,9 @@ export default function SimilarityPage() {
   const elapsed = progress?.running ? progress.elapsed_sec : Math.max(0, Math.round((now - startedAt) / 1000))
   const budget = progress?.running ? progress.budget_sec : estimateData?.budget_sec
   const comparing = progress?.running === true && progress.phase === 'comparing' && progress.total > 0
+  // Named apart from an ordinary run: after a group or exercise change this is the run the page left
+  // behind, still holding core's one permit, and its result will not be shown.
+  const findLabel = !running ? t('similarity.find') : check.isPending && current ? t('similarity.searching') : t('similarity.waitingPrevious')
 
   // submission id -> student id, so each side of a pair can link to that student's grading view. Core
   // says whose each compared submission is; the list the run was over knows each student only by their
@@ -404,17 +407,23 @@ export default function SimilarityPage() {
         <Button
           variant="contained"
           startIcon={
-            running ? <CircularProgress size={16} color="inherit" /> : <CompareArrowsOutlined />
+            // The icon's 20 px, so the button keeps its width when the one becomes the other.
+            running ? <CircularProgress size={16} color="inherit" sx={{ m: '2px' }} /> : <CompareArrowsOutlined />
           }
           // Not offered for a check core has already said it would refuse: the alert below says why.
           disabled={!selected || running || rowsLoading || submitted.length < 2 || refusedAhead}
           onClick={run}
+          // Said outright: the label below is two stacked, and a name read from them depends on what reads it.
+          aria-label={findLabel}
         >
-          {/* Named apart from an ordinary run: after a group or exercise change this is the run the
-              page left behind, still holding core's one permit, and its result will not be shown. */}
-          {running
-            ? check.isPending && current ? t('similarity.searching') : t('similarity.waitingPrevious')
-            : t('similarity.find')}
+          {running && !(check.isPending && current) ? findLabel : (
+            // Both labels in one cell, the one not current hidden: the button keeps the wider one's width, so
+            // starting a run does not wrap the row afresh and move the button out from under the pointer.
+            <Box component="span" aria-hidden sx={{ display: 'inline-grid' }}>
+              <Box component="span" sx={{ gridArea: '1 / 1', visibility: running ? 'hidden' : 'visible' }}>{t('similarity.find')}</Box>
+              <Box component="span" sx={{ gridArea: '1 / 1', visibility: running ? 'visible' : 'hidden' }}>{t('similarity.searching')}</Box>
+            </Box>
+          )}
         </Button>
 
         <Button variant="text" startIcon={<TuneOutlined />} onClick={() => setSettingsOpen(true)}>
@@ -443,11 +452,13 @@ export default function SimilarityPage() {
             ? t('similarity.scope', { submissions: submitted.length, count: pairCount })
             : estimate.kind === 'nothing'
               ? t('similarity.estimateNothing', { submissions: estimate.submissions })
-              : t('similarity.estimateScope', {
-                submissions: estimate.submissions,
-                count: estimate.pairs,
-                budget: formatDuration(estimate.budget, t),
-              })}
+              // With what happens if the budget runs out, which the mode decides: the same "at most 2 min"
+              // ended one check with the pairs it found and another with nothing.
+              : estimate.mode === 'optimised'
+                ? t('similarity.estimateScopeOptimised', { submissions: estimate.submissions, count: estimate.pairs, budget: formatDuration(estimate.budget, t) })
+                : estimate.mode === 'full'
+                  ? t('similarity.estimateScopeFull', { submissions: estimate.submissions, count: estimate.pairs, budget: formatDuration(estimate.budget, t) })
+                  : t('similarity.estimateScope', { submissions: estimate.submissions, count: estimate.pairs, budget: formatDuration(estimate.budget, t) })}
           {estimate.kind !== 'unknown' && estimate.notCompared > 0 && (
             <Box component="span" sx={{ display: 'block' }}>{t('similarity.estimateNotCompared', { count: estimate.notCompared })}</Box>
           )}

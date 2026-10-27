@@ -177,13 +177,17 @@ export function errorMessage(err: unknown, t: TFunction): string {
     return t('errors.tooManySubmissionsLimit', { value: body.attrs.limit })
   }
   // How long it would have taken against how long a check may run, in minutes: what tells a teacher
-  // how much smaller the group has to be (EZ-1667).
+  // how much smaller the group has to be (EZ-1667). Stopped while still reading the solutions, the time is
+  // the reading's alone - the least the check would take - and only fewer solutions help; stopped while
+  // comparing every pair, comparing the likeliest first does too.
   if (body.code === 'SIMILARITY_TOO_COSTLY') {
     const estimated = Number(body.attrs?.estimated_sec)
     const budget = Number(body.attrs?.budget_sec)
     if (Number.isFinite(estimated) && Number.isFinite(budget)) {
-      const minutes = (sec: number) => Math.ceil(sec / 60)
-      return t('errors.similarityTooCostlyMinutes', { estimated: minutes(estimated), budget: minutes(budget) })
+      const minutes = { estimated: Math.ceil(estimated / 60), budget: Math.ceil(budget / 60) }
+      return body.attrs?.phase === 'preparing'
+        ? t('errors.similarityTooCostlyReading', minutes)
+        : t('errors.similarityTooCostlyMinutes', minutes)
     }
   }
 

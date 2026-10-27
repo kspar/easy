@@ -64,7 +64,7 @@ class SimilarityCountTest {
 
     @Test
     fun `a refusal's whole seconds round up, so a run is never said to take none`() {
-        val exactly = SimilarityEstimate(submissions = 2, pairs = 1, threads = 1, wallNanos = 2_000_000_000L, budgetSec = 2)
+        val exactly = SimilarityProjection(wallNanos = 2_000_000_000L, budgetSec = 2, preparing = false)
         assertEquals(2, exactly.seconds)
         assertEquals(3, exactly.copy(wallNanos = 2_000_000_001L).seconds)
         assertEquals(1, exactly.copy(wallNanos = 1L).seconds)

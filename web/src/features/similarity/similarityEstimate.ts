@@ -14,7 +14,14 @@ import type { SimilarityEstimateResp } from '../../api/types.ts'
 export type EstimateView =
   | { kind: 'unknown' }
   | { kind: 'nothing'; submissions: number; notCompared: number }
-  | { kind: 'counted'; submissions: number; pairs: number; budget: number; notCompared: number }
+  | { kind: 'counted'; submissions: number; pairs: number; budget: number; notCompared: number; mode: SimilarityRunMode | null }
+
+/**
+ * What a check does when its budget runs out, by its mode: `optimised` shows the likeliest pairs found by then,
+ * `full` is stopped early without results. Said beside the budget, as "at most 2 min" alone was the same for
+ * both, and one of them ends with nothing. Null for a mode the page does not know.
+ */
+export type SimilarityRunMode = 'optimised' | 'full'
 
 const isCount = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0
 
@@ -31,7 +38,8 @@ export function estimateView(estimate: Partial<SimilarityEstimateResp> | undefin
   // handed in, which is one comparand - is not "0 pairs to compare". Find still runs it: the result names
   // who could not be compared and why, or the group that handed in the same text.
   if (pairs === 0) return { kind: 'nothing', submissions, notCompared }
-  return { kind: 'counted', submissions, pairs, budget, notCompared }
+  const mode = estimate.mode === 'optimised' || estimate.mode === 'full' ? estimate.mode : null
+  return { kind: 'counted', submissions, pairs, budget, notCompared, mode }
 }
 
 /** Seconds as a clock, for the time a running check has taken: 47 is 0:47, 120 is 2:00. */

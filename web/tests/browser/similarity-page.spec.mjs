@@ -156,8 +156,8 @@ test('similarity-page', async ({ launch, check }) => {
     await waitUntil(() => page.getByText('3 submissions, 3 pairs to compare').isVisible()),
   )
   check(
-    'and the longest the wait can be, before anybody waits',
-    await waitUntil(() => page.getByText('3 submissions, 3 pairs to compare · at most 2 min').isVisible()),
+    'and the longest the wait can be, and how a check of every pair ends if it runs out, before anybody waits',
+    await waitUntil(() => page.getByText('3 submissions, 3 pairs to compare · at most 2 min; stopped early, without results, if it cannot compare them all').isVisible()),
   )
 
   await shot('01-ready')

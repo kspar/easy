@@ -435,6 +435,31 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
         val attributes = refused.attributes.toMap()
         assertEquals("3", attributes["budget_sec"])
         assertTrue(attributes.getValue("estimated_sec").toInt() >= 4, "estimated ${attributes["estimated_sec"]}s")
+        assertEquals("comparing", attributes["phase"])
+    }
+
+    @Test
+    fun `a run stopped while still reading the solutions says so, as its time is the reading's alone`() {
+        // Refused at the tokenising pace, what is projected is tokenising: what the pairs would add is not known
+        // until they start. Said as the whole run's, a teacher who chose a group by it timed out on the pairs.
+        // Two solutions at 3 s each of the test's clock against a budget of three.
+        val clock = ManualTicker()
+        val service = SimilarityService(maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = 3, ticker = clock)
+        service.tokenise = { language, id, source, maxTokens ->
+            clock.advance(3_000)
+            language.read(id, source, maxTokens)
+        }
+        service.threadsFor = { 1 }
+        val slow = TeacherCheckSimilarityController(service, SimilarityRequests(service))
+        val request = TeacherCheckSimilarityController.Req(listOf(TeacherCheckSimilarityController.ReqCourse(myCourse.toString())), null)
+
+        val refused = assertThrows<InvalidRequestException> {
+            slow.controller(myExercise.toString(), request, Auth.easyUser(teacher, EasyRole.TEACHER))
+        }
+        assertEquals(ReqError.SIMILARITY_TOO_COSTLY, refused.code)
+        val attributes = refused.attributes.toMap()
+        assertEquals("preparing", attributes["phase"])
+        assertEquals("6", attributes["estimated_sec"])
     }
 
     @Test
@@ -721,6 +746,49 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
             val refused = assertThrows<InvalidRequestException> { call() }
             assertEquals(ReqError.SIMILARITY_BUSY, refused.code)
             assertFalse(refused.notify, "a busy refusal would be mailed to ops")
+            release.countDown()
+            waiting.join(30_000)
+        } finally {
+            release.countDown()
+            running.join(30_000)
+        }
+    }
+
+    @Test
+    @Timeout(value = 60, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    fun `a named submission that is not there is refused before the permit, not as busy behind a running check`() {
+        // Found missing only by the loader, inside the permit, a wrong id waited behind the running check - and
+        // with another caller waiting as well, was refused at once as busy, which says nothing of the id.
+        val theirs = transaction {
+            Fixtures.submission(Fixtures.courseExercise(Fixtures.course("Theirs"), myExercise), Fixtures.student("their-student"), number = 1, solution = renamed)
+        }
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val service = SimilarityService(maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000, timeoutSec = 120)
+        service.tokenise = { language, id, source, maxTokens ->
+            entered.countDown()
+            release.await(30, TimeUnit.SECONDS)
+            language.read(id, source, maxTokens)
+        }
+        val controller = TeacherCheckSimilarityController(service, SimilarityRequests(service))
+        val call = { ids: List<Long> ->
+            val request = TeacherCheckSimilarityController.Req(
+                listOf(TeacherCheckSimilarityController.ReqCourse(myCourse.toString())),
+                ids.map { TeacherCheckSimilarityController.ReqSubmission(it.toString()) },
+            )
+            controller.controller(myExercise.toString(), request, Auth.easyUser(teacher, EasyRole.TEACHER))
+        }
+
+        val running = thread { call(listOf(studentSubmission, teacherSubmission)) }
+        try {
+            assertTrue(entered.await(10, TimeUnit.SECONDS), "the first comparison never started")
+            val waiting = thread { call(listOf(studentSubmission, teacherSubmission)) }
+            val deadline = System.nanoTime() + 10_000_000_000L
+            while (waiting.state != Thread.State.TIMED_WAITING && System.nanoTime() < deadline) Thread.sleep(5)
+            assertEquals(Thread.State.TIMED_WAITING, waiting.state, "the second caller is not waiting for the permit")
+
+            val refused = assertThrows<InvalidRequestException> { call(listOf(studentSubmission, theirs)) }
+            assertEquals(ReqError.ENTITY_WITH_ID_NOT_FOUND, refused.code)
             release.countDown()
             waiting.join(30_000)
         } finally {

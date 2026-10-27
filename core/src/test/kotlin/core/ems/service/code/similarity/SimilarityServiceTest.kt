@@ -917,8 +917,8 @@ class SimilarityServiceTest {
         val sources = (1L..30L).map { SimilaritySource(it, original + "\n" + "print($it)\n".repeat(it.toInt())) }
 
         val refused = assertThrows<SimilarityTooCostly> { slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
-        assertEquals(435, refused.estimate.pairs)
-        assertTrue(refused.estimate.seconds > 1, "projected only ${refused.estimate.seconds}s")
+        assertFalse(refused.projection.preparing)
+        assertTrue(refused.projection.seconds > 1, "projected only ${refused.projection.seconds}s")
     }
 
     @Test
@@ -966,9 +966,9 @@ class SimilarityServiceTest {
         val sources = (1L..100L).map { SimilaritySource(it, original + "\n" + "print($it)\n".repeat(it.toInt())) }
 
         val refused = assertThrows<SimilarityTooCostly> { slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
-        assertTrue(refused.estimate.seconds >= 5, "projected only ${refused.estimate.seconds}s")
-        // With the pairs that would have followed, so the teacher knows preparing was only the start.
-        assertEquals(4950, refused.estimate.pairs)
+        assertTrue(refused.projection.seconds >= 5, "projected only ${refused.projection.seconds}s")
+        // Said as preparing's alone, the least the run would take: what the pairs would add is not known yet.
+        assertTrue(refused.projection.preparing)
         assertTrue(tokenised.get() <= 3, "tokenised ${tokenised.get()} of 100 solutions before the pace was read")
     }
 

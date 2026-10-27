@@ -131,6 +131,9 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         // solution text is read — and only here: the loader selects exactly these ids, so a second
         // check after loading could never fire.
         assertWithinLimit(ids.size)
+        // Named ids are there, before the permit: found missing only by the loader, a wrong id waited behind
+        // a running check - and was refused as busy, if another waited too - rather than as not found.
+        if (named != null) assertNamedFound(exerciseId, courses, named)
 
         // One cheap row, and it decides the tokeniser, so it is read before the permit is asked for.
         val exercise = selectExerciseMeta(exerciseId, courses)
@@ -312,6 +315,23 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         return chosen.values.toList()
     }
 
+    /**
+     * Refused unless every one of [named] is a submission to [exerciseId] on one of [courses], which the caller
+     * was asserted on - so one on another course is refused as if it were not there, as the loader refuses it.
+     */
+    private fun assertNamedFound(exerciseId: Long, courses: List<Long>, named: List<Long>) = transaction {
+        val found = (CourseExercise innerJoin Submission).select(Submission.id).where {
+            CourseExercise.exercise eq exerciseId and
+                    (CourseExercise.course inList courses) and
+                    (Submission.id inList named)
+        }.count()
+        if (found < named.size) throw InvalidRequestException(
+            "Number of submissions '${named.size}' requested to analyze does not equal to the number of submissions found: '$found'.",
+            ReqError.ENTITY_WITH_ID_NOT_FOUND,
+            notify = false,
+        )
+    }
+
     /** Refused unless [courseExercise] is [exerciseId] on one of [courses], which the caller was asserted on. */
     private fun assertCourseExercise(exerciseId: Long, courses: List<Long>, courseExercise: Long) = transaction {
         val found = CourseExercise.select(CourseExercise.id).where {
@@ -333,9 +353,9 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
      * `char_length` decoded every solution to count it. The providers cap solutions in UTF-8 bytes too, so
      * the count skips what the run skips.
      *
-     * Restricted like the loader, to the exercise on the asserted courses, and refused like it when an id
-     * named is not there: left out, the count answered for the rest and enabled a check the loader then
-     * refused, after the permit.
+     * Restricted like the loader, to the exercise on the asserted courses. An id named that is not there was
+     * refused by [resolve] already: left out, the count answered for the rest and enabled a check the loader
+     * then refused, after the permit.
      */
     private fun selectSizes(resolved: Resolved): List<SizedSource> = transaction {
         if (resolved.submissionIds.isEmpty()) return@transaction emptyList()
@@ -345,13 +365,6 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
                     (CourseExercise.course inList resolved.courses) and
                     (Submission.id inList resolved.submissionIds)
         }.map { Triple(it[Submission.id].value, it[Submission.student].value, it[bytes] ?: 0) }
-        if (chosen.size < resolved.submissionIds.size) {
-            throw InvalidRequestException(
-                "Number of submissions '${resolved.submissionIds.size}' requested to analyze does not equal to the number of submissions found: '${chosen.size}'.",
-                ReqError.ENTITY_WITH_ID_NOT_FOUND,
-                notify = false,
-            )
-        }
 
         // Blank ones, which no provider compares: counted, a whitespace-only answer made pairs the run then
         // skipped, and the count before Find disagreed with the one after. Only the short texts are read for

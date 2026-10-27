@@ -117,6 +117,19 @@ class OptimisedRankingTest {
 
     private val unbounded = SimilarityBinding("unbounded", SimilarityLanguage.PYTHON, optimised = true)
 
+    /** [Unbounded], each pair taking 100 ms of [clock]. */
+    private class SlowUnbounded(private val clock: ManualTicker, private val inner: SimilarityProvider = Unbounded()) : SimilarityProvider by inner {
+        override fun open(request: ProviderRequest, run: RunContext): ProviderSession {
+            val session = inner.open(request, run)
+            return object : ProviderSession by session {
+                override fun score(a: Long, b: Long): PairScore? {
+                    clock.advance(100)
+                    return session.score(a, b)
+                }
+            }
+        }
+    }
+
     /** Edit distance with its bounds at half what they are: wrong, as a provider's could be after an upgrade. */
     private class Unsound(private val inner: SimilarityProvider = EditDistanceProvider()) : SimilarityProvider by inner {
         override val id = "unsound"
@@ -145,6 +158,17 @@ class OptimisedRankingTest {
 
     private fun unboundedService(timeoutSec: Long = 120) =
         service(timeoutSec).also { it.registry = SimilarityRegistry(listOf(Unbounded())) }
+
+    @Test
+    fun `optimised, a provider that cannot bound is stopped at its pace as a full run is, not answered in part`() {
+        // With no bounds there is no likeliest first: stopped at the budget, what it reached would be whichever
+        // pairs came first, said as the best the budget could find. So it runs as a full run, and one its pace
+        // says cannot finish is stopped early. 780 pairs at 100 ms of the test's clock against two seconds.
+        val clock = ManualTicker()
+        val slow = service(timeoutSec = 2, threads = 1, clock = clock).also { it.registry = SimilarityRegistry(listOf(SlowUnbounded(clock))) }
+        val refused = assertThrows<SimilarityTooCostly> { slow.compare({ cohort(3, 40) }, { it }, unbounded, null, 10) }
+        assertFalse(refused.projection.preparing)
+    }
 
     @Test
     fun `a provider that cannot bound its pairs compares every pair, optimised or not`() {
