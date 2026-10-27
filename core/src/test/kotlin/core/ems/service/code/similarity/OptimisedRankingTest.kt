@@ -138,10 +138,9 @@ class OptimisedRankingTest {
         val full = service().compare({ sources }, { it }, editDistance, null, 10).outcome
         val caught = service.compare({ sources }, { it }, unsound, null, 10).outcome
         assertEquals(signature(full), signature(caught))
-        // Caught once, its next check compares every pair, and is priced as one that does.
+        // Caught once, its next check compares every pair.
         val next = service.compare({ sources }, { it }, unsound, null, 10).outcome
         assertEquals(next.pairsTotal, next.pairsCompared)
-        assertFalse(service.estimate(unsound, sources.map { SizedSource(it.id, it.solution.length, it.owner) }).optimised)
     }
 
     private fun unboundedService(timeoutSec: Long = 120) =
@@ -188,20 +187,5 @@ class OptimisedRankingTest {
         val copies = sources.indices.filter { it % 9 == 3 }.map { (it + 1L) to it.toLong() }
         val found = outcome.pairs.map { minOf(it.id1, it.id2) to maxOf(it.id1, it.id2) }.toSet()
         assertTrue(copies.any { (copy, original) -> (original to copy) in found }, "no verbatim copy among ${outcome.pairs.size} pairs")
-    }
-
-    @Test
-    fun `optimised, a cohort over the budget is priced but not refused - unless its provider cannot bound`() {
-        // 200 solutions of 5 KB: prepared in seconds by either provider, compared in well over ten.
-        val sources = (1L..200L).map { SizedSource(it, 5_000, "s$it") }
-        val tenSeconds = service(timeoutSec = 10)
-        val estimate = tenSeconds.assertAffordable(editDistance.copy(optimised = true), sources)
-        assertTrue(estimate.optimised)
-        assertFalse(estimate.withinBudget)
-        assertThrows<SimilarityTooCostly> { tenSeconds.assertAffordable(editDistance, sources) }
-        assertThrows<SimilarityTooCostly> { unboundedService(timeoutSec = 10).assertAffordable(unbounded, sources) }
-        // JPlag bounds its pairs, so it is not refused optimised either.
-        val jplagEstimate = tenSeconds.assertAffordable(jplag.copy(optimised = true), sources)
-        assertTrue(jplagEstimate.optimised && !jplagEstimate.withinBudget)
     }
 }

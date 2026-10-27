@@ -57,8 +57,8 @@ data class SimilarityBinding(
     val fallback: String? = null,
     /**
      * Whether the course asked for the optimised mode. Carried here, with the provider it applies to, so
-     * the estimate and the run read one value: passed beside the binding, the run could be left without it
-     * while the estimate, admitting the cohort as optimised, had it.
+     * the page's count and the run read one value: passed beside the binding, the run could be left
+     * without it while the count had it.
      */
     val optimised: Boolean = false,
     /**
@@ -109,23 +109,31 @@ data class SimilarityOutcome(
 data class SimilarityRun<T>(val rows: List<T>, val outcome: SimilarityOutcome)
 
 /**
- * A submission as the estimate sees it: its size in UTF-8 bytes as every provider counts it, its author, and a fingerprint of its
- * text - never the text, so a cohort can be priced without loading it; only a run, which has loaded it,
- * passes the text itself. Equal fingerprints are compared once, as identical texts are; null is a text of
- * its own.
+ * A submission as it is counted before a check: its size in UTF-8 bytes as every provider counts it, its
+ * author, and a fingerprint of its text - never the text, so a cohort can be counted without loading it;
+ * only a run, which has loaded it, passes the text itself. Equal fingerprints are compared once, as
+ * identical texts are; null is a text of its own.
  */
 data class SizedSource(
     val id: Long,
     val bytes: Int,
     val owner: String? = null,
     val digest: String? = null,
-    /** Whitespace only, which no provider compares: priced, it made pairs the run skipped as too short. */
+    /** Whitespace only, which no provider compares: counted, it made pairs the run skipped as too short. */
     val blank: Boolean = false,
 )
 
 /**
- * What a comparison would take: how many pairs it would score, and how long on this server's pool,
- * against the budget it would run under. See [SimilarityService.estimate].
+ * What a check would compare, counted before it runs (EZ-1667): the submissions, the pairs among them, and
+ * those in no pair at all - blank, or a size the provider does not compare. Counted, not timed: how long a
+ * pair takes depends on the server and on the code, and a model of it measured on one machine was out by
+ * four to a hundred times on another; the run's own pace says it instead (see [RunPace]).
+ */
+data class SimilarityCohort(val submissions: Int, val pairs: Long, val notCompared: Int)
+
+/**
+ * What a run would take in all, measured at its own pace part way through (see [RunPace]): the refusal of
+ * one that cannot finish inside its budget.
  */
 data class SimilarityEstimate(
     val submissions: Int,
@@ -133,17 +141,7 @@ data class SimilarityEstimate(
     val threads: Int,
     val wallNanos: Long,
     val budgetSec: Long,
-    /**
-     * Whether it would run optimised: then [wallNanos] is the most it can take - pairs the provider can
-     * rule out are not scored - and over the budget it stops with the likeliest pairs found, so it is not
-     * refused for being over.
-     */
-    val optimised: Boolean = false,
-    /** Submissions in no pair at all - blank, or a size the provider does not compare - for the page to say so. */
-    val notCompared: Int = 0,
 ) {
-    val withinBudget: Boolean get() = wallNanos <= budgetSec * 1_000_000_000L
-
     /** Whole seconds, rounded up: "about 0 s" is not something to tell a teacher about a real run. */
     val seconds: Long get() = (wallNanos + 999_999_999L) / 1_000_000_000L
 }
@@ -154,7 +152,7 @@ data class SimilarityEstimate(
  */
 data class SimilarityProgress(val comparing: Boolean, val done: Long, val total: Long, val elapsedSec: Long, val budgetSec: Long)
 
-/** Refused before the permit: the estimate is over the budget, so the run would only time out. */
+/** Refused part way, at the run's pace: it would only have run to the end of its budget and timed out. */
 class SimilarityTooCostly(val estimate: SimilarityEstimate) :
     RuntimeException("Similarity comparison would take about ${estimate.seconds}s, over the ${estimate.budgetSec}s budget")
 

@@ -46,7 +46,7 @@
     "tooManySubmissions": "Korraga on liiga palju esitusi võrrelda. Kitsenda valik ühele rühmale.",
     "tooManySubmissionsLimit": "Korraga saab võrrelda kõige rohkem {{value}} esitust. Kitsenda valik ühele rühmale.",
     "similarityTooCostly": "Nende võrdlemine võtaks kauem, kui üks kontroll tohib kesta. Vali rühm, et võrrelda vähem lahendusi.",
-    "similarityTooCostlyMinutes": "Nende võrdlemine võtaks umbes {{estimated}} min, kauem kui üks kontroll tohib kesta ({{budget}} min). Vali rühm, et võrrelda vähem lahendusi."
+    "similarityTooCostlyMinutes": "Peatatud varakult: selle tempoga võtaks nende võrdlemine umbes {{estimated}} min, kauem kui üks kontroll tohib kesta ({{budget}} min). Vali rühm, et võrrelda vähem lahendusi."
   },
   "general": {
     "add": "Lisa",
@@ -735,11 +735,10 @@
     "diceTooltip": "Dice’i kordaja — kui suur osa kahe teksti märgipaaridest on mõlemas. Kahe sama keele programmi puhul alati kõrge, seega näidatakse seda vaid teadmiseks ja see ei otsusta midagi.",
     "levenshteinTooltip": "Levenshteini suhtarv — kui suur osa kahest tekstist kattub märk-märgilt: 100% on sama tekst. Ümbernimetamine või vormindamine vähendab seda.",
     "sharedTokensTooltip": "Ühised sümbolid — kui palju koodi on kahel lahendusel ühist, sõltumata sellest, kui suure osa see kummastki moodustab. Paarid on järjestatud enim ühist koodi jagavast alates.",
-    "estimateScope_one": "{{submissions, number}} esitust, {{count, number}} võrreldav paar, umbes {{duration}}",
-    "estimateScope_other": "{{submissions, number}} esitust, {{count, number}} võrreldavat paari, umbes {{duration}}",
+    "estimateScope_one": "{{submissions, number}} esitust, {{count, number}} võrreldav paar · kuni {{budget}}",
+    "estimateScope_other": "{{submissions, number}} esitust, {{count, number}} võrreldavat paari · kuni {{budget}}",
     "durationSeconds": "{{value}} s",
     "durationMinutes": "{{value}} min",
-    "tooCostly": "See võtaks umbes {{duration}}, kauem kui üks kontroll tohib kesta ({{budget}}), seega see lükataks tagasi. Vali rühm, et võrrelda vähem lahendusi.",
     "estimateNothing": "{{submissions, number}} esitust, kuid võrrelda pole ühtegi paari: kõik on tühjad, selle meetodi jaoks liiga pikad või sama tekst, mille esitasid teised. Otsing näitab need.",
     "settingsModeTitle": "Võrreldavad paarid",
     "settingsModeOptimised": "Tõenäolisemad paarid enne (soovitatav)",
@@ -752,7 +751,7 @@
     "settingsAttemptsFirstHelp": "Võrdleb iga õpilase esimest esitust. Kopeeritud ja siis nii kaua muudetud lahendus, kuni see enam kopeeritud ei paista, on seal ikka koopia.",
     "firstAttemptsNote": "Võrreldakse iga õpilase esimest esitust.",
     "attemptNumber": "{{number}}. esitus",
-    "settingsModeFullHelp": "Võrdleb kõiki paare. Kontroll, mis võtaks lubatust kauem, lükatakse tagasi; vali siis rühm.",
+    "settingsModeFullHelp": "Võrdleb kõiki paare. Kontroll, mis ei jõua lubatud aja jooksul lõpuni, peatatakse varakult ilma tulemusteta; vali siis rühm.",
     "incompleteInGroup": "Peatus ajapiirangu tõttu pärast {{compared, number}} paari võrdlemist {{total, number}}-st ({{share}}%), tõenäolisemad enne. Ülejäänute seas võib olla sarnane paar.",
     "incomplete": "Peatus ajapiirangu tõttu pärast {{compared, number}} paari võrdlemist {{total, number}}-st ({{share}}%), tõenäolisemad enne. Ülejäänute seas võib olla sarnane paar: kõigi võrdlemiseks vali rühm.",
     "ruledOut": "Võrreldi {{compared, number}} paari {{total, number}}-st: ülejäänud ei saanud olla kõige sarnasemate seas.",
@@ -778,10 +777,7 @@
     "progressPreparing": "Loen lahendusi… {{elapsed}} (kõige rohkem {{budget}})",
     "progressComparing": "Võrreldud {{done, number}} paari {{total, number}}-st · {{elapsed}} (kõige rohkem {{budget}})",
     "progressWaiting": "Võrdlen… {{elapsed}} (kõige rohkem {{budget}})",
-    "progressElapsed": "Võrdlen… {{elapsed}}",
-    "estimatePartial_one": "{{submissions, number}} esitust, {{count, number}} võrreldav paar, tõenäolisemad enne: kontroll lõpeb {{budget}} järel, umbes {{share}}% neist võrrelduna.",
-    "estimatePartial_other": "{{submissions, number}} esitust, {{count, number}} võrreldavat paari, tõenäolisemad enne: kontroll lõpeb {{budget}} järel, umbes {{share}}% neist võrrelduna.",
-    "everyPairWouldTake": "Kõigi paaride võrdlemine võtaks umbes {{duration}}."
+    "progressElapsed": "Võrdlen… {{elapsed}}"
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",

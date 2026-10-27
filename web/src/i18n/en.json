@@ -46,7 +46,7 @@
     "tooManySubmissions": "Too many submissions to compare at once. Narrow the selection to a single group.",
     "tooManySubmissionsLimit": "At most {{value}} submissions can be compared at once. Narrow the selection to a single group.",
     "similarityTooCostly": "Comparing these would take longer than one check may run. Choose a group to compare fewer solutions.",
-    "similarityTooCostlyMinutes": "Comparing these would take about {{estimated}} min, longer than the {{budget}} min one check may run. Choose a group to compare fewer solutions."
+    "similarityTooCostlyMinutes": "Stopped early: at its pace, comparing these would take about {{estimated}} min, longer than the {{budget}} min one check may run. Choose a group to compare fewer solutions."
   },
   "general": {
     "add": "Add",
@@ -735,11 +735,10 @@
     "diceTooltip": "Dice coefficient — how many of the two texts' character pairs both contain. High for any two programs in one language, so it is shown for reference and decides nothing.",
     "levenshteinTooltip": "Levenshtein ratio — how much of the two texts lines up character by character: 100% is the same text. Renaming or reformatting lowers it.",
     "sharedTokensTooltip": "Shared tokens — how much code the two have in common, whatever share of either that is. Pairs are listed most shared first.",
-    "estimateScope_one": "{{submissions, number}} submissions, {{count, number}} pair to compare, about {{duration}}",
-    "estimateScope_other": "{{submissions, number}} submissions, {{count, number}} pairs to compare, about {{duration}}",
+    "estimateScope_one": "{{submissions, number}} submissions, {{count, number}} pair to compare · at most {{budget}}",
+    "estimateScope_other": "{{submissions, number}} submissions, {{count, number}} pairs to compare · at most {{budget}}",
     "durationSeconds": "{{value}} s",
     "durationMinutes": "{{value}} min",
-    "tooCostly": "This would take about {{duration}}, longer than the {{budget}} one check may run, so it would be refused. Choose a group to compare fewer solutions.",
     "estimateNothing": "{{submissions, number}} submissions, but no pair is left to compare: each is blank, too long for this method, or the same text others handed in. Find shows them.",
     "settingsModeTitle": "Pairs to compare",
     "settingsModeOptimised": "Likeliest pairs first (recommended)",
@@ -752,7 +751,7 @@
     "settingsAttemptsFirstHelp": "Compares each student's first attempt. A solution copied and then changed until it no longer looks copied is still a copy there.",
     "firstAttemptsNote": "Each student's first attempt is compared.",
     "attemptNumber": "attempt {{number}}",
-    "settingsModeFullHelp": "Compares every pair. A check that would take longer than allowed is refused; choose a group instead.",
+    "settingsModeFullHelp": "Compares every pair. A check that cannot finish in the time allowed is stopped early, without results; choose a group instead.",
     "incompleteInGroup": "Stopped at the time limit after comparing {{compared, number}} of {{total, number}} pairs ({{share}}%), the likeliest first. A similar pair may be among the rest.",
     "incomplete": "Stopped at the time limit after comparing {{compared, number}} of {{total, number}} pairs ({{share}}%), the likeliest first. A similar pair may be among the rest: choose a group to compare them all.",
     "ruledOut": "Compared {{compared, number}} of {{total, number}} pairs: the others could not have been among the most similar.",
@@ -778,10 +777,7 @@
     "progressPreparing": "Reading the solutions… {{elapsed}} of at most {{budget}}",
     "progressComparing": "Compared {{done, number}} of {{total, number}} pairs · {{elapsed}} of at most {{budget}}",
     "progressWaiting": "Comparing… {{elapsed}} of at most {{budget}}",
-    "progressElapsed": "Comparing… {{elapsed}}",
-    "estimatePartial_one": "{{submissions, number}} submissions, {{count, number}} pair to compare, likeliest first: the check stops at {{budget}}, after about {{share}}% of them.",
-    "estimatePartial_other": "{{submissions, number}} submissions, {{count, number}} pairs to compare, likeliest first: the check stops at {{budget}}, after about {{share}}% of them.",
-    "everyPairWouldTake": "Comparing every pair would take about {{duration}}."
+    "progressElapsed": "Comparing… {{elapsed}}"
   },
   "about": {
     "s1": "Lahendus is operated and developed by the",

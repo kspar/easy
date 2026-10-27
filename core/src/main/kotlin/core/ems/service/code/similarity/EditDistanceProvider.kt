@@ -48,17 +48,6 @@ internal class EditDistanceProvider(
     /** The ratio from above, linear in the texts' lengths: see [Session.bound]. */
     override val bounds = true
 
-    /** Its bigrams, sorted: measured at about 100 ns a character. */
-    override fun prepareNanos(bytes: Int): Long = 100L * bytes
-
-    /**
-     * The bit-parallel LCS walks the longer text once per 64 characters of the shorter, measured at
-     * about 7 ns a step on one core; Dice merges two sorted bigram lists. 500 solutions of 2.7 KB come
-     * to 104 s here, against 100 s measured.
-     */
-    override fun pairNanos(bytesA: Int, bytesB: Int): Long =
-        7L * ((minOf(bytesA, bytesB) + 63) / 64) * maxOf(bytesA, bytesB) + 2L * (bytesA + bytesB) + 2_000
-
     /** Blank solutions are too small and those above the cap, in UTF-8 bytes, too large; neither is compared. */
     override fun compares(bytes: Int): Boolean = bytes in 1..maxSolutionBytes
 
@@ -90,21 +79,14 @@ internal class EditDistanceProvider(
                 when {
                     // Nothing to compare: blank answers would pair with each other as identical.
                     source.solution.isBlank() -> skipped += SkippedSubmission(source.id, "TOO_SMALL")
-                    // In UTF-8 bytes, as the estimate reads them from the database, so it skips what this
-                    // skips; counted differently, the two disagreed and the estimate priced pairs this never ran.
+                    // In UTF-8 bytes, as the count before a check reads them from the database, so it skips what
+                    // this skips; counted differently, the two disagreed and the count had pairs this never ran.
                     utf8Length(source.solution) > maxSolutionBytes ->
                         skipped += SkippedSubmission(source.id, "TOO_LARGE")
                     else -> usable += source.id
                 }
             }
-            bigramsById = run.workers.all(
-                usable.map { id ->
-                    {
-                        val solution = solutionById.getValue(id)
-                        id to run.preparing(request.language, prepareNanos(utf8Length(solution))) { EditDistance.bigrams(solution) }
-                    }
-                },
-            ).toMap()
+            bigramsById = run.workers.all(usable.map { id -> { id to EditDistance.bigrams(solutionById.getValue(id)) } }).toMap()
             if (run.deadline.passed()) throw SimilarityTimedOut(run.budgetSec)
             return PreparedCohort(
                 language = request.language,

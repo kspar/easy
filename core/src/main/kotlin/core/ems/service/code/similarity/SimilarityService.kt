@@ -87,6 +87,9 @@ class SimilarityService(
     /** Every provider installed, and the choice between them; see [bind]. */
     internal var registry = SimilarityRegistry(listOf(jplag, EditDistanceProvider()))
 
+    /** How long one check may run, in seconds: what the page says before Find. */
+    val budgetSec: Long get() = timeoutSec
+
     /** Whether preparing, and a full run's pairs, are refused once their pace says they cannot finish; see [RunPace]. Off only in a test of the deadline. */
     internal var projectRuns = true
 
@@ -96,9 +99,6 @@ class SimilarityService(
      * bound is a bug in this version, which the next deploy fixes or does not.
      */
     private val untrustedBounds: MutableSet<String> = ConcurrentHashMap.newKeySet()
-
-    /** This server's runs against the cost model, which the estimate is scaled by. */
-    internal val calibration = Calibration()
 
     /** The check running now, when its caller asked to watch it: see [progress]. One at a time, as the permit allows. */
     private val running = AtomicReference<RunProgress?>()
@@ -174,76 +174,47 @@ class SimilarityService(
     }
 
     /**
-     * What comparing [sources] under [binding] would take, from their sizes alone (EZ-1667): the pairs
-     * it would score and the time its provider's measured costs add up to on this server's pool.
-     *
-     * The deadline already stops a run that outlasts the budget, but only once the budget is spent:
-     * the teacher waits two minutes for a refusal, and the one permit is held for all of them. Priced
-     * up front, a cohort that cannot finish is refused at once, and one that can says how long it will
-     * take before anybody clicks.
+     * What a check of [sources] under [binding] would compare (EZ-1667): the submissions, the pairs among
+     * them, and those in no pair at all - counted from sizes and fingerprints, never the text, so the page
+     * can say it before anybody clicks. Not how long: that depends on the server and the code, and the
+     * model that once said it was out by four to a hundred times; the run's own pace says it instead.
      *
      * The same pairs the engine would compare, as far as sizes can tell: identical texts once where
      * [comparands] would make them a group - by [GROUP_AUTHORS] or more authors - and each on its own
      * where it would not; none between a student's own submissions; none with a solution the provider
-     * would skip for its size. Divided by the threads the run would get, which is fixed per server, so
-     * the same cohort gets the same answer every time.
+     * would skip, blank or for its size.
      */
-    fun estimate(binding: SimilarityBinding, sources: List<SizedSource>): SimilarityEstimate {
+    fun count(binding: SimilarityBinding, sources: List<SizedSource>): SimilarityCohort {
         val provider = checkNotNull(registry.provider(binding.provider)) { "No similarity provider ${binding.provider}" }
-        val language = provider.comparesAs(binding.language)
-        // The model's figures, scaled by how this server's runs have compared with them (see [Calibration]).
-        val prepareNanos = (sources.sumOf { provider.prepareNanos(it.bytes) } *
-                calibration.factor(provider.id, language, Calibration.Phase.PREPARE)).toLong()
-        val (pairs, pairNanos) = pairsOf(provider, language, sources)
-        val nanos = prepareNanos + pairNanos
-        val threads = threadsFor(sources.size)
-        // Optimised stops at the budget with the pairs it reached - but only once the cohort is prepared,
-        // and preparing is not stopped part way with anything to show: a cohort JPlag would spend the whole
-        // budget tokenising is priced, and refused, as a full run is. Unpriced, it held the permit for the
-        // budget and then timed out with nothing.
-        val prepared = prepareNanos / threads <= timeoutSec * 1_000_000_000L
-        return SimilarityEstimate(
-            sources.size, pairs, threads, nanos / threads, timeoutSec, binding.optimised && bounds(provider) && prepared,
-            notCompared = sources.count { !compares(provider, it) },
-        )
+        return SimilarityCohort(sources.size, pairsAmong(provider, sources), sources.count { !compares(provider, it) })
     }
 
     /**
-     * The pairs [sources] would make and one worker's time for them, by the model as this server's runs have
-     * scaled it: comparands as [comparands] makes them, with the authors of each. Collapsing every identical
-     * text instead priced fifty pairs of identical solutions as fifty comparands where the run compares a
-     * hundred - a quarter of the pairs, admitted to time out.
+     * The pairs among [sources], with comparands as [comparands] makes them, with the authors of each.
+     * Collapsing every identical text instead counted fifty pairs of identical solutions as fifty
+     * comparands where the run compares a hundred.
      */
-    private fun pairsOf(provider: SimilarityProvider, language: SimilarityLanguage, sources: List<SizedSource>): Pair<Long, Long> {
+    private fun pairsAmong(provider: SimilarityProvider, sources: List<SizedSource>): Long {
         val comparands = sources.filter { compares(provider, it) }
             .groupBy { it.digest ?: "#${it.id}" }.values
             .flatMap { same ->
                 val authors = same.mapNotNull { it.owner }.distinct().size + same.count { it.owner == null }
-                if (authors >= GROUP_AUTHORS) listOf(same.first().bytes to same.mapTo(mutableSetOf()) { it.owner })
-                else same.map { it.bytes to setOf(it.owner) }
+                if (authors >= GROUP_AUTHORS) listOf(same.mapTo(mutableSetOf()) { it.owner })
+                else same.map { setOf(it.owner) }
             }
-        var pairNanos = 0L
         var pairs = 0L
         for (i in comparands.indices) for (j in i + 1 until comparands.size) {
-            val (bytesA, ownersA) = comparands[i]
-            val (bytesB, ownersB) = comparands[j]
+            val ownersA = comparands[i]
+            val ownersB = comparands[j]
             // One author on both sides is a student against their own attempt, which is never compared.
             if (ownersA.size == 1 && ownersA == ownersB && ownersA.single() != null) continue
             pairs++
-            pairNanos += provider.pairNanos(bytesA, bytesB)
         }
-        return pairs to (pairNanos * calibration.factor(provider.id, language, Calibration.Phase.PAIRS)).toLong()
+        return pairs
     }
 
     /** Whether [source] is in any pair: not blank, which every provider skips, and of a size [provider] compares. */
     private fun compares(provider: SimilarityProvider, source: SizedSource) = !source.blank && provider.compares(source.bytes)
-
-    /**
-     * [estimate], refused with [SimilarityTooCostly] when it is over the budget - unless it would run
-     * optimised, which stops at the budget with the likeliest pairs instead of timing out.
-     */
-    fun assertAffordable(binding: SimilarityBinding, sources: List<SizedSource>): SimilarityEstimate =
-        estimate(binding, sources).also { if (!it.withinBudget && !it.optimised) throw SimilarityTooCostly(it) }
 
     /**
      * Takes a *loader* rather than the loaded solutions, so the permit covers the memory it claims to.
@@ -347,27 +318,19 @@ class SimilarityService(
         val ownerById = sources.mapNotNull { source -> source.owner?.let { source.id to it } }.toMap()
         val threads = threadsFor(sources.size)
 
-        val bytesById = sources.associate { it.id to utf8Length(it.solution) }
-        // What the pairs would take once the cohort is prepared, for a refusal while preparing to say what the
-        // whole run would: priced as the estimate prices them, the text itself standing for its fingerprint.
-        val (pairsAfter, pairNanosAfter) = pairsOf(provider, language, sources.map {
-            SizedSource(it.id, bytesById.getValue(it.id), it.owner, it.solution, it.solution.isBlank())
+        // How many pairs would follow preparing, for a refusal while preparing to say: counted as the page
+        // counts them, the text itself standing for its fingerprint.
+        val pairsAfter = pairsAmong(provider, sources.map {
+            SizedSource(it.id, utf8Length(it.solution), it.owner, it.solution, it.solution.isBlank())
         })
 
         SimilarityWorkers(threads, WORKER_STACK_BYTES).use { workers ->
             val context = RunContext(workers, deadline, timeoutSec, projectRuns) { wall ->
-                SimilarityEstimate(sources.size, pairsAfter, threads, wall + pairNanosAfter / threads, timeoutSec)
+                SimilarityEstimate(sources.size, pairsAfter, threads, wall, timeoutSec)
             }
             provider.open(ProviderRequest(language, sources, baseCode, textAllowed), context).use { session ->
                 val prepareStart = ticker.nanos()
-                val cohort = try {
-                    session.prepare()
-                } finally {
-                    // However preparing ends: refused at its pace, it is the run that says most about the model.
-                    context.prepared.forEach { (compared, spent) ->
-                        calibration.observe(provider.id, compared, Calibration.Phase.PREPARE, spent.measured.get(), spent.predicted.get())
-                    }
-                }
+                val cohort = session.prepare()
                 val prepareMs = (ticker.nanos() - prepareStart) / 1_000_000
 
                 if (cohort.usable.size < 2) {
@@ -379,16 +342,9 @@ class SimilarityService(
                 val comparands = comparands(cohort, ownerById)
                 val groups = comparands.filter { it.members.size > 1 }.map { it.members }
                 session.ready(comparands.map { it.representative })
-                val ranker = PairRanking(workers, deadline, timeoutSec, projectRuns) { a, b ->
-                    provider.pairNanos(bytesById.getValue(a), bytesById.getValue(b))
-                }
+                val ranker = PairRanking(workers, deadline, timeoutSec, projectRuns)
                 progress?.ranker = ranker
-                // Measured however the ranking ends: a run refused at its pace is the one that says most.
-                val ranking = try {
-                    if (bounded) ranker.rankBounded(session, comparands, topN, partial = true) else ranker.rank(session, comparands, topN)
-                } finally {
-                    calibration.observe(provider.id, cohort.language, Calibration.Phase.PAIRS, ranker.scored.measured.get(), ranker.scored.predicted.get())
-                }
+                val ranking = if (bounded) ranker.rankBounded(session, comparands, topN, partial = true) else ranker.rank(session, comparands, topN)
                 ranking.boundsViolation?.let { violation ->
                     untrustedBounds += provider.id
                     log.error {

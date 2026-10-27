@@ -551,18 +551,15 @@
       "attempts": { "kind": "string" },
       "attempts_from": { "kind": "string" },
       "budget_sec": { "kind": "number" },
-      "estimated_sec": { "kind": "number" },
       "language": { "kind": "string" },
       "mode": { "kind": "string" },
       "mode_from": { "kind": "string" },
       "not_compared": { "kind": "number" },
-      "optimised": { "kind": "boolean" },
       "pairs": { "kind": "number" },
       "provider": { "kind": "string" },
       "provider_fallback": { "kind": "string", "nullable": true },
       "provider_from": { "kind": "string" },
-      "submissions": { "kind": "number" },
-      "within_budget": { "kind": "boolean" }
+      "submissions": { "kind": "number" }
     },
     "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.Resp": {
       "attempts": { "kind": "string" },

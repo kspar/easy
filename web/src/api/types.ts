@@ -734,8 +734,8 @@ export interface SimilarityResp {
 }
 
 /**
- * What a similarity check with the same body would do, priced from the submissions' sizes without
- * running it. `within_budget` false means the check would be refused as SIMILARITY_TOO_COSTLY.
+ * What a similarity check with the same body would compare, counted from the submissions' sizes without
+ * running it - not how long it would take, which only the run itself can say.
  *
  * @endpoint POST /v2/exercises/{exerciseId}/similarity/estimate -> (root)
  */
@@ -747,15 +747,8 @@ export interface SimilarityEstimateResp {
   language: string
   mode: string
   provider_fallback: string | null
-  /** About how long, in whole seconds rounded up. */
-  estimated_sec: number
+  /** How long one check may run, in seconds. */
   budget_sec: number
-  within_budget: boolean
-  /**
-   * Whether it would run optimised: `estimated_sec` is then the most it can take, and over the budget it
-   * is not refused but stops there with the likeliest pairs found.
-   */
-  optimised: boolean
   /**
    * Where the provider choice and the mode came from: `exercise` (its own), `course` or `default`. Absent
    * from an older core.

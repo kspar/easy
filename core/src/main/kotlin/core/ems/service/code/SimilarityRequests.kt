@@ -13,10 +13,9 @@ import core.db.Submission
 import core.ems.service.access_control.assertAccess
 import core.ems.service.access_control.teacherOnCourse
 import core.ems.service.code.similarity.SimilarityBinding
-import core.ems.service.code.similarity.SimilarityEstimate
+import core.ems.service.code.similarity.SimilarityCohort
 import core.ems.service.code.similarity.SimilarityLanguage
 import core.ems.service.code.similarity.SimilarityService
-import core.ems.service.code.similarity.SimilarityTooCostly
 import core.ems.service.code.similarity.SimilarityUnavailable
 import core.ems.service.code.similarity.SizedSource
 import core.ems.service.code.similarity.TooManySubmissions
@@ -38,10 +37,10 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Service
 
 /**
- * Everything a similarity check decides before it asks for the permit, shared by the check itself and
- * by its estimate (EZ-1667): who may ask, which submissions, which language, which provider and mode,
- * and what it would cost. The two must agree - an estimate that resolved the cohort differently from
- * the run would price one comparison and refuse or admit another.
+ * Everything a similarity check decides before it asks for the permit, shared by the check itself and by
+ * the count the page shows before it (EZ-1667): who may ask, which submissions, which language, which
+ * provider and mode, and how many pairs that makes. The two must agree - a count that resolved the cohort
+ * differently from the run would tell the teacher about one comparison and run another.
  */
 @Service
 class SimilarityRequests(private val similarityService: SimilarityService) {
@@ -191,35 +190,9 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
         }
     }
 
-    /** What running [resolved] would take, from the submissions' sizes; no text leaves the database. */
-    fun estimate(resolved: Resolved): SimilarityEstimate =
-        similarityService.estimate(resolved.binding, selectSizes(resolved))
-
-    /**
-     * [estimate], refused when over the budget - a named 400 that says how long it would have taken and
-     * what the budget is, so the page can say "about 9 minutes; try a group" rather than wait two minutes
-     * for a timeout that was certain from the start.
-     *
-     * Priced optimised too: a run that stops at the budget with the pairs it reached still has to prepare
-     * the cohort first, and JPlag's tokenising alone can outlast the budget. The sizes are read from each
-     * value's header (see [selectSizes]), so pricing costs the database little.
-     */
-    fun assertAffordable(resolved: Resolved) {
-        try {
-            similarityService.assertAffordable(resolved.binding, selectSizes(resolved))
-        } catch (e: SimilarityTooCostly) {
-            throw tooCostly(e)
-        }
-    }
-
-    /** The named 400 for a run over the budget: priced so before it starts, or measured so as it runs. */
-    fun tooCostly(e: SimilarityTooCostly) = InvalidRequestException(
-        "Similarity comparison would take about ${e.estimate.seconds}s, over the ${e.estimate.budgetSec}s budget; try a smaller group.",
-        ReqError.SIMILARITY_TOO_COSTLY,
-        "estimated_sec" to e.estimate.seconds.toString(),
-        "budget_sec" to e.estimate.budgetSec.toString(),
-        notify = false,
-    )
+    /** What running [resolved] would compare, from the submissions' sizes; no text leaves the database. */
+    fun count(resolved: Resolved): SimilarityCohort =
+        similarityService.count(resolved.binding, selectSizes(resolved))
 
     private class CourseSettings(val provider: String?, val mode: SimilarityMode, val attempts: SimilarityAttempts)
 
@@ -352,17 +325,16 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
     /**
      * Each chosen submission's length and its author, and - only where another has the same length, since
      * only those can be identical - an md5 of its text, all computed by the database, so the cohort is
-     * priced without one solution reaching the heap. It runs before the permit, as often as the page asks:
+     * counted without one solution reaching the heap. It runs before the permit, as often as the page asks:
      * hashing every text on every call made the database read and hash the whole cohort each time a
      * teacher changed group.
      *
      * The length is in UTF-8 bytes, `octet_length`, which Postgres reads from a stored value's header;
-     * `char_length` decoded every solution to count it. Bytes are never fewer than the UTF-16 units the
-     * providers work in, so a cohort is never priced below its cost - in characters, emoji were priced at
-     * half - and the providers cap solutions in bytes too, so the estimate skips what the run skips.
+     * `char_length` decoded every solution to count it. The providers cap solutions in UTF-8 bytes too, so
+     * the count skips what the run skips.
      *
      * Restricted like the loader, to the exercise on the asserted courses, and refused like it when an id
-     * named is not there: left out, the estimate answered for the rest and enabled a check the loader then
+     * named is not there: left out, the count answered for the rest and enabled a check the loader then
      * refused, after the permit.
      */
     private fun selectSizes(resolved: Resolved): List<SizedSource> = transaction {
@@ -381,10 +353,10 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
             )
         }
 
-        // Blank ones, which no provider compares: priced, a whitespace-only answer made pairs the run then
+        // Blank ones, which no provider compares: counted, a whitespace-only answer made pairs the run then
         // skipped, and the count before Find disagreed with the one after. Only the short texts are read for
-        // it, so pricing still costs the database next to nothing; a blank one longer than this is rare
-        // enough to be priced as it is.
+        // it, so counting still costs the database next to nothing; a blank one longer than this is rare
+        // enough to be counted as it is.
         val short = chosen.filter { it.third <= BLANK_READ_BYTES }.map { it.first }
         val blank = if (short.isEmpty()) emptySet() else Submission.select(Submission.id, Submission.solution)
             .where { Submission.id inList short }

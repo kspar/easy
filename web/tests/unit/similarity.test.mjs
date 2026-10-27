@@ -18,7 +18,7 @@ import { isSimilarityRefusal } from '../../src/features/similarity/similarityErr
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchEntries, matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
 import { capped, comparedBy, coverage, forReference, orderPairs, pairMetrics, providerName, ranksBySharedCode, resultNotes, rowMetrics, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
-import { comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings, partialShare } from '../../src/features/similarity/similarityEstimate.ts'
+import { comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
 import { skippedByReason } from '../../src/features/similarity/similaritySkipped.ts'
@@ -445,19 +445,16 @@ describe('the request', () => {
 })
 
 describe('the estimate', () => {
-  const fits = { submissions: 30, pairs: 435, provider: 'edit-distance', language: 'python', mode: 'optimised', provider_fallback: null, estimated_sec: 12, budget_sec: 120, within_budget: true }
+  const counted = { submissions: 30, pairs: 435, provider: 'edit-distance', language: 'python', mode: 'optimised', provider_fallback: null, budget_sec: 120 }
 
-  test('within the budget it is a duration to show, and over it a refusal to say before the click', () => {
-    expect(estimateView(fits)).toEqual({ kind: 'fits', submissions: 30, pairs: 435, seconds: 12, notCompared: 0 })
-    expect(estimateView({ ...fits, estimated_sec: 540, within_budget: false }))
-      .toEqual({ kind: 'tooCostly', submissions: 30, pairs: 435, seconds: 540, budget: 120, notCompared: 0 })
+  test('it is what Find would compare, and the most a check may take', () => {
+    expect(estimateView(counted)).toEqual({ kind: 'counted', submissions: 30, pairs: 435, budget: 120, notCompared: 0 })
   })
 
-  test('optimised, a cohort over the budget is not refused: it stops at the budget with the likeliest pairs', () => {
-    expect(estimateView({ ...fits, estimated_sec: 540, within_budget: false, optimised: true }))
-      .toEqual({ kind: 'partial', submissions: 30, pairs: 435, seconds: 540, budget: 120, notCompared: 0 })
-    // Within the budget it is a duration like any other, an upper bound though it is.
-    expect(estimateView({ ...fits, optimised: true })).toEqual({ kind: 'fits', submissions: 30, pairs: 435, seconds: 12, notCompared: 0 })
+  test('the time and verdict an older core sends are not read, so a check this core would run is never refused ahead', () => {
+    // "Too costly" from a model out by four to a hundred times switched Find off for checks that ran.
+    expect(estimateView({ ...counted, estimated_sec: 540, within_budget: false, optimised: false }))
+      .toEqual({ kind: 'counted', submissions: 30, pairs: 435, budget: 120, notCompared: 0 })
   })
 
   test('a result that did not compare every pair says how many it did, and why', () => {
@@ -509,17 +506,12 @@ describe('the estimate', () => {
     expect(capped({ truncated: false, complete: true })).toBe(false)
   })
 
-  test('a cohort with no pair to compare says so, rather than "about 0 s"', () => {
+  test('a cohort with no pair to compare says so, rather than "0 pairs to compare"', () => {
     // Every solution blank, or too long for the provider: Find still runs it, to name who was skipped.
-    expect(estimateView({ ...fits, pairs: 0, estimated_sec: 0 })).toEqual({ kind: 'nothing', submissions: 30, notCompared: 0 })
-    expect(estimateView({ ...fits, pairs: 0, estimated_sec: 0, within_budget: false })).toEqual({ kind: 'nothing', submissions: 30, notCompared: 0 })
+    expect(estimateView({ ...counted, pairs: 0 })).toEqual({ kind: 'nothing', submissions: 30, notCompared: 0 })
   })
 
-  test('over the budget, the share of the pairs a check gets through, and the time it has run as a clock', () => {
-    // "About 6 min" over a note that it stops at 2 was two answers to one question.
-    expect(partialShare({ seconds: 360, budget: 120 })).toBe(33)
-    expect(partialShare({ seconds: 100_000, budget: 120 })).toBe(1)
-    expect(partialShare({ seconds: 121, budget: 120 })).toBe(99)
+  test('the time a running check has taken is a clock', () => {
     expect(formatClock(47)).toBe('0:47')
     expect(formatClock(120)).toBe('2:00')
     expect(formatClock(-3)).toBe('0:00')
@@ -527,22 +519,22 @@ describe('the estimate', () => {
 
   test('those in no pair are counted with the estimate, and an older core is taken to compare them all', () => {
     // 27 submissions and 120 pairs said nothing of why not 351, and after the run there were 91.
-    expect(estimateView({ ...fits, not_compared: 9 })).toMatchObject({ kind: 'fits', notCompared: 9 })
-    expect(estimateView({ ...fits, not_compared: -1 })).toMatchObject({ notCompared: 0 })
-    expect(estimateView(fits)).toMatchObject({ notCompared: 0 })
+    expect(estimateView({ ...counted, not_compared: 9 })).toMatchObject({ kind: 'counted', notCompared: 9 })
+    expect(estimateView({ ...counted, not_compared: -1 })).toMatchObject({ notCompared: 0 })
+    expect(estimateView(counted)).toMatchObject({ notCompared: 0 })
   })
 
   test('no estimate, or one the page cannot read, falls back to what the page said before estimates', () => {
     expect(estimateView(undefined)).toEqual({ kind: 'unknown' })
     // An unstubbed request, or a proxy's empty body.
     expect(estimateView({})).toEqual({ kind: 'unknown' })
-    expect(estimateView({ ...fits, estimated_sec: 'soon' })).toEqual({ kind: 'unknown' })
-    expect(estimateView({ ...fits, within_budget: undefined })).toEqual({ kind: 'unknown' })
+    expect(estimateView({ ...counted, pairs: 'many' })).toEqual({ kind: 'unknown' })
+    expect(estimateView({ ...counted, budget_sec: undefined })).toEqual({ kind: 'unknown' })
   })
 
   test('seconds under a minute and a half, whole minutes rounded up from there, and nothing raised', () => {
     const t = (key, options) => `${key.replace('similarity.duration', '')}:${options.value}`
-    // A budget of none is said as none: raised to one, it read "about 1 s, longer than the 1 s".
+    // A budget of none is said as none, not raised to one.
     expect(formatDuration(0, t)).toBe('Seconds:0')
     expect(formatDuration(0.2, t)).toBe('Seconds:1')
     expect(formatDuration(12, t)).toBe('Seconds:12')

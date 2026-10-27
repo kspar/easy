@@ -2,48 +2,36 @@ import type { TFunction } from 'i18next'
 import type { SimilarityEstimateResp } from '../../api/types.ts'
 
 /**
- * What the page says before Find, from core's estimate of the check (EZ-1667).
+ * What the page says before Find, from core's count of what the check would compare (EZ-1667).
  *
- * Here rather than in the page because a wrong answer looks like a right one. Read as "fits" when it
- * does not, the teacher clicks and waits for a refusal the page could have given; read as "too
- * costly" when it fits, Find is switched off for a check that would have run. And an answer the page
- * cannot read - an older core with no estimate, a proxy's empty body - must fall back to what the page
- * said before estimates, not to "about NaN s".
+ * Counted, not timed: how long a check takes depends on the server and on the code, and the model that
+ * once said it was out by four to a hundred times, so the page refused checks that would have run and
+ * let through ones that timed out. What a check may take at most - its budget - is a fact, and is what
+ * the page says instead. Here rather than in the page because a wrong answer looks like a right one: an
+ * answer the page cannot read - an older core with no estimate, a proxy's empty body - must fall back to
+ * what the page said before estimates, not to "NaN pairs".
  */
 export type EstimateView =
   | { kind: 'unknown' }
   | { kind: 'nothing'; submissions: number; notCompared: number }
-  | { kind: 'fits'; submissions: number; pairs: number; seconds: number; notCompared: number }
-  | { kind: 'tooCostly'; submissions: number; pairs: number; seconds: number; budget: number; notCompared: number }
-  | { kind: 'partial'; submissions: number; pairs: number; seconds: number; budget: number; notCompared: number }
+  | { kind: 'counted'; submissions: number; pairs: number; budget: number; notCompared: number }
 
 const isCount = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0
 
 export function estimateView(estimate: Partial<SimilarityEstimateResp> | undefined): EstimateView {
   if (!estimate) return { kind: 'unknown' }
-  const { submissions, pairs, estimated_sec: seconds, budget_sec: budget, within_budget: fits, optimised } = estimate
-  if (!isCount(submissions) || !isCount(pairs) || !isCount(seconds) || typeof fits !== 'boolean') return { kind: 'unknown' }
+  // An older core's time and verdict are not read: nothing is refused before it runs any more, and Find
+  // switched off by them would keep a teacher from a check this core would run.
+  const { submissions, pairs, budget_sec: budget } = estimate
+  if (!isCount(submissions) || !isCount(pairs) || !isCount(budget)) return { kind: 'unknown' }
   // Those in no pair, said with the count that leaves them out: 27 submissions and 120 pairs, with nothing
   // on why not 351, and after the run 91. An older core does not say, and is taken to compare them all.
   const notCompared = isCount(estimate.not_compared) ? estimate.not_compared : 0
   // No pair at all - every solution blank, too long for this provider, or one text three or more authors
-  // handed in, which is one comparand - is not "about 0 s". Find still runs it: the result names who could
-  // not be compared and why, or the group that handed in the same text.
+  // handed in, which is one comparand - is not "0 pairs to compare". Find still runs it: the result names
+  // who could not be compared and why, or the group that handed in the same text.
   if (pairs === 0) return { kind: 'nothing', submissions, notCompared }
-  if (fits) return { kind: 'fits', submissions, pairs, seconds, notCompared }
-  // Over the budget, optimised is not refused: it stops at the budget with the likeliest pairs found.
-  if (optimised === true) return { kind: 'partial', submissions, pairs, seconds, budget: isCount(budget) ? budget : 0, notCompared }
-  return { kind: 'tooCostly', submissions, pairs, seconds, budget: isCount(budget) ? budget : 0, notCompared }
-}
-
-/**
- * About what share of the pairs an optimised check over the budget compares before it stops, as a whole
- * percent from 1 to 99: the budget over what every pair would take. Said with the estimate, which gave
- * two answers to "how long?" - "about 6 min" above a note that it stops at 2.
- */
-export function partialShare(estimate: { seconds: number; budget: number }): number {
-  if (estimate.seconds <= 0) return 99
-  return Math.min(99, Math.max(1, Math.round((100 * estimate.budget) / estimate.seconds)))
+  return { kind: 'counted', submissions, pairs, budget, notCompared }
 }
 
 /** Seconds as a clock, for the time a running check has taken: 47 is 0:47, 120 is 2:00. */
@@ -87,10 +75,9 @@ export function estimateRefusal(error: unknown): string | null {
 
 /**
  * A duration as a teacher reads it: seconds under a minute and a half, whole minutes, rounded up,
- * from there. "About 95 s" is a number to convert; "about 2 min" is not.
+ * from there. "At most 95 s" is a number to convert; "at most 2 min" is not.
  *
- * Rounded up but never raised: core already rounds an estimate up to a whole second, and a floor of
- * one here turned a budget of none into "1 s" - "about 1 s, longer than the 1 s a check may run".
+ * Rounded up but never raised: a floor of one turned a budget of none into "1 s".
  */
 export function formatDuration(seconds: number, t: TFunction): string {
   if (seconds < 90) return t('similarity.durationSeconds', { value: Math.ceil(seconds) })

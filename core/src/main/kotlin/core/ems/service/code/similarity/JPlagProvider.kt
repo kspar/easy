@@ -82,22 +82,6 @@ internal class JPlagProvider(
     override val bounds = true
 
     /**
-     * Tokenising: about 20 ms a solution whatever its size, and 2 µs a character on top, measured on
-     * Python of 2 to 20 KB on one core. Tokens are not known before it, so the cost is read from
-     * characters.
-     */
-    override fun prepareNanos(bytes: Int): Long = 20_000_000L + 2_000L * bytes
-
-    /**
-     * One tiling: about 70 µs, a few nanoseconds a character, and a term in the product of the two sizes,
-     * since greedy string tiling looks for each token's matches in the other submission. Without it, 300
-     * solutions of 19 KB were priced at 7 s and took over 120: a pair there measured 21-29 ms on one of
-     * four threads against 0.2 ms priced. With it, such a pair is about 26 ms, and an ordinary one of
-     * 0.8 KB about 0.12 ms against 0.07 ms measured - generous, as the estimate should be.
-     */
-    override fun pairNanos(bytesA: Int, bytesB: Int): Long = 70_000L + 4L * (bytesA + bytesB) + bytesA.toLong() * bytesB / 14
-
-    /**
      * The tokeniser, replaceable only by a test. The catches that turn a tokeniser that *throws* into
      * a CANNOT_PARSE skip need an input that makes a frontend throw, and none does reliably: the case
      * JPlag's own Python code names, an empty TrailerContext, needs error recovery to enter a rule it
@@ -218,23 +202,28 @@ internal class JPlagProvider(
         override fun prepare(): PreparedCohort {
             val template = request.template?.takeIf { it.isNotBlank() }
             // Tokenising cannot stop part way with anything to show, so a cohort it would spend the budget on
-            // is refused at its pace, not at the deadline: the estimate prices it from a model of one
-            // machine's speed, and on a slower server - or with solutions slower to parse than their size
-            // says - a run spent the whole budget here and found nothing.
-            // Each solution counted at what the cost model prices it, by the pace and by the calibration both.
-            val predicted = LongArray(sources.size) { prepareNanos(utf8Length(sources[it].solution)) }
-            fun pace() = if (!run.project) null else RunPace(run.deadline, run.budgetSec, predicted.sum(), "tokenising", run.tooCostlyPreparing)
+            // is refused at its pace (see [RunPace]), not at the deadline: on a slower server, or with
+            // solutions slower to parse than anyone expected, a run spent the whole budget here and found nothing.
+            fun pace() = if (!run.project) null else RunPace(run.deadline, run.budgetSec, sources.size.toLong(), "tokenising", run.tooCostlyPreparing)
             var pace = pace()
+            // In an order shuffled by id, not the loader's: the pace reads the first tenth of the time as that
+            // share of the cohort, and in the database's order a cohort's few large solutions could all come
+            // first - one that fits refused - or all last. The language sample below is the same first share,
+            // so it is a fair one too. The same order every time, for the same answer every time.
+            val order = sources.indices.sortedBy { sources[it].id * SHUFFLE }
+            val tokenised = arrayOfNulls<TokeniseResult>(sources.size)
+            var templateResult: TokeniseResult? = null
             // The template too, when there is one, on the pool like everything else: it is parsed inside
             // the permit, cannot be interrupted, and needs the pool's stack as much as a submission does.
-            fun tokenise(language: SimilarityLanguage, indices: IntRange, withTemplate: Boolean) = run.workers.all(
-                indices.map { i ->
-                    {
-                        run.preparing(language, predicted[i]) { tokeniseOne("Submission ${sources[i].id}", files[i], sources[i].solution, language, run) }
-                            .also { pace?.done(predicted[i]) }
-                    }
-                } + listOfNotNull(template?.takeIf { withTemplate }?.let { { tokeniseOne("The exercise template", BASE_CODE, it, language, run) } }),
-            )
+            fun tokenise(language: SimilarityLanguage, indices: List<Int>, withTemplate: Boolean) {
+                val done = run.workers.all(
+                    indices.map { i ->
+                        { tokeniseOne("Submission ${sources[i].id}", files[i], sources[i].solution, language, run).also { pace?.done() } }
+                    } + listOfNotNull(template?.takeIf { withTemplate }?.let { { tokeniseOne("The exercise template", BASE_CODE, it, language, run) } }),
+                )
+                indices.forEachIndexed { k, i -> tokenised[i] = done[k] }
+                if (withTemplate && template != null) templateResult = done.last()
+            }
 
             // A sample first, so a cohort that is not in its language at all - an essay exercise that kept
             // `lahendus.py` - is not parsed in full only to be thrown away: that pass cost twice what the
@@ -243,17 +232,18 @@ internal class JPlagProvider(
             // text off: then the cohort is compared in its language, and what does not parse is skipped.
             var language = request.language
             val mayFallBack = language != SimilarityLanguage.TEXT && request.textAllowed
-            val sample = minOf(sources.size, LANGUAGE_SAMPLE)
-            val sampled = tokenise(language, 0 until sample, withTemplate = false)
-            var results = if (mayFallBack && mostlyNotIn(sampled)) sampled
-            else sampled + tokenise(language, sample until sources.size, withTemplate = true)
-            if (mayFallBack && mostlyNotIn(results.take(sources.size))) {
+            val sample = order.take(LANGUAGE_SAMPLE)
+            tokenise(language, sample, withTemplate = false)
+            val sampleIsNot = mayFallBack && mostlyNotIn(sample.map { tokenised[it]!! })
+            if (!sampleIsNot) tokenise(language, order.drop(LANGUAGE_SAMPLE), withTemplate = true)
+            if (sampleIsNot || (mayFallBack && mostlyNotIn(tokenised.map { it!! }))) {
                 log.info { "Most of this cohort did not parse as ${language.wireName}; comparing it as text instead" }
                 language = SimilarityLanguage.TEXT
                 // Tokenised again, from the start: a pace of its own, read against the time now left.
                 pace = pace()
-                results = tokenise(language, sources.indices, withTemplate = true)
+                tokenise(language, order, withTemplate = true)
             }
+            val results = tokenised.map { it!! }
             val minTokenMatch = language.frontend.minimumTokenMatch
 
             // Assembled in source order, not completion order, so `skipped` and every downstream list
@@ -279,7 +269,7 @@ internal class JPlagProvider(
             // Starter code every submission was built on, when the caller has some. Subtracted as base
             // code, it is not reported as similarity, so a fill-in-the-blank exercise does not flag its
             // whole cohort. The endpoint passes none today; see where TeacherCheckSimilarity calls this.
-            val baseCodeFile = template?.let { usableTemplate(results.last(), minTokenMatch) }?.let { tokens ->
+            val baseCodeFile = templateResult?.let { usableTemplate(it, minTokenMatch) }?.let { tokens ->
                 tokensByFile[BASE_CODE] = tokens
                 BASE_CODE
             }
@@ -623,6 +613,9 @@ internal class JPlagProvider(
 
         /** How many solutions decide alone that a cohort is not in its language; see [Session.prepare]. */
         private const val LANGUAGE_SAMPLE = 20
+
+        /** An odd multiplier near 2^64 over the golden ratio: ids in a row, multiplied by it, land far apart. */
+        private const val SHUFFLE = -7046029254386353131L
 
         private val LAYOUT = Regex("\\s+")
 

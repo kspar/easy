@@ -67,7 +67,7 @@ import {
   rowMetrics,
   usesMatchRanges,
 } from './similarityProvider.ts'
-import { comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings, partialShare } from './similarityEstimate.ts'
+import { comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings } from './similarityEstimate.ts'
 import { similarityRequest } from './similarityRequest.ts'
 import type { PairOrder, ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
@@ -142,9 +142,9 @@ export default function SimilarityPage() {
   const submitted = useMemo(() => (rows ?? []).filter((r) => r.submission), [rows])
   const pairCount = (submitted.length * (submitted.length - 1)) / 2
 
-  // What core says the check would take, before it is asked for (EZ-1667): pairs, about how long, and
-  // whether it would be refused as too costly - so the refusal comes before the click, not after it.
-  // The body is the one `run` sends, memoised so the query's key holds still between renders.
+  // What core says the check would compare, before it is asked for (EZ-1667): the submissions and pairs,
+  // counted as the check counts them, and the most it may take. The body is the one `run` sends,
+  // memoised so the query's key holds still between renders.
   const request = useMemo(() => similarityRequest(courseId!, selected?.course_exercise_id ?? '', submitted), [courseId, selected, submitted])
   const { data: estimateData, error: estimateError } = useSimilarityEstimate(selected ? exerciseId : undefined, request)
   const estimate = estimateView(estimateData)
@@ -407,7 +407,7 @@ export default function SimilarityPage() {
             running ? <CircularProgress size={16} color="inherit" /> : <CompareArrowsOutlined />
           }
           // Not offered for a check core has already said it would refuse: the alert below says why.
-          disabled={!selected || running || rowsLoading || submitted.length < 2 || estimate.kind === 'tooCostly' || refusedAhead}
+          disabled={!selected || running || rowsLoading || submitted.length < 2 || refusedAhead}
           onClick={run}
         >
           {/* Named apart from an ordinary run: after a group or exercise change this is the run the
@@ -436,31 +436,22 @@ export default function SimilarityPage() {
         <Typography color="text.secondary" sx={{ mt: 3 }}>{t('similarity.chooseExercise')}</Typography>
       )}
 
-      {/* What is about to be compared, before committing to the wait: and how long, once core says. */}
+      {/* What is about to be compared, before committing to the wait, and the longest the wait can be. */}
       {selected && !rowsLoading && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-          {/* One answer to "how long?": over the budget, an optimised check stops at it, so that and the
-              share it gets through is the time - not "about 6 min" over a note that it stops at 2. */}
           {estimate.kind === 'unknown'
             ? t('similarity.scope', { submissions: submitted.length, count: pairCount })
             : estimate.kind === 'nothing'
               ? t('similarity.estimateNothing', { submissions: estimate.submissions })
-              : estimate.kind === 'partial'
-                ? t('similarity.estimatePartial', {
-                  submissions: estimate.submissions,
-                  count: estimate.pairs,
-                  budget: formatDuration(estimate.budget, t),
-                  share: partialShare(estimate),
-                })
-                : t('similarity.estimateScope', {
-                  submissions: estimate.submissions,
-                  count: estimate.pairs,
-                  duration: formatDuration(estimate.seconds, t),
-                })}
+              : t('similarity.estimateScope', {
+                submissions: estimate.submissions,
+                count: estimate.pairs,
+                budget: formatDuration(estimate.budget, t),
+              })}
           {estimate.kind !== 'unknown' && estimate.notCompared > 0 && (
             <Box component="span" sx={{ display: 'block' }}>{t('similarity.estimateNotCompared', { count: estimate.notCompared })}</Box>
           )}
-          {/* A line of their own: run on after the estimate, "about 2 s This exercise has…" read as one
+          {/* A line of their own: run on after the count, "at most 2 min This exercise has…" read as one
               sentence with its full stop missing. */}
           {comparesFirstAttempts(estimateData) && <Box component="span" sx={{ display: 'block' }}>{t('similarity.firstAttemptsNote')}</Box>}
           {ownSettings(estimateData) === 'all' && <Box component="span" sx={{ display: 'block' }}>{t('similarity.ownSettingsAll')}</Box>}
@@ -473,15 +464,6 @@ export default function SimilarityPage() {
 
       {refusedAhead && (
         <Alert severity="warning" sx={{ mb: 2 }}>{errorMessage(estimateError, t)}</Alert>
-      )}
-
-      {estimate.kind === 'tooCostly' && !result && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          {t('similarity.tooCostly', {
-            duration: formatDuration(estimate.seconds, t),
-            budget: formatDuration(estimate.budget, t),
-          })}
-        </Alert>
       )}
 
       {/* A failed load is said as one: empty, it read as "fewer than two submissions" and disabled Find. */}
@@ -586,12 +568,10 @@ export default function SimilarityPage() {
           {/* Not every pair was compared: stopped at the time limit, or ruled out as unable to rank. */}
           {covered?.kind === 'incomplete' && (
             <Alert severity="warning" sx={{ mb: 2 }}>
-              {/* "Choose a group" is no advice to a teacher who has one chosen; what every pair would have
-                  taken, from the estimate, is. */}
+              {/* "Choose a group" is no advice to a teacher who has one chosen. */}
               {group
                 ? t('similarity.incompleteInGroup', { compared: covered.compared, total: covered.total, share: covered.share })
                 : t('similarity.incomplete', { compared: covered.compared, total: covered.total, share: covered.share })}
-              {estimate.kind === 'partial' && ` ${t('similarity.everyPairWouldTake', { duration: formatDuration(estimate.seconds, t) })}`}
             </Alert>
           )}
           {covered?.kind === 'ruledOut' && (

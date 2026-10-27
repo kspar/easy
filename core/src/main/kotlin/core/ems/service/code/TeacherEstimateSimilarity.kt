@@ -13,13 +13,14 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * What a similarity check with this body would do, without doing it (EZ-1667): how many submissions
- * and pairs, which provider, and how long - priced from the submissions' sizes, never their text.
+ * What a similarity check with this body would do, without doing it (EZ-1667): how many submissions and
+ * pairs, which provider and how, and how long a check may run - counted from the submissions' sizes, never
+ * their text. Not how long it would take: a model of that, measured on one machine, was out by four to a
+ * hundred times on another, and a run that cannot finish is refused at its own pace a tenth of the way in.
  *
- * The page asks as soon as an exercise and group are chosen, so a teacher sees "about 2 minutes" or
- * "too large for one check" before clicking Find, instead of a pair count that says nothing of how long
- * a pair takes. The check prices its cohort the same way and refuses one over the budget; resolving
- * both through [SimilarityRequests] is what keeps the answer here the answer there.
+ * The page asks as soon as an exercise and group are chosen, so a teacher sees what Find would compare
+ * before clicking it. Resolving it through [SimilarityRequests], as the check does, is what keeps the
+ * answer here the answer there.
  */
 @RestController
 @RequestMapping("/v2")
@@ -40,17 +41,8 @@ class TeacherEstimateSimilarityController(
         @get:JsonProperty("mode") val mode: String,
         /** As on the check: why it would not run as the course asked, or null. */
         @get:JsonProperty("provider_fallback") val providerFallback: String?,
-        /** About how long, in whole seconds rounded up, on this server. */
-        @get:JsonProperty("estimated_sec") val estimatedSec: Long,
-        /** How long one check may run. */
+        /** How long one check may run: a fact, where how long this one would take is not one. */
         @get:JsonProperty("budget_sec") val budgetSec: Long,
-        /** False when every pair would take longer than the budget: refused, unless [optimised]. */
-        @get:JsonProperty("within_budget") val withinBudget: Boolean,
-        /**
-         * Whether it would run optimised: [estimatedSec] is then the most it can take, and over the budget
-         * it is not refused but stops there with the likeliest pairs found.
-         */
-        @get:JsonProperty("optimised") val optimised: Boolean,
         /** Where the provider choice came from - `exercise`, `course` or `default` - so the page can say whose it is. */
         @get:JsonProperty("provider_from") val providerFrom: String,
         /** Where [mode] came from, likewise. */
@@ -77,24 +69,21 @@ class TeacherEstimateSimilarityController(
                     "${body.students?.size ?: 0} student(s)"
         }
         val resolved = requests.resolve(exIdString, body.courses.map { it.id }, body.courseExercise, body.submissions?.map { it.id }, body.students?.map { it.id }, caller)
-        val estimate = requests.estimate(resolved)
+        val cohort = requests.count(resolved)
         val provider = checkNotNull(similarityService.registry.provider(resolved.binding.provider))
         return Resp(
-            estimate.submissions,
-            estimate.pairs,
+            cohort.submissions,
+            cohort.pairs,
             provider.id,
             provider.comparesAs(resolved.binding.language).wireName,
             resolved.mode.name.lowercase(),
             resolved.binding.fallback,
-            estimate.seconds,
-            estimate.budgetSec,
-            estimate.withinBudget,
-            estimate.optimised,
+            similarityService.budgetSec,
             resolved.providerFrom.name.lowercase(),
             resolved.modeFrom.name.lowercase(),
             resolved.attemptsName,
             resolved.attemptsFrom.name.lowercase(),
-            estimate.notCompared,
+            cohort.notCompared,
         )
     }
 }

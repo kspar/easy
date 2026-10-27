@@ -265,9 +265,6 @@ class TeacherCheckSimilarityController(
         }
         val resolved = requests.resolve(exIdString, body.courses.map { it.id }, body.courseExercise, body.submissions?.map { it.id }, body.students?.map { it.id }, caller)
         val binding = resolved.binding
-        // Priced before the permit: a cohort the budget cannot cover is refused now, by name, rather
-        // than after holding the one permit for the whole budget and timing out (EZ-1667).
-        requests.assertAffordable(resolved)
 
         // The rows are selected by the loader below, which the service runs only once it holds the
         // permit. Loading them out here instead would put every queuing caller's whole cohort on the
@@ -304,9 +301,15 @@ class TeacherCheckSimilarityController(
                 ReqError.SIMILARITY_BUSY, notify = false,
             )
         } catch (e: SimilarityTooCostly) {
-            // Measured as it ran: at its pace it would not have finished, so it was stopped early with the
-            // same refusal the estimate gives, rather than at the deadline.
-            throw requests.tooCostly(e)
+            // Measured as it ran: at its pace it would not have finished, so it was stopped early, with what
+            // it measured, rather than at the deadline.
+            throw InvalidRequestException(
+                "Similarity comparison would take about ${e.estimate.seconds}s, over the ${e.estimate.budgetSec}s budget; try a smaller group.",
+                ReqError.SIMILARITY_TOO_COSTLY,
+                "estimated_sec" to e.estimate.seconds.toString(),
+                "budget_sec" to e.estimate.budgetSec.toString(),
+                notify = false,
+            )
         } catch (e: SimilarityTimedOut) {
             // Not a 500: nothing is broken, the cohort is simply more than one run's budget. Named so
             // the page can say "try a smaller group", which for this one is advice that works — the

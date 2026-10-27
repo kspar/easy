@@ -6,16 +6,14 @@ import java.util.concurrent.atomic.AtomicLong
 
 /**
  * A run's pace (EZ-1667), measured once a tenth of the time it has left is spent: the share of its [total]
- * work done so far - pairs compared, or tokenising in the nanoseconds the cost model prices each solution
- * at - says how long all of it will take, and a run that cannot finish is refused then, as too costly,
- * rather than holding the one permit to the deadline and timing out with nothing. The estimate prices a run
- * before it starts, from sizes and a cost model measured on one machine; this measures the run itself, on
- * this one. The stress test of EZ-1667 found the model under by a hundred times for JPlag on large
- * solutions, and by three for edit distance on a slower server: each admitted runs that then timed out.
+ * work done so far - pairs compared, solutions tokenised - says how long all of it will take, and a run that
+ * cannot finish is refused then, as too costly, rather than holding the one permit to the deadline and
+ * timing out with nothing. It measures the run itself, on this server, which is the only thing that can
+ * say: nothing is predicted from sizes. A model that did, measured on one machine, was out by a hundred
+ * times for JPlag on large solutions and by four for edit distance in the stress test of EZ-1667.
  *
- * Counted in what the work costs, not in pieces, where pieces differ: by solutions, a cohort whose few
- * large ones came first - the loader's order is the database's - projected from them alone, and was
- * refused although it would have fit.
+ * Counted in pieces, which differ in cost, so the first tenth must be a fair share of them: JPlag tokenises
+ * in an order shuffled by id, as the database's could put a cohort's few large solutions all first.
  *
  * Only for work that would be refused anyway: a run that stops at the deadline with what it found -
  * [PairRanking.rankBounded] - has no use for it. Checked once, and only past [MARGIN] times the time left,

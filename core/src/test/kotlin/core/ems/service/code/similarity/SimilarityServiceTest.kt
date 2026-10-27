@@ -967,6 +967,8 @@ class SimilarityServiceTest {
 
         val refused = assertThrows<SimilarityTooCostly> { slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
         assertTrue(refused.estimate.seconds >= 5, "projected only ${refused.estimate.seconds}s")
+        // With the pairs that would have followed, so the teacher knows preparing was only the start.
+        assertEquals(4950, refused.estimate.pairs)
         assertTrue(tokenised.get() <= 3, "tokenised ${tokenised.get()} of 100 solutions before the pace was read")
     }
 
@@ -995,23 +997,27 @@ class SimilarityServiceTest {
     }
 
     @Test
-    fun `the tokenising pace counts what each solution costs, so large ones first do not make a cohort that fits look long`() {
-        // Five large solutions and then 95 small ones, each taking what the cost model says it does: 3 s in
-        // all against a budget of ten. Counted by solutions, the pace read after the five large ones - a tenth
-        // of the budget - took them for a twentieth of the work and refused the cohort as taking 22 s.
+    fun `the tokenising pace is read over a fair share of the cohort, so large ones first do not make one that fits look long`() {
+        // Five large solutions first in the loader's order, 600 ms each of the test's clock, and 95 small
+        // ones at 20 ms: 4.9 s in all against a budget of ten. In that order the pace, read a tenth of the
+        // budget in, saw two solutions take 1.2 s and refused the cohort as taking a minute; shuffled by id,
+        // the large ones are spread through it and the first tenth is a tenth of the work.
         val clock = ManualTicker()
-        val model = JPlagProvider(10_000, 1_000_000)
+        val tokenised = AtomicInteger()
         val slow = service(timeoutSec = 10, clock = clock).also {
             it.threadsFor = { 1 }
             it.tokenise = { language, id, solution, maxTokens ->
-                clock.advance(model.prepareNanos(utf8Length(solution)) / 1_000_000)
+                tokenised.incrementAndGet()
+                clock.advance(if (solution.length > 50_000) 600 else 20)
                 language.read(id, solution, maxTokens)
             }
         }
         val large = "x = 1\n".repeat(17_000)
         val sources = (1L..100L).map { SimilaritySource(it, (if (it <= 5) large else original + "\n") + "print($it)\n") }
 
-        slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100)
+        val outcome = slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100).outcome
+        assertEquals(100, tokenised.get())
+        assertTrue(outcome.complete)
     }
 
     @Test
@@ -1075,11 +1081,16 @@ class SimilarityServiceTest {
         // hold CPU and heap. Each task here is a busy wait, which, like a parse, ignores interrupts.
         val started = AtomicInteger()
         val finished = AtomicInteger()
+        // Where the failing one falls in the order solutions are tokenised in, which is shuffled by id.
+        val startedBeforeFailing = AtomicInteger(-1)
         val failingFast = service().also { failing ->
             failing.threadsFor = { 2 }
             failing.tokenise = { language, id, solution, maxTokens ->
-                started.incrementAndGet()
-                if (solution == CHOKES) throw IllegalStateException("fails at once")
+                val n = started.incrementAndGet()
+                if (solution == CHOKES) {
+                    startedBeforeFailing.set(n)
+                    throw IllegalStateException("fails at once")
+                }
                 val until = System.nanoTime() + 300_000_000L
                 while (System.nanoTime() - until < 0) Thread.onSpinWait()
                 finished.incrementAndGet()
@@ -1091,7 +1102,9 @@ class SimilarityServiceTest {
         assertThrows<IllegalStateException> { failingFast.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100) }
 
         assertEquals(started.get() - 1, finished.get(), "a task was still running when compare threw")
-        assertTrue(started.get() <= 3, "${started.get()} of ${sources.size} were tokenised after the failure")
+        // The other worker's task in hand, and at most one it took as the failure landed.
+        val after = started.get() - startedBeforeFailing.get()
+        assertTrue(after <= 2, "$after of ${sources.size} were tokenised after the failure")
     }
 
     @Test

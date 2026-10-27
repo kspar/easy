@@ -382,9 +382,9 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
     fun `a run past its budget is refused as SIMILARITY_TIMEOUT with the budget, not a 500`() {
         // The context's service has the test config's 120 s, which no fixture here can spend, so the
         // controller is driven directly over a service with one second, and a tokeniser slower than
-        // that. Not a budget of none: that is now priced and refused before the run (see below). And with
-        // the pace off, which would refuse this one first: a run its pace lets through, being near the
-        // line, still ends in the timeout when it crosses it. The mapping is under test.
+        // that. Not a budget of none, which never starts (see below). And with the pace off, which would
+        // refuse this one first: a run its pace lets through, being near the line, still ends in the
+        // timeout when it crosses it. The mapping is under test.
         val clock = ManualTicker()
         val service = SimilarityService(
             maxSubmissions = 3, maxSolutionTokens = 10_000, maxRepetition = 1_000_000,
@@ -409,9 +409,9 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
 
     @Test
     fun `a run whose pace says it cannot finish is refused as SIMILARITY_TOO_COSTLY, saying how long it would take`() {
-        // Priced as fitting, then measured as it runs: ten pairs at 500 ms of the test's clock on one thread
-        // against a budget of three seconds. The refusal is the estimate's, with its numbers, so the page says
-        // the same either way. Every pair: optimised, JPlag now stops at the budget with what it found instead.
+        // Measured as it runs: ten pairs at 500 ms of the test's clock on one thread against a budget of three
+        // seconds. The refusal says how long the run would have taken at that pace, so the teacher knows by
+        // how much it is over. Every pair: optimised, JPlag stops at the budget with what it found instead.
         fullMode()
         transaction {
             (1..3).forEach { n ->
@@ -438,10 +438,10 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
-    fun `a cohort priced over the budget is refused before it runs, saying how long it would take`() {
-        // Priced from sizes, before the permit: with no budget at all any cohort is over it, and the
-        // refusal must come without one solution being tokenised - a run would only time out. Every pair, as
-        // only that is refused: optimised, it would stop at the budget instead.
+    fun `with no budget at all, the run times out before one solution is tokenised`() {
+        // Nothing is priced before a run any more, so a run with no budget starts - and must stop at once,
+        // at the deadline it already has, rather than tokenise a cohort it can never compare. Every pair:
+        // optimised ends the same way, as nothing is prepared to stop with.
         fullMode()
         val tokenised = AtomicInteger()
         val service = SimilarityService(
@@ -460,16 +460,14 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
         val refused = assertThrows<InvalidRequestException> {
             noBudget.controller(myExercise.toString(), request, Auth.easyUser(teacher, EasyRole.TEACHER))
         }
-        assertEquals(ReqError.SIMILARITY_TOO_COSTLY, refused.code)
+        assertEquals(ReqError.SIMILARITY_TIMEOUT, refused.code)
         assertFalse(refused.notify, "a cohort too large for one check would be mailed to ops")
-        val attributes = refused.attributes.toMap()
-        assertEquals("0", attributes["budget_sec"])
-        assertEquals("1", attributes["estimated_sec"])
-        assertEquals(0, tokenised.get(), "the refused cohort was tokenised anyway")
+        assertEquals("0", refused.attributes.toMap()["budget_sec"])
+        assertEquals(0, tokenised.get(), "a run with no budget tokenised the cohort anyway")
     }
 
     @Test
-    fun `the estimate prices the cohort the check would run, without running it`() {
+    fun `the estimate counts the cohort the check would run, without running it`() {
         val response = api.post(
             "/v2/exercises/$myExercise/similarity/estimate",
             api.body("courses" to listOf(mapOf("id" to myCourse.toString()))),
@@ -484,8 +482,6 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals("optimised", json.get("mode").asString())
         assertTrue(json.get("provider_fallback").isNull)
         assertEquals(120, json.get("budget_sec").asInt())
-        assertTrue(json.get("within_budget").asBoolean())
-        assertTrue(json.get("estimated_sec").asInt() in 1..120, "estimated ${json.get("estimated_sec")}")
         assertEquals(0, json.get("not_compared").asInt())
     }
 

@@ -55,7 +55,8 @@ enum class ReqError(val errorCodeStr: String) {
     SIMILARITY_TIMEOUT("SIMILARITY_TIMEOUT"),
     // An admin has switched the exercise's language off for similarity, or left no provider that takes it.
     SIMILARITY_UNAVAILABLE("SIMILARITY_UNAVAILABLE"),
-    // The cohort's estimate is over the comparison budget. Attributes `estimated_sec` and `budget_sec`.
+    // The run's own pace, read a tenth of the way into its budget, says it cannot finish within it.
+    // Attributes `estimated_sec`, what that pace projects for the whole run, and `budget_sec`.
     SIMILARITY_TOO_COSTLY("SIMILARITY_TOO_COSTLY")
 }
 

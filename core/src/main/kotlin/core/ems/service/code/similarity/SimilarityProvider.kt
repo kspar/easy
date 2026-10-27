@@ -1,7 +1,5 @@
 package core.ems.service.code.similarity
 
-import java.util.concurrent.ConcurrentHashMap
-
 /**
  * One way of measuring how alike a cohort's submissions are: a similarity *provider*.
  *
@@ -46,20 +44,8 @@ internal interface SimilarityProvider {
     fun comparesAs(language: SimilarityLanguage): SimilarityLanguage
 
     /**
-     * What one solution of [bytes] UTF-8 bytes costs before any pair, in nanoseconds of one worker; and
-     * [pairNanos], what one pair costs. Measured on this provider, not derived, and only as exact as a
-     * measurement: they are what [SimilarityService.estimate] adds up to refuse a cohort that would not
-     * finish inside the budget before anybody waits for it, and to tell a teacher how long one will take.
-     * Generous rather than tight - an overestimate refuses a run that might have finished, but an
-     * underestimate is still bounded by the deadline.
-     */
-    fun prepareNanos(bytes: Int): Long
-
-    fun pairNanos(bytesA: Int, bytesB: Int): Long
-
-    /**
      * Whether its sessions give a [ProviderSession.bound] for every pair: what lets the optimised mode
-     * rule pairs out, and compare the likeliest first. Known before any text is read, for the estimate.
+     * rule pairs out, and compare the likeliest first.
      */
     val bounds: Boolean get() = false
 
@@ -93,29 +79,13 @@ internal class RunContext(
     /** Whether work that would only time out is refused at its pace; see [RunPace]. Off only in a test of the deadline itself. */
     val project: Boolean = true,
     /**
-     * The refusal for a run whose preparing, at its pace, would take [projectedNanos] of wall time: with
-     * what its pairs would take after it, by the estimate, so that the figure a teacher is given is the
-     * whole run's. Preparing's alone, a group two-thirds the size looked as if it would fit, and did not.
+     * The refusal for a run whose preparing, at its pace, would take [projectedNanos] of wall time: with how
+     * many pairs would follow it, so the teacher knows preparing was only the start. The time is preparing's
+     * alone, the least the whole run would take; how long the pairs would add is the run's to find out.
      */
     val tooCostlyPreparing: (projectedNanos: Long) -> SimilarityEstimate =
         { wall -> SimilarityEstimate(0, 0, workers.threads, wall, budgetSec) },
-) {
-    /**
-     * One worker's time spent preparing solutions in each language, beside what the cost model predicted
-     * for the same solutions: what [Calibration] learns preparing from. Timed solution by solution on the
-     * worker that prepared it, not as the phase's wall time times the pool, which counted every idle worker
-     * - waiting on one slow solution, or on the language sample - as work.
-     */
-    val prepared = ConcurrentHashMap<SimilarityLanguage, Spent>()
-
-    /** [work], one solution's preparing as [language], which the model prices at [predictedNanos]: timed into [prepared]. */
-    fun <T> preparing(language: SimilarityLanguage, predictedNanos: Long, work: () -> T): T {
-        val started = deadline.ticker.nanos()
-        val result = work()
-        prepared.computeIfAbsent(language) { Spent() }.add(deadline.ticker.nanos() - started, predictedNanos)
-        return result
-    }
-}
+)
 
 /**
  * One cohort, from preparing it to the last pair's details.

@@ -39,13 +39,13 @@ test('similarity-page', async ({ launch, check }) => {
     // Before '/similarity', which it also contains: asked every second while a check runs.
     ['/similarity/progress', () => ({ running: false, phase: null, done: 0, total: 0, elapsed_sec: 0, budget_sec: 120 })],
 
-    // Before '/similarity', which it also contains - the first needle that matches answers. Priced from
+    // Before '/similarity', which it also contains - the first needle that matches answers. Counted from
     // what was sent, as core does, so a group change is a new answer: n submissions, n(n-1)/2 pairs.
     ['/similarity/estimate', ({ body }) => {
       const n = body?.students?.length ?? 0
       return {
         submissions: n, pairs: (n * (n - 1)) / 2, provider, language: 'python', mode: 'full',
-        provider_fallback: null, estimated_sec: 2, budget_sec: 120, within_budget: true, optimised: false, not_compared: 0,
+        provider_fallback: null, budget_sec: 120, not_compared: 0,
       }
     }],
 
@@ -156,8 +156,8 @@ test('similarity-page', async ({ launch, check }) => {
     await waitUntil(() => page.getByText('3 submissions, 3 pairs to compare').isVisible()),
   )
   check(
-    'and how long core says it will take, before anybody waits for it',
-    await waitUntil(() => page.getByText('3 submissions, 3 pairs to compare, about 2 s').isVisible()),
+    'and the longest the wait can be, before anybody waits',
+    await waitUntil(() => page.getByText('3 submissions, 3 pairs to compare · at most 2 min').isVisible()),
   )
 
   await shot('01-ready')
