@@ -543,6 +543,7 @@
       "family_name": { "kind": "string" },
       "given_name": { "kind": "string" },
       "id": { "kind": "string" },
+      "latest_number": { "kind": "number" },
       "number": { "kind": "number" },
       "solution": { "kind": "string", "nullable": true },
       "student_id": { "kind": "string" }

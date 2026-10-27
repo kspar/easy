@@ -1348,10 +1348,11 @@ class SimilarityServiceTest {
     fun `a group is compared with its first member's own other attempt through another member`() {
         // Explicit ids can bring one student's two attempts: one inside a group, one outside it. The
         // group's first member is that student, and their own attempts are never paired - but the group
-        // holds other authors, and the pair must name one of them, with lines read from its tokens.
-        val laid = starter.replace("\n\ndef main", "\n\n\n\ndef main")
+        // holds other authors, and the pair must name one of them. (Its lines were read from that member's
+        // tokens, and checked to be by a member laid out differently; identical is now the same text, so
+        // every member's lines are the same.)
         val sources = listOf(
-            SimilaritySource(1, starter, "ann"), SimilaritySource(2, laid, "ben"), SimilaritySource(3, starter, "cid"),
+            SimilaritySource(1, starter, "ann"), SimilaritySource(2, starter, "ben"), SimilaritySource(3, starter, "cid"),
             SimilaritySource(4, grown(grownBodies[1]), "ann"),
         )
 
@@ -1360,9 +1361,8 @@ class SimilarityServiceTest {
         assertEquals(listOf(listOf(1L, 2L, 3L)), outcome.groups)
         val pair = outcome.pairs.single()
         assertEquals(setOf(2L, 4L), setOf(pair.id1, pair.id2), "the group should be shown by its first member of another author")
-        // Ben's copy has two more blank lines, so the shared tail ends on his line 14 where Ann's ends on 12.
         val benEnd = pair.matches.maxOf { if (pair.id1 == 2L) it.endLine1 else it.endLine2 }
-        assertEquals(laid.trimEnd().lines().size, benEnd, "lines read from another member's tokens: ${pair.matches}")
+        assertEquals(starter.trimEnd().lines().size, benEnd, "lines read from another member's tokens: ${pair.matches}")
     }
 
     @Test

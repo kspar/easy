@@ -56,7 +56,7 @@ import { skippedByReason } from './similaritySkipped.ts'
 import type { SkippedReason } from './similaritySkipped.ts'
 import { highlightFileName } from './similarityLanguage.ts'
 import {
-  capped,
+  cappedNote,
   comparedBy,
   coverage,
   forReference,
@@ -67,7 +67,8 @@ import {
   rowMetrics,
   usesMatchRanges,
 } from './similarityProvider.ts'
-import { comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings } from './similarityEstimate.ts'
+import { attemptNote, comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings } from './similarityEstimate.ts'
+import { hiddenIn, hidesAnything } from './similarityHidden.ts'
 import { similarityRequest } from './similarityRequest.ts'
 import type { PairOrder, ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
@@ -202,6 +203,14 @@ export default function SimilarityPage() {
   const submissionsById = useMemo(() => {
     const map = new Map<string, NonNullable<typeof result>['submissions'][number]>()
     for (const s of result?.submissions ?? []) map.set(s.id, s)
+    return map
+  }, [result])
+
+  // What each solution hides that cannot be seen - characters that print as nothing, names mixing
+  // alphabets - read once per result, for the row's chip and the opened pair's note (see similarityHidden).
+  const hiddenBySubmission = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof hiddenIn>>()
+    for (const s of result?.submissions ?? []) if (s.solution) map.set(s.id, hiddenIn(s.solution))
     return map
   }, [result])
 
@@ -607,9 +616,11 @@ export default function SimilarityPage() {
           {unreadable && <Alert severity="warning" sx={{ mb: 2 }}>{t('similarity.unreadable')}</Alert>}
 
           {/* A note, not an alert: nothing went wrong, and the count it explains is the one just above. */}
-          {capped(result) && (
+          {cappedNote(result) !== null && (
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-              {t('similarity.capped', { limit: MAX_PAIRS, shown: result.scores.length })}
+              {cappedNote(result) === 'capped'
+                ? t('similarity.capped', { limit: MAX_PAIRS, shown: result.scores.length })
+                : t('similarity.cappedByScore', { limit: MAX_PAIRS })}
             </Typography>
           )}
 
@@ -751,6 +762,10 @@ export default function SimilarityPage() {
                         />
                       ) : null
                     })}
+                    {/* In the row, not only in the opened pair: what cannot be seen is what a list scanned by eye misses. */}
+                    {(hidesAnything(hiddenBySubmission.get(score.sub_1)) || hidesAnything(hiddenBySubmission.get(score.sub_2))) && (
+                      <Chip size="small" variant="outlined" color="warning" label={t('similarity.hiddenChip')} />
+                    )}
                     {/* Wrapping, so on a phone the chips go below the names rather than off the side. */}
                     <Box sx={{ ml: 'auto', display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       {/* Labelled, because "84% · 61%" invites the question of which is which — and
@@ -793,13 +808,43 @@ export default function SimilarityPage() {
                             exact clock time is the evidence.
                           */}
                           {sub.course_title} ·{' '}
-                          {/* Which attempt: with the first attempts compared, not the one the student's page opens on. */}
-                          {sub.number !== undefined && `${t('similarity.attemptNumber', { number: sub.number })} · `}
+                          {/* Which attempt: with the first attempts compared, not the one the student's page opens on -
+                              and, when the student has handed in since, which one is their latest. */}
+                          {(() => {
+                            const note = attemptNote(sub)
+                            if (!note) return null
+                            return `${note.latest === undefined
+                              ? t('similarity.attemptNumber', { number: note.number })
+                              : t('similarity.attemptNumberOfLatest', { number: note.number, latest: note.latest })} · `
+                          })()}
                           {formatDateTime(new Date(sub.created_at), dateFnsLocale)}
                         </Typography>
                       </Box>
                     ))}
                   </Box>
+                  {/* Said above the code as well as marked in it: a red dot in forty lines is easy to miss. */}
+                  {sides.some(({ sub }) => hidesAnything(hiddenBySubmission.get(sub.id))) && (
+                    <Alert severity="warning" sx={{ mb: 1.5 }}>
+                      {sides.map(({ sub }) => {
+                        const hidden = hiddenBySubmission.get(sub.id)
+                        if (!hidden || !hidesAnything(hidden)) return null
+                        const name = `${sub.given_name} ${sub.family_name}`
+                        return (
+                          <Fragment key={sub.id}>
+                            {hidden.invisible > 0 && (
+                              <Box component="span" sx={{ display: 'block' }}>{t('similarity.invisibleChars', { name, count: hidden.invisible })}</Box>
+                            )}
+                            {hidden.mixed.length > 0 && (
+                              <Box component="span" sx={{ display: 'block' }}>
+                                {t('similarity.mixedScript', { name, count: hidden.mixed.length, names: hidden.mixed.slice(0, 5).join(', ') })}
+                              </Box>
+                            )}
+                          </Fragment>
+                        )
+                      })}
+                      <Box component="span" sx={{ display: 'block', mt: 0.5 }}>{t('similarity.hiddenWhy')}</Box>
+                    </Alert>
+                  )}
                   {/* What each number means, in the page rather than only in a tooltip, which a keyboard
                       cannot reach: the chips sit inside the row's button and cannot take focus of their
                       own. With the numbers shown for reference only, which the row leaves out. */}

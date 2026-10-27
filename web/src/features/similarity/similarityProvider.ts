@@ -144,6 +144,16 @@ export function capped(result: Pick<SimilarityResp, 'truncated' | 'complete'>): 
 }
 
 /**
+ * How the cap notice reads, when there is one: by both orders where the pairs rank by shared code, by score
+ * alone where the rank is the score. Under edit distance it named "the pairs sharing the most code", an
+ * order that result has not got.
+ */
+export function cappedNote(result: Pick<SimilarityResp, 'truncated' | 'complete' | 'scores'>): 'capped' | 'cappedByScore' | null {
+  if (!capped(result)) return null
+  return ranksBySharedCode(result) ? 'capped' : 'cappedByScore'
+}
+
+/**
  * The numbers to show for a pair, in the order the provider sent them. A core older than metrics sends
  * none, and the two scores every response carries stand in, as JPlag's two similarities.
  */

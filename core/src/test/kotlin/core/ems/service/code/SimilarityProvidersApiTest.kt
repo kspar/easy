@@ -461,6 +461,9 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         // list knows each student by their latest, which this is not.
         val compared = json.get("submissions").toList().associate { it.get("id").asString() to (it.get("number").asInt() to it.get("student_id").asString()) }
         assertEquals(mapOf(submissions[0].toString() to (1 to "student-1"), submissions[1].toString() to (1 to "student-2")), compared)
+        // And which attempt is each author's latest, for the page to say that student-1 has since handed in another.
+        val latestNumbers = json.get("submissions").toList().associate { it.get("student_id").asString() to it.get("latest_number").asInt() }
+        assertEquals(mapOf("student-1" to 2, "student-2" to 1), latestNumbers)
         // Asked without students, every student's first attempt.
         val everyone = api.post(
             "/v2/exercises/$exercise/similarity",

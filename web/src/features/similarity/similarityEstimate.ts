@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next'
-import type { SimilarityEstimateResp } from '../../api/types.ts'
+import type { SimilarSubmissionResp, SimilarityEstimateResp } from '../../api/types.ts'
 
 /**
  * What the page says before Find, from core's count of what the check would compare (EZ-1667).
@@ -46,6 +46,17 @@ export function estimateView(estimate: Partial<SimilarityEstimateResp> | undefin
 export function formatClock(seconds: number): string {
   const whole = Math.max(0, Math.floor(seconds))
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
+}
+
+/**
+ * Which attempt a compared submission is, and the student's latest when that is a later one: with the first
+ * attempts compared, a copy handed in first and rewritten after was "attempt 1" on the page, with nothing to
+ * say that the student had since handed in something else. Null from a core that says neither.
+ */
+export function attemptNote(submission: Pick<SimilarSubmissionResp, 'number' | 'latest_number'>): { number: number; latest?: number } | null {
+  if (submission.number === undefined) return null
+  const latest = submission.latest_number
+  return latest !== undefined && latest > submission.number ? { number: submission.number, latest } : { number: submission.number }
 }
 
 /** Whether the check compares each student's first attempt rather than the latest (EZ-1667). */

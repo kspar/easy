@@ -77,7 +77,7 @@ data class SimilarityOutcome(
     val language: SimilarityLanguage,
     val truncated: Boolean,
     /**
-     * Submissions that are identical - the same text but for layout - by three or more authors, each
+     * Submissions that are identical - the same text - by three or more authors, each
      * group's ids in id order, the lowest first. A group was compared as one, so [pairs] holds none between its members, and at
      * most one between the group and any other submission, naming one member for them all.
      */

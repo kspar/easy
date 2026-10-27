@@ -302,20 +302,20 @@ internal class JPlagProvider(
                 idByName[invalid.name]?.let { SkippedSubmission(it, skipReason(invalid.state)) }
             }
 
-            // Identical here is the same tokens *and* the same text once layout is set aside: Python's and
-            // Java's token types leave out operators, literals and names, so a max, a min and a sum over a
-            // list are one token stream, and grouping on that alone called them identical code. Found by a
-            // fingerprint of the types, and by the types themselves only within one: keyed on the types,
-            // grouping held a second copy of every token list in the cohort while it ran.
+            // Identical here is the same text, as it is for every provider and for the count before Find.
+            // Not the tokens alone: Python's and Java's token types leave out operators, literals and names,
+            // so a max, a min and a sum over a list are one token stream, and grouping on that alone called
+            // them identical code. Nor the text but for layout, as it was: the count, which hashes the text
+            // in the database, took a copy changed only in its whitespace for another submission and the
+            // run for a group member, and the pairs said before Find were not the pairs compared. Such a
+            // copy is a pair at 100% instead, its own row. Found by a fingerprint of the types, equal for
+            // equal texts: keyed on the types, grouping held a second copy of every token list while it ran.
             return PreparedCohort(
                 language = language,
                 usable = set.submissions.map { idByName.getValue(it.name) },
                 skipped = skipped,
                 groupKey = { fingerprint(submissionById.getValue(it).tokenList) },
-                identical = { a, b ->
-                    sameTypes(submissionById.getValue(a).tokenList, submissionById.getValue(b).tokenList) &&
-                            sameText(solutionById.getValue(a), solutionById.getValue(b))
-                },
+                identical = { a, b -> solutionById.getValue(a) == solutionById.getValue(b) },
             )
         }
 
@@ -399,18 +399,6 @@ internal class JPlagProvider(
         var hash = 1L
         for (token in tokens) if (!token.type.isExcludedFromMatching()) hash = hash * 1_000_003L + token.type.hashCode()
         return hash
-    }
-
-    /** Whether two solutions are the same text but for layout: runs of whitespace, and where they start and end. */
-    private fun sameText(first: String, second: String): Boolean =
-        first.trim().replace(LAYOUT, " ") == second.trim().replace(LAYOUT, " ")
-
-    /** Whether two token lists match on the same types in the same order, which a group's members must too. */
-    private fun sameTypes(first: List<Token>, second: List<Token>): Boolean {
-        val a = first.asSequence().map { it.type }.filterNot { it.isExcludedFromMatching() }.iterator()
-        val b = second.asSequence().map { it.type }.filterNot { it.isExcludedFromMatching() }.iterator()
-        while (a.hasNext() && b.hasNext()) if (a.next() != b.next()) return false
-        return !a.hasNext() && !b.hasNext()
     }
 
     /**
@@ -613,8 +601,6 @@ internal class JPlagProvider(
 
         /** How many solutions decide alone that a cohort is not in its language; see [Session.prepare]. */
         private const val LANGUAGE_SAMPLE = 20
-
-        private val LAYOUT = Regex("\\s+")
 
         /** The template's identifier, beside the submissions'. */
         private val BASE_CODE = File("basecode")

@@ -662,11 +662,11 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
 
     @Test
     fun `identical submissions by three authors come back as one group, with every member named`() {
-        // Two more authors hand in the student's program, one laid out differently, so the three are a
-        // group: one entry instead of every pair among them, and the members shipped for the page to name.
-        // (The teacher's is that program renamed, which is a pair, not identical code.)
+        // Two more authors hand in the student's program, so the three are a group: one entry instead of
+        // every pair among them, and the members shipped for the page to name. (The teacher's is that
+        // program renamed, which is a pair, not identical code.)
         val (second, third) = transaction {
-            listOf("s-second" to solution, "s-third" to solution.replace("\n", "\n\n")).map { (name, code) ->
+            listOf("s-second" to solution, "s-third" to solution).map { (name, code) ->
                 val author = Fixtures.student(name)
                 Fixtures.enrolStudent(myCourse, author)
                 Fixtures.submission(myCourseExercise, author, number = 1, solution = code)
@@ -678,11 +678,44 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
         val groups = response.elements("groups").map { group -> group.get("submissions").toList().map { it.asString() } }
         assertEquals(listOf(listOf("$studentSubmission", "$second", "$third")), groups)
         assertEquals(0, response.elements("scores").size, "a pair inside the group was reported")
-        // Every member named, but only the first with its code: the rest are that code but for layout.
+        // Every member named, but only the first with its code: the rest are that code.
         val shipped = response.elements("submissions").associate { it.get("id").asString() to it.get("solution") }
         assertEquals(setOf("$studentSubmission", "$second", "$third"), shipped.keys)
         assertEquals(solution, shipped.getValue("$studentSubmission").asString())
         assertTrue(shipped.getValue("$second").isNull && shipped.getValue("$third").isNull, "the group's code was sent per member: $shipped")
+    }
+
+    @Test
+    fun `a copy changed only in its whitespace is a pair at 100%, not a member, so the pairs counted before Find are the pairs compared`() {
+        // JPlag took the text but for layout for identical, and the count, which hashes the text in the
+        // database, took the text itself: such a copy was a group member in the run and a submission of its
+        // own before it, and the page said more pairs before Find than the run then compared.
+        // Three authors - the most a test check takes - two of one text and one of it with trailing spaces:
+        // taken for identical, the three were a group and no pair; they are two identical and a copy.
+        val (copy, spaced) = transaction {
+            listOf("s-copy" to solution, "s-spaced" to solution.replace("\n", "  \n")).map { (name, code) ->
+                val author = Fixtures.student(name)
+                Fixtures.enrolStudent(myCourse, author)
+                Fixtures.submission(myCourseExercise, author, number = 1, solution = code)
+            }
+        }
+        val ids = listOf(studentSubmission, copy, spaced)
+
+        val response = runWith(ids)
+        assertEquals(200, response.status, response.toString())
+        val json = response.jsonOrNull!!
+        assertEquals(0, json.get("groups").toList().size, "the spaced copy was taken for identical: ${json.get("groups")}")
+        val pairs = json.get("scores").toList()
+        assertEquals(3, pairs.size)
+        assertTrue(pairs.all { it.get("similarity").asInt() == 100 }, "$pairs")
+
+        val counted = api.post(
+            "/v2/exercises/$myExercise/similarity/estimate",
+            api.body("courses" to listOf(mapOf("id" to myCourse.toString())), "submissions" to ids.map { mapOf("id" to it.toString()) }),
+            Auth.asTeacher(teacher),
+        ).jsonOrNull!!
+        assertEquals(json.get("pairs_total").asInt(), counted.get("pairs").asInt(), "the count before Find is not the run's")
+        assertEquals(3, counted.get("pairs").asInt())
     }
 
     @Test

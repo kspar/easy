@@ -10,6 +10,7 @@ import { languageFromFilename } from '../course-exercise/editorLanguage.ts'
 import { useSoftWrap } from '../../components/editorWrap.ts'
 import { readOnlyEditor } from '../../components/editorReadOnly.ts'
 import { chunkHighlighting, tokenMatchHighlighting } from './similarityHighlight.ts'
+import { hiddenMarking } from './similarityHidden.ts'
 import type { MatchedLines } from './similarityHighlight.ts'
 
 /**
@@ -98,6 +99,8 @@ export default function SimilarityDiff({
         readOnlyEditor,
         wrapExtension(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        // What prints as nothing, and names mixing alphabets, marked where they are; see similarityHidden.
+        hiddenMarking(t('similarity.invisibleTitle'), t('similarity.mixedScriptTitle')),
         lang,
         ...(dark ? [oneDark] : []),
       ]
@@ -137,7 +140,7 @@ export default function SimilarityDiff({
       cancelled = true
       view?.destroy()
     }
-  }, [left, right, fileName, dark, wrap, wrapExtension, matchedLeft, matchedRight, matchRanges, selectedMatch, leftLabel, rightLabel])
+  }, [left, right, fileName, dark, wrap, wrapExtension, matchedLeft, matchedRight, matchRanges, selectedMatch, leftLabel, rightLabel, t])
 
   return (
     <>

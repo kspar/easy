@@ -17,8 +17,8 @@ import { expect, test, describe } from 'vitest'
 import { isSimilarityRefusal } from '../../src/features/similarity/similarityError.ts'
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchEntries, matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
-import { capped, comparedBy, coverage, forReference, orderPairs, pairMetrics, providerName, ranksBySharedCode, resultNotes, rowMetrics, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
-import { comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
+import { capped, cappedNote, comparedBy, coverage, forReference, orderPairs, pairMetrics, providerName, ranksBySharedCode, resultNotes, rowMetrics, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
+import { attemptNote, comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
 import { skippedByReason } from '../../src/features/similarity/similaritySkipped.ts'
@@ -27,6 +27,7 @@ import { ApiResponseError } from '../../src/api/client.ts'
 import { errorMessage } from '../../src/api/errorMessage.ts'
 import { groupAuthors, identicalOthers } from '../../src/features/similarity/similarityGroups.ts'
 import { similarityRequest } from '../../src/features/similarity/similarityRequest.ts'
+import { hiddenIn, hidesAnything, invisibleCount, mixedScriptWords } from '../../src/features/similarity/similarityHidden.ts'
 
 describe('identical groups', () => {
   test('students are counted, not submissions: one student\'s two attempts are one author', () => {
@@ -560,5 +561,75 @@ describe('the estimate', () => {
     expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY', { estimated_sec: '180', budget_sec: '120', phase: 'preparing' }), t))
       .toBe('errors.similarityTooCostlyReading {"estimated":3,"budget":2}')
     expect(errorMessage(apiError('SIMILARITY_TOO_COSTLY'), t)).toBe('errors.similarityTooCostly {}')
+  })
+})
+
+
+describe('what a copy hides that cannot be seen', () => {
+  // By code point, so the characters under test are visible in this file too.
+  const ch = (code) => String.fromCodePoint(code)
+  const [ZWSP, ZWNJ, ZWJ, WJ, RLO, BEL, BOM] = [0x200b, 0x200c, 0x200d, 0x2060, 0x202e, 0x07, 0xfeff].map(ch)
+  const [TAB, LF, CR] = [9, 10, 13].map(ch)
+  // "pаllid" with a Cyrillic а, "tор" with a Cyrillic о and р, "pαrim" with a Greek alpha.
+  const pallid = `p${ch(0x430)}llid`
+  const tor = `t${ch(0x43e)}${ch(0x440)}`
+  const parim = `p${ch(0x3b1)}rim`
+
+  test('characters that print as nothing are counted, and tabs and line breaks are not', () => {
+    expect(invisibleCount(`a${ZWSP}b${ZWNJ}c${ZWJ}d${WJ}e`)).toBe(4)
+    // A direction override, the Trojan Source trick, and a control character.
+    expect(invisibleCount(`x = 1 ${RLO}# comment${BEL}`)).toBe(2)
+    expect(invisibleCount(['def f():', `${TAB}return 1`, ''].join(CR + LF))).toBe(0)
+  })
+
+  test('a byte order mark at the very start is what Notepad writes, and only there is it not counted', () => {
+    expect(invisibleCount(`${BOM}print(1)`)).toBe(0)
+    expect(invisibleCount(`print(1)${BOM}`)).toBe(1)
+  })
+
+  test('a name mixing Latin letters with Cyrillic or Greek ones is found, once, in the order it first appears', () => {
+    const text = [`${pallid} = 1`, `${tor} = ${pallid}`, `${parim} = 2`, ''].join(LF)
+    expect(mixedScriptWords(text)).toEqual([pallid, tor, parim])
+  })
+
+  test('one alphabet is a word, whichever it is: Estonian, a Russian comment, Greek', () => {
+    expect(mixedScriptWords(['põhjus = "Õun ja Ülle"', '# Python-скрипт для оценок', 'αβγ = 3', ''].join(LF))).toEqual([])
+  })
+
+  test('a solution hides something when it has either, and nothing when it is missing', () => {
+    expect(hiddenIn(`${pallid} = 1`)).toEqual({ invisible: 0, mixed: [pallid] })
+    expect(hidesAnything(hiddenIn(`${pallid} = 1`))).toBe(true)
+    expect(hidesAnything(hiddenIn(`# lahendus${ZWSP}`))).toBe(true)
+    expect(hidesAnything(hiddenIn('print(1)'))).toBe(false)
+    expect(hidesAnything(hiddenIn(null))).toBe(false)
+    expect(hidesAnything(undefined)).toBe(false)
+  })
+})
+
+describe('which attempt a compared submission is', () => {
+  test('a first attempt the student has since followed with another says which is the latest', () => {
+    expect(attemptNote({ number: 1, latest_number: 2 })).toEqual({ number: 1, latest: 2 })
+  })
+
+  test('the latest says only its number, and so does a core that does not say which is the latest', () => {
+    expect(attemptNote({ number: 2, latest_number: 2 })).toEqual({ number: 2 })
+    expect(attemptNote({ number: 2 })).toEqual({ number: 2 })
+    expect(attemptNote({})).toBeNull()
+  })
+})
+
+describe('the cap notice', () => {
+  const jplag = { scores: [{ metrics: [{ id: 'similarity', value: 90, unit: 'percent' }, { id: 'shared_tokens', value: 40, unit: 'count' }] }] }
+  const editDistance = { scores: [{ metrics: [{ id: 'levenshtein', value: 90, unit: 'percent' }, { id: 'dice', value: 80, unit: 'percent' }] }] }
+
+  test('names both orders where the pairs rank by shared code, and the score alone where they rank by it', () => {
+    expect(cappedNote({ ...jplag, truncated: true, complete: true })).toBe('capped')
+    // Edit distance has no order by shared code to name.
+    expect(cappedNote({ ...editDistance, truncated: true, complete: true })).toBe('cappedByScore')
+  })
+
+  test('says nothing where nothing was cut, or the run stopped at the time limit', () => {
+    expect(cappedNote({ ...jplag, truncated: false, complete: true })).toBeNull()
+    expect(cappedNote({ ...editDistance, truncated: true, complete: false })).toBeNull()
   })
 })

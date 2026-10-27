@@ -568,7 +568,7 @@ export interface SimilarSubmissionResp {
   created_at: string
   /**
    * Null for a member of an identical group that no pair names and that is not the group's first: its
-   * code is that one's but for layout, and only that one is shown.
+   * code is that one's, and only that one is shown.
    */
   solution: string | null
   given_name: string
@@ -581,6 +581,8 @@ export interface SimilarSubmissionResp {
   student_id?: string
   /** Which of the student's attempts this is, from 1. Absent from an older core. */
   number?: number
+  /** The number of the student's latest attempt on the course exercise. Absent from an older core. */
+  latest_number?: number
 }
 
 /** @endpoint POST /v2/exercises/{exerciseId}/similarity -> scores[].matches[] */

@@ -19,6 +19,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.max
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.joda.time.DateTime
@@ -172,7 +175,7 @@ class TeacherCheckSimilarityController(
         @get:JsonProperty("created_at") val createdAt: DateTime,
         /**
          * Null for a member of an identical group that no pair names and that is not the group's first:
-         * its code is the first one's but for layout, and the page shows only that one. Sent in full,
+         * its code is the first one's, and the page shows only that one. Sent in full,
          * a class that mostly handed in one file sent that file once per student.
          */
         @get:JsonProperty("solution") val solution: String?,
@@ -187,6 +190,12 @@ class TeacherCheckSimilarityController(
         @get:JsonProperty("student_id") val studentId: String,
         /** Which of the student's attempts this is, from 1: the page says so when it is not their latest. */
         @get:JsonProperty("number") val number: Int,
+        /**
+         * The number of the student's latest attempt on the course exercise. With the first attempts compared,
+         * a copy handed in first and rewritten after was "attempt 1" on the page, with nothing to say that
+         * the student had since handed in something else.
+         */
+        @get:JsonProperty("latest_number") val latestNumber: Int,
     )
 
     data class RespScore(
@@ -391,10 +400,23 @@ class TeacherCheckSimilarityController(
                 Submission.solution,
                 Submission.student,
                 Submission.number,
+                Submission.courseExercise,
                 Account.givenName,
                 Account.familyName
             )
             .where { submittedTo(exerciseId, courses, submissionIds) }
+            .toList()
+
+        // Each author's latest attempt on each course exercise among them, in one more query.
+        val latest = Submission.number.max()
+        val latestOf = if (query.isEmpty()) emptyMap() else Submission
+            .select(Submission.courseExercise, Submission.student, latest)
+            .where {
+                (Submission.courseExercise inList query.map { it[Submission.courseExercise] }.distinct()) and
+                        (Submission.student inList query.map { it[Submission.student] }.distinct())
+            }
+            .groupBy(Submission.courseExercise, Submission.student)
+            .associate { (it[Submission.courseExercise].value to it[Submission.student].value) to it[latest] }
 
         val rows = query.map {
             SubmissionRow(
@@ -407,6 +429,7 @@ class TeacherCheckSimilarityController(
                     it[Course.title],
                     it[Submission.student].value,
                     it[Submission.number],
+                    latestOf[it[Submission.courseExercise].value to it[Submission.student].value] ?: it[Submission.number],
                 ),
                 it[Submission.student].value,
                 it[Submission.solution],

@@ -426,13 +426,14 @@ first order — so whatever lies above a threshold is what the percentage alone 
 as long as fewer than 100 pairs do.
 
 **Identical submissions by three or more authors are one group** (`groups[]`, each its members' ids):
-the same text but for layout, and so the same tokens. Not the tokens alone: for Python and Java those
+the same text, and so the same tokens — as for every provider, and as the count before Find has it, which a copy
+changed only in its whitespace would otherwise be counted apart by: such a copy is a pair at 100%. Not the tokens alone: for Python and Java those
 leave out operators, literals and names, so a maximum, a minimum and a sum over a list were one group. A group
 is compared once, so `scores[]` holds no pair between its members and at most one between the group and
 any other submission, naming one member for it — the lowest id whose author differs from the other side's,
 so that one student's own attempts are still never paired. Every member is in `submissions`, for the
 page to name, but only the first carries its `solution`, and any member a pair names: the rest are that
-code but for layout, and a class that mostly handed in one file sent it once per student. The page
+code, and a class that mostly handed in one file sent it once per student. The page
 lists each group once, with its students and the first one's code, and marks a pair side that stands
 for a group with how many more students it is. Twelve untouched starters were 66 pairs at 100% among themselves; a ring of fifteen identical copies
 was 105. Two identical submissions stay a pair, shown side by side, and one student's identical attempts
