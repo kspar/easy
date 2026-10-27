@@ -148,6 +148,12 @@ data class SimilarityEstimate(
     val seconds: Long get() = (wallNanos + 999_999_999L) / 1_000_000_000L
 }
 
+/**
+ * What a running check has done (EZ-1667), for the teacher waiting on it: preparing, or [comparing] - [done]
+ * of [total] pairs settled, scored or ruled out - and how long it has run of its budget.
+ */
+data class SimilarityProgress(val comparing: Boolean, val done: Long, val total: Long, val elapsedSec: Long, val budgetSec: Long)
+
 /** Refused before the permit: the estimate is over the budget, so the run would only time out. */
 class SimilarityTooCostly(val estimate: SimilarityEstimate) :
     RuntimeException("Similarity comparison would take about ${estimate.seconds}s, over the ${estimate.budgetSec}s budget")

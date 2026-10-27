@@ -36,6 +36,9 @@ test('similarity-page', async ({ launch, check }) => {
   await fakeApi(page, [
     ['/account/checkin', () => ({})],
 
+    // Before '/similarity', which it also contains: asked every second while a check runs.
+    ['/similarity/progress', () => ({ running: false, phase: null, done: 0, total: 0, elapsed_sec: 0, budget_sec: 120 })],
+
     // Before '/similarity', which it also contains - the first needle that matches answers. Priced from
     // what was sent, as core does, so a group change is a new answer: n submissions, n(n-1)/2 pairs.
     ['/similarity/estimate', ({ body }) => {

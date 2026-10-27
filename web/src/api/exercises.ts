@@ -13,6 +13,7 @@ import type {
   MoodlePropsResp,
   ParticipantsResp,
   SimilarityEstimateResp,
+  SimilarityProgressResp,
   SimilarityReq,
   SimilarityResp,
   SubmissionResp,
@@ -1156,6 +1157,23 @@ const SIMILARITY_MUTATION_KEY = ['checkSimilarity']
  * disabled on every similarity page in the tab.
  */
 const SIMILARITY_REQUEST_TIMEOUT_MS = 300_000
+
+/**
+ * EZ-1667. How far the caller's running check has got, asked every second while it runs: the check is
+ * one request that answers only at the end, and for up to its whole budget the page had nothing to show.
+ * Not retried: an older core answers 404, and the page then shows the time alone.
+ */
+export function useSimilarityProgress(enabled: boolean) {
+  return useQuery({
+    queryKey: ['similarity-progress'],
+    queryFn: () => apiFetch<SimilarityProgressResp>('/similarity/progress'),
+    enabled,
+    refetchInterval: enabled ? 1000 : false,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+  })
+}
 
 /**
  * Compare submissions of one library exercise for similarity.

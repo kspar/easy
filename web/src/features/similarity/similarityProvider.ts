@@ -118,13 +118,19 @@ export function resultNotes(result: Pick<SimilarityResp, 'provider' | 'provider_
  * out because they could not be among the most similar (`ruledOut`, a note). Null for a result that
  * compared every pair, and for an older core that does not say.
  */
-export type Coverage = { kind: 'incomplete' | 'ruledOut'; compared: number; total: number }
+export type Coverage = { kind: 'incomplete' | 'ruledOut'; compared: number; total: number; share: number }
 
+/**
+ * [share] is the compared pairs as a whole percent, never 0 when some were and never 100 when some were
+ * not: "2,622 of 30,135" asked the teacher to do the sum that says how thin a result is.
+ */
 export function coverage(result: Pick<SimilarityResp, 'complete' | 'pairs_compared' | 'pairs_total'>): Coverage | null {
   const { complete, pairs_compared: compared, pairs_total: total } = result
   if (typeof compared !== 'number' || typeof total !== 'number') return null
-  if (complete === false) return { kind: 'incomplete', compared, total }
-  if (compared < total) return { kind: 'ruledOut', compared, total }
+  const exact = total > 0 ? (100 * compared) / total : 100
+  const share = compared === 0 ? 0 : compared >= total ? 100 : Math.min(99, Math.max(1, Math.round(exact)))
+  if (complete === false) return { kind: 'incomplete', compared, total, share }
+  if (compared < total) return { kind: 'ruledOut', compared, total, share }
   return null
 }
 

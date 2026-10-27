@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   Accordion,
   AccordionDetails,
@@ -13,6 +13,7 @@ import {
   FormControl,
   IconButton,
   InputLabel,
+  LinearProgress,
   Link,
   MenuItem,
   Select,
@@ -39,6 +40,7 @@ import {
   useCheckSimilarity,
   useCourseGroups,
   useSimilarityEstimate,
+  useSimilarityProgress,
   useSimilarityRunning,
   useTeacherCourseExercises,
   useTeacherSubmissionSummaries,
@@ -65,7 +67,7 @@ import {
   rowMetrics,
   usesMatchRanges,
 } from './similarityProvider.ts'
-import { comparesFirstAttempts, estimateRefusal, estimateView, formatDuration, ownSettings } from './similarityEstimate.ts'
+import { comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings, partialShare } from './similarityEstimate.ts'
 import { similarityRequest } from './similarityRequest.ts'
 import type { PairOrder, ResultNote } from './similarityProvider.ts'
 import type { SimilarityMetricResp } from '../../api/types.ts'
@@ -161,6 +163,22 @@ export default function SimilarityPage() {
   // Also true for a run the page has left behind (a group or exercise change mid-run): core is still
   // computing it under its one permit, so a new run now would only wait and fail as busy.
   const running = useSimilarityRunning()
+
+  // How far this page's run has got, while the teacher waits on it: the check answers only at the end, and
+  // for up to its whole budget there was nothing to see but a greyed button. Core's own count when it can
+  // say; the time since the click whatever it says.
+  const waiting = check.isPending && current
+  const { data: progress } = useSimilarityProgress(waiting)
+  const [startedAt, setStartedAt] = useState(0)
+  const [now, setNow] = useState(0)
+  useEffect(() => {
+    if (!waiting) return
+    const tick = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(tick)
+  }, [waiting])
+  const elapsed = progress?.running ? progress.elapsed_sec : Math.max(0, Math.round((now - startedAt) / 1000))
+  const budget = progress?.running ? progress.budget_sec : estimateData?.budget_sec
+  const comparing = progress?.running === true && progress.phase === 'comparing' && progress.total > 0
 
   // submission id -> student id, so each side of a pair can link to that student's grading view. Core
   // says whose each compared submission is; the list the run was over knows each student only by their
@@ -302,6 +320,9 @@ export default function SimilarityPage() {
 
   const run = () => {
     if (!selected) return
+    const clicked = Date.now()
+    setStartedAt(clicked)
+    setNow(clicked)
     setRanOver({ exerciseId, group, submitted })
     check.mutate(similarityRequest(courseId!, selected.course_exercise_id, submitted))
   }
@@ -418,15 +439,24 @@ export default function SimilarityPage() {
       {/* What is about to be compared, before committing to the wait: and how long, once core says. */}
       {selected && !rowsLoading && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+          {/* One answer to "how long?": over the budget, an optimised check stops at it, so that and the
+              share it gets through is the time - not "about 6 min" over a note that it stops at 2. */}
           {estimate.kind === 'unknown'
             ? t('similarity.scope', { submissions: submitted.length, count: pairCount })
             : estimate.kind === 'nothing'
               ? t('similarity.estimateNothing', { submissions: estimate.submissions })
-              : t('similarity.estimateScope', {
-              submissions: estimate.submissions,
-              count: estimate.pairs,
-              duration: formatDuration(estimate.seconds, t),
-            })}
+              : estimate.kind === 'partial'
+                ? t('similarity.estimatePartial', {
+                  submissions: estimate.submissions,
+                  count: estimate.pairs,
+                  budget: formatDuration(estimate.budget, t),
+                  share: partialShare(estimate),
+                })
+                : t('similarity.estimateScope', {
+                  submissions: estimate.submissions,
+                  count: estimate.pairs,
+                  duration: formatDuration(estimate.seconds, t),
+                })}
           {estimate.kind !== 'unknown' && estimate.notCompared > 0 && (
             <Box component="span" sx={{ display: 'block' }}>{t('similarity.estimateNotCompared', { count: estimate.notCompared })}</Box>
           )}
@@ -440,14 +470,6 @@ export default function SimilarityPage() {
 
       {/* What was said before the run is not said again over its result: three and four notices stacked
           above the first pair, one of them about a wait that was over. */}
-      {estimate.kind === 'partial' && !result && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          {t('similarity.partialAhead', {
-            duration: formatDuration(estimate.seconds, t),
-            budget: formatDuration(estimate.budget, t),
-          })}
-        </Alert>
-      )}
 
       {refusedAhead && (
         <Alert severity="warning" sx={{ mb: 2 }}>{errorMessage(estimateError, t)}</Alert>
@@ -475,6 +497,25 @@ export default function SimilarityPage() {
         <Alert severity="warning" sx={{ mb: 2 }}>
           {t('similarity.slowWarning', { pairs: pairCount })}
         </Alert>
+      )}
+
+      {waiting && (
+        <Box sx={{ mb: 2, maxWidth: 560 }}>
+          <LinearProgress
+            variant={comparing ? 'determinate' : 'indeterminate'}
+            value={comparing && progress ? (100 * progress.done) / progress.total : undefined}
+            aria-label={t('similarity.progressName')}
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+            {budget === undefined
+              ? t('similarity.progressElapsed', { elapsed: formatClock(elapsed) })
+              : comparing && progress
+                ? t('similarity.progressComparing', { done: progress.done, total: progress.total, elapsed: formatClock(elapsed), budget: formatClock(budget) })
+                : progress?.running
+                  ? t('similarity.progressPreparing', { elapsed: formatClock(elapsed), budget: formatClock(budget) })
+                  : t('similarity.progressWaiting', { elapsed: formatClock(elapsed), budget: formatClock(budget) })}
+          </Typography>
+        </Box>
       )}
 
       {check.isError && current && (
@@ -545,10 +586,12 @@ export default function SimilarityPage() {
           {/* Not every pair was compared: stopped at the time limit, or ruled out as unable to rank. */}
           {covered?.kind === 'incomplete' && (
             <Alert severity="warning" sx={{ mb: 2 }}>
-              {/* "Choose a group" is no advice to a teacher who has one chosen. */}
+              {/* "Choose a group" is no advice to a teacher who has one chosen; what every pair would have
+                  taken, from the estimate, is. */}
               {group
-                ? t('similarity.incompleteInGroup', { compared: covered.compared, total: covered.total })
-                : t('similarity.incomplete', { compared: covered.compared, total: covered.total })}
+                ? t('similarity.incompleteInGroup', { compared: covered.compared, total: covered.total, share: covered.share })
+                : t('similarity.incomplete', { compared: covered.compared, total: covered.total, share: covered.share })}
+              {estimate.kind === 'partial' && ` ${t('similarity.everyPairWouldTake', { duration: formatDuration(estimate.seconds, t) })}`}
             </Alert>
           )}
           {covered?.kind === 'ruledOut' && (

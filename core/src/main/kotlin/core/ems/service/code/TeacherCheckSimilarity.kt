@@ -293,6 +293,8 @@ class TeacherCheckSimilarityController(
                 // the embed, and an exercise that gives its starter code in the text got none.
                 baseCode = null,
                 topN = TOP_PAIRS,
+                // So the page can say how far it has got while the teacher waits: see TeacherReadSimilarityProgress.
+                owner = caller.id,
             )
         } catch (_: SimilarityBusy) {
             // One comparison at a time, and this caller waited long enough. A named refusal the UI

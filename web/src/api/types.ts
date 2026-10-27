@@ -653,6 +653,21 @@ export interface SimilarityReq {
   submissions?: { id: string }[]
 }
 
+/**
+ * How far the caller's own running similarity check has got: `phase` is `preparing` or `comparing`, null
+ * when none is running; `done` of `total` pairs are settled while comparing.
+ *
+ * @endpoint GET /v2/similarity/progress -> (root)
+ */
+export interface SimilarityProgressResp {
+  running: boolean
+  phase: string | null
+  done: number
+  total: number
+  elapsed_sec: number
+  budget_sec: number
+}
+
 /** @endpoint POST /v2/exercises/{exerciseId}/similarity -> (root) */
 export interface SimilarityResp {
   submissions: SimilarSubmissionResp[]

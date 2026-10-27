@@ -490,6 +490,16 @@ class SimilarityApiTest(@Autowired mockMvc: MockMvc) {
     }
 
     @Test
+    fun `progress says nothing is running when none of the caller's checks is`() {
+        val response = api.get("/v2/similarity/progress", Auth.asTeacher(teacher))
+        assertEquals(200, response.status)
+        val json = response.jsonOrNull!!
+        assertFalse(json.get("running").asBoolean())
+        assertTrue(json.get("phase").isNull)
+        assertEquals(0, json.get("total").asInt())
+    }
+
+    @Test
     fun `the estimate leaves a blank answer out of its pairs and counts it, as the check skips it`() {
         val exercise = transaction {
             val exercise = Fixtures.exercise("Blanks", teacher)

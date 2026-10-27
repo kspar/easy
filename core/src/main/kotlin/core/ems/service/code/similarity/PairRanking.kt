@@ -2,6 +2,7 @@ package core.ems.service.code.similarity
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.PriorityQueue
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -88,6 +89,16 @@ internal class PairRanking(
     /** One worker's time the scored pairs took, and what the model predicted for them: read by [Calibration]. */
     val scored = Spent()
 
+    /**
+     * Pairs settled so far - scored, or ruled out - of [pairsToSettle], for the teacher waiting on the run
+     * (see `SimilarityService.progress`). Re-queued pairs settle twice, so it can pass the total; read capped.
+     */
+    val settled = AtomicLong()
+
+    @Volatile
+    var pairsToSettle = 0L
+        private set
+
     /** [ProviderSession.score], timed for [Calibration]. */
     private fun timedScore(session: ProviderSession, a: Long, b: Long): PairScore? {
         val started = deadline.ticker.nanos()
@@ -98,8 +109,10 @@ internal class PairRanking(
 
     /** [comparands] are the cohort's usable submissions, identical ones as one; see [Comparand]. */
     fun rank(session: ProviderSession, comparands: List<Comparand>, topN: Int): Ranking {
-        val pace = if (!project) null else pairsWorthComparing(comparands).let { total ->
-            RunPace(deadline, budgetSec, total, "pairs") { wall -> SimilarityEstimate(comparands.size, total, workers.threads, wall, budgetSec) }
+        val total = pairsWorthComparing(comparands)
+        pairsToSettle = total
+        val pace = if (!project) null else RunPace(deadline, budgetSec, total, "pairs") { wall ->
+            SimilarityEstimate(comparands.size, total, workers.threads, wall, budgetSec)
         }
         val stripes = workers.all(
             (0 until workers.threads).map { stripe -> { stripe(stripe, session, comparands, topN, pace) } },
@@ -142,6 +155,7 @@ internal class PairRanking(
         // pair, just before scoring - in parallel, and stopped by the deadline like the scoring is.
         val stripes = workers.all((0 until workers.threads).map { stripe -> { bounded(stripe, session, comparands) } })
         val total = stripes.sumOf { it.pairs }
+        pairsToSettle = total.toLong()
         val candidates = stripes.flatMap { it.candidates }.sortedWith(
             // Total, so the order - and with it which pairs a cut-short run reached - is the same on any number of threads.
             compareByDescending<Candidate> { it.bound.similarity }.thenByDescending { it.bound.rank }.thenByDescending { it.bound.score }
@@ -180,8 +194,14 @@ internal class PairRanking(
                 val candidate = work[next++]
                 when {
                     !pruning || audited(candidate) -> batch += candidate
-                    candidate.bound.score < MIN_REPORTED_SIMILARITY -> passedOver += Worked(candidate, null, skipped = true, ruledOut = false)
-                    floors.rulesOut(candidate.bound) -> passedOver += Worked(candidate, null, skipped = true, ruledOut = true)
+                    candidate.bound.score < MIN_REPORTED_SIMILARITY -> {
+                        passedOver += Worked(candidate, null, skipped = true, ruledOut = false)
+                        settled.incrementAndGet()
+                    }
+                    floors.rulesOut(candidate.bound) -> {
+                        passedOver += Worked(candidate, null, skipped = true, ruledOut = true)
+                        settled.incrementAndGet()
+                    }
                     else -> batch += candidate
                 }
             }
@@ -276,6 +296,7 @@ internal class PairRanking(
             }
             if (exact != null && (exact.score < MIN_REPORTED_SIMILARITY || floors.rulesOut(exact)) && !audited(candidate)) {
                 done += Worked(candidate, null, skipped = true, ruledOut = exact.score >= MIN_REPORTED_SIMILARITY)
+                settled.incrementAndGet()
                 continue
             }
             val pair = try {
@@ -287,6 +308,7 @@ internal class PairRanking(
             // Against both bounds it passed on: the quick one let it into the batch, the exact one into scoring.
             val wrong = if (pair == null || exact == null) null else above(pair, candidate.bound) ?: above(pair, exact)
             if (wrong != null) violation.compareAndSet(null, "${candidate.a}-${candidate.b}: $wrong")
+            settled.incrementAndGet()
             done += Worked(candidate, pair)
         }
         return done
@@ -353,6 +375,7 @@ internal class PairRanking(
                 val b = comparands[j].representative
                 val pair = timedScore(session, a, b)
                 compared++
+                settled.incrementAndGet()
                 pace?.done()
                 if (pair == null || pair.score < MIN_REPORTED_SIMILARITY) continue
                 scoring++

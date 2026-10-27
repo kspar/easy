@@ -18,7 +18,7 @@ import { isSimilarityRefusal } from '../../src/features/similarity/similarityErr
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchEntries, matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
 import { capped, comparedBy, coverage, forReference, orderPairs, pairMetrics, providerName, ranksBySharedCode, resultNotes, rowMetrics, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
-import { comparesFirstAttempts, estimateRefusal, estimateView, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
+import { comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings, partialShare } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
 import { skippedByReason } from '../../src/features/similarity/similaritySkipped.ts'
@@ -461,8 +461,11 @@ describe('the estimate', () => {
   })
 
   test('a result that did not compare every pair says how many it did, and why', () => {
-    expect(coverage({ complete: false, pairs_compared: 900, pairs_total: 4950 })).toEqual({ kind: 'incomplete', compared: 900, total: 4950 })
-    expect(coverage({ complete: true, pairs_compared: 2100, pairs_total: 4950 })).toEqual({ kind: 'ruledOut', compared: 2100, total: 4950 })
+    expect(coverage({ complete: false, pairs_compared: 900, pairs_total: 4950 })).toEqual({ kind: 'incomplete', compared: 900, total: 4950, share: 18 })
+    expect(coverage({ complete: true, pairs_compared: 2100, pairs_total: 4950 })).toEqual({ kind: 'ruledOut', compared: 2100, total: 4950, share: 42 })
+    // As a percent that never rounds to none of a few nor all of nearly all.
+    expect(coverage({ complete: false, pairs_compared: 3, pairs_total: 30135 })).toMatchObject({ share: 1 })
+    expect(coverage({ complete: false, pairs_compared: 30134, pairs_total: 30135 })).toMatchObject({ share: 99 })
     expect(coverage({ complete: true, pairs_compared: 4950, pairs_total: 4950 })).toBeNull()
     // An older core says nothing of it, and nothing is claimed.
     expect(coverage({})).toBeNull()
@@ -510,6 +513,16 @@ describe('the estimate', () => {
     // Every solution blank, or too long for the provider: Find still runs it, to name who was skipped.
     expect(estimateView({ ...fits, pairs: 0, estimated_sec: 0 })).toEqual({ kind: 'nothing', submissions: 30, notCompared: 0 })
     expect(estimateView({ ...fits, pairs: 0, estimated_sec: 0, within_budget: false })).toEqual({ kind: 'nothing', submissions: 30, notCompared: 0 })
+  })
+
+  test('over the budget, the share of the pairs a check gets through, and the time it has run as a clock', () => {
+    // "About 6 min" over a note that it stops at 2 was two answers to one question.
+    expect(partialShare({ seconds: 360, budget: 120 })).toBe(33)
+    expect(partialShare({ seconds: 100_000, budget: 120 })).toBe(1)
+    expect(partialShare({ seconds: 121, budget: 120 })).toBe(99)
+    expect(formatClock(47)).toBe('0:47')
+    expect(formatClock(120)).toBe('2:00')
+    expect(formatClock(-3)).toBe('0:00')
   })
 
   test('those in no pair are counted with the estimate, and an older core is taken to compare them all', () => {

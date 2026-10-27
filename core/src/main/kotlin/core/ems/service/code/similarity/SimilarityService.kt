@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Similarity, entirely in memory: which submissions of a cohort are most alike.
@@ -98,6 +99,28 @@ class SimilarityService(
 
     /** This server's runs against the cost model, which the estimate is scaled by. */
     internal val calibration = Calibration()
+
+    /** The check running now, when its caller asked to watch it: see [progress]. One at a time, as the permit allows. */
+    private val running = AtomicReference<RunProgress?>()
+
+    private class RunProgress(val owner: String, val started: Long) {
+        @Volatile
+        var ranker: PairRanking? = null
+    }
+
+    /**
+     * What [owner]'s running check has done, or null when none of theirs is running: only their own, so a
+     * teacher waiting learns nothing of another's. A check is one request that answers only at the end, and
+     * up to its whole budget the page had nothing to show but a greyed button.
+     */
+    fun progress(owner: String): SimilarityProgress? {
+        val run = running.get()?.takeIf { it.owner == owner } ?: return null
+        val ranker = run.ranker
+        val elapsedSec = (ticker.nanos() - run.started) / 1_000_000_000
+        if (ranker == null) return SimilarityProgress(false, 0, 0, elapsedSec, timeoutSec)
+        val total = ranker.pairsToSettle
+        return SimilarityProgress(true, minOf(ranker.settled.get(), total), total, elapsedSec, timeoutSec)
+    }
 
     /** Whether [provider]'s bounds may rule pairs out: it has them, and no run has caught one wrong. */
     private fun bounds(provider: SimilarityProvider) = provider.bounds && provider.id !in untrustedBounds
@@ -240,10 +263,14 @@ class SimilarityService(
         binding: SimilarityBinding,
         baseCode: String?,
         topN: Int,
+        /** Who may watch the run's [progress], if anybody. */
+        owner: String? = null,
     ): SimilarityRun<T> {
         val provider = checkNotNull(registry.provider(binding.provider)) { "No similarity provider ${binding.provider}" }
         val compared = provider.comparesAs(binding.language)
         acquirePermit()
+        val progress = owner?.let { RunProgress(it, ticker.nanos()) }
+        running.set(progress)
         try {
             val rows = loadRows()
             if (rows.size < 2) {
@@ -252,8 +279,9 @@ class SimilarityService(
             // Optimised - [SimilarityBinding.optimised] - rules out the pairs that cannot be among the top N,
             // and stops at the deadline with the likeliest found rather than refuse, where the provider can
             // bound its pairs ([SimilarityProvider.bounds]); one that cannot compares every pair either way.
-            return SimilarityRun(rows, run(provider, rows.map(asSource), compared, baseCode, topN, binding.optimised && bounds(provider), binding.textAllowed))
+            return SimilarityRun(rows, run(provider, rows.map(asSource), compared, baseCode, topN, binding.optimised && bounds(provider), binding.textAllowed, progress))
         } finally {
+            running.compareAndSet(progress, null)
             oneAtATime.release()
         }
     }
@@ -313,6 +341,7 @@ class SimilarityService(
         topN: Int,
         bounded: Boolean,
         textAllowed: Boolean,
+        progress: RunProgress?,
     ): SimilarityOutcome {
         val deadline = Deadline.after(TimeUnit.SECONDS.toNanos(timeoutSec), ticker)
         val ownerById = sources.mapNotNull { source -> source.owner?.let { source.id to it } }.toMap()
@@ -353,6 +382,7 @@ class SimilarityService(
                 val ranker = PairRanking(workers, deadline, timeoutSec, projectRuns) { a, b ->
                     provider.pairNanos(bytesById.getValue(a), bytesById.getValue(b))
                 }
+                progress?.ranker = ranker
                 // Measured however the ranking ends: a run refused at its pace is the one that says most.
                 val ranking = try {
                     if (bounded) ranker.rankBounded(session, comparands, topN, partial = true) else ranker.rank(session, comparands, topN)

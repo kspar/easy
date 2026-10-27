@@ -36,6 +36,22 @@ export function estimateView(estimate: Partial<SimilarityEstimateResp> | undefin
   return { kind: 'tooCostly', submissions, pairs, seconds, budget: isCount(budget) ? budget : 0, notCompared }
 }
 
+/**
+ * About what share of the pairs an optimised check over the budget compares before it stops, as a whole
+ * percent from 1 to 99: the budget over what every pair would take. Said with the estimate, which gave
+ * two answers to "how long?" - "about 6 min" above a note that it stops at 2.
+ */
+export function partialShare(estimate: { seconds: number; budget: number }): number {
+  if (estimate.seconds <= 0) return 99
+  return Math.min(99, Math.max(1, Math.round((100 * estimate.budget) / estimate.seconds)))
+}
+
+/** Seconds as a clock, for the time a running check has taken: 47 is 0:47, 120 is 2:00. */
+export function formatClock(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds))
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
+}
+
 /** Whether the check compares each student's first attempt rather than the latest (EZ-1667). */
 export function comparesFirstAttempts(estimate: Partial<SimilarityEstimateResp> | undefined): boolean {
   return estimate?.attempts === 'first'

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import java.io.File
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
@@ -1011,6 +1012,40 @@ class SimilarityServiceTest {
         val sources = (1L..100L).map { SimilaritySource(it, (if (it <= 5) large else original + "\n") + "print($it)\n") }
 
         slow.compare({ sources }, { it }, SimilarityLanguage.PYTHON, null, 100)
+    }
+
+    @Test
+    fun `a running check says how far it has got to its owner, and to nobody else`() {
+        // A check answers only when it is done; until then the page shows this, polled, so the teacher sees
+        // more than a greyed button for up to the whole budget. Paused on its third pair, five seconds in.
+        val clock = ManualTicker()
+        val watched = service(clock = clock).also { it.threadsFor = { 1 } }
+        val reached = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val compared = AtomicInteger()
+        watched.comparePair = { gst, first, second ->
+            if (compared.incrementAndGet() == 3) {
+                clock.advance(5_000)
+                reached.countDown()
+                release.await(30, TimeUnit.SECONDS)
+            }
+            gst.compare(first, second)
+        }
+        val sources = (1L..6L).map { SimilaritySource(it, original + "\n" + "print($it)\n".repeat(it.toInt()), "s$it") }
+        assertNull(watched.progress("ann"))
+        val run = thread {
+            watched.compare({ sources }, { it }, SimilarityBinding(JPlagProvider.ID, SimilarityLanguage.PYTHON), null, 100, owner = "ann")
+        }
+        try {
+            assertTrue(reached.await(30, TimeUnit.SECONDS), "the third pair was never reached")
+            val progress = watched.progress("ann")
+            assertEquals(SimilarityProgress(comparing = true, done = 2, total = 15, elapsedSec = 5, budgetSec = 120), progress)
+            assertNull(watched.progress("ben"))
+        } finally {
+            release.countDown()
+            run.join(30_000)
+        }
+        assertNull(watched.progress("ann"))
     }
 
     @Test

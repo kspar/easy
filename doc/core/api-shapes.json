@@ -45,6 +45,7 @@
     "GET /v2/management/common/notifications": { "response": "core.ems.service.management.CommonReadManagementNotificationsController.Resp" },
     "GET /v2/management/notifications": { "response": "core.ems.service.management.AdminReadManagementNotificationsController.Resp" },
     "GET /v2/resource/{key}/{filename}": {  },
+    "GET /v2/similarity/progress": { "response": "core.ems.service.code.TeacherReadSimilarityProgressController.Resp" },
     "GET /v2/snippets": { "response": "core.ems.service.snippet.TeacherReadFeedbackSnippetsController.Resp" },
     "GET /v2/student/courses": { "response": "core.ems.service.course.ReadStudentCourses.Resp" },
     "GET /v2/student/courses/{courseId}/exercises": { "response": "core.ems.service.exercise.StudentReadExercisesController.Resp" },
@@ -578,6 +579,14 @@
     "core.ems.service.code.TeacherReadCourseSimilaritySettingsController.RespProvider": {
       "id": { "kind": "string" },
       "languages": { "kind": "array" }
+    },
+    "core.ems.service.code.TeacherReadSimilarityProgressController.Resp": {
+      "budget_sec": { "kind": "number" },
+      "done": { "kind": "number" },
+      "elapsed_sec": { "kind": "number" },
+      "phase": { "kind": "string", "nullable": true },
+      "running": { "kind": "boolean" },
+      "total": { "kind": "number" }
     },
     "core.ems.service.code.TeacherUpdateCourseExerciseSimilaritySettingsController.Req": {
       "attempts": { "kind": "string", "nullable": true },

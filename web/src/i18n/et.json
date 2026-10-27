@@ -753,9 +753,8 @@
     "firstAttemptsNote": "Võrreldakse iga õpilase esimest esitust.",
     "attemptNumber": "{{number}}. esitus",
     "settingsModeFullHelp": "Võrdleb kõiki paare. Kontroll, mis võtaks lubatust kauem, lükatakse tagasi; vali siis rühm.",
-    "partialAhead": "Kõigi paaride võrdlemine võib võtta kuni umbes {{duration}}, kauem kui üks kontroll tohib kesta ({{budget}}). Kõigepealt võrreldakse tõenäolisemaid paare ja kontroll lõpeb {{budget}} järel leitud kõige sarnasemate paaridega.",
-    "incompleteInGroup": "Peatus ajapiirangu tõttu pärast {{compared, number}} paari võrdlemist {{total, number}}-st, tõenäolisemad enne. Ülejäänute seas võib olla sarnane paar.",
-    "incomplete": "Peatus ajapiirangu tõttu pärast {{compared, number}} paari võrdlemist {{total, number}}-st, tõenäolisemad enne. Ülejäänute seas võib olla sarnane paar: kõigi võrdlemiseks vali rühm.",
+    "incompleteInGroup": "Peatus ajapiirangu tõttu pärast {{compared, number}} paari võrdlemist {{total, number}}-st ({{share}}%), tõenäolisemad enne. Ülejäänute seas võib olla sarnane paar.",
+    "incomplete": "Peatus ajapiirangu tõttu pärast {{compared, number}} paari võrdlemist {{total, number}}-st ({{share}}%), tõenäolisemad enne. Ülejäänute seas võib olla sarnane paar: kõigi võrdlemiseks vali rühm.",
     "ruledOut": "Võrreldi {{compared, number}} paari {{total, number}}-st: ülejäänud ei saanud olla kõige sarnasemate seas.",
     "minScoreName": "Väikseim näidatav skoor",
     "orderName": "Paaride järjekord",
@@ -774,7 +773,15 @@
     "settingsAutomaticNow": "Praegu tähendab Automaatne keele {{language}} jaoks: {{provider}}.",
     "settingsAutomaticNowText": "Praegu tähendab Automaatne keele {{language}} jaoks: {{provider}}, tavalise tekstina.",
     "estimateNotCompared_one": "{{count, number}} jääb võrdlemata: tühi või selle meetodi jaoks liiga pikk või lühike.",
-    "estimateNotCompared_other": "{{count, number}} jääb võrdlemata: tühjad või selle meetodi jaoks liiga pikad või lühikesed."
+    "estimateNotCompared_other": "{{count, number}} jääb võrdlemata: tühjad või selle meetodi jaoks liiga pikad või lühikesed.",
+    "progressName": "Võrdluse edenemine",
+    "progressPreparing": "Loen lahendusi… {{elapsed}} (kõige rohkem {{budget}})",
+    "progressComparing": "Võrreldud {{done, number}} paari {{total, number}}-st · {{elapsed}} (kõige rohkem {{budget}})",
+    "progressWaiting": "Võrdlen… {{elapsed}} (kõige rohkem {{budget}})",
+    "progressElapsed": "Võrdlen… {{elapsed}}",
+    "estimatePartial_one": "{{submissions, number}} esitust, {{count, number}} võrreldav paar, tõenäolisemad enne: kontroll lõpeb {{budget}} järel, umbes {{share}}% neist võrrelduna.",
+    "estimatePartial_other": "{{submissions, number}} esitust, {{count, number}} võrreldavat paari, tõenäolisemad enne: kontroll lõpeb {{budget}} järel, umbes {{share}}% neist võrrelduna.",
+    "everyPairWouldTake": "Kõigi paaride võrdlemine võtaks umbes {{duration}}."
   },
   "about": {
     "s1": "Lahenduse keskkonda haldab ja arendab",
