@@ -35,7 +35,7 @@
 
 # --- dev ---------------------------------------------------------------------------------------
 
-dev.silmused: "nuubis"
+dev.silmused: "marttikakk"
 dev.tiivad: "emuuli KarmoSaviauk"
 
 # Deliberately nobody. pygrader is pinned to a commit in an unreviewed upstream tree rather than to a
@@ -78,7 +78,7 @@ dev.imgrec: ""
 # production-specific one: pygrader is pinned to a commit in an unreviewed upstream tree rather than
 # a release, and nothing in imgrec has ever been bumped.
 
-prod.silmused: "nuubis"
+prod.silmused: "marttikakk"
 prod.tiivad: ""
 prod.pygrader: ""
 prod.imgrec: ""
