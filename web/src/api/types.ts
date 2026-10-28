@@ -707,10 +707,17 @@ export interface SimilarityResp {
   /** `full` or `optimised`: the course's setting, or the default. */
   mode?: string
   /**
-   * Why the comparison did not run as asked, or null when it did: `PINNED_UNAVAILABLE` (the course's
-   * pinned provider may not compare this language now) or `LANGUAGE_UNAVAILABLE` (compared as text).
+   * Why the comparison did not run as asked, or null when it did: `PINNED_UNAVAILABLE` (the provider the
+   * exercise or course pinned may not compare this language now) or `LANGUAGE_UNAVAILABLE` (compared as text).
    */
   provider_fallback?: string | null
+  /**
+   * The provider the exercise's or the course's settings chose, whether or not it ran - null for the
+   * admin's order - and where that choice came from: `exercise`, `course` or `default`. Absent from an
+   * older core, which said only that "the method chosen" had not run.
+   */
+  pinned_provider?: string | null
+  provider_from?: string
   /**
    * Whether `scores[].matches` says where each pair matches. True, an empty list means the pair shares
    * nothing; false (edit distance), matches are never sent and the page finds the shared code itself.
@@ -765,6 +772,8 @@ export interface SimilarityEstimateResp {
   attempts_from?: string
   /** Submissions in no pair - blank, or a size the provider does not compare. Absent from an older core. */
   not_compared?: number
+  /** As on the check: the provider the settings chose, whether or not it would run. Absent from an older core. */
+  pinned_provider?: string | null
 }
 
 /**

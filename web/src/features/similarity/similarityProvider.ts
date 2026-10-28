@@ -92,7 +92,8 @@ export type ResultNote = 'pinnedUnavailable' | 'languageUnavailable' | 'language
 /**
  * The notes owed above the pairs, in the order shown.
  *
- * - The course pinned a provider that may not compare this language now, and another one did.
+ * - The exercise or course pinned a provider that may not compare this language now, and another one did:
+ *   see [passedOver] for what it says.
  * - No provider may compare it, so it was compared as text - said once, as that, rather than also as
  *   the generic "compared as plain text" note, which guesses at a cause this one names.
  * - Otherwise, what the language the tokens were read as means for the score; only for a provider that
@@ -110,6 +111,44 @@ export function resultNotes(result: Pick<SimilarityResp, 'provider' | 'provider_
   if (language === 'text') notes.push('languageText')
   if (language === 'sql') notes.push('languageSql')
   return notes
+}
+
+/**
+ * A pinned provider passed over: which one was chosen, whose choice it was, and which compared instead and
+ * in what language - from the estimate before Find or the result after it, which say it alike. A teacher
+ * who pinned JPlag on an SQL exercise, where JPlag's SQL is off until an admin switches it on, read edit
+ * distance's text similarities as JPlag's: the note named neither method nor language, sat under three
+ * other lines, and said "this course" of a choice made for the exercise.
+ */
+export interface PassedOver {
+  /** Null from a core older than `pinned_provider`, which says only that the choice did not hold. */
+  pinned: string | null
+  provider: string
+  language: string
+  /** Whose choice it was; null where core does not say. */
+  from: 'exercise' | 'course' | null
+}
+
+export function passedOver(
+  answer: Partial<Pick<SimilarityResp, 'provider' | 'provider_fallback' | 'language' | 'pinned_provider' | 'provider_from'>> | undefined,
+): PassedOver | null {
+  if (answer?.provider_fallback !== 'PINNED_UNAVAILABLE' || !answer.provider) return null
+  const from = answer.provider_from
+  return {
+    pinned: answer.pinned_provider ?? null,
+    provider: answer.provider,
+    language: answer.language ?? '',
+    from: from === 'exercise' || from === 'course' ? from : null,
+  }
+}
+
+/** [over] as a sentence: by name where core says what was pinned, in the old words where it does not. */
+export function passedOverText(over: PassedOver, t: TFunction): string {
+  if (over.pinned === null || !over.language) return t('similarity.pinnedUnavailable')
+  const args = { pinned: providerName(over.pinned, t), language: languageName(over.language, t), provider: providerName(over.provider, t) }
+  return over.from === 'exercise'
+    ? t('similarity.pinnedPassedOverExercise', args)
+    : t('similarity.pinnedPassedOverCourse', args)
 }
 
 /**

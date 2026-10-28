@@ -17,8 +17,8 @@ import { expect, test, describe } from 'vitest'
 import { isSimilarityRefusal } from '../../src/features/similarity/similarityError.ts'
 import { emptyReason, hasUnreadableScores } from '../../src/features/similarity/similarityEmptyState.ts'
 import { matchEntries, matchedLineNumbers, sideChunks, unchangedLineNumbers, unchangedSpans } from '../../src/features/similarity/similarityHighlight.ts'
-import { capped, cappedNote, comparedBy, coverage, forReference, orderPairs, pairMetrics, providerName, ranksBySharedCode, resultNotes, rowMetrics, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
-import { attemptNote, comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
+import { capped, cappedNote, comparedBy, coverage, forReference, orderPairs, pairMetrics, passedOver, passedOverText, providerName, ranksBySharedCode, resultNotes, rowMetrics, usesMatchRanges } from '../../src/features/similarity/similarityProvider.ts'
+import { attemptNote, comparesFirstAttempts, estimateMethod, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings } from '../../src/features/similarity/similarityEstimate.ts'
 import { Chunk } from '@codemirror/merge'
 import { Text } from '@codemirror/state'
 import { skippedByReason } from '../../src/features/similarity/similaritySkipped.ts'
@@ -631,5 +631,41 @@ describe('the cap notice', () => {
   test('says nothing where nothing was cut, or the run stopped at the time limit', () => {
     expect(cappedNote({ ...jplag, truncated: false, complete: true })).toBeNull()
     expect(cappedNote({ ...editDistance, truncated: true, complete: false })).toBeNull()
+  })
+})
+
+describe('a pinned method passed over', () => {
+  const t = (key, options) => (options ? `${key} ${JSON.stringify(options)}` : key)
+  // JPlag pinned on an SQL exercise while JPlag's SQL was off: edit distance compared it.
+  const answer = { provider: 'edit-distance', provider_fallback: 'PINNED_UNAVAILABLE', language: 'sql', pinned_provider: 'jplag', provider_from: 'exercise' }
+
+  test('names what was pinned, whose choice it was, the language and what compared instead', () => {
+    expect(passedOver(answer)).toEqual({ pinned: 'jplag', provider: 'edit-distance', language: 'sql', from: 'exercise' })
+    expect(passedOverText(passedOver(answer), t)).toBe(
+      'similarity.pinnedPassedOverExercise {"pinned":"similarity.providerJplag","language":"SQL","provider":"similarity.providerEditDistance"}')
+  })
+
+  test("a course's pin is said to be the course's, not the exercise's", () => {
+    expect(passedOverText(passedOver({ ...answer, provider_from: 'course' }), t).startsWith('similarity.pinnedPassedOverCourse ')).toBe(true)
+  })
+
+  test('a pin that held, or none, is not passed over', () => {
+    expect(passedOver({ ...answer, provider_fallback: null })).toBeNull()
+    expect(passedOver({ ...answer, provider_fallback: 'LANGUAGE_UNAVAILABLE' })).toBeNull()
+    expect(passedOver(undefined)).toBeNull()
+  })
+
+  test('an older core, which does not say what was pinned, gets the old words rather than a name made up', () => {
+    const older = { provider: 'edit-distance', provider_fallback: 'PINNED_UNAVAILABLE', language: 'sql' }
+    expect(passedOver(older)).toEqual({ pinned: null, provider: 'edit-distance', language: 'sql', from: null })
+    expect(passedOverText(passedOver(older), t)).toBe('similarity.pinnedUnavailable')
+  })
+
+  test('the method a check would use is said before Find, and as plain text where it would be', () => {
+    expect(estimateMethod({ provider: 'jplag', provider_fallback: null })).toEqual({ provider: 'jplag', asText: false })
+    expect(estimateMethod({ provider: 'jplag', provider_fallback: 'LANGUAGE_UNAVAILABLE' })).toEqual({ provider: 'jplag', asText: true })
+    expect(estimateMethod({ provider: 'edit-distance', provider_fallback: 'PINNED_UNAVAILABLE' })).toEqual({ provider: 'edit-distance', asText: false })
+    expect(estimateMethod(undefined)).toBeNull()
+    expect(estimateMethod({ submissions: 3 })).toBeNull()
   })
 })

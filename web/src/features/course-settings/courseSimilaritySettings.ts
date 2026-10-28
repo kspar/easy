@@ -44,17 +44,48 @@ export function providerChoices(settings: CourseSimilaritySettings, pinned: stri
 }
 
 /**
- * What Automatic means for [language] now: the first provider in the admin's order that compares it, or
- * failing that one that compares plain text, which is what the check then does. Said beside "Automatic",
- * which named no method at all: the teacher could not tell what they would be choosing. Null when no
- * provider would compare it, or the language is not known yet.
+ * Which provider a check would compare [language] with, [pinned] chosen, as core binds it
+ * (SimilarityRegistry.bind): the pin where it may compare the language; else the first in the admin's order
+ * that may; failing every one, plain text - by the pin where it may compare text, else by the first that
+ * may. Null when none would, or the language is not known yet.
+ */
+export function comparedWith(
+  settings: CourseSimilaritySettings,
+  language: string | undefined,
+  pinned: string | null,
+): { provider: string; asText: boolean } | null {
+  if (!language) return null
+  const pin = pinned === null ? undefined : settings.providers.find((p) => p.id === pinned && p.languages.includes(language))
+  const own = pin ?? settings.providers.find((p) => p.languages.includes(language))
+  if (own) return { provider: own.id, asText: false }
+  if (language === 'text') return null
+  const text = settings.providers.filter((p) => p.languages.includes('text'))
+  const chosen = text.find((p) => p.id === pinned) ?? text[0]
+  return chosen ? { provider: chosen.id, asText: true } : null
+}
+
+/**
+ * What Automatic means for [language] now: [comparedWith] with nothing pinned. Said beside "Automatic",
+ * which named no method at all: the teacher could not tell what they would be choosing.
  */
 export function automaticFor(settings: CourseSimilaritySettings, language: string | undefined): { provider: string; asText: boolean } | null {
-  if (!language) return null
-  const own = settings.providers.find((p) => p.languages.includes(language))
-  if (own) return { provider: own.id, asText: false }
-  const text = settings.providers.find((p) => p.languages.includes('text'))
-  return text ? { provider: text.id, asText: true } : null
+  return comparedWith(settings, language, null)
+}
+
+/**
+ * What choosing [pinned] would come to for [language] where it is not [pinned] comparing [language] - the
+ * provider that would compare it instead, and whether as text - or null where the pin would hold. Said under
+ * the choice: JPlag chosen for an SQL exercise, while JPlag's SQL was off, saved without a word, and the next
+ * check ran edit distance under it.
+ */
+export function pinPassedOver(
+  settings: CourseSimilaritySettings,
+  language: string | undefined,
+  pinned: string,
+): { provider: string; asText: boolean } | null {
+  const compared = comparedWith(settings, language, pinned)
+  if (compared === null) return null
+  return compared.provider === pinned && !compared.asText ? null : compared
 }
 
 /** What the dialog opens on: the stored pin, switched off or not - it is still what is stored. */

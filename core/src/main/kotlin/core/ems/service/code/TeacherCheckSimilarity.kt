@@ -139,8 +139,8 @@ class TeacherCheckSimilarityController(
         /** `full` or `optimised`: the course's setting, or the default. */
         @get:JsonProperty("mode") val mode: String,
         /**
-         * Why the comparison did not run as asked, or null when it did: `PINNED_UNAVAILABLE` (the course's
-         * pinned provider may not compare this language now) or `LANGUAGE_UNAVAILABLE` (no provider may,
+         * Why the comparison did not run as asked, or null when it did: `PINNED_UNAVAILABLE` (the provider
+         * the exercise or course pinned, [pinnedProvider], may not compare this language now) or `LANGUAGE_UNAVAILABLE` (no provider may,
          * so it was compared as text).
          */
         @get:JsonProperty("provider_fallback") val providerFallback: String?,
@@ -162,6 +162,13 @@ class TeacherCheckSimilarityController(
          * request named the submissions themselves.
          */
         @get:JsonProperty("attempts") val attempts: String,
+        /**
+         * The provider the exercise's or the course's settings chose, whether or not it ran; null for the
+         * admin's order. With `PINNED_UNAVAILABLE`, the one passed over, so the page can name it.
+         */
+        @get:JsonProperty("pinned_provider") val pinnedProvider: String?,
+        /** Where the provider choice came from - `exercise`, `course` or `default` - as on the estimate. */
+        @get:JsonProperty("provider_from") val providerFrom: String,
     )
 
     data class RespGroup(
@@ -369,6 +376,8 @@ class TeacherCheckSimilarityController(
             outcome.pairsCompared,
             outcome.complete,
             resolved.attemptsName,
+            resolved.pinned,
+            resolved.providerFrom.name.lowercase(),
         )
     }
 

@@ -62,12 +62,24 @@ import {
   forReference,
   orderPairs,
   pairMetrics,
+  passedOver,
+  passedOverText,
+  providerName,
   ranksBySharedCode,
   resultNotes,
   rowMetrics,
   usesMatchRanges,
 } from './similarityProvider.ts'
-import { attemptNote, comparesFirstAttempts, estimateRefusal, estimateView, formatClock, formatDuration, ownSettings } from './similarityEstimate.ts'
+import {
+  attemptNote,
+  comparesFirstAttempts,
+  estimateMethod,
+  estimateRefusal,
+  estimateView,
+  formatClock,
+  formatDuration,
+  ownSettings,
+} from './similarityEstimate.ts'
 import { hiddenIn, hidesAnything } from './similarityHidden.ts'
 import { similarityRequest } from './similarityRequest.ts'
 import type { PairOrder, ResultNote } from './similarityProvider.ts'
@@ -151,6 +163,8 @@ export default function SimilarityPage() {
   const estimate = estimateView(estimateData)
   // A refusal the check would give too: said now, with Find off, rather than after the click.
   const refusedAhead = estimateRefusal(estimateError) !== null
+  const method = estimateMethod(estimateData)
+  const passedBefore = passedOver(estimateData)
 
   const check = useCheckSimilarity(exerciseId || undefined)
   // What the last run was over, taken when it was asked for. The result belongs to that selection and
@@ -288,8 +302,10 @@ export default function SimilarityPage() {
   // Switches of literal keys, like skippedLabel, so the i18n test can see every one.
   const noteText = (note: ResultNote) => {
     switch (note) {
-      case 'pinnedUnavailable':
-        return t('similarity.pinnedUnavailable')
+      case 'pinnedUnavailable': {
+        const over = passedOver(result)
+        return over ? passedOverText(over, t) : t('similarity.pinnedUnavailable')
+      }
       case 'languageUnavailable':
         return t('similarity.languageUnavailable')
       case 'languageText':
@@ -481,6 +497,13 @@ export default function SimilarityPage() {
           {estimate.kind !== 'unknown' && estimate.notCompared > 0 && (
             <Box component="span" sx={{ display: 'block' }}>{t('similarity.estimateNotCompared', { count: estimate.notCompared })}</Box>
           )}
+          {method && (
+            <Box component="span" sx={{ display: 'block' }}>
+              {method.asText
+                ? t('similarity.estimateMethodText', { provider: providerName(method.provider, t) })
+                : t('similarity.estimateMethod', { provider: providerName(method.provider, t) })}
+            </Box>
+          )}
           {/* A line of their own: run on after the count, "at most 2 min This exercise has…" read as one
               sentence with its full stop missing. */}
           {comparesFirstAttempts(estimateData) && <Box component="span" sx={{ display: 'block' }}>{t('similarity.firstAttemptsNote')}</Box>}
@@ -494,6 +517,12 @@ export default function SimilarityPage() {
 
       {refusedAhead && (
         <Alert severity="warning" sx={{ mb: 2 }}>{errorMessage(estimateError, t)}</Alert>
+      )}
+
+      {/* The method chosen will not be the one to compare: said before Find, where it can still be changed,
+          and once - over a result, that result's own note says it. */}
+      {selected && !result && passedBefore && (
+        <Alert severity="warning" sx={{ mb: 2 }}>{passedOverText(passedBefore, t)}</Alert>
       )}
 
       {/* A failed load is said as one: empty, it read as "fewer than two submissions" and disabled Find. */}
@@ -595,6 +624,18 @@ export default function SimilarityPage() {
             </Typography>
           )}
 
+          {/* With the line above, which they qualify: the pinned provider passed over, or the language
+              compared as text; otherwise which tokeniser ran. Under the coverage and cap lines, the
+              method a teacher had chosen not running was the fourth thing said and the easiest missed. A
+              text-mode result is a weaker answer than a token one, and saying so is the difference
+              between "nothing similar" and "we could not read this as code"; an SQL one reads
+              differently, and says how. resultNotes says which applies when. */}
+          {resultNotes(result).map((note) => (
+            <Alert key={note} severity={note === 'languageSql' ? 'info' : 'warning'} sx={{ mb: 2 }}>
+              {noteText(note)}
+            </Alert>
+          ))}
+
           {/* Not every pair was compared: stopped at the time limit, or ruled out as unable to rank. */}
           {covered?.kind === 'incomplete' && (
             <Alert severity="warning" sx={{ mb: 2 }}>
@@ -623,16 +664,6 @@ export default function SimilarityPage() {
                 : t('similarity.cappedByScore', { limit: MAX_PAIRS })}
             </Typography>
           )}
-
-          {/* The course's pinned provider passed over, or the language compared as text; otherwise
-              which tokeniser ran. A text-mode result is a weaker answer than a token one, and saying
-              so is the difference between "nothing similar" and "we could not read this as code";
-              an SQL one reads differently, and says how. resultNotes says which applies when. */}
-          {resultNotes(result).map((note) => (
-            <Alert key={note} severity={note === 'languageSql' || note === 'pinnedUnavailable' ? 'info' : 'warning'} sx={{ mb: 2 }}>
-              {noteText(note)}
-            </Alert>
-          ))}
 
           {/* JPlag drops what it cannot parse or what is too short. Silently comparing 4 of 40 and
               reporting "no similar pairs" would read as a clean result, which is the one thing it

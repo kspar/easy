@@ -50,7 +50,7 @@ test('similarity-page', async ({ launch, check }) => {
       const n = body?.students?.length ?? 0
       return {
         submissions: n, pairs: (n * (n - 1)) / 2, provider, language: 'python', mode: 'full',
-        provider_fallback: null, budget_sec: 120, not_compared: 0,
+        provider_fallback: null, budget_sec: 120, not_compared: 0, pinned_provider: null,
       }
     }],
 
@@ -91,6 +91,7 @@ test('similarity-page', async ({ launch, check }) => {
         mode: 'full',
         // The course pinned JPlag; this stands for a check JPlag could not take.
         provider_fallback: 'PINNED_UNAVAILABLE',
+        pinned_provider: 'jplag', provider_from: 'course',
         match_ranges: false,
         pairs_total: 1, pairs_compared: 1, complete: true,
       }
@@ -112,6 +113,7 @@ test('similarity-page', async ({ launch, check }) => {
         provider: 'jplag',
         mode: 'full',
         provider_fallback: null,
+        pinned_provider: null, provider_from: 'default',
         match_ranges: true,
         pairs_total: 3, pairs_compared: 3, complete: true,
       }
@@ -164,6 +166,10 @@ test('similarity-page', async ({ launch, check }) => {
   check(
     'and the longest the wait can be, and how a check of every pair ends if it runs out, before anybody waits',
     await waitUntil(() => page.getByText('3 submissions, 3 pairs to compare · at most 2 min; stopped early, without results, if it cannot compare them all').isVisible()),
+  )
+  check(
+    'and which method will compare them: nothing before Find named it',
+    await waitUntil(() => page.getByText('Method: JPlag.', { exact: true }).isVisible()),
   )
 
   await shot('01-ready')
@@ -404,8 +410,8 @@ test('similarity-page', async ({ launch, check }) => {
       (await page.getByText('Text similarity 64%').isVisible()) && (await page.getByText('Shared text 81%').count()) === 0),
   )
   check(
-    'a pinned provider passed over is said rather than shown as the course\'s choice',
-    await page.getByText(/^The method chosen for this course cannot compare/).isVisible(),
+    'a pinned provider passed over is said by name, with the language and what compared instead',
+    await page.getByText(/^JPlag, chosen for this course, does not compare Python here now\. Compared instead by: Edit distance\./).isVisible(),
   )
   check(
     'and the JPlag reading of renamed code is not claimed for edit distance',

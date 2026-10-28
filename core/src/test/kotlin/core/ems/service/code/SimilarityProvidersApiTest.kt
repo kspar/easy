@@ -2,6 +2,7 @@ package core.ems.service.code
 
 import core.conf.security.EasyRole
 import core.db.CourseSimilaritySettings
+import core.db.ExerciseVer
 import core.db.SimilarityLanguageSetting
 import core.db.SimilarityProviderSetting
 import core.ems.service.code.similarity.SimilarityLanguage
@@ -13,9 +14,11 @@ import core.testing.Fixtures
 import core.testing.HttpApi
 import core.testing.IntegrationTest
 import core.testing.TestClock
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteAll
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -101,6 +104,9 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         assertEquals(1, json.get("pairs_total").asInt())
         assertEquals(1, json.get("pairs_compared").asInt())
         assertTrue(json.get("complete").asBoolean())
+        // Nothing pinned, and said so: the admin's order, by default.
+        assertTrue(json.get("pinned_provider").isNull)
+        assertEquals("default", json.get("provider_from").asString())
     }
 
     @Test
@@ -219,6 +225,9 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         val response = check()
         assertEquals("edit-distance", response.field("provider"))
         assertEquals("PINNED_UNAVAILABLE", response.field("provider_fallback"))
+        // Named, and whose it was, so the page can say which choice did not hold.
+        assertEquals("jplag", response.field("pinned_provider"))
+        assertEquals("course", response.field("provider_from"))
         // And it cannot be pinned again while off.
         assertEquals(400, putSettings("jplag").status)
     }
@@ -340,6 +349,36 @@ class SimilarityProvidersApiTest(@Autowired mockMvc: MockMvc) {
         val listed = exerciseOverrides().single()
         assertEquals(courseExercise.toString(), listed.get("course_exercise_id").asString())
         assertEquals("edit-distance", listed.get("provider").asString())
+    }
+
+    @Test
+    fun `a method pinned on an exercise in a language it may not compare is named beside the one that compared it`() {
+        // As a teacher met it: JPlag pinned on an SQL exercise, where JPlag's SQL is experimental and so off
+        // until an admin switches it on. Edit distance compared it, and the page could say only that "the
+        // method chosen for this course" had not run - while the list was sorted by text similarity under a
+        // pin that read as JPlag. Both answers name what was pinned, and where.
+        transaction { ExerciseVer.update({ ExerciseVer.exercise eq exercise }) { it[ExerciseVer.solutionFileName] = "query.sql" } }
+        assertEquals(200, putExercise(ownProvider = true, provider = "jplag", mode = null).status)
+        estimate().let {
+            assertEquals("edit-distance", it.get("provider").asString())
+            assertEquals("sql", it.get("language").asString())
+            assertEquals("PINNED_UNAVAILABLE", it.get("provider_fallback").asString())
+            assertEquals("jplag", it.get("pinned_provider").asString())
+            assertEquals("exercise", it.get("provider_from").asString())
+        }
+        val passedOver = check()
+        assertEquals(200, passedOver.status, passedOver.toString())
+        assertEquals("edit-distance", passedOver.field("provider"))
+        assertEquals("PINNED_UNAVAILABLE", passedOver.field("provider_fallback"))
+        assertEquals("jplag", passedOver.field("pinned_provider"))
+        assertEquals("exercise", passedOver.field("provider_from"))
+
+        // Its SQL switched on, the pin holds, and is named still - now as what ran.
+        assertEquals(200, putProvider("jplag", enabled = true, priority = 50, languages = listOf("sql" to true)).status)
+        val held = check()
+        assertEquals("jplag", held.field("provider"))
+        assertTrue(held.jsonOrNull!!.get("provider_fallback").isNull)
+        assertEquals("jplag", held.field("pinned_provider"))
     }
 
     @Test

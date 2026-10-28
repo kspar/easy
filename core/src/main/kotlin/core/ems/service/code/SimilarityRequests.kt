@@ -64,6 +64,13 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
          */
         val attempts: SimilarityAttempts? = SimilarityAttempts.LATEST,
         val attemptsFrom: SettingsSource = SettingsSource.DEFAULT,
+        /**
+         * The provider the exercise's or the course's settings chose, whether or not [binding] could keep to
+         * it; null for the admin's order. Said beside a pin passed over: without it the page could only say
+         * that "the method chosen" had not run, and a teacher who had chosen JPlag for an SQL exercise read
+         * edit distance's text similarities as JPlag's.
+         */
+        val pinned: String? = null,
     ) {
         /** [attempts] on the wire: `latest`, `first`, or `named` for submissions the request named. */
         val attemptsName: String get() = attempts?.name?.lowercase() ?: "named"
@@ -173,6 +180,7 @@ class SimilarityRequests(private val similarityService: SimilarityService) {
                 courseSettings != null -> SettingsSource.COURSE
                 else -> SettingsSource.DEFAULT
             },
+            pinned = pinned,
         )
     }
 

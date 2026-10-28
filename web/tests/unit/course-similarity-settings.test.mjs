@@ -22,6 +22,7 @@ import {
   initialAttempts,
   initialChoice,
   initialMode,
+  pinPassedOver,
   providerChoices,
   settingsRequest,
 } from '../../src/features/course-settings/courseSimilaritySettings.ts'
@@ -151,5 +152,41 @@ describe('what Automatic means now', () => {
     expect(automaticFor({ ...settings, providers: [] }, 'python')).toBeNull()
     // Before the estimate has said which language: nothing to say yet.
     expect(automaticFor(settings, undefined)).toBeNull()
+  })
+})
+
+describe('a pin that would not hold', () => {
+  // JPlag first in the admin's order, its SQL off - experimental, as it ships.
+  const settings = { provider: null, mode: 'optimised', providers: [
+    { id: 'jplag', languages: ['java', 'python', 'text'] },
+    { id: 'edit-distance', languages: ['java', 'python', 'sql', 'text'] },
+  ] }
+
+  test('JPlag chosen for an SQL exercise, while its SQL is off, is said to come to edit distance', () => {
+    // Saved without a word, and the next check sorted by edit distance's text similarity under it.
+    expect(pinPassedOver(settings, 'sql', 'jplag')).toEqual({ provider: 'edit-distance', asText: false })
+  })
+
+  test('a pin that may compare the language holds, and says nothing', () => {
+    expect(pinPassedOver(settings, 'python', 'jplag')).toBeNull()
+    // Last in the admin's order, and still the one that compares: a pin comes before the order.
+    expect(pinPassedOver(settings, 'python', 'edit-distance')).toBeNull()
+    expect(pinPassedOver(settings, 'sql', 'edit-distance')).toBeNull()
+  })
+
+  test('where nobody compares the language, the pin compares it as text if it may, and that is said too', () => {
+    const noSql = { ...settings, providers: [
+      { id: 'edit-distance', languages: ['java', 'python', 'text'] },
+      { id: 'jplag', languages: ['java', 'python', 'text'] },
+    ] }
+    // As core binds it: the pin is preferred for text, over the first in the order.
+    expect(pinPassedOver(noSql, 'sql', 'jplag')).toEqual({ provider: 'jplag', asText: true })
+    const jplagNoText = { ...noSql, providers: [noSql.providers[0], { id: 'jplag', languages: ['java', 'python'] }] }
+    expect(pinPassedOver(jplagNoText, 'sql', 'jplag')).toEqual({ provider: 'edit-distance', asText: true })
+  })
+
+  test('nothing to say before the language is known, or where no method would compare it at all', () => {
+    expect(pinPassedOver(settings, undefined, 'jplag')).toBeNull()
+    expect(pinPassedOver({ ...settings, providers: [] }, 'sql', 'jplag')).toBeNull()
   })
 })

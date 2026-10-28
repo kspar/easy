@@ -53,6 +53,8 @@ class TeacherEstimateSimilarityController(
         @get:JsonProperty("attempts_from") val attemptsFrom: String,
         /** Submissions in no pair: blank, or too long or short for the provider. Said with the count, which leaves them out. */
         @get:JsonProperty("not_compared") val notCompared: Int,
+        /** As on the check: the provider the settings chose, whether or not it would run; null for the admin's order. */
+        @get:JsonProperty("pinned_provider") val pinnedProvider: String?,
     )
 
     @Secured("ROLE_TEACHER", "ROLE_ADMIN")
@@ -84,6 +86,7 @@ class TeacherEstimateSimilarityController(
             resolved.attemptsName,
             resolved.attemptsFrom.name.lowercase(),
             cohort.notCompared,
+            resolved.pinned,
         )
     }
 }

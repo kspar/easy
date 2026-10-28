@@ -78,6 +78,16 @@ export function ownSettings(estimate: Partial<SimilarityEstimateResp> | undefine
   return own === sources.filter((from) => from !== undefined).length ? 'all' : 'some'
 }
 
+/**
+ * The method the check would compare with, said with the count before Find, where nothing named it: a
+ * teacher learned which had run only from the result, and a pin passed over only below it. `asText` where
+ * no method may compare the language, so it would be compared as plain text. Null from an answer with none.
+ */
+export function estimateMethod(estimate: Partial<SimilarityEstimateResp> | undefined): { provider: string; asText: boolean } | null {
+  if (!estimate?.provider) return null
+  return { provider: estimate.provider, asText: estimate.provider_fallback === 'LANGUAGE_UNAVAILABLE' }
+}
+
 /** Refusals the check would give as well, which the estimate already knows: said before Find, not after. */
 const REFUSALS = new Set(['TOO_MANY_SUBMISSIONS', 'SIMILARITY_UNAVAILABLE'])
 

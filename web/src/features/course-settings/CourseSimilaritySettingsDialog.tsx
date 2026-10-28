@@ -39,6 +39,7 @@ import {
   initialAttempts,
   initialChoice,
   initialMode,
+  pinPassedOver,
   providerChoices,
   settingsRequest,
 } from './courseSimilaritySettings.ts'
@@ -214,6 +215,9 @@ export default function CourseSimilaritySettingsDialog({
                 const help = fromCourse
                   ? (settings.provider === null ? t('similarity.settingsAutomatic') : providerName(settings.provider, t))
                   : automatic ? t('similarity.settingsAutomaticHelp') : providerHelp(c.value, t)
+                // What this choice would come to for the selected exercise, where it is not itself: see pinPassedOver.
+                const pin = fromCourse ? settings.provider : automatic || !c.available ? null : c.value
+                const instead = pin === null ? null : pinPassedOver(settings, language, pin)
                 return (
                   <FormControlLabel
                     key={c.value}
@@ -243,6 +247,13 @@ export default function CourseSimilaritySettingsDialog({
                         {c.languages.length > 0 && (
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                             {t('similarity.settingsLanguages', { languages: c.languages.map((l) => languageName(l, t)).join(', ') })}
+                          </Typography>
+                        )}
+                        {instead && language && (
+                          <Typography variant="caption" color="warning.main" sx={{ display: 'block' }}>
+                            {instead.asText
+                              ? t('similarity.settingsPassedOverText', { language: languageName(language, t), provider: providerName(instead.provider, t) })
+                              : t('similarity.settingsPassedOver', { language: languageName(language, t), provider: providerName(instead.provider, t) })}
                           </Typography>
                         )}
                         {/* Still stored, and still passed over on every check: said here, where the
