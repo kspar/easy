@@ -25,7 +25,7 @@ import pins  # noqa: E402
 ENVIRONMENTS = ("dev", "prod")
 
 ALLOW = {
-    "dev.silmused": ["nuubis"],
+    "dev.silmused": ["marttikakk"],
     "dev.tiivad": ["KarmoSaviauk"],
     "dev.pygrader": [],
     "prod.silmused": [],
@@ -215,7 +215,7 @@ def test_digest_is_insensitive_to_pin_ordering():
 def _validate(**kw):
     kw.setdefault("filenames", ["doc/aae/pins/dev.yml"])
     kw.setdefault("patch", bump())
-    kw.setdefault("author", "nuubis")
+    kw.setdefault("author", "marttikakk")
     kw.setdefault("allowlist", ALLOW)
     return pins.validate_change(**kw)
 
@@ -315,25 +315,25 @@ def test_refuses_an_unknown_author():
 
 
 def test_refuses_a_dev_author_on_the_production_file():
-    # nuubis may bump silmused on dev. That must not carry to production.
+    # marttikakk may bump silmused on dev. That must not carry to production.
     with pytest.raises(pins.PinsError, match="nobody is currently allowed"):
-        _validate(filenames=["doc/aae/pins/prod.yml"], author="nuubis")
+        _validate(filenames=["doc/aae/pins/prod.yml"], author="marttikakk")
 
 
 def test_refuses_an_author_permitted_for_another_image():
     with pytest.raises(pins.PinsError, match="not allowed"):
-        _validate(patch=bump("tiivad.TIIVAD_VERSION", "0.0.33", "0.0.34"), author="nuubis")
+        _validate(patch=bump("tiivad.TIIVAD_VERSION", "0.0.33", "0.0.34"), author="marttikakk")
 
 
 def test_refuses_everyone_when_the_list_is_empty():
     with pytest.raises(pins.PinsError, match="nobody is currently allowed"):
-        _validate(patch=bump("pygrader.NUMPY_SPEC", "1.23.4", "1.23.5"), author="nuubis")
+        _validate(patch=bump("pygrader.NUMPY_SPEC", "1.23.4", "1.23.5"), author="marttikakk")
 
 
 def test_refuses_an_image_absent_from_the_allowlist():
     # A typo in the allowlist must fail closed, not open.
     with pytest.raises(pins.PinsError, match="nobody is currently allowed"):
-        _validate(patch=bump("imgrec.PILLOW_VERSION", "12.3.0", "12.4.0"), author="nuubis")
+        _validate(patch=bump("imgrec.PILLOW_VERSION", "12.3.0", "12.4.0"), author="marttikakk")
 
 
 def test_the_real_allowlist_grants_silmused_on_production_and_tiivad_only_on_dev():
@@ -346,8 +346,8 @@ def test_the_real_allowlist_grants_silmused_on_production_and_tiivad_only_on_dev
     """
     allow = pins.load_allowlist()
 
-    assert allow["dev.silmused"] == ["nuubis"]
-    assert allow["prod.silmused"] == ["nuubis"]
+    assert allow["dev.silmused"] == ["marttikakk"]
+    assert allow["prod.silmused"] == ["marttikakk"]
 
     # More than one login on a line has to keep working — tiivad has two maintainers on dev.
     assert allow["dev.tiivad"] == ["emuuli", "KarmoSaviauk"]
@@ -364,7 +364,7 @@ def test_the_real_allowlist_grants_silmused_on_production_and_tiivad_only_on_dev
 # Deciding a whole pull request, which is what the merge bot actually calls
 
 
-def pr_payload(author="nuubis", base="master", draft=False, labels=(), number=70):
+def pr_payload(author="marttikakk", base="master", draft=False, labels=(), number=70):
     return {
         "number": number,
         "draft": draft,
@@ -646,7 +646,7 @@ def test_cli_validate_patch_reads_the_github_files_payload(tmp_path):
     payload = [{"filename": "doc/aae/pins/dev.yml", "patch": bump()}]
     f = tmp_path / "files.json"
     f.write_text(json.dumps(payload))
-    out = _cli("validate-patch", str(f), "--author", "nuubis")
+    out = _cli("validate-patch", str(f), "--author", "marttikakk")
     assert out.returncode == 0, out.stderr
     assert "1.7.11 -> 1.7.12" in out.stdout
 
