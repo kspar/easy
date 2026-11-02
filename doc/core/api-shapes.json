@@ -43,6 +43,7 @@
     "GET /v2/management/common/notifications": { "response": "core.ems.service.management.CommonReadManagementNotificationsController.Resp" },
     "GET /v2/management/notifications": { "response": "core.ems.service.management.AdminReadManagementNotificationsController.Resp" },
     "GET /v2/resource/{key}/{filename}": {  },
+    "GET /v2/similarity/progress": { "response": "core.ems.service.code.TeacherReadSimilarityProgressController.Resp" },
     "GET /v2/snippets": { "response": "core.ems.service.snippet.TeacherReadFeedbackSnippetsController.Resp" },
     "GET /v2/student/courses": { "response": "core.ems.service.course.ReadStudentCourses.Resp" },
     "GET /v2/student/courses/{courseId}/exercises": { "response": "core.ems.service.exercise.StudentReadExercisesController.Resp" },
@@ -441,14 +442,36 @@
       "id": { "kind": "string" }
     },
     "core.ems.service.code.TeacherCheckSimilarityController.Resp": {
+      "compared": { "kind": "number" },
+      "groups": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespGroup" },
+      "language": { "kind": "string" },
+      "provider": { "kind": "string" },
       "scores": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespScore" },
-      "submissions": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespSubmission" }
+      "skipped": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespSkipped" },
+      "submissions": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespSubmission" },
+      "truncated": { "kind": "boolean" }
+    },
+    "core.ems.service.code.TeacherCheckSimilarityController.RespGroup": {
+      "submissions": { "kind": "array" }
+    },
+    "core.ems.service.code.TeacherCheckSimilarityController.RespMatch": {
+      "end_line_1": { "kind": "number" },
+      "end_line_2": { "kind": "number" },
+      "start_line_1": { "kind": "number" },
+      "start_line_2": { "kind": "number" },
+      "tokens": { "kind": "number" }
     },
     "core.ems.service.code.TeacherCheckSimilarityController.RespScore": {
-      "score_a": { "kind": "number" },
-      "score_b": { "kind": "number" },
+      "matches": { "kind": "array", "type": "core.ems.service.code.TeacherCheckSimilarityController.RespMatch" },
+      "max_similarity": { "kind": "number" },
+      "shared_tokens": { "kind": "number", "nullable": true },
+      "similarity": { "kind": "number" },
       "sub_1": { "kind": "string" },
       "sub_2": { "kind": "string" }
+    },
+    "core.ems.service.code.TeacherCheckSimilarityController.RespSkipped": {
+      "id": { "kind": "string" },
+      "reason": { "kind": "string" }
     },
     "core.ems.service.code.TeacherCheckSimilarityController.RespSubmission": {
       "course_title": { "kind": "string" },
@@ -457,6 +480,14 @@
       "given_name": { "kind": "string" },
       "id": { "kind": "string" },
       "solution": { "kind": "string" }
+    },
+    "core.ems.service.code.TeacherReadSimilarityProgressController.Resp": {
+      "budget_sec": { "kind": "number" },
+      "done": { "kind": "number" },
+      "elapsed_sec": { "kind": "number" },
+      "phase": { "kind": "string", "nullable": true },
+      "running": { "kind": "boolean" },
+      "total": { "kind": "number" }
     },
     "core.ems.service.course.AddTeachersToCourse.GroupReq": {
       "id": { "kind": "string" }
