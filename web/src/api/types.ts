@@ -556,9 +556,9 @@ export interface DirAccessesResp {
 
 // --- similarity ---------------------------------------------------------------------------------
 // `POST /exercises/{exerciseId}/similarity` compares submissions of the same *library* exercise,
-// optionally across several courses. Both scores are percentages of a whole-text comparison: a Dice
-// coefficient over character bigrams, and a Levenshtein-based FuzzyWuzzy ratio. Neither understands
-// code, so renaming variables lowers both — worth knowing before reading a low score as innocence.
+// optionally across several courses. Python is compared by JPlag, over the code's tokens, so renaming
+// variables does not lower its scores; everything else by edit distance over the whole text, which
+// renaming does lower — worth knowing before reading a low score as innocence.
 
 /** @endpoint POST /v2/exercises/{exerciseId}/similarity -> submissions[] */
 export interface SimilarSubmissionResp {
@@ -570,19 +570,69 @@ export interface SimilarSubmissionResp {
   course_title: string
 }
 
+/** @endpoint POST /v2/exercises/{exerciseId}/similarity -> scores[].matches[] */
+export interface SimilarityMatchResp {
+  start_line_1: number
+  end_line_1: number
+  start_line_2: number
+  end_line_2: number
+  tokens: number
+}
+
 /** @endpoint POST /v2/exercises/{exerciseId}/similarity -> scores[] */
 export interface SimilarityScoreResp {
   sub_1: string
   sub_2: string
-  /** Dice coefficient, 0–100. */
-  score_a: number
-  /** Levenshtein-based ratio, 0–100. */
-  score_b: number
+  /** The share of both submissions together, 0–100. */
+  similarity: number
+  /** The share of whichever submission is covered more, 0–100: what the threshold filters on. */
+  max_similarity: number
+  /** How many tokens the two share (JPlag); null for edit distance. */
+  shared_tokens: number | null
+  /** Where the two match (JPlag); always empty for edit distance, whose shared text the page finds itself. */
+  matches: SimilarityMatchResp[]
+}
+
+/** @endpoint POST /v2/exercises/{exerciseId}/similarity -> skipped[] */
+export interface SimilaritySkippedResp {
+  id: string
+  /** `TOO_SMALL`, `TOO_LARGE`, `TOO_COMPLEX`, `TOO_REPETITIVE` or `CANNOT_PARSE`. */
+  reason: string
+}
+
+/** @endpoint POST /v2/exercises/{exerciseId}/similarity -> groups[] */
+export interface SimilarityGroupResp {
+  /** In id order. */
+  submissions: string[]
 }
 
 /** @endpoint POST /v2/exercises/{exerciseId}/similarity -> (root) */
 export interface SimilarityResp {
+  /** Only those some pair or group names. */
   submissions: SimilarSubmissionResp[]
-  /** Core returns at most the 100 highest-scoring pairs, ordered by score_a + score_b. */
+  /** How many submissions the check was over, including those skipped and those no pair names. */
+  compared: number
+  /** At most 100 by most shared code and 100 by highest score, most shared first. */
   scores: SimilarityScoreResp[]
+  /** `jplag` or `edit-distance`. */
+  provider: string
+  /** `python`, `sql` or `text`: the language compared. */
+  language: string
+  skipped: SimilaritySkippedResp[]
+  /** Identical submissions by three or more students, compared once; a pair names one member for them all. */
+  groups: SimilarityGroupResp[]
+  /** More pairs scored than were returned. */
+  truncated: boolean
+}
+
+/** @endpoint GET /v2/similarity/progress -> (root) */
+export interface SimilarityProgressResp {
+  /** False when none of the caller's checks is running. */
+  running: boolean
+  /** `preparing` or `comparing`; null when nothing is running. */
+  phase: string | null
+  done: number
+  total: number
+  elapsed_sec: number
+  budget_sec: number
 }
