@@ -14,16 +14,20 @@
 # "whatever is latest" is not a thing this role should ever install on its own.
 #
 # The checksum is the SHA-256 of the official release asset. Keycloak publishes no .sha256 alongside
-# the zip, so there is no upstream hash to compare against: this one was computed on 2026-08-24 from
-# the asset downloaded off the GitHub release. That makes it a pin rather than an independent
+# the zip, so there is no upstream .sha256 file to compare against: this one was computed on
+# 2026-11-19 from the asset downloaded off the GitHub release, and it equals the `digest` GitHub's
+# release API records for that asset (`gh api repos/keycloak/keycloak/releases/tags/<version>`).
+# That is one source agreeing with itself, so it stays a pin rather than an independent
 # verification — the second opinion is that `get_url` below refuses any host whose download differs.
 #
-# 26.7.2 is not a routine bump. It carries CVE-2026-18963 (CVSS 9.1, unauthenticated account takeover
-# through the reset-credentials flow) and seven more; the version before it that anyone should run is
-# no version before it.
-keycloak_version: 26.7.2
+# None of the 26.7 patch releases were routine bumps. 26.7.2 carried CVE-2026-18963 (CVSS 9.1,
+# unauthenticated account takeover through the reset-credentials flow); 26.7.3 to 26.7.5 carry some
+# forty more, among them an unauthenticated denial of service (CVE-2026-79651) and a client secret
+# readable through Client Registration (CVE-2026-89298). 26.7.5 is the last of the 26.7 line: the
+# next security fix is only in 26.8, which is a minor upgrade with migration changes to read first.
+keycloak_version: 26.7.5
 keycloak_zip_url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_version }}/keycloak-{{ keycloak_version }}.zip"
-keycloak_zip_sha256: 744ced2aee48932be2de935ff380085ebded737655c0986aa3512bbcec62f69b
+keycloak_zip_sha256: 30ef87fb7101c43d29688d1ae80c0588ff4a151b3330e9f664bf9692d398658a
 
 # Keycloak 26.7 runs on Java 17 or 21. 21 is the newer of the two it supports — deliberately NOT the
 # Java 25 core runs on, because Quarkus in this release predates it and the failure mode is an
@@ -163,7 +167,7 @@ keycloak_gate_client_id: idp-admin-gate
 # imports it.
 #
 # Pinned and checksummed for the same reason the server is. The version tracks the adapter's own
-# releases, not the server's — 26.2.4 against a 26.7.2 server is expected, not drift — and it is the
+# releases, not the server's — 26.2.4 against a 26.7.5 server is expected, not drift — and it is the
 # same major.minor the SPA carries in web/package.json.
 keycloak_js_version: 26.2.4
 keycloak_js_url: "https://registry.npmjs.org/keycloak-js/-/keycloak-js-{{ keycloak_js_version }}.tgz"

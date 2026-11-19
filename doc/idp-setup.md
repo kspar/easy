@@ -1,7 +1,7 @@
 # Setting up the dev IdP
 
 `dev.idp.lahendus.ut.ee` — a CNAME to `easy-idp-dev.cloud.ut.ee`, the VM's own name (193.40.11.153,
-OpenStack, Ubuntu 24.04.4 LTS) — Keycloak 26.7.2 serving the realm that every login on dev goes
+OpenStack, Ubuntu 24.04 LTS) — Keycloak 26.7.5 serving the realm that every login on dev goes
 through. Both names reach it; the `lahendus.ut.ee` one is what the configs use and what the tokens
 say, and §5 is why that took two attempts.
 
@@ -147,7 +147,7 @@ reasoning for each value; what follows is only what does not fit in a comment.
 
 ### 3.1 The version is pinned and checksummed
 
-`keycloak_version: 26.7.2`, downloaded from GitHub and verified against a SHA-256 in the role.
+`keycloak_version: 26.7.5`, downloaded from GitHub and verified against a SHA-256 in the role.
 
 Keycloak publishes no `.sha256` next to the zip, so that hash is one this project computed off the
 release asset rather than an upstream figure it agrees with. What it buys is not "this is the real
@@ -158,7 +158,9 @@ role should ever install by itself.
 If the download ever fails on a checksum mismatch, **do not fix it by updating the hash.**
 
 26.7.2 arrived here as a security upgrade, not a routine bump: it fixes CVE-2026-18963, an
-unauthenticated account takeover through the reset-credentials flow, and seven others.
+unauthenticated account takeover through the reset-credentials flow, and seven others. 26.7.3 to
+26.7.5 (EZ-1944) were security releases too, and 26.7.5 is the last of the 26.7 line — the fix
+after it is only in 26.8.
 
 ### 3.2 Java 21, not Java 25
 
