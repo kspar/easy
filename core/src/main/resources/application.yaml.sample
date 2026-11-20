@@ -93,6 +93,13 @@ easy:
       fixed-delay:
         ms: "1000"
 
+    # Source similarity (doc/jplag-integration.md). These are the defaults in code.
+    similarity:
+      # The largest cohort one check takes; a larger one is refused before it is loaded.
+      max-submissions: "500"
+      # How long one check may run, in seconds.
+      timeout-sec: "120"
+
     moodle-sync:
       wstoken: "<token>"
       moodlewsrestformat: "json"

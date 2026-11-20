@@ -31,7 +31,7 @@ plugins {
 extra["tomcat.version"] = libs.versions.tomcat.get()
 
 /**
- * Coverage: **report everywhere, gate in four places.**
+ * Coverage: **report everywhere, gate in five places.**
  *
  * A global threshold is a trap in this codebase and would be worse than none. A large fraction of
  * these 17,000 lines is DTO declaration, so a global percentage measures the ratio of boilerplate to
@@ -48,6 +48,8 @@ extra["tomcat.version"] = libs.versions.tomcat.get()
  *   somebody else's data and throws nothing.
  * - **conf.security** — the filter chain, the JWT converter, the permitAll list.
  * - **ems.service.storage** and **ems.cron** — the only code that deletes a teacher's file.
+ * - **ems.service.code.similarity** — plagiarism scores. A wrong score looks like a right one, and a
+ *   teacher acts on it.
  *
  * Run `./gradlew :core:koverHtmlReport` and open the result; `koverVerify` is what fails the build.
  */
@@ -127,6 +129,10 @@ val coverageTargets = listOf(
     CoverageTarget("core.ems.service.storage.", 90, "object storage"),
     CoverageTarget("core.ems.cron.StoredFileSweep", 90, "the stored-file sweep"),
     CoverageTarget("core.ems.cron.Stored_file_sweepKt", 90, "the sweep's scanned-column list"),
+
+    // Plagiarism scores, which reach into JPlag's protected and package-private internals to keep student
+    // code off disk: what an upgrade breaks there still produces numbers, wrong ones. 97% today.
+    CoverageTarget("core.ems.service.code.similarity.", 90, "source similarity"),
 )
 
 tasks.register("koverVerifyTargets") {
@@ -195,8 +201,9 @@ tasks.register("koverVerifyTargets") {
 
         if (failures.isNotEmpty()) throw GradleException(
             "Coverage below target:\n" + failures.joinToString("\n") +
-                    "\n\nThese four packages carry a number because being untested in them is a " +
-                    "specific harm — somebody else's data, or a teacher's file. Everything else is " +
+                    "\n\nThese five areas carry a number because being untested in them is a " +
+                    "specific harm — somebody else's data, a teacher's file, or a plagiarism score " +
+                    "that is wrong without looking wrong. Everything else is " +
                     "reported, not gated: see the note above coverageTargets in core/build.gradle.kts." +
                     "\n\nRead the detail with: ./gradlew :core:koverHtmlReport"
         )
@@ -340,8 +347,18 @@ dependencies {
     // StoredFile type detection
     implementation(libs.tika.core)
 
-    // Source code similarity
-    implementation(libs.fuzzywuzzy)
+    // Source code similarity; see doc/jplag-integration.md.
+    //
+    // Excluded: JPlag's language API declares ICU4J (charset detection for its file reader) and two
+    // annotation processors at compile scope, about 21 MB of the release jar with Guava. Nothing on the
+    // in-memory path loads any of it: ICU is used only where JPlag reads a file, and core never lets it.
+    listOf(libs.jplag.core, libs.jplag.python, libs.jplag.antlrUtils).forEach { jplag ->
+        implementation(jplag) {
+            exclude(group = "com.ibm.icu")
+            exclude(group = "com.google.auto.service")
+            exclude(group = "org.kohsuke.metainf-services")
+        }
+    }
 
     // TSL
     implementation(project(":tsl"))

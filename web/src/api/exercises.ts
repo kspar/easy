@@ -12,6 +12,7 @@ import type {
   InlineCommentResp,
   MoodlePropsResp,
   ParticipantsResp,
+  SimilarityProgressResp,
   SimilarityResp,
   SubmissionResp,
   SubmissionRow,
@@ -1146,20 +1147,37 @@ export function useMarkdownPreview(markdownText: string, debounceMs = 400): stri
 }
 
 /**
+ * How far the caller's running check has got, asked every second while it runs: the check answers only
+ * at the end, up to two minutes later.
+ */
+export function useSimilarityProgress(enabled: boolean) {
+  return useQuery({
+    queryKey: ['similarity-progress'],
+    queryFn: () => apiFetch<SimilarityProgressResp>('/similarity/progress'),
+    enabled,
+    refetchInterval: enabled ? 1000 : false,
+    staleTime: 0,
+    gcTime: 0,
+  })
+}
+
+/**
  * Compare submissions of one library exercise for similarity.
  *
  * A mutation rather than a query because it is expensive and explicit: the teacher asks for it, and
  * asking twice should mean running it twice. Core compares every pair — N submissions means
- * N(N-1)/2 comparisons, synchronously, inside the request — so it gets slow on a large course and can
- * time out. That is EZ-1667's open question, not something this hook can paper over; the page shows
- * the pair count up front so the wait is at least predictable.
+ * N(N-1)/2 comparisons, inside the request — so it is capped and timed, and reports how far it has
+ * got through `useSimilarityProgress`.
  *
  * `exerciseId` is the *library* exercise id, not the course exercise id. `courses` scopes which
  * courses' submissions may be included, and `submissions` narrows it further — the page passes the
  * ids it got from the summaries query, which is how the group filter is applied.
  */
 export function useCheckSimilarity(exerciseId: string | undefined) {
+  const queryClient = useQueryClient()
   return useMutation({
+    // The last run's progress, kept while the page still watches it, would otherwise show until the first poll.
+    onMutate: () => queryClient.removeQueries({ queryKey: ['similarity-progress'] }),
     mutationFn: ({ courseIds, submissionIds }: { courseIds: string[]; submissionIds: string[] }) =>
       apiFetch<SimilarityResp>(`/exercises/${exerciseId}/similarity`, {
         method: 'POST',

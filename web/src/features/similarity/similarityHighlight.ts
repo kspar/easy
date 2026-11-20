@@ -29,6 +29,7 @@ import { getChunks } from '@codemirror/merge'
  */
 
 const commonLine = Decoration.line({ class: 'cm-commonLine' })
+const selectedLine = Decoration.line({ class: 'cm-commonLine cm-selectedMatch' })
 const commonSpan = Decoration.mark({ class: 'cm-commonSpan' })
 
 /**
@@ -128,7 +129,7 @@ function commonSpansIn(view: EditorView): DecorationSet {
   return builder.finish()
 }
 
-function highlighter(build: (view: EditorView) => DecorationSet) {
+function highlighter(build: (view: EditorView) => DecorationSet, stale: (update: ViewUpdate) => boolean = () => true) {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet
@@ -138,7 +139,7 @@ function highlighter(build: (view: EditorView) => DecorationSet) {
       update(update: ViewUpdate) {
         // Chunks arrive a tick after construction — `getChunks` returns null until the merge
         // extension has settled — so this recomputes rather than trying to guess when that was.
-        this.decorations = build(update.view)
+        if (stale(update)) this.decorations = build(update.view)
       }
     },
     { decorations: (v) => v.decorations },
@@ -153,9 +154,12 @@ function highlighter(build: (view: EditorView) => DecorationSet) {
  * `.cm-changedText` here loses the cascade and the underlines survive untouched. Those prefixes are
  * a `baseTheme` feature and throw "Unsupported selector" in a `theme`, which takes the whole page
  * down with it — hence the mode being passed in as a value instead.
+ *
+ * Not on a shared line: a line JPlag matched is often one the character diff calls changed — a renamed
+ * copy's all are — and it keeps its band.
  */
 const muteDiffColours = EditorView.theme({
-  '&.cm-merge-a .cm-changedLine, &.cm-merge-b .cm-changedLine, .cm-inlineChangedLine': {
+  '&.cm-merge-a .cm-changedLine:not(.cm-commonLine), &.cm-merge-b .cm-changedLine:not(.cm-commonLine), .cm-inlineChangedLine:not(.cm-commonLine)': {
     backgroundColor: 'transparent !important',
   },
   '&.cm-merge-a .cm-changedText, &.cm-merge-b .cm-changedText, &.cm-merge-b .cm-deletedText, .cm-deletedChunk .cm-deletedText':
@@ -189,10 +193,18 @@ export const SHARED_DARK = 'rgba(120, 180, 220, .16)'
 
 function sharedTheme(dark: boolean) {
   return EditorView.theme({
-    // A full-width band for an identical line; a rounded, text-hugging mark for a fragment inside a
-    // line that differs. The band is the lighter of the two — it covers far more area, and the
-    // fragment is the rarer, more telling signal.
-    '.cm-commonLine': { backgroundColor: dark ? SHARED_DARK : SHARED_LIGHT },
+    // A full-width band for an identical or matched line; a rounded, text-hugging mark for a fragment
+    // inside a line that differs. The band is the lighter of the two — it covers far more area, and
+    // the fragment is the rarer, more telling signal. Qualified by side and `!important`, so it beats
+    // the merge package's own colour for a changed line, which a matched line can be.
+    '&.cm-merge-a .cm-commonLine, &.cm-merge-b .cm-commonLine': {
+      backgroundColor: (dark ? SHARED_DARK : SHARED_LIGHT) + ' !important',
+    },
+    // The match picked from the list, marked on both sides at once.
+    '&.cm-merge-a .cm-selectedMatch, &.cm-merge-b .cm-selectedMatch': {
+      backgroundColor: (dark ? 'rgba(120, 180, 220, .45)' : 'rgba(90, 150, 190, .45)') + ' !important',
+      boxShadow: `inset 3px 0 0 ${dark ? '#8cc4e8' : '#3a7aa8'}`,
+    },
     '.cm-commonSpan': {
       backgroundColor: dark ? 'rgba(120, 180, 220, .22)' : 'rgba(90, 150, 190, .18)',
       borderRadius: '2px',
@@ -200,7 +212,76 @@ function sharedTheme(dark: boolean) {
   })
 }
 
-/** Everything the similarity diff adds on top of a plain merge view. */
+/** A region JPlag matched, as a 1-based inclusive line range. */
+export interface MatchedLines {
+  startLine: number
+  endLine: number
+}
+
+/**
+ * The 1-based lines [ranges] cover in a document of [docLines] lines, sorted and without duplicates.
+ * Clamped rather than trusted: core sends 0 for a line it could not place, and a line outside the
+ * document makes `doc.line(n)` throw, which switches the whole highlighter off for that side.
+ */
+export function matchedLineNumbers(ranges: MatchedLines[], docLines: number): number[] {
+  const lines = new Set<number>()
+  for (const range of ranges) {
+    // Only the ends core could place: an unplaced 0 clamped to line 1 painted a file from its top.
+    const known = [range.startLine, range.endLine].filter((line) => line >= 1)
+    if (known.length === 0) continue
+    const to = Math.min(docLines, Math.max(...known))
+    for (let line = Math.min(...known); line <= to; line++) lines.add(line)
+  }
+  return [...lines].sort((a, b) => a - b)
+}
+
+/**
+ * Marks the lines JPlag matched, rather than what a character diff aligns: on a copy with every name
+ * changed the score is near 100% and a character diff aligns almost nothing. The [selected] match, if
+ * any, is marked apart.
+ */
+export function matchHighlighting(dark: boolean, ranges: MatchedLines[], selected?: MatchedLines) {
+  const build = (view: EditorView) => {
+    const builder = new RangeSetBuilder<Decoration>()
+    const doc = view.state.doc
+    const chosen = new Set(selected ? matchedLineNumbers([selected], doc.lines) : [])
+    for (const line of matchedLineNumbers(ranges, doc.lines)) {
+      builder.add(doc.line(line).from, doc.line(line).from, chosen.has(line) ? selectedLine : commonLine)
+    }
+    return builder.finish()
+  }
+  return [muteDiffColours, gutterRule(dark), sharedTheme(dark), highlighter(build, (u) => u.docChanged)]
+}
+
+/** A matched block as the page lists it: where it is on each side, and its place in `matches`. */
+export interface MatchEntry {
+  index: number
+  fromA: number
+  toA: number
+  fromB: number
+  toB: number
+  tokens: number
+}
+
+/** How many matched blocks the page lists for one pair. */
+const MAX_MATCHES = 30
+
+/**
+ * A pair's matches to pick from, largest first: the band marks every matched line alike, so it cannot say
+ * which block on the left is the copy of which on the right. A match core could not place on both sides
+ * is left out; at most [MAX_MATCHES], and how many more there are.
+ */
+export function matchEntries(
+  matches: { start_line_1: number; end_line_1: number; start_line_2: number; end_line_2: number; tokens: number }[],
+): { shown: MatchEntry[]; more: number } {
+  const placed = matches
+    .map((m, index) => ({ index, fromA: m.start_line_1, toA: m.end_line_1, fromB: m.start_line_2, toB: m.end_line_2, tokens: m.tokens }))
+    .filter((m) => m.fromA >= 1 && m.fromB >= 1)
+    .sort((x, y) => y.tokens - x.tokens || x.fromA - y.fromA)
+  return { shown: placed.slice(0, MAX_MATCHES), more: Math.max(0, placed.length - MAX_MATCHES) }
+}
+
+/** Everything the similarity diff adds on top of a plain merge view, for edit distance's character diff. */
 export function sharedCodeHighlighting(dark: boolean) {
   return [
     muteDiffColours,

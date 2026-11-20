@@ -32,6 +32,9 @@ test('similarity-page', async ({ launch, check }) => {
   await fakeApi(page, [
     ['/account/checkin', () => ({})],
 
+    // Before '/similarity', which it also contains: the first needle that matches answers.
+    ['/similarity/progress', () => ({ running: false, phase: null, done: 0, total: 0, elapsed_sec: 0, budget_sec: 120 })],
+
     ['/similarity', ({ method, url, body }) => {
       if (method === 'POST') requests.push({ url, body })
       return {
@@ -40,9 +43,16 @@ test('similarity-page', async ({ launch, check }) => {
           { id: '102', created_at: '2026-08-01T11:00:00.000Z', solution: '# loeb kaks arvu ja liidab\nx = int(input())\ny = int(input())\ntulemus = x + y\nprint(tulemus)\n', given_name: 'Jaan', family_name: 'Tamm', course_title: 'Programmeerimise alused' },
         ],
         scores: [
-          { sub_1: '101', sub_2: '102', score_a: 91, score_b: 78 },
-          { sub_1: '101', sub_2: '104', score_a: 20, score_b: 15 },
+          { sub_1: '101', sub_2: '102', similarity: 78, max_similarity: 78, shared_tokens: null, matches: [] },
+          { sub_1: '101', sub_2: '104', similarity: 15, max_similarity: 15, shared_tokens: null, matches: [] },
         ],
+        // Edit distance, which says how alike two texts are and not where: the page finds the shared code itself.
+        compared: 3,
+        provider: 'edit-distance',
+        language: 'text',
+        skipped: [],
+        groups: [],
+        truncated: false,
       }
     }],
 
@@ -106,9 +116,8 @@ test('similarity-page', async ({ launch, check }) => {
   check('and scoping to this course', JSON.stringify(requests[0]?.body?.courses) === JSON.stringify([{ id: COURSE }]))
 
   check(
-    'the pair is listed with both scores labelled',
-    await waitUntil(async () =>
-      (await page.getByText('Shared text 91%').count()) > 0 && (await page.getByText('Edit distance 78%').count()) > 0),
+    'the pair is listed with its score labelled',
+    await waitUntil(async () => (await page.getByText('Text similarity 78%').count()) > 0),
   )
 
   // --- the diff, and the link to the student -----------------------------------------------------------
@@ -229,7 +238,7 @@ test('similarity-page', async ({ launch, check }) => {
   // real endpoint does when a pair falls outside the returned set — it must not crash the page.
   check(
     'a pair whose submissions are missing from the response is skipped rather than crashing',
-    (await page.getByText('Shared text 20%').count()) === 0,
+    (await page.getByText('Text similarity 15%').count()) === 0,
   )
 
   // --- the group filter narrows what gets sent ----------------------------------------------------------
